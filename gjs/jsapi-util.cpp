@@ -135,7 +135,7 @@ gjs_object_require_property(JSContext       *cx,
     return false;
 }
 
-/* Converts JS string value to UTF-8 string. */
+// Converts JS string value to UTF-8 string.
 bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
                                  const char* description,
                                  JS::HandleId property_name,
@@ -687,7 +687,7 @@ void gjs_gc_if_needed(JSContext* cx) {
             JS::NonIncrementalGC(cx, JS::GCOptions::Shrink,
                                  Gjs::GCReason::LINUX_RSS_TRIGGER);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
-            /* If we've shrunk by 75%, lower the trigger */
+            // If we've shrunk by 75%, lower the trigger
             linux_rss_trigger = rss_usize * 1.25;
         }
     }

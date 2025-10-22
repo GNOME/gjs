@@ -232,7 +232,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
 
     if (!is_valid()) {
-        /* We were destroyed; become a no-op */
+        // We were destroyed; become a no-op
         return;
     }
 
@@ -272,7 +272,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     JSAutoRealm ar{m_cx, callable()};
 
     if (marshal_data) {
-        /* we are used for a signal handler */
+        // we are used for a signal handler
         unsigned signal_id = GPOINTER_TO_UINT(marshal_data);
 
         g_signal_query(signal_id, &signal_query);
@@ -310,7 +310,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     Maybe<GI::AutoSignalInfo> signal_info{
         get_signal_info_if_available(repo, &signal_query)};
     if (signal_info) {
-        /* Start at argument 1, skip the instance parameter */
+        // Start at argument 1, skip the instance parameter
         for (i = 1; i < n_param_values; ++i) {
             ArgumentDetails& arg_details = args_details[i];
             arg_details.info.emplace();
@@ -331,7 +331,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     }
 
     JS::RootedValueVector argv{m_cx};
-    /* May end up being less */
+    // May end up being less
     if (!argv.reserve(n_param_values))
         g_error("Unable to reserve space");
     JS::RootedValue argv_to_append{m_cx};
@@ -497,7 +497,7 @@ static bool throw_expect_type(JSContext* cx, JS::HandleValue value,
               gtype ? g_type_name(gtype) : "",
               out_of_range ? ". But it's out of range: " : "",
               out_of_range ? val_str.get() : "");
-    return false;  /* for convenience */
+    return false;  // for convenience
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -653,13 +653,13 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                                      out_of_range);
         }
     } else if (gtype == G_TYPE_BOOLEAN) {
-        /* JS::ToBoolean() can't fail */
+        // JS::ToBoolean() can't fail
         Gjs::gvalue_set(gvalue, JS::ToBoolean(value));
     } else if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
                g_type_is_a(gtype, G_TYPE_INTERFACE)) {
         GObject* gobj = nullptr;
         if (value.isNull()) {
-            /* nothing to do */
+            // nothing to do
         } else if (value.isObject()) {
             JS::RootedObject obj{cx, &value.toObject()};
             if (!ObjectBase::typecheck(cx, obj, gtype) ||
@@ -697,7 +697,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             return true;
 
         void* gboxed = nullptr;
-        /* special case GValue */
+        // special case GValue
         if (gtype == G_TYPE_VALUE) {
             /* explicitly handle values that are already GValues
                to avoid infinite recursion */
@@ -730,12 +730,12 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                 g_value_set_boxed(gvalue, ObjectBox::boxed(cx, obj).get());
                 return true;
             } else if (gtype == G_TYPE_ERROR) {
-                /* special case GError */
+                // special case GError
                 gboxed = ErrorBase::to_c_ptr(cx, obj);
                 if (!gboxed)
                     return false;
             } else if (gtype == G_TYPE_BYTE_ARRAY) {
-                /* special case GByteArray */
+                // special case GByteArray
                 if (JS_IsUint8Array(obj)) {
                     g_value_take_boxed(gvalue,
                                        gjs_byte_array_get_byte_array(obj));
@@ -809,7 +809,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         GVariant* variant = nullptr;
 
         if (value.isNull()) {
-            /* nothing to do */
+            // nothing to do
         } else if (value.isObject()) {
             JS::RootedObject obj{cx, &value.toObject()};
 
@@ -831,7 +831,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             GEnumValue *v;
             Gjs::AutoTypeClass<GEnumClass> enum_class{gtype};
 
-            /* See arg.c:_gjs_enum_to_int() */
+            // See arg.c:_gjs_enum_to_int()
             v = g_enum_get_value(enum_class, (int)value_int64);
             if (v == nullptr) {
                 gjs_throw(cx, "%d is not a valid value for enumeration %s",
@@ -850,7 +850,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             if (!_gjs_flags_value_is_valid(cx, gtype, value_int64))
                 return false;
 
-            /* See arg.c:_gjs_enum_to_int() */
+            // See arg.c:_gjs_enum_to_int()
             g_value_set_flags(gvalue, (int)value_int64);
         } else {
             return throw_expect_type(cx, value, "flags", gtype);
@@ -858,7 +858,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         void* gparam = nullptr;
         if (value.isNull()) {
-            /* nothing to do */
+            // nothing to do
         } else if (value.isObject()) {
             JS::RootedObject obj{cx, &value.toObject()};
 
@@ -883,7 +883,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         Gjs::gvalue_set<Gjs::Tag::GType>(gvalue, type);
     } else if (g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (value.isNull()) {
-            /* Nothing to do */
+            // Nothing to do
         } else {
             gjs_throw(cx, "Cannot convert non-null JS value to G_POINTER");
             return false;
@@ -943,10 +943,10 @@ static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
     double v_double;
 
     if (v > 0 && v < INT_MAX) {
-        /* Optimize the unambiguous case */
+        // Optimize the unambiguous case
         v_double = v;
     } else {
-        /* Need to distinguish between negative integers and unsigned integers */
+        // Need to distinguish between negative integers and unsigned integers
         Maybe<GI::AutoEnumInfo> info{
             repo.find_by_gtype<GI::InfoTag::ENUM>(gtype)};
 
@@ -1102,7 +1102,7 @@ static bool gjs_value_from_g_value_internal(
             return true;
         }
 
-        /* special case GError */
+        // special case GError
         if (gtype == G_TYPE_ERROR) {
             obj = ErrorInstance::object_for_c_ptr(
                 cx, Gjs::gvalue_get<GError*>(gvalue));
@@ -1112,7 +1112,7 @@ static bool gjs_value_from_g_value_internal(
             return true;
         }
 
-        /* special case GValue */
+        // special case GValue
         if (gtype == G_TYPE_VALUE) {
             return gjs_value_from_g_value(cx, value_p,
                                           Gjs::gvalue_get<GValue*>(gvalue));

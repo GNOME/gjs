@@ -325,7 +325,7 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
     bool found;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
-    /* First we check if js module has already been loaded  */
+    // First we check if js module has already been loaded
     if (!JS_HasPropertyById(cx, in_object, atoms.module_init(), &found))
         return nullptr;
     if (found) {
@@ -473,7 +473,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
     if (!JS_GetPropertyById(cx, obj, atoms.parent_module(), &parent))
         return false;
 
-    /* First try importing an internal module like gi */
+    // First try importing an internal module like gi
     if (parent.isNull() &&
         Gjs::NativeModuleDefineFuncs::get().is_registered(name.get())) {
         if (!gjs_import_native_module(cx, obj, name.get()))
@@ -511,21 +511,21 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
         if (!dirname)
             return false;
 
-        /* Ignore empty path elements */
+        // Ignore empty path elements
         if (dirname[0] == '\0')
             continue;
 
         Gjs::AutoUnref<GFile> directory{
             g_file_new_for_commandline_arg(dirname.get())};
 
-        /* Try importing __init__.js and loading the symbol from it */
+        // Try importing __init__.js and loading the symbol from it
         bool found = false;
         if (!import_symbol_from_init_js(cx, obj, directory, name.get(), &found))
             return false;
         if (found)
             return true;
 
-        /* Second try importing a directory (a sub-importer) */
+        // Second try importing a directory (a sub-importer)
         Gjs::AutoUnref<GFile> file{g_file_get_child(directory, name.get())};
 
         if (g_file_query_file_type(file, GFileQueryInfoFlags(0), nullptr) ==
@@ -546,7 +546,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
         if (!directories.empty())
             continue;
 
-        /* Third, if it's not a directory, try importing a file */
+        // Third, if it's not a directory, try importing a file
         file = g_file_get_child(directory, filename.get());
         exists = g_file_query_exists(file, nullptr);
 
@@ -645,7 +645,7 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
         if (!load_module_elements(cx, object, properties, file))
             return false;
 
-        /* new_for_commandline_arg handles resource:/// paths */
+        // new_for_commandline_arg handles resource:/// paths
         Gjs::AutoUnref<GFileEnumerator> direnum{g_file_enumerate_children(
             directory, "standard::name,standard::type", G_FILE_QUERY_INFO_NONE,
             nullptr, nullptr)};
@@ -661,11 +661,11 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
 
             Gjs::AutoChar filename{g_file_get_basename(file)};
 
-            /* skip hidden files and directories (.svn, .git, ...) */
+            // skip hidden files and directories (.svn, .git, ...)
             if (filename.get()[0] == '.')
                 continue;
 
-            /* skip module init file */
+            // skip module init file
             if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
                 continue;
 
@@ -751,29 +751,29 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
     static std::vector<std::string> gjs_search_path;
     static bool search_path_initialized = false;
 
-    /* not thread safe */
+    // not thread safe
 
     if (!search_path_initialized) {
         const char* const* system_data_dirs;
         const char *envstr;
 
-        /* in order of priority */
+        // in order of priority
 
-        /* $GJS_PATH */
+        // $GJS_PATH
         envstr = g_getenv("GJS_PATH");
         if (envstr) {
             char **dirs, **d;
             dirs = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
             for (d = dirs; *d != nullptr; d++)
                 gjs_search_path.push_back(*d);
-            /* we assume the array and strings are allocated separately */
+            // we assume the array and strings are allocated separately
             g_free(dirs);
         }
 
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/script/");
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/core/");
 
-        /* $XDG_DATA_DIRS /gjs-1.0 */
+        // $XDG_DATA_DIRS /gjs-1.0
         system_data_dirs = g_get_system_data_dirs();
         for (size_t i = 0; system_data_dirs[i] != nullptr; ++i) {
             Gjs::AutoChar s{
@@ -781,7 +781,7 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
             gjs_search_path.push_back(s.get());
         }
 
-        /* ${datadir}/share/gjs-1.0 */
+        // ${datadir}/share/gjs-1.0
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
@@ -847,7 +847,7 @@ static JSObject* gjs_create_importer(
     bool add_standard_search_path, JS::HandleObject in_object) {
     std::vector<std::string> search_paths = initial_search_path;
     if (add_standard_search_path) {
-        /* Stick the "standard" shared search path after the provided one. */
+        // Stick the "standard" shared search path after the provided one.
         const std::vector<std::string>& gjs_search_path = gjs_get_search_path();
         search_paths.insert(search_paths.end(), gjs_search_path.begin(),
                             gjs_search_path.end());
@@ -865,7 +865,7 @@ static JSObject* gjs_create_importer(
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER, "importer constructor, obj %p",
                         importer.get());
 
-    /* API users can replace this property from JS, is the idea */
+    // API users can replace this property from JS, is the idea
     if (!gjs_define_string_array(
             cx, importer, "searchPath", search_paths,
             // settable (no READONLY) but not deletable (PERMANENT)

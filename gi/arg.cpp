@@ -90,12 +90,12 @@ static void throw_invalid_argument(JSContext*, JS::HandleValue,
                                    GjsArgumentType);
 
 bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
-    /* Do proper value check for flags with GType's */
+    // Do proper value check for flags with GTypes
     if (gtype != G_TYPE_NONE) {
         Gjs::AutoTypeClass<GFlagsClass> gflags_class{gtype};
         uint32_t tmpval = static_cast<uint32_t>(value);
 
-        /* check all bits are valid bits for the flag and is a 32 bit flag*/
+        // check all bits are valid bits for the flag and is a 32 bit flag
         if ((tmpval &= gflags_class->mask) != value) {
             // Not a uint32_t with invalid mask values
             gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
@@ -329,7 +329,7 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
 
     switch (type_tag) {
     case GI_TYPE_TAG_BOOLEAN:
-        /* This doesn't seem particularly useful, but it's easy */
+        // This doesn't seem particularly useful, but it's easy
         *pointer_out = gjs_int_to_pointer(JS::ToBoolean(value));
         break;
 
@@ -501,7 +501,7 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
                                       GjsArgumentFlags::MAY_BE_NULL, &val_arg))
             return false;
 
-        /* Use heap-allocated values for types that don't fit in a pointer */
+        // Use heap-allocated values for types that don't fit in a pointer
         void* val_ptr;
         if (val_type == GI_TYPE_TAG_INT64) {
             val_ptr = heap_value_new_from_arg<int64_t>(&val_arg);
@@ -626,7 +626,7 @@ static bool gjs_string_to_intarray(JSContext* cx, JS::HandleString str,
         }
 
         default:
-            /* can't convert a string to this type */
+            // can't convert a string to this type
             gjs_throw(cx, "Cannot convert string to array of '%s'",
                       gi_type_tag_to_string(element_type));
             return false;
@@ -674,7 +674,7 @@ static bool gjs_array_to_ptrarray(JSContext* cx, JS::Value array_value,
     JS::RootedObject array_obj{cx, array_value.toObjectOrNull()};
     JS::RootedValue elem{cx};
 
-    /* Always one extra element, to cater for null terminated arrays */
+    // Always one extra element, to cater for null terminated arrays
     Gjs::AutoPointer<void*> array{array_allocate<void*>(length + 1)};
 
     for (i = 0; i < length; i++) {
@@ -1147,7 +1147,7 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
         *contents = nullptr;
         *length_p = 0;
     } else if (value.isString()) {
-        /* Allow strings as int8/uint8/int16/uint16 arrays */
+        // Allow strings as int8/uint8/int16/uint16 arrays
         JS::RootedString str{cx, value.toString()};
         if (!gjs_string_to_intarray(cx, str, element_tag, contents, length_p))
             return false;
@@ -2543,7 +2543,7 @@ static bool gjs_array_from_carray_internal(JSContext* cx,
                 break;
             }
         }
-        /* fallthrough */
+            [[fallthrough]];
         case GI_TYPE_TAG_ARRAY:
         case GI_TYPE_TAG_GLIST:
         case GI_TYPE_TAG_GSLIST:
@@ -2618,7 +2618,7 @@ static bool gjs_array_from_boxed_array(JSContext* cx,
     size_t length = 0;
     switch(array_type) {
     case GI_ARRAY_TYPE_BYTE_ARRAY:
-        /* GByteArray is just a typedef for GArray internally */
+        // GByteArray is just a typedef for GArray internally
     case GI_ARRAY_TYPE_ARRAY:
         array = gjs_arg_get<GArray*>(arg);
         data = array->data;
@@ -3288,7 +3288,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                     cx, value_p, struct_info.value(), arg);
             }
 
-            /* Everything else is a pointer type, NULL is the easy case */
+            // Everything else is a pointer type, NULL is the easy case
             if (!gjs_arg_get<void*>(arg)) {
                 value_p.setNull();
                 return true;
@@ -3406,7 +3406,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
             if (g_type_is_a(gtype, G_TYPE_BOXED) ||
                 g_type_is_a(gtype, G_TYPE_ENUM) ||
                 g_type_is_a(gtype, G_TYPE_FLAGS)) {
-                /* Should have been handled above */
+                // Should have been handled above
                 gjs_throw(cx,
                           "Type %s registered for unexpected interface_type %s",
                           g_type_name(gtype), interface_info.type_string());
@@ -3456,7 +3456,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                     cx, value_p, type_info.element_type(), transfer,
                     gjs_arg_get<void*>(arg));
             } else {
-                /* arrays with length are handled outside of this function */
+                // arrays with length are handled outside of this function
                 g_assert(!type_info.array_length_index() &&
                          "Use gjs_value_from_explicit_array() for arrays with "
                          "length param");
@@ -3919,7 +3919,7 @@ static bool gjs_g_arg_release_internal(
             if (interface_info.is_enum_or_flags())
                 return true;  // enum and flags
 
-            /* Anything else is a pointer */
+            // Anything else is a pointer
             if (!gjs_arg_get<void*>(arg))
                 return true;
 
@@ -3948,7 +3948,7 @@ static bool gjs_g_arg_release_internal(
                 g_clear_pointer(&gjs_arg_member<GClosure*>(arg),
                                 g_closure_unref);
             } else if (g_type_is_a(gtype, G_TYPE_VALUE)) {
-                /* G_TYPE_VALUE is-a G_TYPE_BOXED, but we special case it */
+                // G_TYPE_VALUE is a G_TYPE_BOXED, but we special case it
                 if (type_info.is_pointer())
                     g_boxed_free(gtype, gjs_arg_steal<void*>(arg));
                 else
@@ -3986,7 +3986,7 @@ static bool gjs_g_arg_release_internal(
         GIArrayType array_type = type_info.array_type();
 
         if (!gjs_arg_get<void*>(arg)) {
-            /* OK */
+            // OK
         } else if (array_type == GI_ARRAY_TYPE_C) {
             GI::AutoTypeInfo element_type{type_info.element_type()};
 

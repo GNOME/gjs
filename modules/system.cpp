@@ -309,8 +309,7 @@ bool gjs_js_define_system_stuff(JSContext* cx, JS::MutableHandleObject module) {
 
     return program_args_getter &&
            gjs_string_from_utf8(cx, program_name, &v_program_invocation_name) &&
-           /* The name is modeled after program_invocation_name, part of glibc
-            */
+           // The name is modeled after program_invocation_name, part of glibc
            JS_DefinePropertyById(cx, module,
                                  gjs->atoms().program_invocation_name(),
                                  v_program_invocation_name,

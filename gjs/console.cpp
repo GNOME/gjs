@@ -120,7 +120,7 @@ check_script_args_for_stray_gjs_args(int           argc,
     Gjs::AutoStrv argv_copy{g_new(char*, argc + 2)};
     int ix;
 
-    argv_copy[0] = g_strdup("dummy"); /* Fake argv[0] for GOptionContext */
+    argv_copy[0] = g_strdup("dummy");  // Fake argv[0] for GOptionContext
     for (ix = 0; ix < argc; ix++)
         argv_copy[ix + 1] = g_strdup(argv[ix]);
     argv_copy[argc + 1] = nullptr;
@@ -165,7 +165,7 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
     gjs_context_set_argv(js_context, argc, const_cast<const char**>(argv));
 
     Gjs::AutoError error;
-    /* evaluate the script */
+    // evaluate the script
     int code = 0;
     if (exec_as_module) {
         Gjs::AutoUnref<GFile> output{g_file_new_for_commandline_arg(filename)};
@@ -213,17 +213,17 @@ int main(int argc, char** argv) {
     if (!g_option_context_parse_strv(context, &argv_copy, &error))
         g_error("option parsing failed: %s", error->message);
 
-    /* Split options so we pass unknown ones through to the JS script */
+    // Split options so we pass unknown ones through to the JS script
     int argc_copy = g_strv_length(argv_copy);
     for (ix = 1; ix < argc; ix++) {
-        /* Check if a file was given and split after it */
+        // Check if a file was given and split after it
         if (argc_copy >= 2 && strcmp(argv[ix], argv_copy[1]) == 0) {
-            /* Filename given; split after this argument */
+            // Filename given; split after this argument
             gjs_argc = ix + 1;
             break;
         }
 
-        /* Check if -c or --command was given and split after following arg */
+        // Check if -c or --command was given and split after following arg
         if (command && (strcmp(argv[ix], "-c") == 0 ||
                         strcmp(argv[ix], "--command") == 0)) {
             gjs_argc = ix + 2;
@@ -235,7 +235,7 @@ int main(int argc, char** argv) {
     script_argc = argc - gjs_argc;
     script_argv = argv + gjs_argc;
 
-    /* Parse again, only the GJS options this time */
+    // Parse again, only the GJS options this time
     include_path.release();
     coverage_prefixes.release();
     coverage_output_path.release();
@@ -285,7 +285,7 @@ int main(int argc, char** argv) {
         program_name = gjs_argv[0];
         interactive_mode = true;
     } else {
-        /* All unprocessed options should be in script_argv */
+        // All unprocessed options should be in script_argv
         g_assert(gjs_argc == 2);
         Gjs::AutoUnref<GFile> input{
             g_file_new_for_commandline_arg(gjs_argv[1])};
@@ -299,10 +299,10 @@ int main(int argc, char** argv) {
         program_name = gjs_argv[1];
     }
 
-    /* This should be removed after a suitable time has passed */
+    // This should be removed after a suitable time has passed
     check_script_args_for_stray_gjs_args(script_argc, script_argv);
 
-    /* Check for GJS_TRACE_FD for sysprof profiling */
+    // Check for GJS_TRACE_FD for sysprof profiling
     const char* env_tracefd = g_getenv("GJS_TRACE_FD");
     int tracefd = -1;
     if (env_tracefd) {
@@ -315,8 +315,8 @@ int main(int argc, char** argv) {
     if (interactive_mode && enable_profiler) {
         g_message("Profiler disabled in interactive mode.");
         enable_profiler = false;
-        g_unsetenv("GJS_ENABLE_PROFILER");  /* ignore env var in eval() */
-        g_unsetenv("GJS_TRACE_FD");         /* ignore env var in eval() */
+        g_unsetenv("GJS_ENABLE_PROFILER");  // ignore env var in eval()
+        g_unsetenv("GJS_TRACE_FD");         // ignore env var in eval()
     }
 
     const char* env_coverage_prefixes = g_getenv("GJS_COVERAGE_PREFIXES");
@@ -382,7 +382,7 @@ int main(int argc, char** argv) {
     int code = define_argv_and_eval_script(js_context, script_argc, script_argv,
                                            script, len, filename);
 
-    /* Probably doesn't make sense to write statistics on failure */
+    // Probably doesn't make sense to write statistics on failure
     if (coverage && code == 0)
         gjs_coverage_write_statistics(coverage);
 

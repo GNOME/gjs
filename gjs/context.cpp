@@ -174,7 +174,7 @@ static void gjs_context_dump_heaps() {
 
     gjs_memory_report("signal handler", false);
 
-    /* dump to sequential files to allow easier comparisons */
+    // dump to sequential files to allow easier comparisons
     Gjs::AutoChar filename{g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
                                            intmax_t(getpid()), counter)};
     ++counter;
@@ -211,7 +211,7 @@ static void setup_dump_heap() {
     if (!dump_heap_initialized) {
         dump_heap_initialized = true;
 
-        /* install signal handler only if environment variable is set */
+        // install signal handler only if environment variable is set
         const char *heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
         if (heap_output) {
 #ifdef G_OS_UNIX
@@ -338,7 +338,7 @@ gjs_context_class_init(GjsContextClass *klass)
                                     pspec);
     g_param_spec_unref(pspec);
 
-    /* For GjsPrivate */
+    // For GjsPrivate
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
@@ -400,7 +400,7 @@ gjs_context_dispose(GObject *object)
     g_assert(gjs->is_owner_thread() &&
              "Gjs Context disposed from another thread");
 
-    /* Profiler must be stopped and freed before context is shut down */
+    // Profiler must be stopped and freed before context is shut down
     gjs->free_profiler();
 
     /* Stop accepting entries in the toggle queue before running dispose
@@ -493,7 +493,7 @@ void GjsContextPrivate::dispose() {
         m_job_queue.clear();
         m_object_init_list.clear();
 
-        /* Tear down JS */
+        // Tear down JS
         JS_DestroyContext(m_cx);
         m_cx = nullptr;
         // don't use g_clear_pointer() as we want the pointer intact while we
@@ -1061,7 +1061,7 @@ bool GjsContextPrivate::run_jobs_fallible() {
      * Since executing a job can trigger enqueueing of additional jobs,
      * it's crucial to recheck the queue length during each iteration. */
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
-        /* A previous job might have set this flag. e.g., System.exit(). */
+        // A previous job might have set this flag. e.g., System.exit().
         if (m_should_exit || !m_dispatcher.is_running()) {
             gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of %s",
                       m_should_exit ? "exit" : "main loop cancel");
@@ -1095,7 +1095,7 @@ bool GjsContextPrivate::run_jobs_fallible() {
                     continue;
                 }
 
-                /* There's nowhere for the exception to go at this point */
+                // There's nowhere for the exception to go at this point
                 gjs_log_exception_uncaught(m_cx);
             }
         }
@@ -1392,8 +1392,7 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
         return Err(error.release());
     }
 
-    // Assume success if no error was thrown and should exit isn't
-    // set
+    // Assume success if no error was thrown and should exit isn't set
     if (no_sync_error_pending) {
         *exit_code = 0;
         return Ok{};
@@ -1407,7 +1406,7 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
                 identifier);
 
     gjs_log_exception_uncaught(m_cx);
-    /* No exit code from script, but we don't want to exit(0) */
+    // No exit code from script, but we don't want to exit(0)
     *exit_code = 1;
     return Err(error.release());
 }
@@ -1692,7 +1691,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
                                         const char* source, size_t source_len,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
-    /* log and clear exception if it's set (should not be, normally...) */
+    // log and clear exception if it's set (should not be, normally...)
     if (JS_IsExceptionPending(m_cx)) {
         g_warning("eval_with_scope() called with a pending exception");
         return false;

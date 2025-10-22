@@ -240,7 +240,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
         nullable = check_nullable(fchar, fmt_required);
         fmt_required++;
     } else {
-        /* No more args passed in JS, only optional formats left */
+        // No more args passed in JS, only optional formats left
         if (args.length() <= param_ix)
             return true;
 
@@ -286,7 +286,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
 
 }  // namespace detail
 
-/* Empty-args version of the template */
+// Empty-args version of the template
 GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
     JSContext* cx, const char* function_name, const JS::CallArgs& args,
     const char* format) {

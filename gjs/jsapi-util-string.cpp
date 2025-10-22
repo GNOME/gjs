@@ -210,8 +210,7 @@ gjs_string_from_utf8_n(JSContext             *cx,
 
 bool gjs_string_to_filename(JSContext* cx, const JS::Value filename_val,
                             Gjs::AutoChar* filename_string) {
-    /* gjs_string_to_filename verifies that filename_val is a string */
-
+    // gjs_string_to_utf8() verifies that filename_val is a string
     JS::UniqueChars tmp{gjs_string_to_utf8(cx, filename_val)};
     if (!tmp)
         return false;
@@ -267,7 +266,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
 
     *data_p = g_new(T, *len_p);
 
-    /* This will probably use a loop, unfortunately */
+    // This will probably use a loop, unfortunately
     std::copy(js_data, js_data + *len_p, *data_p);
     return true;
 }

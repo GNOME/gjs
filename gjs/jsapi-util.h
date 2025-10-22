@@ -154,7 +154,7 @@ jsid gjs_intern_string_to_id(JSContext*, const char* string);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_unichar_from_string(JSContext*, JS::Value string, gunichar* result);
 
-/* Functions intended for more "internal" use */
+// Functions intended for more "internal" use
 
 void gjs_maybe_gc(JSContext*);
 void gjs_gc_if_needed(JSContext*);

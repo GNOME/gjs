@@ -9,13 +9,13 @@
 
 #ifdef HAVE_DTRACE
 
-/* include the generated probes header and put markers in code */
+// include the generated probes header and put markers in code
 #include "gjs_gi_probes.h"
 #define TRACE(probe) probe
 
 #else
 
-/* Wrap the probe to allow it to be removed when no systemtap available */
+// Wrap the probe to allow it to be removed when no systemtap available
 #define TRACE(probe)
 
 #endif

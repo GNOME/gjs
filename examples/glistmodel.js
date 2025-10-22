@@ -15,7 +15,7 @@ export let GjsListStore = GObject.registerClass({
     constructor() {
         super();
 
-        /* We'll use a native Array as internal storage for the list model */
+        // We'll use a native Array as internal storage for the list model
         this._items = [];
     }
 

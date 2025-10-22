@@ -73,9 +73,7 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
     return true;
 }
 
-/**/
-
-/* Find the first constructor */
+// Find the first constructor
 [[nodiscard]]
 static Maybe<GI::AutoFunctionInfo> find_fundamental_constructor(
     const GI::ObjectInfo info) {
@@ -86,8 +84,6 @@ static Maybe<GI::AutoFunctionInfo> find_fundamental_constructor(
 
     return {};
 }
-
-/**/
 
 bool FundamentalPrototype::resolve_interface(JSContext* cx,
                                              JS::HandleObject obj,
@@ -131,13 +127,13 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
         return true;  // not resolved, but no error
     }
 
-    /* We are the prototype, so look for methods and other class properties */
+    // We are the prototype, so look for methods and other class properties
     Maybe<GI::AutoFunctionInfo> method_info{info().method(prop_name.get())};
 
     if (method_info) {
         method_info->log_usage();
         if (method_info->is_method()) {
-            /* we do not define deprecated methods in the prototype */
+            // we do not define deprecated methods in the prototype
             if (method_info->is_deprecated()) {
                 gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                           "Ignoring definition of deprecated method %s in "

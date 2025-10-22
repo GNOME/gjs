@@ -86,7 +86,7 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
 
     char *tmp_js_script_filename = g_file_get_path(fixture->tmp_js_script);
 
-    /* Allocate a strv that we can pass over to gjs_coverage_new */
+    // Allocate a strv that we can pass over to gjs_coverage_new()
     char* coverage_paths[] = {tmp_js_script_filename, nullptr};
     char* search_paths[] = {tmp_output_dir_name, nullptr};
 
@@ -214,8 +214,7 @@ assert_coverage_data_matches_values_for_key(const char            *data,
                                             size_t                 data_size)
 {
     const char *line = line_starting_with (data, key);
-    /* Keep matching. If we fail to match one of them then
-     * bail out */
+    // Keep matching. If we fail to match one of them then bail out
     char *data_iterator = (char *) user_data;
 
     while (line && n > 0) {
@@ -226,7 +225,7 @@ assert_coverage_data_matches_values_for_key(const char            *data,
         data_iterator += data_size;
     }
 
-    /* If n is zero then we've found all available matches */
+    // If n is zero then we've found all available matches
     g_assert_cmpuint(n, ==, 0);
 }
 
@@ -326,7 +325,7 @@ static void test_new_contents_written(void* fixture_data, const void*) {
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* We have new content in the coverage data */
+    // We have new content in the coverage data
     g_assert_cmpstr(existing_contents, !=, coverage_data_contents);
     g_free(coverage_data_contents);
 }
@@ -391,9 +390,9 @@ branch_at_line_should_be_taken(const char *line,
 {
     auto branch_data = static_cast<const BranchLineData *>(user_data);
     int line_no, branch_id, block_no, hit_count_num, nmatches;
-    char hit_count[20];  /* can hold maxint64 (19 digits) + nul terminator */
+    char hit_count[20];  // can hold maxint64 (19 digits) + nul terminator
 
-    /* Advance past "BRDA:" */
+    // Advance past "BRDA:"
     line += 5;
 
     nmatches = sscanf(line, "%i,%i,%i,%19s", &line_no, &block_no, &branch_id, hit_count);
@@ -564,7 +563,7 @@ any_line_matches_not_executed_branch(const char *data)
         int line_no, branch_id, block_no;
         char hit_count;
 
-        /* Advance past "BRDA:" */
+        // Advance past "BRDA:"
         line += 5;
 
         int nmatches = sscanf(line, "%i,%i,%i,%c", &line_no, &block_no,
@@ -611,10 +610,10 @@ has_function_name(const char *line,
 {
     const char *expected_function_name = *(static_cast<const char * const *>(user_data));
 
-    /* Advance past "FN:" */
+    // Advance past "FN:"
     line += 3;
 
-    /* Advance past the first comma */
+    // Advance past the first comma
     while (*(line - 1) != ',')
         ++line;
 
@@ -646,7 +645,7 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
     const size_t expected_function_names_len =
         G_N_ELEMENTS(expected_function_names);
 
-    /* Just expect that we've got an FN matching out expected function names */
+    // Just expect that we've got an FN matching out expected function names
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
                                                 expected_function_names_len,
                                                 has_function_name,
@@ -661,7 +660,7 @@ has_function_line(const char *line,
 {
     const char *expected_function_line = *(static_cast<const char * const *>(user_data));
 
-    /* Advance past "FN:" */
+    // Advance past "FN:"
     line += 3;
 
     Gjs::AutoChar actual{g_strndup(line, strlen(expected_function_line))};
@@ -715,7 +714,7 @@ hit_count_is_more_than_for_function(const char *line,
     size_t max_buf_size;
     int nmatches;
 
-    /* Advance past "FNDA:" */
+    // Advance past "FNDA:"
     line += 5;
 
     max_buf_size = strcspn(line, "\n");
@@ -879,7 +878,6 @@ static void test_total_function_coverage_written_to_coverage_data(
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* More than one assert per test is bad, but we are testing interlinked concepts */
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "FNF:", "3");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
@@ -951,7 +949,7 @@ static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* Hits on all lines, including both lines with a condition (3 and 4) */
+    // Hits on all lines, including both lines with a condition (3 and 4)
     const LineCountIsMoreThanData data[] = {{1, 0}, {2, 0}, {3, 0}, {4, 0}};
 
     assert_coverage_data_matches_value_for_key(coverage_data_contents, "DA:",
@@ -970,7 +968,6 @@ static void test_full_line_tally_written_to_coverage_data(void* fixture_data,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* More than one assert per test is bad, but we are testing interlinked concepts */
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "LF:", "1");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
@@ -986,7 +983,7 @@ static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
         write_statistics_and_get_coverage_data(fixture->coverage,
                                                fixture->lcov_output);
 
-    /* No files were executed, so the coverage data is empty. */
+    // No files were executed, so the coverage data is empty.
     g_assert_cmpstr(coverage_data_contents, ==, "\n");
     g_free(coverage_data_contents);
 }

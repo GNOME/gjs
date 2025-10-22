@@ -265,7 +265,7 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
                                      &interface_type))
         return false;
 
-    /* create a custom JSClass */
+    // create a custom JSClass
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     if (!module)
         return false;  // error will have been thrown already
@@ -296,7 +296,7 @@ static bool gjs_register_interface_with_class(JSContext* cx, unsigned argc,
                                      &interface_type))
         return false;
 
-    /* create a custom JSClass */
+    // create a custom JSClass
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     if (!module)
         return false;  // error will have been thrown already
@@ -350,7 +350,7 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
         return false;
     }
 
-    /* We checked parent above, in ObjectBase::for_js_typecheck() */
+    // We checked parent above, in ObjectBase::for_js_typecheck()
     g_assert(parent_priv);
 
     GTypeQuery query;
@@ -406,7 +406,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
                                 &instance_type))
         return false;
 
-    /* create a custom JSClass */
+    // create a custom JSClass
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
     if (!ObjectPrototype::define_class(cx, module, Nothing{}, instance_type,
@@ -475,7 +475,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
                              &params_obj))
         return false;
 
-    /* we only support standard accumulators for now */
+    // we only support standard accumulators for now
     GSignalAccumulator accumulator;
     switch (accumulator_enum) {
         case 1:

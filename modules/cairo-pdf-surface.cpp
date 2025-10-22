@@ -63,4 +63,4 @@ JSObject* CairoPDFSurface::from_c_ptr(JSContext* cx, cairo_surface_t* surface) {
               "support.");
     return nullptr;
 }
-#endif /* CAIRO_HAS_PDF_SURFACE */
+#endif  // CAIRO_HAS_PDF_SURFACE

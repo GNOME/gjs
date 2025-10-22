@@ -94,7 +94,7 @@ bool ErrorInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
 
     m_ptr = g_error_new_literal(domain(), code, message.get());
 
-    /* We assume this error will be thrown in the same line as the constructor */
+    // We assume this error will be thrown in the same line as the constructor
     return gjs_define_error_properties(cx, object);
 }
 
@@ -174,7 +174,7 @@ bool ErrorBase::value_of(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     if (!gjs_object_require_property(cx, self, "constructor", atoms.prototype(),
                                      &prototype)) {
-        /* This error message will be more informative */
+        // This error message will be more informative
         JS_ClearPendingException(cx);
         gjs_throw(cx,
                   "GLib.Error.valueOf() called on something that is not a "
@@ -256,12 +256,12 @@ bool ErrorPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
 [[nodiscard]]
 static Maybe<const GI::EnumInfo> find_error_domain_info(
     const GI::Repository& repo, GQuark domain) {
-    /* first an attempt without loading extra libraries */
+    // first an attempt without loading extra libraries
     Maybe<GI::AutoEnumInfo> info = repo.find_by_error_domain(domain);
     if (info)
         return info;
 
-    /* load standard stuff */
+    // load standard stuff
     repo.require("GLib", "2.0").unwrap();
     repo.require("GObject", "2.0").unwrap();
     repo.require("Gio", "2.0").unwrap();
@@ -269,8 +269,7 @@ static Maybe<const GI::EnumInfo> find_error_domain_info(
     if (info)
         return info;
 
-    /* last attempt: load GIRepository (for invoke errors, rarely
-       needed) */
+    // last attempt: load GIRepository (for invoke errors, rarely needed)
     repo.require("GIRepository", "3.0").unwrap();
     return repo.find_by_error_domain(domain);
 }
@@ -442,7 +441,7 @@ bool ErrorBase::typecheck(JSContext* cx, JS::HandleObject obj,
 GJS_JSAPI_RETURN_CONVENTION
 static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
     if (ErrorBase::typecheck(cx, obj, GjsTypecheckNoThrow())) {
-        /* This is already a GError, just copy it */
+        // This is already a GError, just copy it
         GError* inner = ErrorBase::to_c_ptr(cx, obj);
         if (!inner)
             return nullptr;

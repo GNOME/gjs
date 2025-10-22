@@ -248,7 +248,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         !report->isWarning() && report->errorNumber == 137) {
-        /* 137, JSMSG_OUT_OF_MEMORY */
+        // 137, JSMSG_OUT_OF_MEMORY
         g_error("GJS ran out of memory at %s:%u:%u.", report->filename.c_str(),
                 report->lineno, report->column.oneOriginValue());
     }
@@ -257,7 +257,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
         warning = "WARNING";
         level = G_LOG_LEVEL_MESSAGE;
 
-        /* suppress bogus warnings. See mozilla/js/src/js.msg */
+        // suppress bogus warnings. See mozilla/js/src/js.msg
         if (report->errorNumber == 162) {
             /* 162, JSMSG_UNDEFINED_PROP: warns every time a lazy property
              * is resolved, since the property starts out

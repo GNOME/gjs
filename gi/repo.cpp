@@ -173,10 +173,10 @@ static bool repo_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                          bool* resolved) {
     if (!id.isString()) {
         *resolved = false;
-        return true; /* not resolved, but no error */
+        return true;  // not resolved, but no error
     }
 
-    /* let Object.prototype resolve these */
+    // let Object.prototype resolve these
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (id == atoms.to_string() || id == atoms.value_of()) {
         *resolved = false;
@@ -222,9 +222,7 @@ static JSObject* repo_new(JSContext* cx) {
                                JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 
-    /* GLib/GObject/Gio are fixed at 2.0, since we depend on them
-     * internally.
-     */
+    // GLib/GObject/Gio are fixed at 2.0, since we depend on them internally.
     JS::RootedString two_point_oh{cx, JS_NewStringCopyZ(cx, "2.0")};
     if (!JS_DefinePropertyById(cx, versions, atoms.glib(), two_point_oh,
                                JSPROP_PERMANENT) ||
@@ -338,7 +336,7 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
 
     if (auto enum_info = info.as<GI::InfoTag::ENUM>()) {
         if (!info.is_flags() && enum_info->error_domain()) {
-            /* define as GError subclass */
+            // define as GError subclass
             return ErrorPrototype::define_class(cx, in_object,
                                                 enum_info.value());
         }
@@ -361,13 +359,13 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
     return false;
 }
 
-/* Get the "unknown namespace", which should be used for unnamespaced types */
+// Get the "unknown namespace", which should be used for unnamespaced types
 JSObject* gjs_lookup_private_namespace(JSContext* cx) {
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     return gjs_lookup_namespace_object_by_name(cx, atoms.private_ns_marker());
 }
 
-/* Get the namespace object that the GIBaseInfo should be inside */
+// Get the namespace object that the GIBaseInfo should be inside
 JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo info) {
     const char* ns = info.ns();
     if (ns == nullptr) {
@@ -490,7 +488,7 @@ gjs_hyphen_from_camel(const char *camel_name)
     GString *s;
     const char *p;
 
-    /* four hyphens should be reasonable guess */
+    // four hyphens should be reasonable guess
     s = g_string_sized_new(strlen(camel_name) + 4 + 1);
 
     for (p = camel_name; *p; ++p) {

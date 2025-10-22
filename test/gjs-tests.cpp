@@ -630,7 +630,7 @@ static void gjstest_test_func_gjs_gobject_without_introspection() {
     AutoError error;
     int status;
 
-    /* Ensure class */
+    // Ensure class
     g_type_class_ref(GJSTEST_TYPE_NO_INTROSPECTION_OBJECT);
 
 #define TESTJS                                                         \
@@ -697,7 +697,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
                                                          const void*) {
     JS::RootedValue exc(fx->cx), value(fx->cx);
 
-    /* Test that we can throw */
+    // Test that we can throw
 
     gjs_throw(fx->cx, "This is an exception %d", 42);
 
@@ -715,14 +715,14 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
     g_assert_nonnull(s);
     g_assert_cmpstr(s.get(), ==, "This is an exception 42");
 
-    /* keep this around before we clear it */
+    // keep this around before we clear it
     JS::RootedValue previous(fx->cx, exc);
 
     JS_ClearPendingException(fx->cx);
 
     g_assert_false(JS_IsExceptionPending(fx->cx));
 
-    /* Check that we don't overwrite a pending exception */
+    // Check that we don't overwrite a pending exception
     JS_SetPendingException(fx->cx, previous);
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
@@ -788,7 +788,7 @@ static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
     g_assert_true(result == u"\xc9\xd6 foobar \u30df");
     g_free(chars);
 
-    /* Try with a string that is likely to be stored as Latin-1 */
+    // Try with a string that is likely to be stored as Latin-1
     str = JS_NewStringCopyZ(fx->cx, "abcd");
     bool ok = gjs_string_get_char16_data(fx->cx, str, &chars, &len);
     g_assert_true(ok);
@@ -811,7 +811,7 @@ static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
     g_assert_true(result == U"\xc9\xd6 foobar \u30df");
     g_free(chars);
 
-    /* Try with a string that is likely to be stored as Latin-1 */
+    // Try with a string that is likely to be stored as Latin-1
     str = JS_NewStringCopyZ(fx->cx, "abcd");
     bool ok = gjs_string_to_ucs4(fx->cx, str, &chars, &len);
     g_assert_true(ok);
@@ -910,7 +910,7 @@ static void gjstest_test_func_util_misc_strv_concat_pointers() {
 
     ret = gjs_g_strv_concat(stuff, 4);
     g_assert_nonnull(ret);
-    g_assert_cmpstr(ret[0], ==, strv0[0]);  /* same string */
+    g_assert_cmpstr(ret[0], ==, strv0[0]);  // same string
     g_assert_true(ret[0] != strv0[0]);      // different pointer
     g_assert_cmpstr(ret[1], ==, strv3[0]);
     g_assert_true(ret[1] != strv3[0]);
@@ -1225,7 +1225,7 @@ main(int    argc,
 {
     using namespace Gjs::Test;  // NOLINT(build/namespaces)
 
-    /* Avoid interference in the tests from stray environment variable */
+    // Avoid interference in the tests from stray environment variable
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
 

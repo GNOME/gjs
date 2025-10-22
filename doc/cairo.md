@@ -135,7 +135,7 @@ creating a `Cairo.ImageSurface` from a PNG is done by calling a static method.
 Creating an empty image surface can be done by passing a [`Cairo.Format`]:
 
 ```js
-/* Creating a surface from a PDF (format, width, height) */
+// Creating a surface from a PDF (format, width, height)
 const imageSurface = new Cairo.ImageSurface(Cairo.Format.ARGB32, 10, 10);
 ```
 
@@ -143,16 +143,16 @@ Creating a `Cairo.ImageSurface` from a file differs somewhat depending on the
 file type:
 
 ```js
-/* Creating a surface from a PNG */
+// Creating a surface from a PNG
 const pngSurface = Cairo.ImageSurface.createFromPNG('filename.png');
 
-/* Creating a surface from a PDF (filename, width, height) */
+// Creating a surface from a PDF (filename, width, height)
 const pdfSurface = new Cairo.PDFSurface('filename.pdf', 32, 32);
 
-/* Creating a surface from a PostScript file (filename, width, height) */
+// Creating a surface from a PostScript file (filename, width, height)
 const psSurface = new Cairo.PSSurface('filename.ps', 32, 32);
 
-/* Creating a surface from a SVG (filename, width, height) */
+// Creating a surface from a SVG (filename, width, height)
 const svgSurface = new Cairo.SVGSurface('filename.svg', 32, 32);
 ```
 

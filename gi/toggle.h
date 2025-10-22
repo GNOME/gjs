@@ -88,7 +88,7 @@ public:
     /* These two functions return a pair DOWN, UP signifying whether toggles
      * are / were queued. is_queued() just checks and does not modify. */
     [[nodiscard]] std::pair<bool, bool> is_queued(ObjectInstance*) const;
-    /* Cancels pending toggles and returns whether any were queued. */
+    // Cancels pending toggles and returns whether any were queued.
     std::pair<bool, bool> cancel(ObjectInstance*);
 
     /* Pops a toggle from the queue and processes it. Call this if you don't
@@ -102,7 +102,7 @@ public:
      * associations between C and JS objects. */
     void shutdown();
 
-    /* Queues a toggle to be processed in idle time. */
+    // Queues a toggle to be processed in idle time.
     void enqueue(ObjectInstance*, Direction, Handler);
 
     [[nodiscard]] static Locked get_default() {

@@ -276,9 +276,7 @@ static void gjs_object_custom_init(GTypeInstance* instance,
     ObjectInstance* priv = priv_base->to_instance();
 
     if (priv_base->gtype() != G_TYPE_FROM_INSTANCE(instance)) {
-        /* This is not the most derived instance_init function,
-           do nothing.
-         */
+        // This is not the most derived instance_init function, do nothing.
         return;
     }
 

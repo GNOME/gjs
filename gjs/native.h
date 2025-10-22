@@ -27,7 +27,7 @@ class NativeModuleDefineFuncs {
         return the_singleton;
     }
 
-    /* called on context init */
+    // called on context init
     void add(const char* module_id, GjsDefineModuleFunc);
 
     // called by importer.cpp to to check for already loaded modules

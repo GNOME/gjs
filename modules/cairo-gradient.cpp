@@ -24,14 +24,15 @@ JSObject* CairoGradient::new_proto(JSContext* cx, JSProtoKey) {
     return JS_NewObjectWithGivenProto(cx, nullptr, parent_proto);
 }
 
-/* Properties */
+// Properties
+
 // clang-format off
 const JSPropertySpec CairoGradient::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "Gradient", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
 
-/* Methods */
+// Methods
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool addColorStopRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {

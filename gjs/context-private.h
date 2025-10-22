@@ -129,7 +129,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     uint8_t m_exit_code;
 
-    /* flags */
+    // flags
     std::atomic_bool m_destroying = ATOMIC_VAR_INIT(false);
     bool m_should_exit : 1;
     bool m_force_gc : 1;
@@ -170,7 +170,7 @@ class GjsContextPrivate : public JS::JobQueue {
     };
 
  public:
-    /* Retrieving a GjsContextPrivate from JSContext or GjsContext */
+    // Retrieving a GjsContextPrivate from JSContext or GjsContext
     [[nodiscard]] static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
     }
@@ -183,7 +183,7 @@ class GjsContextPrivate : public JS::JobQueue {
     GjsContextPrivate(JSContext*, GjsContext* public_context);
     ~GjsContextPrivate();
 
-    /* Accessors */
+    // Accessors
     [[nodiscard]] GjsContext* public_context() const {
         return m_public_context;
     }

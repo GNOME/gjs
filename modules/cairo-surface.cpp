@@ -31,14 +31,16 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-/* Properties */
+// Properties
+
 // clang-format off
 const JSPropertySpec CairoSurface::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "Surface", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
 
-/* Methods */
+// Methods
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool writeToPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, argv, obj);
@@ -246,7 +248,7 @@ const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // hasShowTextGlyphs
     JS_FN("writeToPNG", writeToPNG_func, 0, 0), JS_FS_END};
 
-/* Public API */
+// Public API
 
 /**
  * CairoSurface::finalize_impl:

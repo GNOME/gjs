@@ -98,7 +98,7 @@ class ObjectBase
     // This is used in debug methods only.
     [[nodiscard]] const void* jsobj_addr() const;
 
-    /* Helper methods */
+    // Helper methods
 
  protected:
     void debug_lifecycle(const char* message) const {
@@ -131,12 +131,12 @@ class ObjectBase
         return GIWrapperBase::typecheck(cx, obj, expected, no_throw);
     }
 
-    /* JSClass operations */
+    // JSClass operations
 
     static bool add_property(JSContext*, JS::HandleObject, JS::HandleId,
                              JS::HandleValue);
 
-    /* JS property getters/setters */
+    // JS property getters/setters
 
  public:
     template <typename TAG = void>
@@ -164,7 +164,7 @@ class ObjectBase
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext*, unsigned, JS::Value*);
 
-    /* JS methods */
+    // JS methods
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool connect(JSContext*, unsigned, JS::Value*);
@@ -186,7 +186,7 @@ class ObjectBase
     GJS_JSAPI_RETURN_CONVENTION
     static bool hook_up_vfunc(JSContext*, unsigned, JS::Value*);
 
-    /* Quarks */
+    // Quarks
 
  protected:
     [[nodiscard]] static GQuark instance_strings_quark();
@@ -236,7 +236,7 @@ class ObjectPrototype
     [[nodiscard]]
     static ObjectPrototype* for_gtype(GType);
 
-    /* Helper methods */
+    // Helper methods
  private:
     GJS_JSAPI_RETURN_CONVENTION
     bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const;
@@ -291,7 +291,7 @@ class ObjectPrototype
             g_closure_unref(closure);
     }
 
-    /* JSClass operations */
+    // JSClass operations
  private:
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_impl(JSContext*, JS::HandleObject, JS::HandleId,
@@ -303,7 +303,7 @@ class ObjectPrototype
                             bool only_enumerable);
     void trace_impl(JSTracer*);
 
-    /* JS methods */
+    // JS methods
  public:
     GJS_JSAPI_RETURN_CONVENTION
     bool hook_up_vfunc_impl(JSContext*, const JS::CallArgs&);
@@ -335,7 +335,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     static bool s_weak_pointer_callback;
 
-    /* Constructors */
+    // Constructors
 
  private:
     ObjectInstance(ObjectPrototype*, JS::HandleObject);
@@ -350,7 +350,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     [[nodiscard]]
     static ObjectInstance* for_gobject(GObject*);
 
-    /* Accessors */
+    // Accessors
 
  private:
     [[nodiscard]] bool has_wrapper() const { return !!m_wrapper; }
@@ -358,7 +358,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
  public:
     [[nodiscard]] JSObject* wrapper() const { return m_wrapper.get(); }
 
-    /* Methods to manipulate the JS object wrapper */
+    // Methods to manipulate the JS object wrapper
 
  private:
     void discard_wrapper() { m_wrapper.reset(); }
@@ -388,7 +388,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     static bool set_value_from_gobject(JSContext*, GObject*,
                                        JS::MutableHandleValue);
 
-    /* Methods to manipulate the list of closures */
+    // Methods to manipulate the list of closures
 
  private:
     void invalidate_closures();
@@ -398,7 +398,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool associate_closure(JSContext*, GClosure*);
 
-    /* Helper methods */
+    // Helper methods
 
  private:
     void set_object_qdata();
@@ -427,7 +427,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     static void associate_string(GObject*, char* str);
 
-    /* Methods to manipulate the linked list of instances */
+    // Methods to manipulate the linked list of instances
 
  private:
     static std::unordered_set<ObjectInstance*> s_wrapped_gobject_list;
@@ -443,7 +443,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
  public:
     static void prepare_shutdown();
 
-    /* JSClass operations */
+    // JSClass operations
 
  private:
     GJS_JSAPI_RETURN_CONVENTION
@@ -452,7 +452,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void finalize_impl(JS::GCContext*, JSObject*);
     void trace_impl(JSTracer*);
 
-    /* JS property getters/setters */
+    // JS property getters/setters
 
  private:
     template <typename TAG>
@@ -484,7 +484,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool constructor_impl(JSContext*, JS::HandleObject, const JS::CallArgs&);
 
-    /* JS methods */
+    // JS methods
 
  private:
     GJS_JSAPI_RETURN_CONVENTION
@@ -509,7 +509,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
         return GIWrapperInstance::typecheck_impl(expected);
     }
 
-    /* Notification callbacks */
+    // Notification callbacks
     void gobj_dispose_notify();
     static void wrapped_gobj_dispose_notify(void* data, GObject*);
     static void wrapped_gobj_toggle_notify(void* instance, GObject*,

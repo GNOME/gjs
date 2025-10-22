@@ -133,7 +133,7 @@ void gjs_log_init() {
             log_file = debug_output;
         }
 
-        /* avoid truncating in case we're using shared logfile */
+        // avoid truncating in case we're using shared logfile
         s_log_file = std::make_unique<LogFile>(log_file.c_str());
         if (s_log_file->has_error()) {
             fprintf(stderr, "Failed to open log file `%s': %s\n",
@@ -176,7 +176,7 @@ write_to_stream(FILE       *logfp,
                 const char *prefix,
                 const char *s)
 {
-    /* seek to end to avoid truncating in case we're using shared logfile */
+    // seek to end to avoid truncating in case we're using shared logfile
     (void)fseek(logfp, 0, SEEK_END);
 
     fprintf(logfp, "%*s: %s", PREFIX_LENGTH, prefix, s);

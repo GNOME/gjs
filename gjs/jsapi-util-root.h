@@ -63,7 +63,7 @@ class GjsMaybeOwned {
     JS::Heap<JSObject*> m_heap;
     std::unique_ptr<JS::PersistentRootedObject> m_root;
 
-    /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+    // No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
     inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned %p %s", this,
                             what);

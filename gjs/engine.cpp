@@ -58,7 +58,7 @@ static void on_promise_unhandled_rejection(
     uint64_t id = JS::GetPromiseID(promise);
 
     if (state == JS::PromiseRejectionHandlingState::Handled) {
-        /* This happens when catching an exception from an await expression. */
+        // This happens when catching an exception from an await expression.
         gjs->unregister_unhandled_promise_rejection(id);
         return;
     }
@@ -118,7 +118,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             break;
 
         default:
-            /* do nothing */
+            // do nothing
             ;
     }
 
@@ -213,9 +213,9 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS_SetNativeStackQuota(cx, 1024 * 1024);
     JS_SetGCParameter(cx, JSGC_MAX_BYTES, -1);
     JS_SetGCParameter(cx, JSGC_INCREMENTAL_GC_ENABLED, 1);
-    JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET_MS, 10); /* ms */
+    JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET_MS, 10);
 
-    /* set ourselves as the private data */
+    // set ourselves as the private data
     JS_SetContextPrivate(cx, uninitialized_gjs);
 
     JS_SetSecurityCallbacks(cx, &security_callbacks);

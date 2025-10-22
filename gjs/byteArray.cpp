@@ -86,7 +86,7 @@ static bool define_legacy_tostring(JSContext* cx, JS::HandleObject array) {
                                  instance_to_string_func, 1, 0);
 }
 
-/* fromString() function implementation */
+// fromString() function implementation
 GJS_JSAPI_RETURN_CONVENTION
 static bool from_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);

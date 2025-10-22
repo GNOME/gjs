@@ -450,7 +450,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         m_info.load_arg(i, &arg_info);
         arg_info.load_type(&type_info);
 
-        /* Skip void * arguments */
+        // Skip void* arguments
         if (type_info.tag() == GI_TYPE_TAG_VOID)
             continue;
 
@@ -523,13 +523,12 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         return false;
 
     if (n_outargs == 0 && ret_type_is_void) {
-        /* void return value, no out args, nothing to do */
+        // void return value, no out args, nothing to do
     } else if (n_outargs == 0) {
         GIArgument argument;
 
         GITransfer transfer = m_info.caller_owns();
-        /* non-void return value, no out args. Should
-         * be a single return value. */
+        // non-void return value, no out args. Should be a single return value.
         if (!gjs_value_to_gi_argument(cx, rval, ret_type, "callback",
                                       GJS_ARGUMENT_RETURN_VALUE, transfer,
                                       GjsArgumentFlags::MAY_BE_NULL, &argument))
@@ -537,8 +536,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
         set_return_ffi_arg_from_gi_argument(ret_type, result, &argument);
     } else if (n_outargs == 1 && ret_type_is_void) {
-        /* void return value, one out args. Should
-         * be a single return value. */
+        // void return value, one out arg. Should be a single return value.
         for (unsigned i = 0; i < n_args; i++) {
             GI::StackArgInfo arg_info;
             m_info.load_arg(i, &arg_info);
@@ -763,7 +761,7 @@ bool GjsCallbackTrampoline::initialize() {
         GITypeTag type_tag = type_info.tag();
 
         if (direction != GI_DIRECTION_IN) {
-            /* INOUT and OUT arguments are handled differently. */
+            // INOUT and OUT arguments are handled differently.
             continue;
         }
 

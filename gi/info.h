@@ -1811,7 +1811,7 @@ static_assert(sizeof(StackTypeInfo) == sizeof(GITypeInfo),
 
 }  // namespace GI
 
-/* For use of GI::OwnedInfo<TAG> in GC hash maps */
+// For use of GI::OwnedInfo<TAG> in GC hash maps
 namespace JS {
 template <GI::InfoTag TAG>
 struct GCPolicy<GI::OwnedInfo<TAG>>

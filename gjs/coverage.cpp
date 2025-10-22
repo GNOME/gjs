@@ -198,7 +198,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
 
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    /* Create output directory if it doesn't exist */
+    // Create output directory if it doesn't exist
     Gjs::AutoError error;
     if (!g_file_make_directory_with_parents(priv->output_dir, nullptr,
                                             error.out())) {
@@ -240,7 +240,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
                 continue;
             }
 
-            /* Now we can write the test name before writing the source file */
+            // Now we can write the test name before writing the source file
             MOZ_TRY(write_line(ostream, test_name));
 
             /* The source file could be a resource, so we must use
@@ -341,7 +341,7 @@ bootstrap_coverage(GjsCoverage *coverage)
                                           "GJS coverage", "coverage"))
             return false;
 
-        /* Add a tracer, as suggested by jdm on #jsapi */
+        // Add a tracer, as suggested by jdm on #jsapi
         JS_AddExtraGCRootsTracer(cx, coverage_tracer, coverage);
 
         priv->global = debugger_global;

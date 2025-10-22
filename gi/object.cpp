@@ -191,7 +191,7 @@ void ObjectInstance::check_js_object_finalized() {
             "dispose()",
             m_ptr.get(), type_name());
         m_wrapper_finalized = false;
-        g_assert(!m_wrapper);  /* should associate again with a new wrapper */
+        g_assert(!m_wrapper);  // should associate again with a new wrapper
     }
 }
 
@@ -231,7 +231,7 @@ void ObjectInstance::unset_object_qdata() {
 GParamSpec* ObjectPrototype::find_param_spec_from_id(
     JSContext* cx, Gjs::AutoTypeClass<GObjectClass> const& object_class,
     JS::HandleString key) {
-    /* First check for the ID in the cache */
+    // First check for the ID in the cache
 
     JS::UniqueChars js_prop_name(JS_EncodeStringToUTF8(cx, key));
     if (!js_prop_name)
@@ -258,7 +258,7 @@ bool ObjectBase::add_property(JSContext* cx, JS::HandleObject obj,
                               JS::HandleId id, JS::HandleValue value) {
     auto* priv = ObjectBase::for_js(cx, obj);
 
-    /* priv is null during init: property is not being added from JS */
+    // priv is null during init: property is not being added from JS
     if (!priv) {
         debug_jsprop_static("Add property hook", id, obj);
         return true;
@@ -681,7 +681,7 @@ bool ObjectBase::prop_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    /* Clear the JS stored value, to avoid keeping additional references */
+    // Clear the JS stored value, to avoid keeping additional references
     args.rval().setUndefined();
 
     return priv->to_instance()->prop_setter_impl<TAG>(cx, pspec, args[0]);
@@ -1079,7 +1079,7 @@ static Maybe<GI::AutoVFuncInfo> find_vfunc_on_parents(
     return vfunc;
 }
 
-/* Taken from GLib */
+// Taken from GLib
 static void canonicalize_key(const Gjs::AutoChar& key) {
     for (char* p = key; *p != 0; p++) {
         char c = *p;
@@ -1090,7 +1090,7 @@ static void canonicalize_key(const Gjs::AutoChar& key) {
     }
 }
 
-/* @name must already be canonicalized */
+// name must already be canonicalized
 [[nodiscard]]
 static Maybe<GI::AutoPropertyInfo> get_ginterface_property_by_name(
     const GI::InterfaceInfo info, const char* name) {
@@ -1756,8 +1756,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
     mozilla::Span<const GI::InterfaceInfo> interfaces =
         GI::Repository{}.object_get_gtype_interfaces(m_gtype);
 
-    /* Fallback to GType system for non custom GObjects with no GI information
-     */
+    // Fallback to GType system for non custom GObjects with no GI information
     if (canonical_name && G_TYPE_IS_CLASSED(m_gtype) && !is_custom_js_class()) {
         Gjs::AutoTypeClass<GObjectClass> oclass{m_gtype};
 
@@ -1880,7 +1879,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
          * rest.
          */
 
-        const char *name_without_vfunc_ = &(name[6]);  /* lifetime tied to name */
+        const char* name_without_vfunc_ = &(name[6]);  // lifetime tied to name
         bool defined_by_parent;
         Maybe<GI::AutoVFuncInfo> vfunc{find_vfunc_on_parents(
             m_info.ref(), name_without_vfunc_, &defined_by_parent)};
@@ -1978,7 +1977,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
             return false;
         }
 
-        *resolved = true; /* we defined the prop in obj */
+        *resolved = true;  // we defined the prop in obj
     }
 
     return true;
@@ -2064,8 +2063,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
     return true;
 }
 
-/* Set properties from args to constructor (args[0] is supposed to be
- * a hash) */
+// Set properties from args to constructor (props is a property bag)
 bool ObjectPrototype::props_to_g_parameters(
     JSContext* cx, Gjs::AutoTypeClass<GObjectClass> const& object_class,
     JS::HandleObject props, std::vector<const char*>* names,
@@ -2114,7 +2112,7 @@ bool ObjectPrototype::props_to_g_parameters(
         if (!(param_spec->flags & G_PARAM_WRITABLE))
             return gjs_wrapper_throw_readonly_field(cx, m_gtype,
                                                     param_spec->name);
-            /* prevent setting the prop even in JS */
+            // prevent setting the prop even in JS
 
         Gjs::AutoGValue& gvalue =
             values->emplace_back(G_PARAM_SPEC_VALUE_TYPE(param_spec));
@@ -2214,9 +2212,7 @@ void ObjectInstance::handle_context_dispose() {
 void ObjectInstance::toggle_down() {
     debug_lifecycle("Toggle notify DOWN");
 
-    /* Change to weak ref so the wrapper-wrappee pair can be
-     * collected by the GC
-     */
+    // Change to weak ref so the wrapper-wrappee pair can be collected by the GC
     if (wrapper_is_rooted()) {
         debug_lifecycle("Unrooting wrapper");
         GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
@@ -2264,7 +2260,7 @@ void ObjectInstance::toggle_up() {
      * doesn't get garbage collected (and lose any associated javascript state
      * such as custom properties).
      */
-    if (!has_wrapper()) /* Object already GC'd */
+    if (!has_wrapper())  // Object already GC'd
         return;
 
     debug_lifecycle("Toggle notify UP");
@@ -2303,9 +2299,7 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
     if (gjs->destroying()) {
-        /* Do nothing here - we're in the process of disassociating
-         * the objects.
-         */
+        // Do nothing here - we're in the process of disassociating the objects.
         return;
     }
 
@@ -2634,15 +2628,15 @@ void ObjectInstance::disassociate_js_gobject() {
         g_object_weak_unref(m_ptr.get(), wrapped_gobj_dispose_notify, this);
 
     if (!m_gobj_finalized) {
-        /* Fist, remove the wrapper pointer from the wrapped GObject */
+        // First, remove the wrapper pointer from the wrapped GObject
         unset_object_qdata();
     }
 
-    /* Now release all the resources the current wrapper has */
+    // Now release all the resources the current wrapper has
     invalidate_closures();
     release_native_object();
 
-    /* Mark that a JS object once existed, but it doesn't any more */
+    // Mark that a JS object once existed, but it doesn't any more
     m_wrapper_finalized = true;
 }
 
@@ -2729,7 +2723,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
         args.rval().setObject(*other_priv->m_wrapper.get());
 
         if (toggle_ref_added)
-            g_clear_object(&gobj); /* We already own a reference */
+            g_clear_object(&gobj);  // We already own a reference
         return true;
     }
 
@@ -2745,7 +2739,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
     } else if (g_object_is_floating(gobj)) {
         g_object_ref_sink(gobj);
     } else {
-        /* we should already have a ref */
+        // we should already have a ref
     }
 
     if (!m_ptr)
@@ -2819,7 +2813,7 @@ ObjectInstance::~ObjectInstance() {
     std::tie(had_toggle_down, had_toggle_up) =
         ToggleQueue::get_default()->cancel(this);
 
-    /* GObject is not already freed */
+    // GObject is not already freed
     if (m_ptr) {
         if (!had_toggle_up && had_toggle_down) {
             g_error(
@@ -3653,7 +3647,7 @@ JSObject* ObjectInstance::wrapper_from_gobject(JSContext* cx, GObject* gobj) {
     ObjectInstance* priv = ObjectInstance::for_gobject(gobj);
 
     if (!priv) {
-        /* We have to create a wrapper */
+        // We have to create a wrapper
         priv = new_for_gobject(cx, gobj);
         if (!priv)
             return nullptr;
@@ -3801,7 +3795,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 
     args.rval().setUndefined();
 
-    /* find the first class that actually has repository information */
+    // find the first class that actually has repository information
     GI::Repository repo;
     Maybe<GI::AutoObjectInfo> info = m_info;
     GType info_gtype = m_gtype;

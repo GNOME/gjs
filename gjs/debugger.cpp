@@ -87,7 +87,7 @@ static bool do_readline(JSContext* cx, unsigned argc, JS::Value* vp) {
             }
         }
 
-        /* EOF, return null */
+        // EOF, return null
         if (!line) {
             args.rval().setNull();
             return true;

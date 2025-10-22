@@ -333,7 +333,7 @@ static void run_code_expect_exception(GjsUnitTestFixture* fx,
     Gjs::AutoChar message{gjs_test_get_exception_message(fx->cx)};
     g_assert_nonnull(message);
 
-    /* Cheap way to shove an expected exception message into the data argument */
+    // Cheap way to shove an expected exception message into the data argument
     const char *expected_msg = strstr((const char *) code, "//");
     if (expected_msg != nullptr) {
         expected_msg += 2;

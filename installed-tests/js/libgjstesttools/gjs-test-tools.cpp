@@ -9,11 +9,11 @@
 
 #ifdef G_OS_UNIX
 #    include <errno.h>
-#    include <fcntl.h> /* for FD_CLOEXEC */
+#    include <fcntl.h>  // for FD_CLOEXEC
 #    include <stdarg.h>
-#    include <unistd.h> /* for close, write */
+#    include <unistd.h>  // for close, write
 
-#    include <glib-unix.h> /* for g_unix_open_pipe */
+#    include <glib-unix.h>  // for g_unix_open_pipe
 #endif
 
 #include "gjs/auto.h"
@@ -322,7 +322,7 @@ static gboolean throw_errno_prefix(GError** error, const char* prefix) {
     return FALSE;
 }
 
-#endif /* G_OS_UNIX */
+#endif  // G_OS_UNIX
 
 /**
  * gjs_open_bytes:

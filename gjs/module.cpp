@@ -77,14 +77,14 @@ class GjsScriptModule {
     GjsScriptModule(GjsScriptModule&) = delete;
     GjsScriptModule& operator=(GjsScriptModule&) = delete;
 
-    /* Private data accessors */
+    // Private data accessors
 
     [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
         return JS::GetMaybePtrFromReservedSlot<GjsScriptModule>(
             module, GjsScriptModule::POINTER);
     }
 
-    /* Creates a JS module object. Use instead of the class's constructor */
+    // Creates a JS module object. Use instead of the class's constructor
     [[nodiscard]] static JSObject* create(JSContext* cx, const char* name) {
         JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
         JS::SetReservedSlot(module, GjsScriptModule::POINTER,
@@ -92,7 +92,7 @@ class GjsScriptModule {
         return module;
     }
 
-    /* Defines the empty module as a property on the importer */
+    // Defines the empty module as a property on the importer
     GJS_JSAPI_RETURN_CONVENTION
     bool
     define_import(JSContext       *cx,
@@ -110,7 +110,7 @@ class GjsScriptModule {
         return true;
     }
 
-    /* Carries out the actual execution of the module code */
+    // Carries out the actual execution of the module code
     GJS_JSAPI_RETURN_CONVENTION
     bool evaluate_import(JSContext* cx, JS::HandleObject module,
                          const char* source, size_t source_len,
@@ -150,7 +150,7 @@ class GjsScriptModule {
         return true;
     }
 
-    /* Loads JS code from a file and imports it */
+    // Loads JS code from a file and imports it
     GJS_JSAPI_RETURN_CONVENTION
     bool
     import_file(JSContext       *cx,
@@ -171,7 +171,7 @@ class GjsScriptModule {
         return evaluate_import(cx, module, script, script_len, full_path, uri);
     }
 
-    /* JSClass operations */
+    // JSClass operations
 
     GJS_JSAPI_RETURN_CONVENTION
     bool
@@ -183,7 +183,7 @@ class GjsScriptModule {
         JS::RootedObject lexical(cx, JS_ExtensibleLexicalEnvironment(module));
         if (!lexical) {
             *resolved = false;
-            return true;  /* nothing imported yet */
+            return true;  // nothing imported yet
         }
 
         JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_desc(cx);
@@ -254,7 +254,7 @@ class GjsScriptModule {
         return priv;
     }
 
-    /* Carries out the import operation */
+    // Carries out the import operation
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject *
     import(JSContext       *cx,

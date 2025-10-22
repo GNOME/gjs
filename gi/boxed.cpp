@@ -88,7 +88,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::resolve_impl(
         gjs_debug(GJS_DEBUG_GBOXED, "Defining method %s in prototype for %s",
                   method_info->name(), format_name().c_str());
 
-        /* obj is the Boxed prototype */
+        // obj is the Boxed prototype
         if (!gjs_define_function(cx, obj, gtype(), *method_info))
             return false;
 
@@ -423,7 +423,7 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
         return false;
     }
 
-    /* If we reach this code, we need to init from a map of fields */
+    // If we reach this code, we need to init from a property bag
 
     if (args.length() == 0)
         return true;
@@ -757,7 +757,7 @@ bool BoxedBase<Base, Prototype, Instance>::field_setter(JSContext* cx,
     if (!priv->to_instance()->field_setter_impl(cx, *field_info, args[0]))
         return false;
 
-    args.rval().setUndefined();  /* No stored value */
+    args.rval().setUndefined();  // No stored value
     return true;
 }
 

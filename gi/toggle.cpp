@@ -17,7 +17,7 @@
 #include "gi/toggle.h"
 #include "util/log.h"
 
-/* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+// No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
 inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
                   const ObjectInstance* object GJS_USED_VERBOSE_LIFECYCLE) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p (%s @ %p)", did,

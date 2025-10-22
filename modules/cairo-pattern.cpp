@@ -27,7 +27,7 @@
 #include "gjs/macros.h"
 #include "modules/cairo-private.h"
 
-/* Properties */
+// Properties
 
 // clang-format off
 const JSPropertySpec CairoPattern::proto_props[] = {
@@ -35,7 +35,7 @@ const JSPropertySpec CairoPattern::proto_props[] = {
     JS_PS_END};
 // clang-format on
 
-/* Methods */
+// Methods
 
 GJS_JSAPI_RETURN_CONVENTION
 bool CairoPattern::getType_func(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -66,7 +66,7 @@ const JSFunctionSpec CairoPattern::proto_funcs[] = {
     // setMatrix
     JS_FS_END};
 
-/* Public API */
+// Public API
 
 /**
  * CairoPattern::finalize_impl:

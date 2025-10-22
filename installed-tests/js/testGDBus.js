@@ -131,7 +131,7 @@ const PROP_READ_ONLY_INITIAL_VALUE = Math.random();
 const PROP_READ_WRITE_INITIAL_VALUE = 58;
 const PROP_WRITE_ONLY_INITIAL_VALUE = 'Initial value';
 
-/* Test is the actual object exporting the dbus methods */
+// Test is the actual object exporting the dbus methods
 class Test {
     constructor() {
         this._propReadOnly = PROP_READ_ONLY_INITIAL_VALUE;
@@ -191,7 +191,7 @@ class Test {
     }
 
     thisDoesNotExist() {
-        /* We'll remove this later! */
+        // We'll remove this later!
     }
 
     noInParameter() {
@@ -211,7 +211,7 @@ class Test {
     }
 
     noReturnValue() {
-        /* Empty! */
+        // Empty!
     }
 
     /* The following two functions have identical return values
@@ -253,8 +253,7 @@ class Test {
         return dict;
     }
 
-    /* This one is implemented asynchronously. Returns
-     * the input arguments */
+    // This one is implemented asynchronously. Returns the input arguments
     echoAsync(parameters, invocation) {
         var [someString, someInt] = parameters;
         GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
@@ -445,8 +444,7 @@ describe('Exported DBus object', function () {
         loop.run();
     });
 
-    /* excp must be exactly the exception thrown by the remote method
-       (more or less) */
+    // excp must be the exception thrown by the remote method (more or less)
     it('can handle an exception thrown by a remote method', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Exception in method call: alwaysThrowException: *');
@@ -591,7 +589,7 @@ describe('Exported DBus object', function () {
     });
 
     it('throws an exception when trying to call a method that does not exist', function () {
-        /* First remove the method from the object! */
+        // First remove the method from the object!
         delete Test.prototype.thisDoesNotExist;
 
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,

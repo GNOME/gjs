@@ -33,7 +33,7 @@
 struct JSFunctionSpec;
 struct JSPropertySpec;
 
-/* Reserved slots of JSNative accessor wrappers */
+// Reserved slots of JSNative accessor wrappers
 enum {
     DYNAMIC_PROPERTY_PRIVATE_SLOT,
 };
@@ -47,7 +47,7 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
                             JSFunctionSpec* static_fs,
                             JS::MutableHandleObject prototype,
                             JS::MutableHandleObject constructor) {
-    /* Without a name, JS_NewObject fails */
+    // Without a name, JS_NewObject() fails
     g_assert(clasp->name != nullptr);
 
     /* gjs_init_class_dynamic only makes sense for instantiable classes,

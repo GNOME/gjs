@@ -66,7 +66,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool param_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
                           bool* resolved) {
     if (!param_value(cx, obj)) {
-        /* instance, not prototype */
+        // instance, not prototype
         *resolved = false;
         return true;
     }
@@ -76,7 +76,7 @@ static bool param_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
         return false;
     if (!name) {
         *resolved = false;
-        return true; /* not resolved, but no error */
+        return true;  // not resolved, but no error
     }
 
     GI::Repository repo;
@@ -98,7 +98,7 @@ static bool param_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
         if (!gjs_define_function(cx, obj, G_TYPE_PARAM, method_info.ref()))
             return false;
 
-        *resolved = true; /* we defined the prop in obj */
+        *resolved = true;  // we defined the prop in obj
     }
 
     return true;
@@ -129,7 +129,7 @@ static void param_finalize(JS::GCContext*, JSObject* obj) {
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);
     if (!priv)
-        return; /* wrong class? */
+        return;  // wrong class?
 
     GJS_DEC_COUNTER(param);
     JS::SetReservedSlot(obj, POINTER, JS::UndefinedValue());

@@ -70,7 +70,7 @@ static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
     JS::PrintError(stderr, report, /* reportWarnings = */ true);
 }
 
-/* Based on js::shell::AutoReportException from SpiderMonkey. */
+// Based on js::shell::AutoReportException from SpiderMonkey.
 class AutoReportException {
     JSContext *m_cx;
 
@@ -81,7 +81,7 @@ public:
         if (!JS_IsExceptionPending(m_cx))
             return;
 
-        /* Get exception object before printing and clearing exception. */
+        // Get exception object before printing and clearing exception.
         JS::ExceptionStack exnStack(m_cx);
         JS::ErrorReportBuilder report(m_cx);
         if (!JS::StealPendingExceptionStack(m_cx, &exnStack) ||

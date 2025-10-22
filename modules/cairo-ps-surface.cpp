@@ -76,4 +76,4 @@ JSObject* CairoPSSurface::from_c_ptr(JSContext* cx, cairo_surface_t* surface) {
               "support.");
     return nullptr;
 }
-#endif /* CAIRO_HAS_PS_SURFACE */
+#endif  // CAIRO_HAS_PS_SURFACE

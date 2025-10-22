@@ -266,14 +266,15 @@ void CairoContext::finalize_impl(JS::GCContext*, cairo_t* cr) {
     cairo_destroy(cr);
 }
 
-/* Properties */
+// Properties
+
 // clang-format off
 const JSPropertySpec CairoContext::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "Context", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
 
-/* Methods */
+// Methods
 
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC5(arc, cairo_arc, "fffff",
                                 double, xc, double, yc, double, radius,
@@ -647,7 +648,7 @@ static bool getSource_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 
-    /* pattern belongs to the context, so keep the reference */
+    // pattern belongs to the context, so keep the reference
     JSObject* pattern_wrapper = gjs_cairo_pattern_from_pattern(cx, pattern);
     if (!pattern_wrapper) {
         gjs_throw(cx, "failed to create pattern");
@@ -674,10 +675,10 @@ static bool getTarget_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 
-    /* surface belongs to the context, so keep the reference */
+    // surface belongs to the context, so keep the reference
     JSObject* surface_wrapper = CairoSurface::from_c_ptr(cx, surface);
     if (!surface_wrapper) {
-        /* exception already set */
+        // exception already set
         return false;
     }
 
@@ -701,10 +702,10 @@ static bool getGroupTarget_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 
-    /* surface belongs to the context, so keep the reference */
+    // surface belongs to the context, so keep the reference
     JSObject* surface_wrapper = CairoSurface::from_c_ptr(cx, surface);
     if (!surface_wrapper) {
-        /* exception already set */
+        // exception already set
         return false;
     }
 
