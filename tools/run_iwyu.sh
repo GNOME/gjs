@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2019 Philip Chimento <philip.chimento@gmail.com>
 

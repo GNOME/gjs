@@ -1,4 +1,4 @@
-#!/bin/sh -e
+#!/bin/bash -e
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 
