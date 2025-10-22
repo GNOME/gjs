@@ -12,11 +12,12 @@
    match-leak-kinds: possible
    fun:calloc
    ...
-   fun:pthread_create@@GLIBC_2.2.5
+   fun:pthread_create@@GLIBC_*
    fun:_ZN7mozilla9TimeStamp20ComputeProcessUptimeEv
-   fun:_ZN7mozilla9TimeStamp15ProcessCreationEPb
-   fun:_ZN2JS6detail25InitWithFailureDiagnosticEb
-   fun:_Z7JS_Initv
+   fun:_ZN7mozilla9TimeStamp15ProcessCreation*
+   fun:_ZN2JS6detail25InitWithFailureDiagnosticEb*
+   ...
+   fun:_ZN7GjsInitC1Ev
 }
 
 # Various things that I don't believe are related to GJS
