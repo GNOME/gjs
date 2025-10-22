@@ -199,7 +199,7 @@ static const js::DOMCallbacks dom_callbacks = {
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     g_assert(gjs_is_inited);
-    JSContext *cx = JS_NewContext(32 * 1024 * 1024 /* max bytes */);
+    JSContext* cx = JS_NewContext(/* max bytes = */ 32 * 1024 * 1024);
     if (!cx)
         return nullptr;
 

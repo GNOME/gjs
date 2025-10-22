@@ -525,8 +525,8 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     unsigned signal_id = g_signal_newv(
         signal_name.get(), gtype, GSignalFlags(flags),
-        /* class closure */ nullptr, accumulator, /* accu_data */ nullptr,
-        /* c_marshaller */ nullptr, return_type, n_parameters, params);
+        /* class closure = */ nullptr, accumulator, /* accu_data = */ nullptr,
+        /* c_marshaller = */ nullptr, return_type, n_parameters, params);
 
     // FIXME: what if ID is greater than int32 max?
     args.rval().setInt32(signal_id);

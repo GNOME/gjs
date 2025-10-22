@@ -72,7 +72,7 @@ bool inline gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
                                      GjsArgumentType argument_type,
                                      GITransfer transfer, GIArgument* arg) {
     return gjs_value_to_gi_argument(cx, value, type_info,
-                                    nullptr /* arg_name */, argument_type,
+                                    /* arg name = */ nullptr, argument_type,
                                     transfer, GjsArgumentFlags::NONE, arg);
 }
 GJS_JSAPI_RETURN_CONVENTION

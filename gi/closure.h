@@ -82,7 +82,7 @@ class Closure : public GClosure {
                                                     JSObject* callable,
                                                     const char* description,
                                                     int signal_id) {
-        auto* self = new Closure(cx, callable, false /* root */, description);
+        auto* self = new Closure(cx, callable, /* root = */ false, description);
         self->add_finalize_notifier<Closure>();
         g_closure_set_meta_marshal(self, gjs_int_to_pointer(signal_id),
                                    marshal_cb);
