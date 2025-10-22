@@ -97,7 +97,7 @@ bool InterfacePrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     return true;
 }
 
-/*
+/**
  * InterfaceBase::has_instance:
  *
  * JSNative implementation of `[Symbol.hasInstance]()`. This method is never

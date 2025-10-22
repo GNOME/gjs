@@ -281,7 +281,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
  * Get the binary data (as a sequence of 16-bit characters) in @str.
  *
  * Returns: false if exception thrown
- **/
+ */
 bool gjs_string_get_char16_data(JSContext* cx, JS::HandleString str,
                                 char16_t** data_p, size_t* len_p) {
     if (JS::StringHasLatin1Chars(str))
@@ -421,7 +421,7 @@ gjs_string_from_ucs4(JSContext             *cx,
  * Otherwise, return true and fill in *name_p with ASCII name of id.
  *
  * Returns: false on error, otherwise true
- **/
+ */
 bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
     if (!id.isString()) {
         name_p->reset();

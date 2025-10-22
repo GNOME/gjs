@@ -11,7 +11,7 @@ function printf(fmt, ...args) {
     print(vprintf(fmt, args));
 }
 
-/*
+/**
  * This function is intended to extend the String object and provide a
  * String.format API for string formatting.
  * It has to be set up using String.prototype.format = Format.format;

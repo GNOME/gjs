@@ -23,7 +23,8 @@ gjs_environment_variable_is_set(const char *env_variable_name)
     return true;
 }
 
-/** gjs_g_strv_concat:
+/**
+ * gjs_g_strv_concat:
  *
  * Concate an array of string arrays to one string array. The strings in each
  * array is copied to the resulting array.

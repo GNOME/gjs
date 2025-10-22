@@ -117,7 +117,7 @@ static bool define_extra_error_properties(JSContext* cx, JS::HandleObject obj) {
     return gjs_define_error_properties(cx, obj);
 }
 
-/*
+/**
  * StructInstance::new_for_c_struct:
  *
  * Creates a new StructInstance JS object from a C boxed struct pointer.

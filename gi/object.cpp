@@ -2185,7 +2185,7 @@ void ObjectInstance::remove_wrapped_gobjects_if(
     }
 }
 
-/*
+/**
  * ObjectInstance::context_dispose_notify:
  *
  * Callback called when the #GjsContext is disposed. It just calls
@@ -2197,7 +2197,7 @@ void ObjectInstance::context_dispose_notify(void*, GObject* where_the_object_was
         std::mem_fn(&ObjectInstance::handle_context_dispose));
 }
 
-/*
+/**
  * ObjectInstance::handle_context_dispose:
  *
  * Called on each existing ObjectInstance when the #GjsContext is disposed.
@@ -2433,7 +2433,7 @@ void gjs_object_shutdown_toggle_queue() {
     ToggleQueue::get_default()->shutdown();
 }
 
-/*
+/**
  * ObjectInstance::prepare_shutdown:
  *
  * Called when the #GjsContext is disposed, in order to release all GC roots of
@@ -2472,7 +2472,7 @@ ObjectPrototype::ObjectPrototype(Maybe<GI::ObjectInfo> info, GType gtype)
     GJS_INC_COUNTER(object_prototype);
 }
 
-/*
+/**
  * ObjectInstance::update_heap_wrapper_weak_pointers:
  *
  * Private callback, called after the JS engine finishes garbage collection, and
@@ -2525,7 +2525,7 @@ bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
     return false;
 }
 
-/*
+/**
  * ObjectInstance::ensure_weak_pointer_callback:
  *
  * Private method called when adding a weak pointer for the first time.
@@ -3385,7 +3385,7 @@ bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
         args.rval());
 }
 
-/*
+/**
  * ObjectInstance::to_string_kind:
  *
  * ObjectInstance shows a "disposed" marker in its toString() method if the
@@ -3397,7 +3397,7 @@ const char* ObjectInstance::to_string_kind() const {
     return m_gobj_disposed ? "object (DISPOSED)" : "object";
 }
 
-/*
+/**
  * ObjectBase::init_gobject:
  *
  * This is named "init_gobject()" but corresponds to "_init()" in JS. The reason
@@ -3496,7 +3496,7 @@ void ObjectPrototype::set_interfaces(GType* interface_gtypes,
     }
 }
 
-/*
+/**
  * ObjectPrototype::define_class:
  * @in_object: Object where the constructor is stored, typically a repo object.
  * @info: Introspection info for the GObject class.
@@ -3555,7 +3555,7 @@ bool ObjectPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
                                  1, GJS_MODULE_PROP_FLAGS);
 }
 
-/*
+/**
  * ObjectInstance::init_custom_class_from_gobject:
  *
  * Does all the necessary initialization for an ObjectInstance and JSObject
@@ -3595,7 +3595,7 @@ bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
                                 &ignored_rval);
 }
 
-/*
+/**
  * ObjectInstance::new_for_gobject:
  *
  * Creates a new JSObject wrapper for the GObject pointer @gobj, and an
@@ -3634,7 +3634,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
     return priv;
 }
 
-/*
+/**
  * ObjectInstance::wrapper_from_gobject:
  *
  * Gets a JSObject wrapper for the GObject pointer @gobj. If one already exists,

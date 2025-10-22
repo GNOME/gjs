@@ -26,7 +26,7 @@ export let GjsListStore = GObject.registerClass({
     }
 
     /* Implementing this function just requires returning the GObject at
-     * @position or %null if out-of-range. This must explicitly return %null,
+     * `position` or `null` if out-of-range. This must explicitly return `null`,
      * not `undefined`. */
     vfunc_get_item(position) {
         return this._items[position] || null;
@@ -39,7 +39,7 @@ export let GjsListStore = GObject.registerClass({
     }
 
     /**
-     * Insert an item in the list. If @position is greater than the number of
+     * Insert an item in the list. If `position` is greater than the number of
      * items in the list or less than `0` it will be appended to the end of the
      * list.
      *

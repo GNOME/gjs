@@ -918,7 +918,7 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
         g_source_set_name_by_id(m_auto_gc_id, "[gjs] Garbage Collection");
 }
 
-/*
+/**
  * GjsContextPrivate::schedule_gc_if_needed:
  *
  * Does a minor GC immediately if the JS engine decides one is needed, but also
@@ -1025,7 +1025,7 @@ void GjsContextPrivate::runJobs(JSContext* cx) {
         gjs_log_exception(cx);
 }
 
-/*
+/**
  * GjsContext::run_jobs_fallible:
  *
  * Drains the queue of promise callbacks that the JS engine has reported
@@ -1673,7 +1673,7 @@ bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
            gjs_context_eval_module(js_context, uri, exit_status_p, error);
 }
 
-/*
+/**
  * GjsContextPrivate::eval_with_scope:
  * @scope_object: an object to use as the global scope, or nullptr
  * @source: JavaScript program encoded in UTF-8
@@ -1743,7 +1743,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     return true;
 }
 
-/*
+/**
  * GjsContextPrivate::call_function:
  * @this_obj: Object to use as the 'this' for the function call
  * @func_val: Callable to call, as a JS value
@@ -1825,7 +1825,7 @@ gjs_context_make_current (GjsContext *context)
 }
 
 namespace Gjs {
-/*
+/**
  * Gjs::AutoMainRealm:
  * @gjs: a #GjsContextPrivate
  *
@@ -1844,7 +1844,7 @@ AutoMainRealm::AutoMainRealm(JSContext* cx)
     : AutoMainRealm(static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx))) {
 }
 
-/*
+/**
  * Gjs::AutoInternalRealm:
  * @gjs: a #GjsContextPrivate
  *

@@ -63,7 +63,7 @@ struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
  */
 #define GJS_MODULE_PROP_FLAGS (JSPROP_PERMANENT | JSPROP_ENUMERATE)
 
-/*
+/**
  * GJS_GET_THIS:
  * @cx: JSContext pointer passed into JSNative function
  * @argc: Number of arguments passed into JSNative function

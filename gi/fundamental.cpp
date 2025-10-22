@@ -50,7 +50,7 @@ FundamentalInstance::FundamentalInstance(FundamentalPrototype* prototype,
     GJS_INC_COUNTER(fundamental_instance);
 }
 
-/*
+/**
  * FundamentalInstance::associate_js_instance:
  *
  * Associates @gfundamental with @object so that @object can be retrieved in the
@@ -159,7 +159,7 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     return resolve_interface(cx, obj, resolved, prop_name.get());
 }
 
-/*
+/**
  * FundamentalInstance::invoke_constructor:
  *
  * Finds the type's static constructor method (the static method given by
@@ -332,7 +332,7 @@ unsigned FundamentalPrototype::constructor_nargs() const {
     return 0;
 }
 
-/*
+/**
  * FundamentalPrototype::define_class:
  * @in_object: Object where the constructor is stored, typically a repo object.
  * @info: Introspection info for the fundamental class.
@@ -362,7 +362,7 @@ bool FundamentalPrototype::define_class(JSContext* cx,
     return true;
 }
 
-/*
+/**
  * FundamentalInstance::object_for_c_ptr:
  *
  * Given a pointer to a C fundamental object, returns a JS object. This JS
@@ -402,7 +402,7 @@ JSObject* FundamentalInstance::object_for_c_ptr(JSContext* cx,
     return object;
 }
 
-/*
+/**
  * FundamentalPrototype::for_gtype:
  *
  * Returns the FundamentalPrototype instance associated with the given GType.

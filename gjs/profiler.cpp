@@ -135,7 +135,7 @@ struct _GjsProfiler {
 static GjsContext *profiling_context;
 
 #ifdef ENABLE_PROFILER
-/*
+/**
  * gjs_profiler_extract_maps:
  *
  * This function will write the mapped section information to the
@@ -246,7 +246,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
 
 #endif  /* ENABLE_PROFILER */
 
-/*
+/**
  * _gjs_profiler_new:
  * @context: The #GjsContext to profile
  *
@@ -297,7 +297,7 @@ _gjs_profiler_new(GjsContext *context)
     return self;
 }
 
-/*
+/**
  * _gjs_profiler_free:
  * @self: A #GjsProfiler
  *
@@ -331,7 +331,7 @@ _gjs_profiler_free(GjsProfiler *self)
     g_free(self);
 }
 
-/*
+/**
  * _gjs_profiler_is_running:
  * @self: A #GjsProfiler
  *
@@ -693,7 +693,7 @@ gjs_profiler_sigusr2(void *data)
 
 #endif  // ENABLE_PROFILER
 
-/*
+/**
  * _gjs_profiler_setup_signals:
  * @context: a #GjsContext with a profiler attached
  *

@@ -312,8 +312,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(JSContext* cx,
     return true;
 }
 
-/* Converts a JS::Value to a GHashTable key, stuffing it into @pointer_out if
- * possible, otherwise giving the location of an allocated key in @pointer_out.
+/* Converts a JS::Value to a GHashTable key, stuffing it into pointer_out if
+ * possible, otherwise giving the location of an allocated key in pointer_out.
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,

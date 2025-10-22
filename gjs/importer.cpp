@@ -254,7 +254,7 @@ static void cancel_import(JSContext* cx, JS::HandleObject obj,
     }
 }
 
-/*
+/**
  * gjs_import_native_module:
  * @cx: the #JSContext
  * @importer: the root importer

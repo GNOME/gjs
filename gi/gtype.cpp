@@ -31,7 +31,7 @@
 #include "gjs/macros.h"
 #include "util/log.h"
 
-/*
+/**
  * GTypeObj:
  *
  * Wrapper object used to represent a GType in JavaScript.

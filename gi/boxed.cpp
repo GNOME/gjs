@@ -120,7 +120,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::new_enumerate_impl(
     return true;
 }
 
-/*
+/**
  * BoxedBase::get_copy_source():
  *
  * Check to see if JS::Value passed in is another Boxed instance object of the
@@ -141,7 +141,7 @@ Base* BoxedBase<Base, Prototype, Instance>::get_copy_source(
     return source_priv;
 }
 
-/*
+/**
  * BoxedInstance::allocate_directly:
  *
  * Allocate a boxed object of the correct size, set all the bytes to 0, and set
@@ -187,7 +187,7 @@ BoxedPrototype<Base, Prototype, Instance>::create_field_map(
     return result;
 }
 
-/*
+/**
  * BoxedPrototype::ensure_field_map:
  *
  * BoxedPrototype keeps a cache of field names to introspection info.
@@ -202,7 +202,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::ensure_field_map(
     return !!m_field_map;
 }
 
-/*
+/**
  * BoxedPrototype::lookup_field:
  *
  * Look up the introspection info corresponding to the field name @prop_name,
@@ -301,7 +301,7 @@ bool BoxedInstance<Base, Prototype, Instance>::invoke_static_method(
     return gjs->call_function(nullptr, method, args, args.rval());
 }
 
-/*
+/**
  * BoxedInstance::copy_boxed:
  *
  * Allocate a new boxed pointer using g_boxed_copy(), either from a raw boxed
@@ -318,7 +318,7 @@ void BoxedInstance<Base, Prototype, Instance>::copy_boxed(Instance* source) {
     copy_boxed(source->ptr());
 }
 
-/*
+/**
  * BoxedInstance::copy_memory:
  *
  * Allocate a new boxed pointer by copying the contents of another boxed pointer
@@ -465,7 +465,7 @@ BoxedInstance<Base, Prototype, Instance>::~BoxedInstance() {
     g_assert_not_reached();
 }
 
-/*
+/**
  * BoxedBase::get_field_info:
  *
  * Does the same thing as g_struct_info_get_field(), but throws a JS exception
@@ -491,7 +491,7 @@ void adopt_nested_ptr(OtherInstance* priv, void* data) {
         "Boxed pointer created, pointing inside memory owned by parent");
 }
 
-/*
+/**
  * BoxedInstance::get_nested_interface_object:
  * @parent_obj: the BoxedInstance JS object that owns `this`
  * @field_info: introspection info for the field of the parent boxed type that
@@ -542,7 +542,7 @@ bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
     return true;
 }
 
-/*
+/**
  * BoxedBase::field_getter:
  *
  * JSNative property getter that is called when accessing a field defined on a
@@ -619,7 +619,7 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
                                       GI_TRANSFER_EVERYTHING, &arg);
 }
 
-/*
+/**
  * BoxedInstance::set_nested_interface_object:
  * @field_info: introspection info for the field of the parent boxed type that
  *   is another boxed type
@@ -733,7 +733,7 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
     return success;
 }
 
-/*
+/**
  * BoxedBase::field_setter:
  *
  * JSNative property setter that is called when writing to a field defined on a
@@ -775,7 +775,7 @@ BoxedPrototype<Base, Prototype, Instance>::find_unique_js_field_name(
     return property_name;
 }
 
-/*
+/**
  * BoxedPrototype::define_boxed_class_fields:
  *
  * Defines properties on the JS prototype object, with JSNative getters and
@@ -987,7 +987,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::init(JSContext* cx) {
     return true;
 }
 
-/*
+/**
  * BoxedPrototype::define_class_impl:
  * @in_object: Object where the constructor is stored, typically a repo object.
  * @info: Introspection info for the boxed class.
@@ -1032,7 +1032,7 @@ JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
     return obj;
 }
 
-/*
+/**
  * BoxedInstance::init_from_c_struct:
  *
  * Do the necessary initialization when creating a BoxedInstance JS object from

@@ -30,8 +30,9 @@ const JSPropertySpec CairoPath::proto_props[] = {
     JS_PS_END};
 // clang-format on
 
-/*
+/**
  * CairoPath::take_c_ptr():
+ *
  * Same as CWrapper::from_c_ptr(), but always takes ownership of the pointer
  * rather than copying it.
  */

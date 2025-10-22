@@ -53,7 +53,7 @@ class ObjectPrototype;
 class ObjectPropertyInfoCaller;
 class ObjectPropertyPspecCaller;
 
-/*
+/**
  * ObjectBase:
  *
  * Specialization of GIWrapperBase for GObject instances. See the documentation

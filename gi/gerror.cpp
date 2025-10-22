@@ -63,7 +63,7 @@ ErrorInstance::ErrorInstance(ErrorPrototype* prototype, JS::HandleObject obj)
 
 ErrorInstance::~ErrorInstance() { GJS_DEC_COUNTER(gerror_instance); }
 
-/*
+/**
  * ErrorBase::domain:
  *
  * Fetches ErrorPrototype::domain() for instances as well as prototypes.
@@ -98,7 +98,7 @@ bool ErrorInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
     return gjs_define_error_properties(cx, object);
 }
 
-/*
+/**
  * ErrorBase::get_domain:
  *
  * JSNative property getter for `domain`. This property works on prototypes as
@@ -484,7 +484,7 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
     return g_error_new_literal(GJS_JS_ERROR, code, message.get());
 }
 
-/*
+/**
  * gjs_gerror_make_from_thrown_value:
  *
  * Attempts to convert a JavaScript thrown value (pending on @cx) into a
@@ -522,7 +522,7 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
                                "Failed to convert JS thrown value into GError");
 }
 
-/*
+/**
  * gjs_throw_gerror:
  *
  * Converts a GError into a JavaScript exception.
