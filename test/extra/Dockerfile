@@ -85,6 +85,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     meson \
     ninja-build \
     pkgconf \
+    python3-pip \
     readline-devel \
     sysprof-devel \
     systemtap-sdt-devel \
@@ -97,6 +98,9 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     dnf clean all && rm -rf /var/cache/dnf
 
 COPY --from=mozjs-build /root/mozjs-install/usr /usr
+
+# Support converting lcov reports to cobertura
+RUN pip3 install lcov-cobertura==2.1.1
 
 # Enable sudo for wheel users
 RUN sed -i -e 's/# %wheel/%wheel/' -e '0,/%wheel/{s/%wheel/# %wheel/}' \
