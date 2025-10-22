@@ -119,17 +119,7 @@ static void gjs_dbus_implementation_method_call(
     }
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name,
-                  invocation, parameters);
-
-    // This is technically wrong, because in practice the JS signal handler
-    // should really call one of the Gio.DBusMethodInvocation.return_* methods
-    // and those would take the ownership of the object.
-    // However, this is not the case because gjs adds a new object reference
-    // when calling a transfer-full method, so these calls are basically no-op
-    // from the reference-counting prospective.
-    // So, here we should consider the invocation already returned but with a
-    // final reference, and so drop it.
-    g_clear_object(&invocation);
+                  g_steal_pointer(&invocation), parameters);
 }
 
 static GVariant* gjs_dbus_implementation_property_get(
@@ -335,7 +325,7 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
      * GjsDBusImplementation::handle-method-call:
      * @self:
      * @method_name:
-     * @invocation:
+     * @invocation: (transfer full):
      * @parameters:
      */
     signals[SIGNAL_HANDLE_METHOD] = g_signal_new(
