@@ -344,7 +344,9 @@ function _handleDBusReply(invocation, ret) {
             ret = new GLib.Variant(outSignature, ret);
         }
         invocation.return_value_with_unix_fd_list(ret, outFdList);
-    } catch {
+    } catch (e) {
+        logError(e, `Exception in method call: ${invocation.get_method_name()}`);
+
         // if we don't do this, the other side will never see a reply
         invocation.return_dbus_error('org.gnome.gjs.JSError.ValueError',
             'Service implementation returned an incorrect value type');

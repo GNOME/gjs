@@ -751,6 +751,10 @@ describe('Exported DBus object', function () {
     });
 
     it('handles a bad signature by throwing an exception', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: arrayOutBadSig: ' +
+            'TypeError: can\'t convert symbol to number*');
+
         proxy.arrayOutBadSigRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
@@ -759,6 +763,10 @@ describe('Exported DBus object', function () {
     });
 
     it('handles a bad signature in async/await by rejecting the promise', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: arrayOutBadSig: ' +
+            'TypeError: can\'t convert symbol to number*');
+
         await expectAsync(proxy.arrayOutBadSigAsync()).toBeRejected();
     });
 
