@@ -276,7 +276,8 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     using CStruct = typename detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
     UnownedInfo() = delete;
-    explicit UnownedInfo(std::nullptr_t) = delete;
+    UnownedInfo(std::nullptr_t) = delete;  // NOLINT(runtime/explicit)
+    // https://github.com/cpplint/cpplint/issues/386
     // No need to delete move constructor; declaring a copy constructor prevents
     // it from being generated.
 
@@ -349,7 +350,8 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     CStruct* m_info;
 
     OwnedInfo() = delete;
-    explicit OwnedInfo(std::nullptr_t) = delete;
+    OwnedInfo(std::nullptr_t) = delete;  // NOLINT(runtime/explicit)
+    // https://github.com/cpplint/cpplint/issues/386
     explicit OwnedInfo(CStruct* info) : m_info(info) {
         static_assert(sizeof(CStruct*) == sizeof(OwnedInfo<TAG>),
                       "OwnedInfo<T> should be byte-compatible with T*");
