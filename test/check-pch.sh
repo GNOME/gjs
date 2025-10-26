@@ -11,7 +11,8 @@ if [ -n "$SELFTEST" ]; then
     trap 'rm -rf -- "${test_paths[@]}"' EXIT
 
     test_env() {
-        local code_path="$(mktemp -t -d "check-pch-XXXXXX")"
+        local code_path
+        code_path=$(mktemp -t -d "check-pch-XXXXXX")
         test_paths+=("$code_path")
         cd "$code_path"
         mkdir gjs gi
