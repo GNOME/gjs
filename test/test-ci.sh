@@ -101,7 +101,7 @@ do_Create_Artifacts_Folder () {
 
 do_Check_Script_Errors () {
     local total=0
-    total=$(cat scripts.log | grep 'not ok ' | wc -l)
+    total=$(grep -c 'not ok ' scripts.log) || true
 
     if test "$total" -gt 0; then
         echo '-----------------------------------------'
