@@ -104,19 +104,22 @@ static void gjs_dbus_implementation_method_call(
 
     if (!gjs_dbus_implementation_check_interface(self, connection, object_path,
                                                  interface_name, &error)) {
-        g_dbus_method_invocation_take_error(invocation, error);
+        g_dbus_method_invocation_take_error(g_steal_pointer(&invocation),
+                                            error);
         return;
     }
-    if (!g_dbus_interface_info_lookup_method(self->priv->ifaceinfo,
+    if (!G_UNLIKELY(g_dbus_method_invocation_get_method_info(invocation)) ||
+        !g_dbus_interface_info_lookup_method(self->priv->ifaceinfo,
                                              method_name)) {
         g_dbus_method_invocation_return_error(
-            invocation, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_METHOD,
-            "Unknown method %s on %s", method_name, interface_name);
+            g_steal_pointer(&invocation), G_DBUS_ERROR,
+            G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method %s on %s", method_name,
+            interface_name);
         return;
     }
 
-    g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name, parameters, invocation);
-    g_object_unref (invocation);
+    g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name,
+                  g_steal_pointer(&invocation), parameters);
 }
 
 static GVariant* gjs_dbus_implementation_property_get(
@@ -318,42 +321,53 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
                                                        G_TYPE_DBUS_INTERFACE_INFO,
                                                        (GParamFlags) (G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY)));
 
-    signals[SIGNAL_HANDLE_METHOD] = g_signal_new("handle-method-call",
-                                                 G_TYPE_FROM_CLASS(klass),
-                                                 (GSignalFlags) 0, /* flags */
-                                                 0, /* closure */
-                                                 NULL, /* accumulator */
-                                                 NULL, /* accumulator data */
-                                                 NULL, /* C marshal */
-                                                 G_TYPE_NONE,
-                                                 3,
-                                                 G_TYPE_STRING, /* method name */
-                                                 G_TYPE_VARIANT, /* parameters */
-                                                 G_TYPE_DBUS_METHOD_INVOCATION);
+    /**
+     * GjsDBusImplementation::handle-method-call:
+     * @self:
+     * @method_name:
+     * @invocation: (transfer full):
+     * @parameters:
+     */
+    signals[SIGNAL_HANDLE_METHOD] = g_signal_new(
+        "handle-method-call", G_TYPE_FROM_CLASS(klass),
+        (GSignalFlags)0,               /* flags */
+        0,                             /* closure */
+        NULL,                          /* accumulator */
+        NULL,                          /* accumulator data */
+        NULL,                          /* C marshal */
+        G_TYPE_NONE, 3, G_TYPE_STRING, /* method name */
+        G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_VARIANT /* parameters */);
 
-    signals[SIGNAL_HANDLE_PROPERTY_GET] = g_signal_new("handle-property-get",
-                                                       G_TYPE_FROM_CLASS(klass),
-                                                       (GSignalFlags) 0, /* flags */
-                                                       0, /* closure */
-                                                       g_signal_accumulator_first_wins,
-                                                       NULL, /* accumulator data */
-                                                       NULL, /* C marshal */
-                                                       G_TYPE_VARIANT,
-                                                       1,
-                                                       G_TYPE_STRING /* property name */);
+    /**
+     * GjsDBusImplementation::handle-property-get:
+     * @self:
+     * @property_name:
+     *
+     * Return: The property value
+     */
+    signals[SIGNAL_HANDLE_PROPERTY_GET] = g_signal_new(
+        "handle-property-get", G_TYPE_FROM_CLASS(klass),
+        (GSignalFlags)0,                       /* flags */
+        0,                                     /* closure */
+        g_signal_accumulator_first_wins, NULL, /* accumulator data */
+        NULL,                                  /* C marshal */
+        G_TYPE_VARIANT, 1, G_TYPE_STRING /* property name */);
 
-
-    signals[SIGNAL_HANDLE_PROPERTY_SET] = g_signal_new("handle-property-set",
-                                                       G_TYPE_FROM_CLASS(klass),
-                                                       (GSignalFlags) 0, /* flags */
-                                                       0, /* closure */
-                                                       NULL, /* accumulator */
-                                                       NULL, /* accumulator data */
-                                                       NULL, /* C marshal */
-                                                       G_TYPE_NONE,
-                                                       2,
-                                                       G_TYPE_STRING, /* property name */
-                                                       G_TYPE_VARIANT /* parameters */);
+    /**
+     * GjsDBusImplementation::handle-property-set:
+     * @self:
+     * @property_name:
+     * @value:
+     */
+    signals[SIGNAL_HANDLE_PROPERTY_SET] =
+        g_signal_new("handle-property-set", G_TYPE_FROM_CLASS(klass),
+                     (GSignalFlags)0,               /* flags */
+                     0,                             /* closure */
+                     NULL,                          /* accumulator */
+                     NULL,                          /* accumulator data */
+                     NULL,                          /* C marshal */
+                     G_TYPE_NONE, 2, G_TYPE_STRING, /* property name */
+                     G_TYPE_VARIANT /* parameters */);
 }
 
 static gboolean

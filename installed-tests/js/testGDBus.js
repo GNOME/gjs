@@ -24,6 +24,24 @@ var TestIface = `<node>
     <arg type="a{sv}" direction="in"/>
     <arg type="a{sv}" direction="out"/>
 </method>
+<method name="synchronouslyAlwaysThrowException">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="asynchronouslyAlwaysThrowExceptionSync">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="asynchronouslyAlwaysThrowException">
+    <arg type="a{sv}" direction="in"/>
+    <arg type="a{sv}" direction="out"/>
+</method>
+<method name="returnThenThrowException">
+    <arg type="s" direction="out"/>
+</method>
+<method name="returnThenThrowExceptionSync">
+    <arg type="s" direction="out"/>
+</method>
 <method name="thisDoesNotExist"/>
 <method name="noInParameter">
     <arg type="s" direction="out"/>
@@ -69,6 +87,12 @@ var TestIface = `<node>
     <arg type="a{sv}" direction="out"/>
 </method>
 <method name="echo">
+    <arg type="s" direction="in"/>
+    <arg type="i" direction="in"/>
+    <arg type="s" direction="out"/>
+    <arg type="i" direction="out"/>
+</method>
+<method name="asynchronouslyEchoSync">
     <arg type="s" direction="in"/>
     <arg type="i" direction="in"/>
     <arg type="s" direction="out"/>
@@ -131,6 +155,39 @@ class Test {
 
     alwaysThrowException() {
         throw Error('Exception!');
+    }
+
+    synchronouslyAlwaysThrowExceptionAsync() {
+        throw Error('Exception!');
+    }
+
+    async asynchronouslyAlwaysThrowExceptionSync() {
+        await this.asynchronouslyAlwaysThrowExceptionAsync();
+    }
+
+    async asynchronouslyAlwaysThrowExceptionAsync() {
+        await (() => new Promise(() => {
+            throw Error('Async Exception!');
+        }))();
+    }
+
+    returnThenThrowExceptionSyncAsync(_parameters, invocation) {
+        invocation.return_value(new GLib.Variant('(s)', ['I\'m going to fail soon!']));
+
+        // These should be a no-op!
+        invocation.return_value(new GLib.Variant('(s)', ['And returning again..!']));
+        invocation.return_error_literal(Gio.DBusError, Gio.DBusError.NOT_SUPPORTED,
+            'Calling multiple times should not be supported');
+
+        // And let's throw on JS side only.
+        throw Error('Oh no!');
+    }
+
+    async returnThenThrowExceptionAsync(_parameters, invocation) {
+        invocation.return_value(new GLib.Variant('(s)', ['I\'m going to fail soon!']));
+        await (() => new Promise(() => {
+            throw Error('Oh no!');
+        }))();
     }
 
     thisDoesNotExist() {
@@ -204,6 +261,16 @@ class Test {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
             return false;
         });
+    }
+
+    async asynchronouslyEchoSync(someString, someInt) {
+        const ret = await new Promise(resolve => {
+            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+                resolve([someString, someInt]);
+                return GLib.SOURCE_REMOVE;
+            });
+        });
+        return ret;
     }
 
     // double
@@ -398,6 +465,112 @@ describe('Exported DBus object', function () {
         await expectAsync(proxy.alwaysThrowExceptionAsync({})).toBeRejected();
     });
 
+    it('can handle an exception thrown by an async remote method that is implemented synchronously', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowExceptionSync: *Async Exception!*');
+
+        proxy.asynchronouslyAlwaysThrowExceptionSyncRemote({}, function (_, e) {
+            expect(e).not.toBeNull();
+            expect(e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.DBUS_ERROR)).toBeTrue();
+            expect(e.message.includes('asynchronouslyAlwaysThrowExceptionSync'));
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by an async method that is implemented synchronously with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowExceptionSync: *Async Exception!*');
+
+        await expectAsync(proxy.asynchronouslyAlwaysThrowExceptionSyncAsync({})).toBeRejected();
+    });
+
+    it('can handle an exception thrown by a sync remote method that is implemented asynchronously', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: synchronouslyAlwaysThrowException: *');
+
+        proxy.synchronouslyAlwaysThrowExceptionRemote({}, function (result, excp) {
+            expect(excp).not.toBeNull();
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by a sync method that is implemented asynchronously with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: synchronouslyAlwaysThrowException: *');
+
+        await expectAsync(proxy.synchronouslyAlwaysThrowExceptionAsync({})).toBeRejected();
+    });
+
+    it('can handle an exception thrown by an async remote method that is implemented asynchronously', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowException: *Async Exception!*');
+
+        proxy.asynchronouslyAlwaysThrowExceptionRemote({}, function (_, e) {
+            expect(e).not.toBeNull();
+            expect(e.matches(Gio.IOErrorEnum, Gio.IOErrorEnum.DBUS_ERROR)).toBeTrue();
+            expect(e.message.includes('asynchronouslyAlwaysThrowException'));
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by an async method that is implemented asynchronously with async/await', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: asynchronouslyAlwaysThrowException: *Async Exception!*');
+
+        await expectAsync(proxy.asynchronouslyAlwaysThrowExceptionAsync({})).toBeRejected();
+    });
+
+    it('can handle an exception thrown by a sync remote method that is implemented asynchronously if invocation is already consumed', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: [object *] (returnThenThrowExceptionSync) already returned*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: [object *] (returnThenThrowExceptionSync) already returned*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: returnThenThrowExceptionSync: *Oh no!*');
+
+        proxy.returnThenThrowExceptionSyncRemote(function ([result], e) {
+            expect(e).toBeNull();
+            expect(result).toBe('I\'m going to fail soon!');
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by an sync method that is implemented asynchronously with async/await if invocation is already consumed', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: [object *] (returnThenThrowExceptionSync) already returned*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: [object *] (returnThenThrowExceptionSync) already returned*');
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: returnThenThrowExceptionSync: *Oh no!*');
+
+        const [result] = await proxy.returnThenThrowExceptionSyncAsync();
+        expect(result).toBe('I\'m going to fail soon!');
+    });
+
+    it('can handle an exception thrown by an async remote method that is implemented asynchronously if invocation is already consumed', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: returnThenThrowException: *Oh no!*');
+
+        proxy.returnThenThrowExceptionRemote(function ([result], e) {
+            expect(e).toBeNull();
+            expect(result).toBe('I\'m going to fail soon!');
+            loop.quit();
+        });
+        loop.run();
+    });
+
+    it('can handle an exception thrown by an async method that is implemented asynchronously with async/await if invocation is already consumed', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: returnThenThrowException: *Oh no!*');
+
+        const [result] = await proxy.returnThenThrowExceptionAsync();
+        expect(result).toBe('I\'m going to fail soon!');
+    });
+
     it('can still destructure the return value when an exception is thrown', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'JS ERROR: Exception in method call: alwaysThrowException: *');
@@ -421,6 +594,9 @@ describe('Exported DBus object', function () {
         /* First remove the method from the object! */
         delete Test.prototype.thisDoesNotExist;
 
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Missing handler for DBus method thisDoesNotExist: *');
+
         proxy.thisDoesNotExistRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
@@ -430,6 +606,10 @@ describe('Exported DBus object', function () {
 
     it('throws an exception when trying to call an async method that does not exist', async function () {
         delete Test.prototype.thisDoesNotExist;
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Missing handler for DBus method thisDoesNotExist: *');
+
         await expectAsync(proxy.thisDoesNotExistAsync()).toBeRejected();
     });
 
@@ -578,6 +758,10 @@ describe('Exported DBus object', function () {
     });
 
     it('handles a bad signature by throwing an exception', function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: arrayOutBadSig: ' +
+            'TypeError: can\'t convert symbol to number*');
+
         proxy.arrayOutBadSigRemote(function (result, excp) {
             expect(excp).not.toBeNull();
             loop.quit();
@@ -586,6 +770,10 @@ describe('Exported DBus object', function () {
     });
 
     it('handles a bad signature in async/await by rejecting the promise', async function () {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            'JS ERROR: Exception in method call: arrayOutBadSig: ' +
+            'TypeError: can\'t convert symbol to number*');
+
         await expectAsync(proxy.arrayOutBadSigAsync()).toBeRejected();
     });
 
@@ -607,6 +795,27 @@ describe('Exported DBus object', function () {
         const someInt = 42;
 
         const results = await proxy.echoAsync(someString, someInt);
+        expect(results).toEqual([someString, someInt]);
+    });
+
+    it('can call a remote async method that is implemented synchronously', function () {
+        let someString = 'Hello world!';
+        let someInt = 42;
+
+        proxy.asynchronouslyEchoSyncRemote(someString, someInt,
+            function (result, excp) {
+                expect(excp).toBeNull();
+                expect(result).toEqual([someString, someInt]);
+                loop.quit();
+            });
+        loop.run();
+    });
+
+    it('can call an async/await async method that is implemented synchronously', async function () {
+        const someString = 'Hello world!';
+        const someInt = 42;
+
+        const results = await proxy.asynchronouslyEchoSyncAsync(someString, someInt);
         expect(results).toEqual([someString, someInt]);
     });
 
