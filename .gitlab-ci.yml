@@ -57,6 +57,9 @@ build-alpine-image:
     when: always
     reports:
       junit: _coverage_build/meson-logs/testlog*.junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: _coverage_build/*.cobertura.xml
     expose_as: 'Coverage Report'
     paths:
       - _coverage/html/index.html
@@ -206,11 +209,10 @@ coverage-automatic:
   <<: *coverage
   when: on_success
   stage: source_check
-  except:
-    - schedules
-  only:
-    refs:
-      - master@GNOME/gjs
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH &&
+          $CI_PIPELINE_SOURCE != 'schedule'
 
 # Publishes
 # The code coverage report
@@ -223,12 +225,9 @@ pages:
   artifacts:
     paths:
       - public
-  only:
-    refs:
-      - master@GNOME/gjs
-  except:
-    variables:
-      - $CRON_TASK == "BUILD_CI_IMAGES"
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH &&
+          $CI_PIPELINE_SOURCE != 'schedule'
 
 #############################################
 #              Static Analyzers             #
@@ -435,8 +434,10 @@ coverage:
   <<: *coverage
   stage: manual
   when: manual
-  except:
-    - schedules
+  rules:
+    - if: $CI_PIPELINE_SOURCE != 'schedule' &&
+          $CI_COMMIT_BRANCH != $CI_DEFAULT_BRANCH &&
+          $CI_PIPELINE_SOURCE != 'merge_request_event'
 
 iwyu-full:
   when: manual

@@ -18,7 +18,26 @@ meson test -C "$BUILDDIR" --num-processes 1 --suite=gjs
 lcov --directory "$BUILDDIR" --capture --output-file _coverage/gjs.lcov.run --no-checksum $LCOV_ARGS
 lcov --extract _coverage/gjs.lcov.run "$SOURCEDIR/*" $LCOV_ARGS -o _coverage/gjs.lcov.sources
 lcov --remove _coverage/gjs.lcov.sources $IGNORE $LCOV_ARGS -o _coverage/gjs.lcov
+
+lcov_outputs=(
+    "$BUILDDIR"/lcov/coverage.lcov
+    "$PWD"/_coverage/gjs.lcov
+)
+
 genhtml --prefix "$BUILDDIR/lcov/org/gnome/gjs" --prefix "$BUILDDIR" --prefix "$SOURCEDIR" \
     --output-directory _coverage/html \
     --title "gjs-$VERSION Code Coverage" \
-    $GENHTML_ARGS _coverage/gjs.lcov "$BUILDDIR"/lcov/coverage.lcov
+    $GENHTML_ARGS ${lcov_outputs[@]}
+
+for lcov_output in "${lcov_outputs[@]}"; do
+    cobertura_xml=$(basename "$lcov_output" .lcov).cobertura.xml
+    lcov_cobertura "$lcov_output" --output "$BUILDDIR/$cobertura_xml"
+
+    # Check the file is small enough for gitlab
+    # See: https://gitlab.com/gitlab-org/gitlab/-/issues/328772
+    file_size=$(stat -c%s "$BUILDDIR/$cobertura_xml" 2>/dev/null)
+    if [[ $file_size -gt 10485760 ]]; then
+        echo "Error: LCOV file $BUILDDIR/$cobertura_xml is larger than 10MB (${file_size} bytes)" >&2
+        exit 1
+    fi
+done
