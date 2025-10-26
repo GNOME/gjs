@@ -126,7 +126,7 @@ function report_out_of_order {
 
 function check_config_header {
     file="$1"
-    included_files=($(sed -nE 's/^#[[:space:]]*include[[:space:]]*([<"][^>"]+[>"]).*/\1/p' "$file"))
+    mapfile -t included_files < <(sed -nE 's/^#[[:space:]]*include[[:space:]]*([<"][^>"]+[>"]).*/\1/p' "$file")
     if [[ "${included_files[0]}" != "<config.h>" ]]; then
         echo "Error: $file: include <config.h> as the first #include directive"
         failed=1

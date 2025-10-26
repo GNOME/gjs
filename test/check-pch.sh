@@ -121,10 +121,10 @@ PCH_FILES=(gjs/gjs_pch.hh)
 IGNORE_COMMENT="check-pch: ignore"
 
 CODE_PATHS=(gjs gi)
-INCLUDED_FILES=(
-    \*.c
-    \*.cpp
-    \*.h
+GREP_INCLUDE_ARGS=(
+    --include \*.c
+    --include \*.cpp
+    --include \*.h
 )
 
 grep_include_lines() {
@@ -138,9 +138,7 @@ grep_header_file() {
 }
 
 # List all the included headers
-mapfile -t includes < <(grep_include_lines \
-    -r \
-    $(printf -- "--include %s\n" "${INCLUDED_FILES[@]}") \
+mapfile -t includes < <(grep_include_lines -r "${GREP_INCLUDE_ARGS[@]}" \
     "${CODE_PATHS[@]}" \
     | grep -vw "$IGNORE_COMMENT")
 
@@ -172,8 +170,7 @@ unneeded=()
 for h in "${pch_includes[@]}"; do
     if [[ "$h" =~ \#[[:space:]]*include[[:space:]]*[\<\"]([^\>\"]+)[\>\"] ]]; then
         header_file="${BASH_REMATCH[1]}"
-        if ! grep_header_file "$header_file" -r \
-            $(printf -- "--include %s\n" "${INCLUDED_FILES[@]}") \
+        if ! grep_header_file "$header_file" -r "${GREP_INCLUDE_ARGS[@]}" \
             "${CODE_PATHS[@]}"; then
             echo "Header <$header_file> included in one PCH is not used in code"
             unneeded+=("$header_file")

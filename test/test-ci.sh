@@ -140,12 +140,14 @@ if test "$1" = "SETUP"; then
 elif test "$1" = "BUILD"; then
     do_Set_Env
 
-    DEFAULT_CONFIG_OPTS="-Dreadline=enabled -Dprofiler=enabled -Ddtrace=false \
-        -Dsystemtap=false -Dverbose_logs=false --werror -Dglib:werror=false"
-    meson setup _build $DEFAULT_CONFIG_OPTS $CONFIG_OPTS
+    DEFAULT_CONFIG_OPTS=(-Dreadline=enabled -Dprofiler=enabled -Ddtrace=false \
+        -Dsystemtap=false -Dverbose_logs=false --werror -Dglib:werror=false)
+    # shellcheck disable=SC2086 # CONFIG_OPTS comes from .gitlab-ci.yml
+    meson setup _build "${DEFAULT_CONFIG_OPTS[@]}" $CONFIG_OPTS
     ninja -C _build
 
     if test "$TEST" != "skip"; then
+        # shellcheck disable=SC2086 # TEST_OPTS comes from .gitlab-ci.yml
         xvfb-run -a meson test -C _build --suite=gjs $TEST_OPTS
     fi
 
@@ -166,8 +168,9 @@ elif test "$1" = "SH_CHECKS"; then
 elif test "$1" = "CPPLINT"; then
     do_Print_Labels 'C/C++ Linter report '
 
+    mapfile -t cpplint_files < <(find . -name \*.cpp -or -name \*.h | sort)
     cpplint --quiet --filter=-build/include_what_you_use \
-        $(find . -name \*.cpp -or -name \*.h | sort) 2>&1 >/dev/null | \
+        "${cpplint_files[@]}" 2>&1 >/dev/null | \
         tee "$save_dir"/analysis/head-report.txt | \
         sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
         > /cwd/head-report.txt
@@ -183,8 +186,10 @@ elif test "$1" = "CPPLINT"; then
         exit 0
     fi
     git checkout ci-upstream-base
+    # files may have changed
+    mapfile -t cpplint_files < <(find . -name \*.cpp -or -name \*.h | sort)
     cpplint --quiet --filter=-build/include_what_you_use \
-        $(find . -name \*.cpp -or -name \*.h | sort) 2>&1 >/dev/null | \
+        "${cpplint_files[@]}" 2>&1 >/dev/null | \
         tee "$save_dir"/analysis/base-report.txt | \
         sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
         > /cwd/base-report.txt
