@@ -4,7 +4,7 @@
 
 SRCDIR=$(pwd)
 
-if [ "$1" = '--help' -o "$1" = '-h' ]; then
+if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
     echo "usage: $0 [ COMMIT ]"
     echo "Run include-what-you-use on the GJS codebase."
     echo "If COMMIT is given, analyze only the files changed since that commit,"
