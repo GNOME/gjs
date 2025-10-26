@@ -23,7 +23,7 @@ if [ -n "$SELFTEST" ]; then
         "$self" || exit 1
     }
     expect_failure() {
-        "$self" && exit 1 || true
+        if "$self"; then exit 1; fi
     }
 
     test_env
