@@ -4,14 +4,14 @@
 
 DIR="$( cd "$( dirname "${0}" )" && pwd )"
 # shellcheck disable=SC1091
-source "${DIR}"/common.sh
+. "${DIR}"/common.sh
 
 # Run the examples
 # shellcheck disable=SC2154 # It's defined in common.sh
 $gjs -m examples/gio-cat.js meson.build
 report "run the gio-cat.js example"
 
-if [[ -n "${ENABLE_GTK}" ]]; then
+if [ -n "${ENABLE_GTK}" ]; then
     export graphical_gjs="xvfb-run -a dbus-run-session -- $gjs"
 
     eval timeout 5s "$graphical_gjs" -m examples/calc.js
