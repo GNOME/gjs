@@ -184,13 +184,12 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         &Ns::finalize,
     };
 
-    // clang-format off
     static constexpr JSPropertySpec proto_props[] = {
         JS_STRING_SYM_PS(toStringTag, "GIRepositoryNamespace", JSPROP_READONLY),
         JS_PSG("__name__", &Ns::get_name, GJS_MODULE_PROP_FLAGS),
-        JS_PSG("__version__", &Ns::get_version, GJS_MODULE_PROP_FLAGS & ~JSPROP_ENUMERATE),
+        JS_PSG("__version__", &Ns::get_version,
+               GJS_MODULE_PROP_FLAGS & ~JSPROP_ENUMERATE),
         JS_PS_END};
-    // clang-format on
 
     static constexpr js::ClassSpec class_spec = {
         nullptr,  // createConstructor

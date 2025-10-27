@@ -139,7 +139,6 @@ bool InterfacePrototype::has_instance_impl(JSContext* cx,
     return true;
 }
 
-// clang-format off
 const struct JSClassOps InterfaceBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
@@ -153,13 +152,12 @@ const struct JSClassOps InterfaceBase::class_ops = {
 const struct JSClass InterfaceBase::klass = {
     "GObject_Interface",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-    &InterfaceBase::class_ops
-};
+    &InterfaceBase::class_ops};
 
+// clang-format off
 JSFunctionSpec InterfaceBase::static_methods[] = {
     JS_SYM_FN(hasInstance, &InterfaceBase::has_instance, 1, 0),
-    JS_FS_END
-};
+    JS_FS_END};
 // clang-format on
 
 bool gjs_lookup_interface_constructor(JSContext* cx, GType gtype,

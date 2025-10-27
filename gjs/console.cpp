@@ -40,28 +40,37 @@ static gboolean parse_profile_arg(const char *, const char *, void *, GError **)
 using GjsAutoGOptionContext =
     Gjs::AutoPointer<GOptionContext, GOptionContext, g_option_context_free>;
 
-// clang-format off
 static GOptionEntry entries[] = {
-    { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
-    { "jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
-        "Print version of the JS engine and exit" },
-    { "command", 'c', 0, G_OPTION_ARG_STRING, command.out(), "Program passed in as a string", "COMMAND" },
-    { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, coverage_prefixes.out(),
-      "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
-    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, coverage_output_path.out(),
-      "Write coverage output to a directory DIR. This option is mandatory when using --coverage-prefix", "DIR", },
-    { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(),
-        "Add DIR to the list of paths to search for JS files", "DIR" },
-    { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
-        "Execute the file as a module" },
-    { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
-        G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
-        "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
-        "FILE" },
-    { "debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode" },
-    { nullptr }
-};
-// clang-format on
+    {"version", 0, 0, G_OPTION_ARG_NONE, &print_version,
+     "Print GJS version and exit"},
+    {"jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
+     "Print version of the JS engine and exit"},
+    {"command", 'c', 0, G_OPTION_ARG_STRING, command.out(),
+     "Program passed in as a string", "COMMAND"},
+    {"coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY,
+     coverage_prefixes.out(),
+     "Add the prefix PREFIX to the list of files to generate coverage info for",
+     "PREFIX"},
+    {
+        "coverage-output",
+        0,
+        0,
+        G_OPTION_ARG_STRING,
+        coverage_output_path.out(),
+        "Write coverage output to a directory DIR. This option is mandatory "
+        "when using --coverage-prefix",
+        "DIR",
+    },
+    {"include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(),
+     "Add DIR to the list of paths to search for JS files", "DIR"},
+    {"module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
+     "Execute the file as a module"},
+    {"profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
+     G_OPTION_ARG_CALLBACK, reinterpret_cast<void*>(&parse_profile_arg),
+     "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
+     "FILE"},
+    {"debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode"},
+    {nullptr}};
 
 [[nodiscard]] static Gjs::AutoStrv strndupv(int n, char* const* strv) {
     Gjs::AutoPointer<GStrvBuilder, GStrvBuilder, g_strv_builder_unref> builder{
@@ -108,14 +117,14 @@ check_script_args_for_stray_gjs_args(int           argc,
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
-    // clang-format off
     GOptionEntry script_check_entries[] = {
-        { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, new_coverage_prefixes.out() },
-        { "coverage-output", 0, 0, G_OPTION_ARG_STRING, new_coverage_output_path.out() },
-        { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, new_include_paths.out() },
-        { nullptr }
-    };
-    // clang-format on
+        {"coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY,
+         new_coverage_prefixes.out()},
+        {"coverage-output", 0, 0, G_OPTION_ARG_STRING,
+         new_coverage_output_path.out()},
+        {"include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY,
+         new_include_paths.out()},
+        {nullptr}};
 
     Gjs::AutoStrv argv_copy{g_new(char*, argc + 2)};
     int ix;

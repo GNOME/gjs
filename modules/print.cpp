@@ -227,24 +227,24 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
     return true;
 }
 
-// clang-format off
 static constexpr JSFunctionSpec funcs[] = {
     JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FN("setPrettyPrintFunction", set_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FN("getPrettyPrintFunction", get_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("setPrettyPrintFunction", set_pretty_print_function, 1,
+          GJS_MODULE_PROP_FLAGS),
+    JS_FN("getPrettyPrintFunction", get_pretty_print_function, 1,
+          GJS_MODULE_PROP_FLAGS),
     JS_FN("warnDeprecatedOncePerCallsite", warn_deprecated_once_per_callsite, 1,
-        GJS_MODULE_PROP_FLAGS),
+          GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 static constexpr JSPropertySpec props[] = {
-    JSPropertySpec::int32Value("PLATFORM_SPECIFIC_TYPELIB",
-        GJS_MODULE_PROP_FLAGS,
+    JSPropertySpec::int32Value(
+        "PLATFORM_SPECIFIC_TYPELIB", GJS_MODULE_PROP_FLAGS,
         GjsDeprecationMessageId::PlatformSpecificTypelib),
     JS_PS_END};
-// clang-format on
 
 bool gjs_define_print_stuff(JSContext* cx, JS::MutableHandleObject module) {
     module.set(JS_NewPlainObject(cx));

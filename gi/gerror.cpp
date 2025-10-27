@@ -190,7 +190,6 @@ bool ErrorBase::value_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-// clang-format off
 const struct JSClassOps ErrorBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
@@ -205,8 +204,7 @@ const struct JSClass ErrorBase::klass = {
     "GLib_Error",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE |
         JSCLASS_IS_DOMJSCLASS,  // needed for Error.isError()
-    &ErrorBase::class_ops
-};
+    &ErrorBase::class_ops};
 
 /* We need to shadow all fields of GError, to prevent calling the getter from GBoxed
    (which would trash memory accessing the instance private data) */
@@ -214,14 +212,11 @@ JSPropertySpec ErrorBase::proto_properties[] = {
     JS_PSG("domain", &ErrorBase::get_domain, GJS_MODULE_PROP_FLAGS),
     JS_PSG("code", &ErrorBase::get_code, GJS_MODULE_PROP_FLAGS),
     JS_PSG("message", &ErrorBase::get_message, GJS_MODULE_PROP_FLAGS),
-    JS_PS_END
-};
+    JS_PS_END};
 
 JSFunctionSpec ErrorBase::static_methods[] = {
     JS_FN("valueOf", &ErrorBase::value_of, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
-// clang-format on
+    JS_FS_END};
 
 // Overrides GIWrapperPrototype::get_parent_proto().
 bool ErrorPrototype::get_parent_proto(JSContext* cx,

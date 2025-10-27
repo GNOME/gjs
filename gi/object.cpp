@@ -118,8 +118,8 @@ static JSObject* gjs_lookup_object_prototype_from_info(
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
 G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
 G_DEFINE_QUARK(gjs::instance-strings, ObjectBase::instance_strings)
-G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
 // clang-format on
+G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
 
 [[nodiscard]] static GQuark gjs_object_priv_quark() {
     static GQuark val = 0;
@@ -3430,12 +3430,10 @@ const struct JSClassOps ObjectBase::class_ops = {
     &ObjectBase::trace,
 };
 
-// clang-format off
 const struct JSClass ObjectBase::klass = {
     "GObject_Object",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-    &ObjectBase::class_ops
-};
+    &ObjectBase::class_ops};
 
 JSFunctionSpec ObjectBase::proto_methods[] = {
     JS_FN("_init", &ObjectBase::init_gobject, 0, 0),
@@ -3443,13 +3441,11 @@ JSFunctionSpec ObjectBase::proto_methods[] = {
     JS_FN("connect_after", &ObjectBase::connect_after, 0, 0),
     JS_FN("connect_object", &ObjectBase::connect_object, 0, 0),
     JS_FN("emit", &ObjectBase::emit, 0, 0),
-    JS_FS_END
-};
+    JS_FS_END};
 
 JSPropertySpec ObjectBase::proto_properties[] = {
     JS_STRING_SYM_PS(toStringTag, "GObject_Object", JSPROP_READONLY),
     JS_PS_END};
-// clang-format on
 
 // Override of GIWrapperPrototype::get_parent_proto()
 bool ObjectPrototype::get_parent_proto(JSContext* cx,

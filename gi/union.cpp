@@ -27,7 +27,6 @@ UnionInstance::UnionInstance(UnionPrototype* prototype, JS::HandleObject obj)
 
 UnionInstance::~UnionInstance() { GJS_DEC_COUNTER(union_instance); }
 
-// clang-format off
 const struct JSClassOps UnionBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
@@ -38,8 +37,7 @@ const struct JSClassOps UnionBase::class_ops = {
     &UnionBase::BoxedBase::finalize,
     nullptr,  // call
     nullptr,  // construct
-    &UnionBase::BoxedBase::trace
-};
+    &UnionBase::BoxedBase::trace};
 
 // We allocate 1 extra reserved slot; this is typically unused, but if the boxed
 // is for a nested structure inside a parent structure, the reserved slot is
@@ -48,9 +46,7 @@ const struct JSClassOps UnionBase::class_ops = {
 const struct JSClass UnionBase::klass = {
     "GObject_Union",
     JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-    &UnionBase::class_ops
-};
-// clang-format on
+    &UnionBase::class_ops};
 
 bool UnionPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
                                   const GI::UnionInfo info) {

@@ -226,7 +226,6 @@ FundamentalPrototype::~FundamentalPrototype() {
     GJS_DEC_COUNTER(fundamental_prototype);
 }
 
-// clang-format off
 const struct JSClassOps FundamentalBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
@@ -237,15 +236,13 @@ const struct JSClassOps FundamentalBase::class_ops = {
     &FundamentalBase::finalize,
     nullptr,  // call
     nullptr,  // construct
-    &FundamentalBase::trace
-};
+    &FundamentalBase::trace};
 
 const struct JSClass FundamentalBase::klass = {
     "GFundamental_Object",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-    &FundamentalBase::class_ops
+    &FundamentalBase::class_ops,
 };
-// clang-format on
 
 // FIXME: assume info is non-null on main? Is it possible to have hidden
 // fundamental types?

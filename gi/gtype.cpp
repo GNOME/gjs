@@ -78,12 +78,12 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
         return gjs_string_from_utf8(cx, strval, rec.rval());
     }
 
-    // clang-format off
     static constexpr JSPropertySpec proto_props[] = {
         JS_PSG("name", &GTypeObj::get_name, JSPROP_PERMANENT),
         JS_STRING_SYM_PS(toStringTag, "GIRepositoryGType", JSPROP_READONLY),
         JS_PS_END};
 
+    // clang-format off
     static constexpr JSFunctionSpec proto_funcs[] = {
         JS_FN("toString", &GTypeObj::to_string, 0, 0),
         JS_FS_END};
