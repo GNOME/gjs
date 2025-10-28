@@ -43,55 +43,54 @@ typedef void (*GjsContextInRealmFunc)(GjsContext*, void*);
 GJS_EXPORT GJS_USE GjsContext* gjs_context_new(void);
 GJS_EXPORT GJS_USE GjsContext* gjs_context_new_with_search_path(
     char** search_path);
-GJS_EXPORT GJS_USE bool gjs_context_eval_file(GjsContext* js_context,
+GJS_EXPORT GJS_USE bool gjs_context_eval_file(GjsContext* self,
                                               const char* filename,
                                               int* exit_status_p,
                                               GError** error);
-GJS_EXPORT GJS_USE bool gjs_context_eval_module_file(GjsContext* js_context,
+GJS_EXPORT GJS_USE bool gjs_context_eval_module_file(GjsContext* self,
                                                      const char* filename,
                                                      uint8_t* exit_status_p,
                                                      GError** error);
-GJS_EXPORT GJS_USE bool gjs_context_eval(GjsContext* js_context,
-                                         const char* script, ssize_t script_len,
+GJS_EXPORT GJS_USE bool gjs_context_eval(GjsContext* self, const char* script,
+                                         ssize_t script_len,
                                          const char* filename,
                                          int* exit_status_p, GError** error);
-GJS_EXPORT GJS_USE bool gjs_context_register_module(GjsContext* context,
+GJS_EXPORT GJS_USE bool gjs_context_register_module(GjsContext* self,
                                                     const char* identifier,
                                                     const char* uri,
                                                     GError** error);
-GJS_EXPORT GJS_USE bool gjs_context_eval_module(GjsContext* context,
+GJS_EXPORT GJS_USE bool gjs_context_eval_module(GjsContext* self,
                                                 const char* identifier,
                                                 uint8_t* exit_code,
                                                 GError** error);
 GJS_EXPORT GJS_USE bool gjs_context_define_string_array(
-    GjsContext* js_context, const char* array_name, ssize_t array_length,
+    GjsContext* self, const char* array_name, ssize_t array_length,
     const char** array_values, GError** error);
 
-GJS_EXPORT void gjs_context_set_argv(GjsContext* js_context,
-                                     ssize_t array_length,
+GJS_EXPORT void gjs_context_set_argv(GjsContext* self, ssize_t array_length,
                                      const char** array_values);
 
 GJS_EXPORT GJS_USE GList* gjs_context_get_all(void);
 
 GJS_EXPORT GJS_USE GjsContext* gjs_context_get_current(void);
 GJS_EXPORT
-void            gjs_context_make_current         (GjsContext *js_context);
+void gjs_context_make_current(GjsContext* self);
 
 GJS_EXPORT
-void*           gjs_context_get_native_context   (GjsContext *js_context);
+void* gjs_context_get_native_context(GjsContext* self);
 
-GJS_EXPORT void gjs_context_run_in_realm(GjsContext* gjs,
+GJS_EXPORT void gjs_context_run_in_realm(GjsContext* self,
                                          GjsContextInRealmFunc func,
                                          void* user_data);
 
 GJS_EXPORT
-void            gjs_context_print_stack_stderr    (GjsContext *js_context);
+void gjs_context_print_stack_stderr(GjsContext* self);
 
 GJS_EXPORT
-void            gjs_context_maybe_gc              (GjsContext  *context);
+void gjs_context_maybe_gc(GjsContext* self);
 
 GJS_EXPORT
-void            gjs_context_gc                    (GjsContext  *context);
+void gjs_context_gc(GjsContext* self);
 
 GJS_EXPORT GJS_USE GjsProfiler* gjs_context_get_profiler(GjsContext* self);
 
@@ -104,9 +103,10 @@ void            gjs_dumpstack                     (void);
 GJS_EXPORT GJS_USE const char* gjs_get_js_version(void);
 
 GJS_EXPORT
-void gjs_context_setup_debugger_console(GjsContext* gjs);
+void gjs_context_setup_debugger_console(GjsContext* self);
 
-GJS_EXPORT GJS_USE const char* gjs_context_get_repl_history_path(GjsContext*);
+GJS_EXPORT GJS_USE const char* gjs_context_get_repl_history_path(
+    GjsContext* self);
 G_END_DECLS
 
 #endif /* GJS_CONTEXT_H_ */

@@ -247,7 +247,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
 
 /**
  * _gjs_profiler_new:
- * @context: The #GjsContext to profile
+ * @gjs_context: The #GjsContext to profile
  *
  * This creates a new profiler for the #JSContext. It is important that this
  * instance is freed with _gjs_profiler_free() before the context is destroyed.
@@ -266,31 +266,32 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
  *
  * Returns: (transfer full) (nullable): A newly allocated #GjsProfiler
  */
-GjsProfiler *
-_gjs_profiler_new(GjsContext *context)
-{
-    g_return_val_if_fail(context, nullptr);
+GjsProfiler* _gjs_profiler_new(GjsContext* gjs_context) {
+    g_return_val_if_fail(gjs_context, nullptr);
 
-    if (profiling_context == context) {
+    if (profiling_context == gjs_context) {
         g_critical("You can only create one profiler at a time.");
         return nullptr;
     }
 
     if (profiling_context) {
-        g_message("Not going to profile GjsContext %p; you can only profile "
-                  "one context at a time.", context);
+        g_message(
+            "Not going to profile GjsContext %p; you can only profile one "
+            "context at a time.",
+            gjs_context);
         return nullptr;
     }
 
     GjsProfiler *self = g_new0(GjsProfiler, 1);
 
 #ifdef ENABLE_PROFILER
-    self->cx = static_cast<JSContext *>(gjs_context_get_native_context(context));
+    self->cx =
+        static_cast<JSContext*>(gjs_context_get_native_context(gjs_context));
     self->pid = getpid();
 #endif
     self->fd = -1;
 
-    profiling_context = context;
+    profiling_context = gjs_context;
 
     return self;
 }
@@ -673,8 +674,8 @@ gjs_profiler_stop(GjsProfiler *self)
 static gboolean
 gjs_profiler_sigusr2(void *data)
 {
-    GjsContext* context = GJS_CONTEXT(data);
-    GjsProfiler *current_profiler = gjs_context_get_profiler(context);
+    GjsContext* gjs_context = GJS_CONTEXT(data);
+    GjsProfiler* current_profiler = gjs_context_get_profiler(gjs_context);
 
     if (current_profiler) {
         if (_gjs_profiler_is_running(current_profiler))
@@ -690,7 +691,7 @@ gjs_profiler_sigusr2(void *data)
 
 /**
  * _gjs_profiler_setup_signals:
- * @context: a #GjsContext with a profiler attached
+ * @gjs_context: a #GjsContext with a profiler attached
  *
  * If you want to simply allow profiling of your process with minimal fuss,
  * simply call gjs_profiler_setup_signals(). This will allow enabling and
@@ -701,18 +702,16 @@ gjs_profiler_sigusr2(void *data)
  * If this is not sufficient, use gjs_profiler_chain_signal() from your own
  * signal handler to pass the signal to a GjsProfiler.
  */
-void
-_gjs_profiler_setup_signals(GjsProfiler *self,
-                            GjsContext  *context)
-{
-    g_return_if_fail(context == profiling_context);
+void _gjs_profiler_setup_signals(GjsProfiler* self, GjsContext* gjs_context) {
+    g_return_if_fail(gjs_context == profiling_context);
 
 #ifdef ENABLE_PROFILER
 
     if (self->sigusr2_id != 0)
         return;
 
-    self->sigusr2_id = g_unix_signal_add(SIGUSR2, gjs_profiler_sigusr2, context);
+    self->sigusr2_id =
+        g_unix_signal_add(SIGUSR2, gjs_profiler_sigusr2, gjs_context);
 
 #else  // !ENABLE_PROFILER
 
@@ -724,7 +723,7 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
 
 /**
  * gjs_profiler_chain_signal:
- * @context: a #GjsContext with a profiler attached
+ * @gjs_context: a #GjsContext with a profiler attached
  * @info: #siginfo_t passed in to signal handler
  *
  * Use this to pass a signal info caught by another signal handler to a
@@ -735,10 +734,7 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
  *
  * Returns: true if the signal was handled.
  */
-bool
-gjs_profiler_chain_signal(GjsContext *context,
-                          siginfo_t *info)
-{
+bool gjs_profiler_chain_signal(GjsContext* gjs_context, siginfo_t* info) {
 #ifdef ENABLE_PROFILER
 
     if (info) {
@@ -748,14 +744,14 @@ gjs_profiler_chain_signal(GjsContext *context,
         }
 
         if (info->si_signo == SIGUSR2) {
-            gjs_profiler_sigusr2(context);
+            gjs_profiler_sigusr2(gjs_context);
             return true;
         }
     }
 
 #else  // !ENABLE_PROFILER
 
-    (void)context;
+    (void)gjs_context;
     (void)info;
 
 #endif  // ENABLE_PROFILER

@@ -133,16 +133,16 @@ struct _GjsContext {
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
 
-GjsContextPrivate* GjsContextPrivate::from_object(GObject* js_context) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
+GjsContextPrivate* GjsContextPrivate::from_object(GObject* gjs_context) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(gjs_context), nullptr);
     return static_cast<GjsContextPrivate*>(
-        gjs_context_get_instance_private(GJS_CONTEXT(js_context)));
+        gjs_context_get_instance_private(GJS_CONTEXT(gjs_context)));
 }
 
-GjsContextPrivate* GjsContextPrivate::from_object(GjsContext* js_context) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
+GjsContextPrivate* GjsContextPrivate::from_object(GjsContext* gjs_context) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(gjs_context), nullptr);
     return static_cast<GjsContextPrivate*>(
-        gjs_context_get_instance_private(js_context));
+        gjs_context_get_instance_private(gjs_context));
 }
 
 GjsContextPrivate* GjsContextPrivate::from_current_context() {
@@ -230,11 +230,9 @@ static void setup_dump_heap() {
     }
 }
 
-static void
-gjs_context_init(GjsContext *js_context)
-{
+static void gjs_context_init(GjsContext* self) {
     gjs_log_init();
-    gjs_context_make_current(js_context);
+    gjs_context_make_current(self);
 }
 
 static void
@@ -531,7 +529,7 @@ gjs_context_finalize(GObject *object)
 static void
 gjs_context_constructed(GObject *object)
 {
-    GjsContext *js_context = GJS_CONTEXT(object);
+    GjsContext* self = GJS_CONTEXT(object);
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
 
@@ -540,7 +538,7 @@ gjs_context_constructed(GObject *object)
     if (!cx)
         g_error("Failed to create javascript context");
 
-    new (gjs_location) GjsContextPrivate(cx, js_context);
+    new (gjs_location) GjsContextPrivate(cx, self);
 
     g_mutex_lock(&contexts_lock);
     all_contexts = g_list_prepend(all_contexts, object);
@@ -549,7 +547,7 @@ gjs_context_constructed(GObject *object)
     setup_dump_heap();
 
 #ifdef HAVE_READLINE_READLINE_H
-    const char* path = gjs_context_get_repl_history_path(js_context);
+    const char* path = gjs_context_get_repl_history_path(self);
     // Populate command history from persisted file
     if (path) {
         int err = read_history(path);
@@ -798,9 +796,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     g_signal_connect_object(
         m_memory_monitor, "low-memory-warning",
-        G_CALLBACK(+[](GjsContext* js_cx, GMemoryMonitorWarningLevel level) {
+        G_CALLBACK(+[](GjsContext* self, GMemoryMonitorWarningLevel level) {
             auto* cx =
-                static_cast<JSContext*>(gjs_context_get_native_context(js_cx));
+                static_cast<JSContext*>(gjs_context_get_native_context(self));
             JS::PrepareForFullGC(cx);
             JS::GCOptions gc_strength = JS::GCOptions::Normal;
             if (level > G_MEMORY_MONITOR_WARNING_LEVEL_LOW)
@@ -1219,7 +1217,7 @@ void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
 
 /**
  * gjs_context_maybe_gc:
- * @context: a #GjsContext
+ * @self: a #GjsContext
  *
  * Similar to the Spidermonkey JS_MaybeGC() call which
  * heuristically looks at JS runtime memory usage and
@@ -1238,24 +1236,20 @@ void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
  * A good time to call this function is when your application
  * transitions to an idle state.
  */
-void
-gjs_context_maybe_gc (GjsContext  *context)
-{
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(context);
+void gjs_context_maybe_gc(GjsContext* self) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
     gjs_maybe_gc(gjs->context());
 }
 
 /**
  * gjs_context_gc:
- * @context: a #GjsContext
+ * @self: a #GjsContext
  *
  * Initiate a full GC; may or may not block until complete.  This
  * function just calls Spidermonkey JS_GC().
  */
-void
-gjs_context_gc (GjsContext  *context)
-{
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(context);
+void gjs_context_gc(GjsContext* self) {
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
     JS_GC(gjs->context(), Gjs::GCReason::GJS_API_CALL);
 }
 
@@ -1286,11 +1280,9 @@ GList* gjs_context_get_all() {
  * Returns a pointer to the underlying native context.  For SpiderMonkey, this
  * is a JSContext *
  */
-void*
-gjs_context_get_native_context (GjsContext *js_context)
-{
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), nullptr);
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+void* gjs_context_get_native_context(GjsContext* self) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(self), nullptr);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
     return gjs->context();
 }
 
@@ -1301,36 +1293,36 @@ static inline bool result_to_c(GErrorResult<> result, GError** error_out) {
     return false;
 }
 
-bool gjs_context_eval(GjsContext* js_context, const char* script,
-                      ssize_t script_len, const char* filename,
-                      int* exit_status_p, GError** error) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
+bool gjs_context_eval(GjsContext* self, const char* script, ssize_t script_len,
+                      const char* filename, int* exit_status_p,
+                      GError** error) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(self), false);
 
     size_t real_len = script_len < 0 ? strlen(script) : script_len;
 
-    Gjs::AutoUnref<GjsContext> js_context_ref{js_context, Gjs::TakeOwnership{}};
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    Gjs::AutoUnref<GjsContext> self_ref{self, Gjs::TakeOwnership{}};
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
 
     gjs->register_non_module_sourcemap(script, filename);
     return result_to_c(gjs->eval(script, real_len, filename, exit_status_p),
                        error);
 }
 
-bool gjs_context_eval_module(GjsContext* js_context, const char* identifier,
+bool gjs_context_eval_module(GjsContext* self, const char* identifier,
                              uint8_t* exit_code, GError** error) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
+    g_return_val_if_fail(GJS_IS_CONTEXT(self), false);
 
-    Gjs::AutoUnref<GjsContext> js_context_ref{js_context, Gjs::TakeOwnership{}};
+    Gjs::AutoUnref<GjsContext> self_ref{self, Gjs::TakeOwnership{}};
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
     return result_to_c(gjs->eval_module(identifier, exit_code), error);
 }
 
-bool gjs_context_register_module(GjsContext* js_context, const char* identifier,
+bool gjs_context_register_module(GjsContext* self, const char* identifier,
                                  const char* uri, GError** error) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
+    g_return_val_if_fail(GJS_IS_CONTEXT(self), false);
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
 
     return result_to_c(gjs->register_module(identifier, uri), error);
 }
@@ -1644,12 +1636,8 @@ GErrorResult<> GjsContextPrivate::register_module(const char* identifier,
     return Err(error.release());
 }
 
-bool
-gjs_context_eval_file(GjsContext    *js_context,
-                      const char    *filename,
-                      int           *exit_status_p,
-                      GError       **error)
-{
+bool gjs_context_eval_file(GjsContext* self, const char* filename,
+                           int* exit_status_p, GError** error) {
     Gjs::AutoChar script;
     size_t script_len;
     Gjs::AutoUnref<GFile> file{g_file_new_for_commandline_arg(filename)};
@@ -1658,17 +1646,17 @@ gjs_context_eval_file(GjsContext    *js_context,
                               error))
         return false;
 
-    return gjs_context_eval(js_context, script, script_len, filename,
-                            exit_status_p, error);
+    return gjs_context_eval(self, script, script_len, filename, exit_status_p,
+                            error);
 }
 
-bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
+bool gjs_context_eval_module_file(GjsContext* self, const char* filename,
                                   uint8_t* exit_status_p, GError** error) {
     Gjs::AutoUnref<GFile> file{g_file_new_for_commandline_arg(filename)};
     Gjs::AutoChar uri{g_file_get_uri(file)};
 
-    return gjs_context_register_module(js_context, uri, uri, error) &&
-           gjs_context_eval_module(js_context, uri, exit_status_p, error);
+    return gjs_context_register_module(self, uri, uri, error) &&
+           gjs_context_eval_module(self, uri, exit_status_p, error);
 }
 
 /**
@@ -1763,13 +1751,12 @@ bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
     return true;
 }
 
-bool gjs_context_define_string_array(GjsContext* js_context,
-                                     const char* array_name,
+bool gjs_context_define_string_array(GjsContext* self, const char* array_name,
                                      ssize_t array_length,
                                      const char** array_values,
                                      GError** error) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(js_context), false);
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    g_return_val_if_fail(GJS_IS_CONTEXT(self), false);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
 
     Gjs::AutoMainRealm ar{gjs};
 
@@ -1801,10 +1788,10 @@ bool gjs_context_define_string_array(GjsContext* js_context,
     return true;
 }
 
-void gjs_context_set_argv(GjsContext* js_context, ssize_t array_length,
+void gjs_context_set_argv(GjsContext* self, ssize_t array_length,
                           const char** array_values) {
-    g_return_if_fail(GJS_IS_CONTEXT(js_context));
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(js_context);
+    g_return_if_fail(GJS_IS_CONTEXT(self));
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
     std::vector<std::string> args(array_values, array_values + array_length);
     gjs->set_args(std::move(args));
 }
@@ -1813,12 +1800,10 @@ static GjsContext *current_context;
 
 GjsContext* gjs_context_get_current() { return current_context; }
 
-void
-gjs_context_make_current (GjsContext *context)
-{
-    g_assert(context == nullptr || current_context == nullptr);
+void gjs_context_make_current(GjsContext* gjs_context) {
+    g_assert(gjs_context == nullptr || current_context == nullptr);
 
-    current_context = context;
+    current_context = gjs_context;
 }
 
 namespace Gjs {

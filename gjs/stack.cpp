@@ -21,12 +21,10 @@
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 
-void
-gjs_context_print_stack_stderr(GjsContext *context)
-{
-    JSContext *cx = (JSContext*) gjs_context_get_native_context(context);
+void gjs_context_print_stack_stderr(GjsContext* self) {
+    JSContext* cx = (JSContext*)gjs_context_get_native_context(self);
 
-    g_printerr("== Stack trace for context %p ==\n", context);
+    g_printerr("== Stack trace for context %p ==\n", self);
     js::DumpBacktrace(cx, stderr);
 }
 
@@ -35,8 +33,8 @@ void gjs_dumpstack() {
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
-        Gjs::AutoUnref<GjsContext> context{GJS_CONTEXT(iter->data)};
-        gjs_context_print_stack_stderr(context);
+        Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(iter->data)};
+        gjs_context_print_stack_stderr(gjs_context);
     }
 }
 
@@ -50,17 +48,18 @@ gjs_dumpstack_string() {
     GList *iter;
 
     for (iter = contexts; iter; iter = iter->next) {
-        Gjs::AutoUnref<GjsContext> context{GJS_CONTEXT(iter->data)};
+        Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(iter->data)};
         if (!printer.init()) {
-            all_traces << "No stack trace for context " << context.get()
+            all_traces << "No stack trace for context " << gjs_context.get()
                        << ": out of memory\n\n";
             break;
         }
-        auto* cx =
-            static_cast<JSContext*>(gjs_context_get_native_context(context));
+        auto* cx = static_cast<JSContext*>(
+            gjs_context_get_native_context(gjs_context));
         js::DumpBacktrace(cx, printer);
         JS::UniqueChars trace = printer.release();
-        all_traces << "== Stack trace for context " << context.get() << " ==\n"
+        all_traces << "== Stack trace for context " << gjs_context.get()
+                   << " ==\n"
                    << trace.get() << "\n";
     }
     out = all_traces.str();

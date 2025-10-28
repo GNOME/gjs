@@ -46,7 +46,7 @@ struct _GjsCoverage {
 
 typedef struct {
     char** prefixes;
-    GjsContext *context;
+    GjsContext* coverage_context;
     JS::Heap<JSObject*> global;
 
     GFile *output_dir;
@@ -281,7 +281,8 @@ void
 gjs_coverage_write_statistics(GjsCoverage *coverage)
 {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
-    auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
+    auto cx = static_cast<JSContext*>(
+        gjs_context_get_native_context(priv->coverage_context));
     Gjs::AutoMainRealm ar{cx};
 
     GErrorResult<Gjs::AutoUnref<GFile>> result{
@@ -318,7 +319,7 @@ bootstrap_coverage(GjsCoverage *coverage)
 {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    auto* gjs = GjsContextPrivate::from_object(priv->context);
+    auto* gjs = GjsContextPrivate::from_object(priv->coverage_context);
     JSContext* cx = gjs->context();
 
     JS::RootedObject debugger_global{
@@ -357,7 +358,7 @@ gjs_coverage_constructed(GObject *object)
 
     if (!bootstrap_coverage(coverage)) {
         JSContext* cx = static_cast<JSContext*>(
-            gjs_context_get_native_context(priv->context));
+            gjs_context_get_native_context(priv->coverage_context));
         Gjs::AutoMainRealm ar{cx};
         gjs_log_exception(cx);
     }
@@ -377,7 +378,7 @@ gjs_coverage_set_property(GObject      *object,
         priv->prefixes = (char **) g_value_dup_boxed (value);
         break;
     case PROP_CONTEXT:
-        priv->context = GJS_CONTEXT(g_value_dup_object(value));
+        priv->coverage_context = GJS_CONTEXT(g_value_dup_object(value));
         break;
     case PROP_CACHE:
         break;
@@ -398,11 +399,12 @@ gjs_coverage_dispose(GObject *object)
 
     /* Decomission objects inside of the JSContext before disposing of the
      * context */
-    auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
+    auto cx = static_cast<JSContext*>(
+        gjs_context_get_native_context(priv->coverage_context));
     JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, coverage);
     priv->global = nullptr;
 
-    g_clear_object(&priv->context);
+    g_clear_object(&priv->coverage_context);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->dispose(object);
 }
@@ -460,12 +462,12 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
  * gjs_coverage_new:
  * @prefixes: A null-terminated strv of prefixes of files on which to record
  * code coverage
- * @context: A #GjsContext object
+ * @coverage_context: A #GjsContext object
  * @output_dir: A #GFile handle to a directory in which to write coverage
  * information
  *
  * Creates a new #GjsCoverage object that collects coverage information for
- * any scripts run in @context.
+ * any scripts run in @coverage_context.
  *
  * Scripts which were provided as part of @prefixes will be written out to
  * @output_dir, in the same directory structure relative to the source dir where
@@ -473,14 +475,11 @@ gjs_coverage_class_init (GjsCoverageClass *klass)
  *
  * Returns: A #GjsCoverage object
  */
-GjsCoverage *
-gjs_coverage_new (const char * const *prefixes,
-                  GjsContext         *context,
-                  GFile              *output_dir)
-{
-    GjsCoverage* coverage = GJS_COVERAGE(
-        g_object_new(GJS_TYPE_COVERAGE, "prefixes", prefixes, "context",
-                     context, "output-directory", output_dir, nullptr));
+GjsCoverage* gjs_coverage_new(const char* const* prefixes,
+                              GjsContext* coverage_context, GFile* output_dir) {
+    GjsCoverage* coverage = GJS_COVERAGE(g_object_new(
+        GJS_TYPE_COVERAGE, "prefixes", prefixes, "context", coverage_context,
+        "output-directory", output_dir, nullptr));
 
     return coverage;
 }
