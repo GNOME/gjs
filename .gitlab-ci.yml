@@ -307,7 +307,7 @@ shellcheck:
       - $CI_COMMIT_MESSAGE =~ /\[skip shellcheck\]/
   only:
     changes:
-      - "**/installed-tests/**.sh"
+      - "**.sh"
       - ".gitlab-ci.yml"
 
 eslint:

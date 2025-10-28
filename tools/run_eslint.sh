@@ -4,6 +4,6 @@
 
 export NODE_OPTIONS=--dns-result-order=ipv4first
 
-cd $(dirname -- "$0")
+cd "$(dirname -- "$0")" || exit 1
 npm ci
 npm run lint -- "$@"

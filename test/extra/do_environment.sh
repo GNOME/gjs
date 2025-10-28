@@ -1,11 +1,11 @@
-#!/bin/sh -e
+#!/bin/bash -e
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 
 do_Print_Labels () {
     if test -n "$1"; then
         label_len=${#1}
-        span=$(((54 - $label_len) / 2))
+        span=$(((54 - label_len) / 2))
 
         echo
         echo "= ======================================================== ="

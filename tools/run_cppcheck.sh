@@ -3,7 +3,7 @@
 # SPDX-FileCopyrightText: 2017 Claudio André <claudioandre.br@gmail.com>
 # SPDX-FileCopyrightText: 2021 Philip Chimento <philip.chimento@gmail.com>
 
-cd ${BUILDDIR:-_build}
+cd "${BUILDDIR:-_build}" || exit 1
 if ! test -f compile_commands.json; then
     echo "compile_commands.json missing. Generate it with ninja -t compdb"
     exit 1
@@ -30,4 +30,4 @@ cppcheck --project=compile_commands.json --check-level=exhaustive \
     --suppress=*:subprojects/* --suppress=*:js-resources.c \
     --suppress=*:test/mock-js-resources.c \
     --suppress=*:installed-tests/js/jsunit-resources.c \
-    --library=gtk,cairo,posix,../tools/cppcheck.cfg $@
+    --library=gtk,cairo,posix,../tools/cppcheck.cfg "$@"

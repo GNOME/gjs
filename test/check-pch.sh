@@ -11,7 +11,8 @@ if [ -n "$SELFTEST" ]; then
     trap 'rm -rf -- "${test_paths[@]}"' EXIT
 
     test_env() {
-        local code_path="$(mktemp -t -d "check-pch-XXXXXX")"
+        local code_path
+        code_path=$(mktemp -t -d "check-pch-XXXXXX")
         test_paths+=("$code_path")
         cd "$code_path"
         mkdir gjs gi
@@ -22,7 +23,7 @@ if [ -n "$SELFTEST" ]; then
         "$self" || exit 1
     }
     expect_failure() {
-        "$self" && exit 1 || true
+        if "$self"; then exit 1; fi
     }
 
     test_env
@@ -46,9 +47,11 @@ if [ -n "$SELFTEST" ]; then
     expect_success
 
     test_env
-    echo "#include <stlib.h>" >> gi/code.c
-    echo "#include <invalid1.h> // NOcheck-pch: ignore" >> gi/code.c
-    echo "#include <invalid2.h> // check-pch: ignoreNO" >> gi/code.c
+    cat <<EOF >> gi/code.c
+#include <stlib.h>
+#include <invalid1.h> // NOcheck-pch: ignore
+#include <invalid2.h> // check-pch: ignoreNO
+EOF
     echo "#include <invalid3.h> // check-pch: ignore, yes" >> gi/other-code.c
     expect_failure
 
@@ -118,10 +121,10 @@ PCH_FILES=(gjs/gjs_pch.hh)
 IGNORE_COMMENT="check-pch: ignore"
 
 CODE_PATHS=(gjs gi)
-INCLUDED_FILES=(
-    \*.c
-    \*.cpp
-    \*.h
+GREP_INCLUDE_ARGS=(
+    --include \*.c
+    --include \*.cpp
+    --include \*.h
 )
 
 grep_include_lines() {
@@ -135,9 +138,7 @@ grep_header_file() {
 }
 
 # List all the included headers
-mapfile -t includes < <(grep_include_lines \
-    -r \
-    $(printf -- "--include %s\n" "${INCLUDED_FILES[@]}") \
+mapfile -t includes < <(grep_include_lines -r "${GREP_INCLUDE_ARGS[@]}" \
     "${CODE_PATHS[@]}" \
     | grep -vw "$IGNORE_COMMENT")
 
@@ -169,8 +170,7 @@ unneeded=()
 for h in "${pch_includes[@]}"; do
     if [[ "$h" =~ \#[[:space:]]*include[[:space:]]*[\<\"]([^\>\"]+)[\>\"] ]]; then
         header_file="${BASH_REMATCH[1]}"
-        if ! grep_header_file "$header_file" -r \
-            $(printf -- "--include %s\n" "${INCLUDED_FILES[@]}") \
+        if ! grep_header_file "$header_file" -r "${GREP_INCLUDE_ARGS[@]}" \
             "${CODE_PATHS[@]}"; then
             echo "Header <$header_file> included in one PCH is not used in code"
             unneeded+=("$header_file")
