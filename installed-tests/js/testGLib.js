@@ -148,6 +148,36 @@ describe('GLib spawn processes', function () {
     });
 });
 
+describe('GLib source function overrides', function () {
+    let loop, spy;
+
+    beforeEach(function () {
+        loop = new GLib.MainLoop(null, false);
+        spy = jasmine.createSpy('sourceFunc');
+    });
+
+    it('GLib.idle_add_once', function () {
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, spy);
+        GLib.idle_add(GLib.PRIORITY_LOW, () => loop.quit());
+        loop.run();
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('GLib.timeout_add_once', function () {
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, spy);
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => loop.quit());
+        loop.run();
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+
+    it('GLib.timeout_add_seconds_once', function () {
+        GLib.timeout_add_seconds_once(GLib.PRIORITY_DEFAULT, 1, spy);
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => loop.quit());
+        loop.run();
+        expect(spy).toHaveBeenCalledTimes(1);
+    });
+});
+
 describe('GLib string function overrides', function () {
     let numExpectedWarnings;
 
