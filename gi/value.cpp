@@ -1090,10 +1090,8 @@ static bool gjs_value_from_g_value_internal(
             return false;
         }
     } else if (g_type_is_a(gtype, G_TYPE_BOXED) || gtype == G_TYPE_VARIANT) {
-        JSObject *obj;
-
         if (g_type_is_a(gtype, ObjectBox::gtype())) {
-            obj = ObjectBox::object_for_c_ptr(
+            JSObject* obj = ObjectBox::object_for_c_ptr(
                 cx, Gjs::gvalue_get<ObjectBox*>(gvalue));
             if (!obj)
                 return false;
@@ -1103,7 +1101,7 @@ static bool gjs_value_from_g_value_internal(
 
         // special case GError
         if (gtype == G_TYPE_ERROR) {
-            obj = ErrorInstance::object_for_c_ptr(
+            JSObject* obj = ErrorInstance::object_for_c_ptr(
                 cx, Gjs::gvalue_get<GError*>(gvalue));
             if (!obj)
                 return false;
@@ -1127,6 +1125,7 @@ static bool gjs_value_from_g_value_internal(
             return false;
         }
 
+        JSObject* obj;
         void* gboxed = Gjs::gvalue_get<void*>(gvalue);
         if (auto struct_info = info->as<GI::InfoTag::STRUCT>()) {
             if (struct_info->is_foreign()) {
@@ -1151,8 +1150,10 @@ static bool gjs_value_from_g_value_internal(
                       info->type_string(), g_type_name(gtype));
             return false;
         }
+        if (!obj)
+            return false;
 
-        value_p.setObjectOrNull(obj);
+        value_p.setObject(*obj);
     } else if (g_type_is_a(gtype, G_TYPE_ENUM)) {
         GI::Repository repo;
         value_p.set(convert_int_to_enum(
