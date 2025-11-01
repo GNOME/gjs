@@ -490,8 +490,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
                 if (!gjs_value_from_explicit_array(
                         cx, jsargs[n_jsargs++], type_info,
-                        arg_info.ownership_transfer(), args[i + c_args_offset],
-                        length))
+                        args[i + c_args_offset], length,
+                        arg_info.ownership_transfer()))
                     return false;
                 break;
             }

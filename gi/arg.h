@@ -161,17 +161,10 @@ bool gjs_value_from_basic_explicit_array(JSContext*, JS::MutableHandleValue,
                                          size_t length);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_explicit_array(JSContext*, JS::MutableHandleValue,
-                                   const GI::TypeInfo, GITransfer, GIArgument*,
-                                   size_t length);
+                                   const GI::TypeInfo, GIArgument*,
+                                   size_t length,
+                                   GITransfer = GI_TRANSFER_EVERYTHING);
 
-GJS_JSAPI_RETURN_CONVENTION
-inline bool gjs_value_from_explicit_array(JSContext* cx,
-                                          JS::MutableHandleValue value_p,
-                                          const GI::TypeInfo type_info,
-                                          GIArgument* arg, size_t length) {
-    return gjs_value_from_explicit_array(cx, value_p, type_info,
-                                         GI_TRANSFER_EVERYTHING, arg, length);
-}
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_from_byte_array_gi_argument(JSContext*, JS::MutableHandleValue,
                                            GIArgument*);

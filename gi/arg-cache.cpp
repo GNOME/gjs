@@ -2343,8 +2343,8 @@ bool CArrayInOut::out(JSContext* cx, GjsFunctionCallState* state,
 
     size_t length = gjs_gi_argument_get_array_length(m_tag, length_arg);
 
-    return gjs_value_from_explicit_array(cx, value, m_type_info, m_transfer,
-                                         arg, length);
+    return gjs_value_from_explicit_array(cx, value, m_type_info, arg, length,
+                                         m_transfer);
 }
 
 GJS_JSAPI_RETURN_CONVENTION

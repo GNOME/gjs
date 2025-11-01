@@ -217,9 +217,8 @@ static bool gjs_value_from_array_and_length_values(
     gjs_arg_set(&array_arg, Gjs::gvalue_get<void*>(array_value));
 
     return gjs_value_from_explicit_array(
-        cx, value_p, array_type_info,
-        no_copy ? GI_TRANSFER_NOTHING : GI_TRANSFER_EVERYTHING, &array_arg,
-        array_length.toInt32());
+        cx, value_p, array_type_info, &array_arg, array_length.toInt32(),
+        no_copy ? GI_TRANSFER_NOTHING : GI_TRANSFER_EVERYTHING);
 }
 
 // FIXME(3v1n0): Move into closure.cpp one day...

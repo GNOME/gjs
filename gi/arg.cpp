@@ -2599,11 +2599,10 @@ static bool gjs_array_from_fixed_size_array(JSContext* cx,
                                           *length, array);
 }
 
-bool gjs_value_from_explicit_array(JSContext* cx,
-                                   JS::MutableHandleValue value_p,
-                                   const GI::TypeInfo type_info,
-                                   GITransfer transfer, GIArgument* arg,
-                                   size_t length) {
+bool gjs_value_from_explicit_array(
+    JSContext* cx, JS::MutableHandleValue value_p, const GI::TypeInfo type_info,
+    GIArgument* arg, size_t length,
+    GITransfer transfer /* = GI_TRANSFER_EVERYTHING */) {
     return gjs_array_from_carray_internal(cx, value_p, type_info.array_type(),
                                           type_info.element_type(), transfer,
                                           length, gjs_arg_get<void*>(arg));
