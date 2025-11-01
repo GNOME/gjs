@@ -54,6 +54,7 @@ bool gjs_wrapper_to_string_func(JSContext*, JSObject* this_obj,
                                 const void* native_address,
                                 JS::MutableHandleValue ret);
 
+// Needed because some of the templates don't have Maybe as their info() type
 GJS_JSAPI_RETURN_CONVENTION
 static inline bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                               const char* objtype,
