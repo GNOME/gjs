@@ -818,8 +818,8 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
 
         if (!gjs_define_property_dynamic(cx, proto, property_name.c_str(), id,
                                          "boxed_field", &Base::field_getter,
-                                         &Base::field_setter, private_id,
-                                         GJS_MODULE_PROP_FLAGS))
+                                         private_id, &Base::field_setter,
+                                         private_id, GJS_MODULE_PROP_FLAGS))
             return false;
     }
 

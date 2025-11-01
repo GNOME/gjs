@@ -1928,7 +1928,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
         JS::RootedValue private_value{cx, JS::ObjectValue(*rooted_field)};
         if (!gjs_define_property_dynamic(
                 cx, obj, name, id, "gobject_field", &ObjectBase::field_getter,
-                &ObjectBase::field_setter, private_value, flags))
+                private_value, &ObjectBase::field_setter, private_value, flags))
             return false;
 
         *resolved = true;
