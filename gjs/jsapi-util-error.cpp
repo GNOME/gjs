@@ -164,15 +164,11 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
  * we want the "root cause" exception. To overwrite,
  * use JS_ClearPendingException() first.
  */
-void
-gjs_throw(JSContext       *context,
-          const char      *format,
-          ...)
-{
+void gjs_throw(JSContext* cx, const char* format, ...) {
     va_list args;
 
     va_start(args, format);
-    gjs_throw_valist(context, JSEXN_ERR, nullptr, format, args);
+    gjs_throw_valist(cx, JSEXN_ERR, nullptr, format, args);
     va_end(args);
 }
 
@@ -196,11 +192,8 @@ void gjs_throw_custom(JSContext *cx, JSExnType kind, const char *error_name,
  * Similar to gjs_throw(), but does not treat its argument as
  * a format string.
  */
-void
-gjs_throw_literal(JSContext       *context,
-                  const char      *string)
-{
-    gjs_throw(context, "%s", string);
+void gjs_throw_literal(JSContext* cx, const char* string) {
+    gjs_throw(cx, "%s", string);
 }
 
 /**
@@ -255,7 +248,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
 
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         !report->isWarning() && report->errorNumber == 137) {
-        /* 137, JSMSG_OUT_OF_MEMORY */
+        // 137, JSMSG_OUT_OF_MEMORY
         g_error("GJS ran out of memory at %s:%u:%u.", report->filename.c_str(),
                 report->lineno, report->column.oneOriginValue());
     }
@@ -264,7 +257,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
         warning = "WARNING";
         level = G_LOG_LEVEL_MESSAGE;
 
-        /* suppress bogus warnings. See mozilla/js/src/js.msg */
+        // suppress bogus warnings. See mozilla/js/src/js.msg
         if (report->errorNumber == 162) {
             /* 162, JSMSG_UNDEFINED_PROP: warns every time a lazy property
              * is resolved, since the property starts out

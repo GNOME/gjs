@@ -44,20 +44,15 @@
 /* Note that this cannot be relied on to test whether two objects are the same!
  * SpiderMonkey can move objects around in memory during garbage collection,
  * and it can also deduplicate identical instances of objects in memory. */
-static bool
-gjs_address_of(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
+static bool gjs_address_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject target_obj(context);
+    JS::RootedObject target_obj{cx};
 
-    if (!gjs_parse_call_args(context, "addressOf", argv, "o",
-                             "object", &target_obj))
+    if (!gjs_parse_call_args(cx, "addressOf", argv, "o", "object", &target_obj))
         return false;
 
     Gjs::AutoChar pointer_string{g_strdup_printf("%p", target_obj.get())};
-    return gjs_string_from_utf8(context, pointer_string, argv.rval());
+    return gjs_string_from_utf8(cx, pointer_string, argv.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -80,20 +75,15 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
     return gjs_string_from_utf8(cx, pointer_string, argv.rval());
 }
 
-static bool
-gjs_refcount(JSContext *context,
-             unsigned   argc,
-             JS::Value *vp)
-{
+static bool gjs_refcount(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    JS::RootedObject target_obj(context);
+    JS::RootedObject target_obj{cx};
     GObject *obj;
 
-    if (!gjs_parse_call_args(context, "refcount", argv, "o",
-                             "object", &target_obj))
+    if (!gjs_parse_call_args(cx, "refcount", argv, "o", "object", &target_obj))
         return false;
 
-    if (!ObjectBase::to_c_ptr(context, target_obj, &obj))
+    if (!ObjectBase::to_c_ptr(cx, target_obj, &obj))
         return false;
     if (!obj) {
         // Object already disposed, treat as refcount 0
@@ -105,13 +95,9 @@ gjs_refcount(JSContext *context,
     return true;
 }
 
-static bool
-gjs_breakpoint(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
+static bool gjs_breakpoint(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    if (!gjs_parse_call_args(context, "breakpoint", argv, ""))
+    if (!gjs_parse_call_args(cx, "breakpoint", argv, ""))
         return false;
     G_BREAKPOINT();
     argv.rval().setUndefined();
@@ -122,11 +108,7 @@ gjs_breakpoint(JSContext *context,
 // js::CollectNurseryBeforeDump promotes any live objects in the nursery to the
 // tenured heap. This is slow, but this way, we are certain to get an accurate
 // picture of the heap.
-static bool
-gjs_dump_heap(JSContext *cx,
-              unsigned   argc,
-              JS::Value *vp)
-{
+static bool gjs_dump_heap(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     Gjs::AutoChar filename;
 
@@ -148,33 +130,24 @@ gjs_dump_heap(JSContext *cx,
     return true;
 }
 
-static bool
-gjs_gc(JSContext *context,
-       unsigned   argc,
-       JS::Value *vp)
-{
+static bool gjs_gc(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    if (!gjs_parse_call_args(context, "gc", argv, ""))
+    if (!gjs_parse_call_args(cx, "gc", argv, ""))
         return false;
-    JS_GC(context);
+    JS_GC(cx);
     argv.rval().setUndefined();
     return true;
 }
 
-static bool
-gjs_exit(JSContext *context,
-         unsigned   argc,
-         JS::Value *vp)
-{
+static bool gjs_exit(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    gint32 ecode;
-    if (!gjs_parse_call_args(context, "exit", argv, "i",
-                             "ecode", &ecode))
+    int32_t ecode;
+    if (!gjs_parse_call_args(cx, "exit", argv, "i", "ecode", &ecode))
         return false;
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     gjs->exit(ecode);
-    JS::ReportUncatchableException(context);
+    JS::ReportUncatchableException(cx);
     return false;
 }
 
@@ -313,47 +286,41 @@ static bool get_program_args(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-bool
-gjs_js_define_system_stuff(JSContext              *context,
-                           JS::MutableHandleObject module)
-{
-    module.set(JS_NewPlainObject(context));
+bool gjs_js_define_system_stuff(JSContext* cx, JS::MutableHandleObject module) {
+    module.set(JS_NewPlainObject(cx));
 
-    if (!JS_DefineFunctions(context, module, &module_funcs[0]))
+    if (!JS_DefineFunctions(cx, module, &module_funcs[0]))
         return false;
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     const char* program_name = gjs->program_name();
     const char* program_path = gjs->program_path();
 
-    JS::RootedValue v_program_invocation_name(context);
-    JS::RootedValue v_program_path(context, JS::NullValue());
+    JS::RootedValue v_program_invocation_name{cx};
+    JS::RootedValue v_program_path{cx, JS::NullValue()};
     if (program_path) {
-        if (!gjs_string_from_utf8(context, program_path, &v_program_path))
+        if (!gjs_string_from_utf8(cx, program_path, &v_program_path))
             return false;
     }
 
-    JS::RootedObject program_args_getter(
-        context,
-        JS_GetFunctionObject(js::NewFunctionByIdWithReserved(
-            context, get_program_args, 0, 0, gjs->atoms().program_args())));
+    JS::RootedObject program_args_getter{
+        cx, JS_GetFunctionObject(js::NewFunctionByIdWithReserved(
+                cx, get_program_args, 0, 0, gjs->atoms().program_args()))};
 
     return program_args_getter &&
-           gjs_string_from_utf8(context, program_name,
-                                &v_program_invocation_name) &&
-           /* The name is modeled after program_invocation_name, part of glibc
-            */
-           JS_DefinePropertyById(context, module,
+           gjs_string_from_utf8(cx, program_name, &v_program_invocation_name) &&
+           // The name is modeled after program_invocation_name, part of glibc
+           JS_DefinePropertyById(cx, module,
                                  gjs->atoms().program_invocation_name(),
                                  v_program_invocation_name,
                                  GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
-           JS_DefinePropertyById(context, module, gjs->atoms().program_path(),
+           JS_DefinePropertyById(cx, module, gjs->atoms().program_path(),
                                  v_program_path,
                                  GJS_MODULE_PROP_FLAGS | JSPROP_READONLY) &&
-           JS_DefinePropertyById(context, module, gjs->atoms().program_args(),
+           JS_DefinePropertyById(cx, module, gjs->atoms().program_args(),
                                  program_args_getter, nullptr,
                                  GJS_MODULE_PROP_FLAGS) &&
-           JS_DefinePropertyById(context, module, gjs->atoms().version(),
+           JS_DefinePropertyById(cx, module, gjs->atoms().version(),
                                  GJS_VERSION,
                                  GJS_MODULE_PROP_FLAGS | JSPROP_READONLY);
 }

@@ -24,38 +24,33 @@ JSObject* CairoGradient::new_proto(JSContext* cx, JSProtoKey) {
     return JS_NewObjectWithGivenProto(cx, nullptr, parent_proto);
 }
 
-/* Properties */
+// Properties
+
 // clang-format off
 const JSPropertySpec CairoGradient::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "Gradient", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
 
-/* Methods */
+// Methods
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-addColorStopRGB_func(JSContext *context,
-                     unsigned   argc,
-                     JS::Value *vp)
-{
-    GJS_GET_THIS(context, argc, vp, argv, obj);
+static bool addColorStopRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, argv, obj);
     double offset, red, green, blue;
 
-    if (!gjs_parse_call_args(context, "addColorStopRGB", argv, "ffff",
-                             "offset", &offset,
-                             "red", &red,
-                             "green", &green,
-                             "blue", &blue))
+    if (!gjs_parse_call_args(cx, "addColorStopRGB", argv, "ffff", "offset",
+                             &offset, "red", &red, "green", &green, "blue",
+                             &blue))
         return false;
 
-    cairo_pattern_t* pattern = CairoPattern::for_js(context, obj);
+    cairo_pattern_t* pattern = CairoPattern::for_js(cx, obj);
     if (!pattern)
         return false;
 
     cairo_pattern_add_color_stop_rgb(pattern, offset, red, green, blue);
 
-    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+    if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 
     argv.rval().setUndefined();
@@ -63,29 +58,22 @@ addColorStopRGB_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-addColorStopRGBA_func(JSContext *context,
-                      unsigned   argc,
-                      JS::Value *vp)
-{
-    GJS_GET_THIS(context, argc, vp, argv, obj);
+static bool addColorStopRGBA_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, argv, obj);
     double offset, red, green, blue, alpha;
 
-    if (!gjs_parse_call_args(context, "addColorStopRGBA", argv, "fffff",
-                             "offset", &offset,
-                             "red", &red,
-                             "green", &green,
-                             "blue", &blue,
-                             "alpha", &alpha))
+    if (!gjs_parse_call_args(cx, "addColorStopRGBA", argv, "fffff", "offset",
+                             &offset, "red", &red, "green", &green, "blue",
+                             &blue, "alpha", &alpha))
         return false;
 
-    cairo_pattern_t* pattern = CairoPattern::for_js(context, obj);
+    cairo_pattern_t* pattern = CairoPattern::for_js(cx, obj);
     if (!pattern)
         return false;
 
     cairo_pattern_add_color_stop_rgba(pattern, offset, red, green, blue, alpha);
 
-    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+    if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 
     argv.rval().setUndefined();

@@ -183,7 +183,7 @@ readline = cxx.find_library('readline', required: get_option('readline'))
 readline_code = '''
 #include <cstdio>
 #include <readline/readline.h>
-int main(void) {
+int main() {
     readline("foo");
     return 0;
 }'''
@@ -208,9 +208,7 @@ endif
 
 if cxx.links('''
 #include <atomic>
-
-int main(void)
-{
+int main() {
   std::atomic_int64_t value = ATOMIC_VAR_INIT(0);
   return value.load();
 }
@@ -289,7 +287,7 @@ endif
 # example by building mozglue as a shared library.
 minimal_program = cxx.run('''
 #include <js/Initialization.h>
-int main(void) {
+int main() {
     if (!JS_Init()) return 1;
     JS_ShutDown();
     return 0;

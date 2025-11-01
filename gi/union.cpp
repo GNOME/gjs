@@ -18,7 +18,7 @@ UnionPrototype::UnionPrototype(const GI::UnionInfo info, GType gtype)
     GJS_INC_COUNTER(union_prototype);
 }
 
-UnionPrototype::~UnionPrototype(void) { GJS_DEC_COUNTER(union_prototype); }
+UnionPrototype::~UnionPrototype() { GJS_DEC_COUNTER(union_prototype); }
 
 UnionInstance::UnionInstance(UnionPrototype* prototype, JS::HandleObject obj)
     : BoxedInstance(prototype, obj) {

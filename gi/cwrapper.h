@@ -40,7 +40,7 @@ struct JSPropertySpec;
 // functionality such as storing the class's prototype in a global slot, where
 // it can be easily retrieved in order to create new objects.
 
-/*
+/**
  * GJS_CHECK_WRAPPER_PRIV:
  * @cx: JSContext pointer passed into JSNative function
  * @argc: Number of arguments passed into JSNative function
@@ -62,10 +62,10 @@ struct JSPropertySpec;
         return false;
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
-                                   GType gtype);
+bool gjs_wrapper_define_gtype_prop(JSContext*, JS::HandleObject constructor,
+                                   GType);
 
-/*
+/**
  * CWrapperPointerOps:
  *
  * This class contains methods that are common to both CWrapper and
@@ -74,7 +74,7 @@ bool gjs_wrapper_define_gtype_prop(JSContext* cx, JS::HandleObject constructor,
 template <class Base, typename Wrapped = Base>
 class CWrapperPointerOps {
  public:
-    /*
+    /**
      * CWrapperPointerOps::for_js:
      *
      * Gets the wrapped C pointer belonging to a particular JS object wrapper.
@@ -91,7 +91,7 @@ class CWrapperPointerOps {
         return JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
-    /*
+    /**
      * CWrapperPointerOps::typecheck:
      *
      * Checks if the given wrapper object has the right JSClass (Base::klass).
@@ -101,7 +101,7 @@ class CWrapperPointerOps {
         return JS_InstanceOf(cx, wrapper, &Base::klass, args);
     }
 
-    /*
+    /**
      * CWrapperPointerOps::for_js_typecheck:
      *
      * Like for_js(), only throws a JS exception if the wrapper object has the
@@ -133,7 +133,7 @@ class CWrapperPointerOps {
         return true;
     }
 
-    /*
+    /**
      * CWrapperPointerOps::for_js_nocheck:
      *
      * Use when you don't have a JSContext* available. This method is infallible
@@ -148,7 +148,7 @@ class CWrapperPointerOps {
     // The first reserved slot always stores the private pointer.
     static const size_t POINTER = 0;
 
-    /*
+    /**
      * CWrapperPointerOps::has_private:
      *
      * Returns true if a private C pointer has already been associated with the
@@ -158,7 +158,7 @@ class CWrapperPointerOps {
         return !!JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
-    /*
+    /**
      * CWrapperPointerOps::init_private:
      *
      * Call this to initialize the wrapper object's private C pointer. The
@@ -172,7 +172,7 @@ class CWrapperPointerOps {
         JS::SetReservedSlot(wrapper, POINTER, JS::PrivateValue(ptr));
     }
 
-    /*
+    /**
      * CWrapperPointerOps::unset_private:
      *
      * Call this to remove the wrapper object's private C pointer. After calling
@@ -183,7 +183,7 @@ class CWrapperPointerOps {
     }
 };
 
-/*
+/**
  * CWrapper:
  *
  * This template implements a JS object that wraps a C pointer, stores its
@@ -315,7 +315,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         &CWrapper::finalize,
     };
 
-    /*
+    /**
      * CWrapper::create_abstract_constructor:
      *
      * This function can be used as the createConstructor member of class_ops.
@@ -330,7 +330,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
                            JSFUN_CONSTRUCTOR, Base::klass.name));
     }
 
-    /*
+    /**
      * CWrapper::define_gtype_prop:
      *
      * This function can be used as the finishInit member of class_ops. It
@@ -378,7 +378,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
     }
 
  public:
-    /*
+    /**
      * CWrapper::create_prototype:
      * @module: Object on which to define the constructor as a property, or
      *   the global object if not given
@@ -520,7 +520,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         return proto;
     }
 
-    /*
+    /**
      * CWrapper::from_c_ptr():
      *
      * Create a new CWrapper JS object from the given C pointer. The pointer

@@ -110,9 +110,7 @@ T get_random_number() {
     g_assert_not_reached();
 }
 
-static void
-gjstest_test_func_gjs_context_construct_destroy(void)
-{
+static void gjstest_test_func_gjs_context_construct_destroy() {
     GjsContext *context;
 
     /* Construct twice just to possibly a case where global state from
@@ -125,9 +123,7 @@ gjstest_test_func_gjs_context_construct_destroy(void)
     g_object_unref (context);
 }
 
-static void
-gjstest_test_func_gjs_context_construct_eval(void)
-{
+static void gjstest_test_func_gjs_context_construct_eval() {
     GjsContext *context;
     int estatus;
     AutoError error;
@@ -211,7 +207,7 @@ static void gjstest_test_func_gjs_context_eval_dynamic_import_bad() {
     g_test_assert_expected_messages();
 }
 
-static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
+static void gjstest_test_func_gjs_context_eval_non_zero_terminated() {
     AutoUnref<GjsContext> gjs{gjs_context_new()};
     AutoError error;
     int status;
@@ -224,9 +220,7 @@ static void gjstest_test_func_gjs_context_eval_non_zero_terminated(void) {
     g_assert_cmpint(status, ==, 77);
 }
 
-static void
-gjstest_test_func_gjs_context_exit(void)
-{
+static void gjstest_test_func_gjs_context_exit() {
     GjsContext *context = gjs_context_new();
     AutoError error;
     int status;
@@ -529,7 +523,7 @@ static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw
     g_assert_true(ok);
     g_assert_no_error(error);
 
-    ok = gjs_context_eval_module(gjs, "lies", NULL, &error);
+    ok = gjs_context_eval_module(gjs, "lies", nullptr, &error);
 
     g_assert_true(ok);
     g_assert_no_error(error);
@@ -613,9 +607,7 @@ const GObject = imports.gi.GObject; \
 const FooBar = GObject.registerClass(class FooBar extends GObject.Object {}); \
 "
 
-static void
-gjstest_test_func_gjs_gobject_js_defined_type(void)
-{
+static void gjstest_test_func_gjs_gobject_js_defined_type() {
     GjsContext *context = gjs_context_new();
     AutoError error;
     int status;
@@ -626,19 +618,19 @@ gjstest_test_func_gjs_gobject_js_defined_type(void)
     GType foo_type = g_type_from_name("Gjs_FooBar");
     g_assert_cmpuint(foo_type, !=, G_TYPE_INVALID);
 
-    gpointer foo = g_object_new(foo_type, NULL);
+    void* foo = g_object_new(foo_type, nullptr);
     g_assert_true(G_IS_OBJECT(foo));
 
     g_object_unref(foo);
     g_object_unref(context);
 }
 
-static void gjstest_test_func_gjs_gobject_without_introspection(void) {
+static void gjstest_test_func_gjs_gobject_without_introspection() {
     AutoUnref<GjsContext> context{gjs_context_new()};
     AutoError error;
     int status;
 
-    /* Ensure class */
+    // Ensure class
     g_type_class_ref(GJSTEST_TYPE_NO_INTROSPECTION_OBJECT);
 
 #define TESTJS                                                         \
@@ -655,7 +647,7 @@ static void gjstest_test_func_gjs_gobject_without_introspection(void) {
     g_assert_nonnull(obj);
 
     int val = 0;
-    g_object_get(obj, "a-int", &val, NULL);
+    g_object_get(obj, "a-int", &val, nullptr);
     g_assert_cmpint(val, ==, 1234);
 
 #undef TESTJS
@@ -705,7 +697,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
                                                          const void*) {
     JS::RootedValue exc(fx->cx), value(fx->cx);
 
-    /* Test that we can throw */
+    // Test that we can throw
 
     gjs_throw(fx->cx, "This is an exception %d", 42);
 
@@ -723,14 +715,14 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
     g_assert_nonnull(s);
     g_assert_cmpstr(s.get(), ==, "This is an exception 42");
 
-    /* keep this around before we clear it */
+    // keep this around before we clear it
     JS::RootedValue previous(fx->cx, exc);
 
     JS_ClearPendingException(fx->cx);
 
     g_assert_false(JS_IsExceptionPending(fx->cx));
 
-    /* Check that we don't overwrite a pending exception */
+    // Check that we don't overwrite a pending exception
     JS_SetPendingException(fx->cx, previous);
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
@@ -796,7 +788,7 @@ static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
     g_assert_true(result == u"\xc9\xd6 foobar \u30df");
     g_free(chars);
 
-    /* Try with a string that is likely to be stored as Latin-1 */
+    // Try with a string that is likely to be stored as Latin-1
     str = JS_NewStringCopyZ(fx->cx, "abcd");
     bool ok = gjs_string_get_char16_data(fx->cx, str, &chars, &len);
     g_assert_true(ok);
@@ -819,7 +811,7 @@ static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
     g_assert_true(result == U"\xc9\xd6 foobar \u30df");
     g_free(chars);
 
-    /* Try with a string that is likely to be stored as Latin-1 */
+    // Try with a string that is likely to be stored as Latin-1
     str = JS_NewStringCopyZ(fx->cx, "abcd");
     bool ok = gjs_string_to_ucs4(fx->cx, str, &chars, &len);
     g_assert_true(ok);
@@ -861,7 +853,7 @@ static void test_gjs_debug_value_bigint_uint64(GjsUnitTestFixture* fx,
                                                const void*) {
     // gjs_debug_value(BigIntValue) prints whatever fits into int64_t, because
     // more complicated operations might be fallible
-    JS::BigInt* bi = JS::NumberToBigInt(fx->cx, G_MAXUINT64);
+    JS::BigInt* bi = JS::NumberToBigInt(fx->cx, UINT64_MAX);
     std::string debug_output = gjs_debug_bigint(bi);
 
     g_assert_cmpstr(debug_output.c_str(), ==,
@@ -895,25 +887,19 @@ static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
 }
 
-static void
-gjstest_test_func_util_misc_strv_concat_null(void)
-{
-    char **ret;
-
-    ret = gjs_g_strv_concat(NULL, 0);
+static void gjstest_test_func_util_misc_strv_concat_null() {
+    char** ret = gjs_g_strv_concat(nullptr, 0);
     g_assert_nonnull(ret);
     g_assert_null(ret[0]);
 
     g_strfreev(ret);
 }
 
-static void
-gjstest_test_func_util_misc_strv_concat_pointers(void)
-{
-    char  *strv0[2] = {(char*)"foo", NULL};
-    char  *strv1[1] = {NULL};
-    char **strv2    = NULL;
-    char  *strv3[2] = {(char*)"bar", NULL};
+static void gjstest_test_func_util_misc_strv_concat_pointers() {
+    char* strv0[2] = {(char*)"foo", nullptr};
+    char* strv1[1] = {nullptr};
+    char** strv2 = nullptr;
+    char* strv3[2] = {(char*)"bar", nullptr};
     char **stuff[4];
     char **ret;
 
@@ -924,7 +910,7 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
 
     ret = gjs_g_strv_concat(stuff, 4);
     g_assert_nonnull(ret);
-    g_assert_cmpstr(ret[0], ==, strv0[0]);  /* same string */
+    g_assert_cmpstr(ret[0], ==, strv0[0]);  // same string
     g_assert_true(ret[0] != strv0[0]);      // different pointer
     g_assert_cmpstr(ret[1], ==, strv3[0]);
     g_assert_true(ret[1] != strv3[0]);
@@ -933,9 +919,7 @@ gjstest_test_func_util_misc_strv_concat_pointers(void)
     g_strfreev(ret);
 }
 
-static void
-gjstest_test_profiler_start_stop(void)
-{
+static void gjstest_test_profiler_start_stop() {
     AutoUnref<GjsContext> context{GJS_CONTEXT(
         g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr))};
     GjsProfiler *profiler = gjs_context_get_profiler(context);
@@ -1082,6 +1066,8 @@ static void gjstest_test_args_set_get_unset() {
 
     GType random_gtype = get_random_number<GType>();
     gjs_arg_set<Gjs::Tag::GType>(&arg, random_gtype);
+    // Don't replace gsize and gulong with size_t and unsigned long, since
+    // GLib may define them differently on some platforms.
     if constexpr (std::is_same_v<GType, gsize>)
         assert_equal(static_cast<GType>(arg.v_size), random_gtype);
     else if constexpr (std::is_same_v<GType, gulong>)
@@ -1239,7 +1225,7 @@ main(int    argc,
 {
     using namespace Gjs::Test;  // NOLINT(build/namespaces)
 
-    /* Avoid interference in the tests from stray environment variable */
+    // Avoid interference in the tests from stray environment variable
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
 
@@ -1345,9 +1331,9 @@ main(int    argc,
     g_test_add_func("/gjs/context/eval-file/source-map",
                     gjstest_test_func_gjs_context_eval_file_source_map);
 
-#define ADD_JSAPI_UTIL_TEST(path, func)                            \
-    g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, NULL,  \
-               gjs_unit_test_fixture_setup, func,                  \
+#define ADD_JSAPI_UTIL_TEST(path, func)                              \
+    g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, nullptr, \
+               gjs_unit_test_fixture_setup, func,                    \
                gjs_unit_test_fixture_teardown)
 
     ADD_JSAPI_UTIL_TEST("error/throw",

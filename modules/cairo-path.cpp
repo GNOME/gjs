@@ -30,8 +30,9 @@ const JSPropertySpec CairoPath::proto_props[] = {
     JS_PS_END};
 // clang-format on
 
-/*
+/**
  * CairoPath::take_c_ptr():
+ *
  * Same as CWrapper::from_c_ptr(), but always takes ownership of the pointer
  * rather than copying it.
  */
@@ -110,7 +111,7 @@ static bool path_release_argument(JSContext*, GITransfer transfer,
     return true;
 }
 
-void gjs_cairo_path_init(void) {
+void gjs_cairo_path_init() {
     static GjsForeignInfo foreign_info = {
         path_to_gi_argument, path_from_gi_argument, path_release_argument};
     gjs_struct_foreign_register("cairo", "Path", &foreign_info);

@@ -166,7 +166,7 @@ bool Closure::invoke(JS::HandleObject this_obj,
                      const JS::HandleValueArray& args,
                      JS::MutableHandleValue retval) {
     if (!m_callable) {
-        /* We were destroyed; become a no-op */
+        // We were destroyed; become a no-op
         reset();
         return false;
     }
@@ -185,7 +185,7 @@ bool Closure::invoke(JS::HandleObject this_obj,
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
 
     if (!ok) {
-        /* Exception thrown... */
+        // Exception thrown...
         gjs_debug_closure(
             "Closure invocation failed (exception should have been thrown) "
             "closure %p callable %p",

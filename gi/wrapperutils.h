@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 
-#ifndef GI_WRAPPERUTILS_H_
-#define GI_WRAPPERUTILS_H_
+#pragma once
 
 #include <config.h>
 
@@ -49,10 +48,10 @@ struct JSPropertySpec;
 class JSTracer;
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
+bool gjs_wrapper_to_string_func(JSContext*, JSObject* this_obj,
                                 const char* objtype,
-                                mozilla::Maybe<const GI::BaseInfo> info,
-                                GType gtype, const void* native_address,
+                                mozilla::Maybe<const GI::BaseInfo>, GType,
+                                const void* native_address,
                                 JS::MutableHandleValue ret);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -66,10 +65,10 @@ static inline bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
         cx, this_obj, objtype, mozilla::Some(info), gtype, native_address, ret);
 }
 
-bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
+bool gjs_wrapper_throw_nonexistent_field(JSContext*, GType,
                                          const char* field_name);
 
-bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
+bool gjs_wrapper_throw_readonly_field(JSContext*, GType,
                                       const char* field_name);
 
 namespace MemoryUse {
@@ -89,7 +88,7 @@ struct is_maybe : std::false_type {};
 template <typename T>
 struct is_maybe<mozilla::Maybe<T>> : std::true_type {};
 
-/*
+/**
  * gjs_define_static_methods:
  *
  * Defines all static methods from @info on @constructor. Also includes class
@@ -108,7 +107,7 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_define_static_methods(
                                      GI::UnownedInfo<TAG>{info});
 }
 
-/*
+/**
  * GIWrapperBase:
  *
  * In most different kinds of C pointer that we expose to JS through GObject
@@ -163,7 +162,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     // use standard C++ polymorphism because that would occupy another 8 bytes
     // for a vtable.
 
-    /*
+    /**
      * GIWrapperBase::is_prototype:
      *
      * Returns whether this Base is actually a Prototype (true) or an Instance
@@ -171,7 +170,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     [[nodiscard]] bool is_prototype() const { return !m_proto; }
 
-    /*
+    /**
      * GIWrapperBase::to_prototype:
      * GIWrapperBase::to_instance:
      *
@@ -196,7 +195,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         return reinterpret_cast<const Instance*>(this);
     }
 
-    /*
+    /**
      * GIWrapperBase::get_prototype:
      *
      * get_prototype() doesn't assert. If you call it on a Prototype, it returns
@@ -297,7 +296,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
     // JS class operations, used only in the JSClassOps struct
 
-    /*
+    /**
      * GIWrapperBase::new_enumerate:
      *
      * Include this in the Base::klass vtable if the class should support
@@ -324,7 +323,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     }
 
  private:
-    /*
+    /**
      * GIWrapperBase::id_is_never_lazy:
      *
      * Returns true if @id should never be treated as a lazy property. The
@@ -382,7 +381,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         return Prototype::for_js(cx, obj);
     }
 
-    /*
+    /**
      * GIWrapperBase::resolve:
      *
      * Include this in the Base::klass vtable if the class should support lazy
@@ -431,7 +430,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         return priv->to_prototype()->resolve_impl(cx, obj, id, resolved);
     }
 
-    /*
+    /**
      * GIWrapperBase::finalize:
      *
      * This should always be included in the Base::klass vtable. The destructors
@@ -456,7 +455,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         Base::unset_private(obj);
     }
 
-    /*
+    /**
      * GIWrapperBase::trace:
      *
      * This should be included in the Base::klass vtable if any of the Base,
@@ -480,7 +479,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         priv->trace_impl(trc);
     }
 
-    /*
+    /**
      * GIWrapperBase::trace_impl:
      * Override if necessary. See trace().
      */
@@ -488,7 +487,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
     // JSNative methods
 
-    /*
+    /**
      * GIWrapperBase::constructor:
      *
      * C++ implementation of the JS constructor passed to JS_InitClass(). Only
@@ -543,7 +542,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         return true;
     }
 
-    /*
+    /**
      * GIWrapperBase::to_string:
      *
      * JSNative method connected to the toString() method in JS.
@@ -559,7 +558,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     // Helper methods
 
  public:
-    /*
+    /**
      * GIWrapperBase::check_is_instance:
      * @for_what: string used in the exception message if an exception is thrown
      *
@@ -576,7 +575,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         return false;
     }
 
-    /*
+    /**
      * GIWrapperBase::to_c_ptr:
      *
      * Returns the underlying C pointer of the wrapped object, or throws a JS
@@ -599,7 +598,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         return static_cast<T*>(priv->to_instance()->ptr());
     }
 
-    /*
+    /**
      * GIWrapperBase::transfer_to_gi_argument:
      * @arg: #GIArgument to fill with the value from @obj
      * @transfer_direction: Either %GI_DIRECTION_IN or %GI_DIRECTION_OUT
@@ -652,7 +651,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
     // Public typecheck API
 
-    /*
+    /**
      * GIWrapperBase::typecheck:
      * @expected_info: (nullable): GI info to check
      * @expected_type: (nullable): GType to check
@@ -718,7 +717,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     GIWrapperBase& operator=(GIWrapperBase&& other) = delete;
 };
 
-/*
+/**
  * GIWrapperPrototype:
  *
  * The specialization of GIWrapperBase which becomes the private data of JS
@@ -748,7 +747,7 @@ class GIWrapperPrototype : public Base {
         Base::debug_lifecycle("Prototype constructor");
     }
 
-    /*
+    /**
      * GIWrapperPrototype::init:
      *
      * Performs any initialization that cannot be done in the constructor of
@@ -765,7 +764,7 @@ class GIWrapperPrototype : public Base {
     // create_class().
 
  private:
-    /*
+    /**
      * GIWrapperPrototype::parent_proto:
      *
      * Returns in @proto the parent class's prototype object, or nullptr if
@@ -781,14 +780,14 @@ class GIWrapperPrototype : public Base {
         return true;
     }
 
-    /*
+    /**
      * GIWrapperPrototype::constructor_nargs:
      *
      * Override this if the type's constructor takes other than 1 argument.
      */
     [[nodiscard]] unsigned constructor_nargs() const { return 1; }
 
-    /*
+    /**
      * GIWrapperPrototype::define_jsclass:
      * @in_object: JSObject on which to define the class constructor as a
      *   property
@@ -878,7 +877,7 @@ class GIWrapperPrototype : public Base {
         return true;
     }
 
-    /*
+    /**
      * GIWrapperPrototype::define_static_methods:
      *
      * Defines all introspectable static methods on @constructor, including
@@ -1020,7 +1019,7 @@ class GIWrapperPrototype : public Base {
 
     // Methods to get an existing Prototype
 
-    /*
+    /**
      * GIWrapperPrototype::for_js:
      *
      * Like Base::for_js(), but asserts that the returned private struct is a
@@ -1031,7 +1030,7 @@ class GIWrapperPrototype : public Base {
         return Base::for_js(cx, wrapper)->to_prototype();
     }
 
-    /*
+    /**
      * GIWrapperPrototype::for_js_prototype:
      *
      * Gets the Prototype private data from to @wrapper.prototype. Cannot return
@@ -1060,12 +1059,12 @@ class GIWrapperPrototype : public Base {
     }
 
  public:
-    Prototype* acquire(void) {
+    Prototype* acquire() {
         g_atomic_rc_box_acquire(this);
         return static_cast<Prototype*>(this);
     }
 
-    void release(void) { g_atomic_rc_box_release_full(this, &destroy_notify); }
+    void release() { g_atomic_rc_box_release_full(this, &destroy_notify); }
 
     // JSClass operations
 
@@ -1085,7 +1084,7 @@ struct SmartPointer<GIWrappedUnowned>
 };
 }  // namespace Gjs
 
-/*
+/**
  * GIWrapperInstance:
  *
  * The specialization of GIWrapperBase which becomes the private data of JS
@@ -1108,10 +1107,10 @@ class GIWrapperInstance : public Base {
         Base::GIWrapperBase::debug_lifecycle(obj, "Instance constructor");
     }
 
-    ~GIWrapperInstance(void) { Base::m_proto->release(); }
+    ~GIWrapperInstance() { Base::m_proto->release(); }
 
  public:
-    /*
+    /**
      * GIWrapperInstance::new_for_js_object:
      *
      * Creates a GIWrapperInstance and associates it with @obj as its private
@@ -1141,7 +1140,7 @@ class GIWrapperInstance : public Base {
 
     // Method to get an existing Instance
 
-    /*
+    /**
      * GIWrapperInstance::for_js:
      *
      * Like Base::for_js(), but asserts that the returned private struct is an
@@ -1155,7 +1154,7 @@ class GIWrapperInstance : public Base {
     // Accessors
 
     [[nodiscard]] Wrapped* ptr() const { return m_ptr; }
-    /*
+    /**
      * GIWrapperInstance::raw_ptr:
      *
      * Like ptr(), but returns a byte pointer for use in byte arithmetic.
@@ -1176,7 +1175,7 @@ class GIWrapperInstance : public Base {
 
     // Helper methods
 
-    /*
+    /**
      * GIWrapperInstance::typecheck_impl:
      *
      * See GIWrapperBase::typecheck(). Checks that the instance's wrapped
@@ -1203,5 +1202,3 @@ class GIWrapperInstance : public Base {
         return g_type_is_a(Base::gtype(), expected_gtype);
     }
 };
-
-#endif  // GI_WRAPPERUTILS_H_

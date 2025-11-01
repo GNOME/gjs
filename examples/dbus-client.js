@@ -4,9 +4,7 @@
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 
-/*
- * An XML DBus Interface
- */
+// An XML DBus Interface
 const ifaceXml = `
 <node>
   <interface name="org.gnome.gjs.Test">

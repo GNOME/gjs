@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GJS_NATIVE_H_
-#define GJS_NATIVE_H_
+#pragma once
 
 #include <config.h>
 #include <string>
@@ -17,7 +16,7 @@
 namespace Gjs {
 class NativeModuleDefineFuncs {
     NativeModuleDefineFuncs() {}
-    typedef bool (*GjsDefineModuleFunc)(JSContext* context,
+    typedef bool (*GjsDefineModuleFunc)(JSContext*,
                                         JS::MutableHandleObject module_out);
 
     std::unordered_map<std::string, GjsDefineModuleFunc> m_modules;
@@ -28,17 +27,15 @@ class NativeModuleDefineFuncs {
         return the_singleton;
     }
 
-    /* called on context init */
-    void add(const char* module_id, GjsDefineModuleFunc func);
+    // called on context init
+    void add(const char* module_id, GjsDefineModuleFunc);
 
     // called by importer.cpp to to check for already loaded modules
     [[nodiscard]] bool is_registered(const char* name) const;
 
     // called by importer.cpp to load a built-in native module
     GJS_JSAPI_RETURN_CONVENTION
-    bool define(JSContext* cx, const char* name,
+    bool define(JSContext*, const char* name,
                 JS::MutableHandleObject module_out) const;
 };
 };  // namespace Gjs
-
-#endif  // GJS_NATIVE_H_

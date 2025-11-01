@@ -34,31 +34,32 @@ replace_file(GFile      *file,
               const char *contents)
 {
     Gjs::AutoError error;
-    g_file_replace_contents(file, contents, strlen(contents), NULL /* etag */,
-                            FALSE /* make backup */, G_FILE_CREATE_NONE,
-                            NULL /* etag out */, NULL /* cancellable */, &error);
+    g_file_replace_contents(
+        file, contents, strlen(contents), /* etag = */ nullptr,
+        /* make backup = */ false, G_FILE_CREATE_NONE,
+        /* etag out = */ nullptr, /* cancellable = */ nullptr, &error);
     g_assert_no_error(error);
 }
 
 static void
 recursive_delete_dir(GFile *dir)
 {
-    GFileEnumerator *files =
+    GFileEnumerator* files =
         g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
-                                  G_FILE_QUERY_INFO_NONE, NULL, NULL);
-    while (TRUE) {
+                                  G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
+    while (true) {
         GFile *file;
         GFileInfo *info;
-        if (!g_file_enumerator_iterate(files, &info, &file, NULL, NULL) ||
+        if (!g_file_enumerator_iterate(files, &info, &file, nullptr, nullptr) ||
             !file || !info)
             break;
         if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
             recursive_delete_dir(file);
             continue;
         }
-        g_file_delete(file, NULL, NULL);
+        g_file_delete(file, nullptr, nullptr);
     }
-    g_file_delete(dir, NULL, NULL);
+    g_file_delete(dir, nullptr, nullptr);
     g_object_unref(files);
 }
 
@@ -80,20 +81,14 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
     fixture->lcov_output = g_file_get_child(fixture->lcov_output_dir,
                                             "coverage.lcov");
 
-    g_file_make_directory_with_parents(fixture->lcov_output_dir, NULL, NULL);
+    g_file_make_directory_with_parents(fixture->lcov_output_dir, nullptr,
+                                       nullptr);
 
     char *tmp_js_script_filename = g_file_get_path(fixture->tmp_js_script);
 
-    /* Allocate a strv that we can pass over to gjs_coverage_new */
-    char *coverage_paths[] = {
-        tmp_js_script_filename,
-        NULL
-    };
-
-    char *search_paths[] = {
-        tmp_output_dir_name,
-        NULL
-    };
+    // Allocate a strv that we can pass over to gjs_coverage_new()
+    char* coverage_paths[] = {tmp_js_script_filename, nullptr};
+    char* search_paths[] = {tmp_output_dir_name, nullptr};
 
     gjs_coverage_enable();
     fixture->context = gjs_context_new_with_search_path((char **) search_paths);
@@ -122,7 +117,7 @@ static const char *
 line_starting_with(const char *data,
                    const char *needle)
 {
-    const gsize needle_length = strlen(needle);
+    const size_t needle_length = strlen(needle);
     const char  *iter = data;
 
     while (iter) {
@@ -135,7 +130,7 @@ line_starting_with(const char *data,
           iter += 1;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 static char *
@@ -146,9 +141,9 @@ write_statistics_and_get_coverage_data(GjsCoverage *coverage,
 
     char  *coverage_data_contents;
 
-    g_file_load_contents(lcov_output, NULL /* cancellable */,
-                         &coverage_data_contents, nullptr, /* length out */
-                         NULL /* etag */,  NULL /* error */);
+    g_file_load_contents(lcov_output, /* cancellable = */ nullptr,
+                         &coverage_data_contents, /* length out = */ nullptr,
+                         /* etag = */ nullptr, /* error = */ nullptr);
 
     return coverage_data_contents;
 }
@@ -167,7 +162,7 @@ eval_script(GjsContext *cx,
             GFile      *script)
 {
     char *filename = get_script_identifier(script);
-    bool retval = gjs_context_eval_file(cx, filename, NULL, NULL);
+    bool retval = gjs_context_eval_file(cx, filename, nullptr, nullptr);
     g_free(filename);
     return retval;
 }
@@ -219,8 +214,7 @@ assert_coverage_data_matches_values_for_key(const char            *data,
                                             size_t                 data_size)
 {
     const char *line = line_starting_with (data, key);
-    /* Keep matching. If we fail to match one of them then
-     * bail out */
+    // Keep matching. If we fail to match one of them then bail out
     char *data_iterator = (char *) user_data;
 
     while (line && n > 0) {
@@ -231,7 +225,7 @@ assert_coverage_data_matches_values_for_key(const char            *data,
         data_iterator += data_size;
     }
 
-    /* If n is zero then we've found all available matches */
+    // If n is zero then we've found all available matches
     g_assert_cmpuint(n, ==, 0);
 }
 
@@ -240,18 +234,12 @@ static void test_covered_file_is_duplicated_into_output_if_resource(
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
     const char *mock_resource_filename = "resource:///org/gnome/gjs/mock/test/gjs-test-coverage/loadedJSFromResource.js";
-    const char *coverage_scripts[] = {
-        mock_resource_filename,
-        NULL
-    };
+    const char* coverage_scripts[] = {mock_resource_filename, nullptr};
 
     g_object_unref(fixture->context);
     g_object_unref(fixture->coverage);
     char *js_script_dirname = g_file_get_path(fixture->tmp_output_dir);
-    char *search_paths[] = {
-        js_script_dirname,
-        NULL
-    };
+    char* search_paths[] = {js_script_dirname, nullptr};
 
     fixture->context = gjs_context_new_with_search_path(search_paths);
     fixture->coverage = gjs_coverage_new(coverage_scripts, fixture->context,
@@ -267,7 +255,7 @@ static void test_covered_file_is_duplicated_into_output_if_resource(
         g_file_resolve_relative_path(fixture->lcov_output_dir,
                                      "org/gnome/gjs/mock/test/gjs-test-coverage/loadedJSFromResource.js");
 
-    g_assert_true(g_file_query_exists(expected_temporary_js_script, NULL));
+    g_assert_true(g_file_query_exists(expected_temporary_js_script, nullptr));
     g_object_unref(expected_temporary_js_script);
     g_free(js_script_dirname);
 }
@@ -306,7 +294,7 @@ static void test_covered_file_is_duplicated_into_output_if_path(
         get_output_file_for_script_on_disk(fixture->tmp_js_script,
                                            fixture->lcov_output_dir);
 
-    g_assert_true(g_file_query_exists(expected_temporary_js_script, NULL));
+    g_assert_true(g_file_query_exists(expected_temporary_js_script, nullptr));
 
     g_object_unref(expected_temporary_js_script);
 }
@@ -337,7 +325,7 @@ static void test_new_contents_written(void* fixture_data, const void*) {
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* We have new content in the coverage data */
+    // We have new content in the coverage data
     g_assert_cmpstr(existing_contents, !=, coverage_data_contents);
     g_free(coverage_data_contents);
 }
@@ -366,10 +354,7 @@ static void test_expected_entry_not_written_for_nonexistent_file(
     void* fixture_data, const void*) {
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
 
-    const char *coverage_paths[] = {
-        "doesnotexist",
-        NULL
-    };
+    const char* coverage_paths[] = {"doesnotexist", nullptr};
 
     g_object_unref(fixture->coverage);
     fixture->coverage = gjs_coverage_new(coverage_paths, fixture->context,
@@ -405,9 +390,9 @@ branch_at_line_should_be_taken(const char *line,
 {
     auto branch_data = static_cast<const BranchLineData *>(user_data);
     int line_no, branch_id, block_no, hit_count_num, nmatches;
-    char hit_count[20];  /* can hold maxint64 (19 digits) + nul terminator */
+    char hit_count[20];  // can hold maxint64 (19 digits) + nul terminator
 
-    /* Advance past "BRDA:" */
+    // Advance past "BRDA:"
     line += 5;
 
     nmatches = sscanf(line, "%i,%i,%i,%19s", &line_no, &block_no, &branch_id, hit_count);
@@ -463,7 +448,7 @@ static void test_single_branch_coverage_written_to_coverage_data(
 
     const BranchLineData expected_branches[] = {{2, 0, TAKEN},
                                                 {2, 1, NOT_TAKEN}};
-    const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
+    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -512,7 +497,7 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
         {2, 0, TAKEN}, {2, 1, TAKEN}, {3, 0, TAKEN},
         {3, 1, TAKEN}, {3, 2, TAKEN}, {3, 3, NOT_TAKEN},
     };
-    const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
+    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -557,7 +542,7 @@ static void test_branches_for_multiple_case_statements_fallthrough(
         {2, 0, TAKEN}, {2, 1, TAKEN},     {3, 0, TAKEN},
         {3, 1, TAKEN}, {3, 2, NOT_TAKEN}, {3, 3, NOT_TAKEN},
     };
-    const gsize expected_branches_len = G_N_ELEMENTS(expected_branches);
+    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -578,7 +563,7 @@ any_line_matches_not_executed_branch(const char *data)
         int line_no, branch_id, block_no;
         char hit_count;
 
-        /* Advance past "BRDA:" */
+        // Advance past "BRDA:"
         line += 5;
 
         int nmatches = sscanf(line, "%i,%i,%i,%c", &line_no, &block_no,
@@ -625,10 +610,10 @@ has_function_name(const char *line,
 {
     const char *expected_function_name = *(static_cast<const char * const *>(user_data));
 
-    /* Advance past "FN:" */
+    // Advance past "FN:"
     line += 3;
 
-    /* Advance past the first comma */
+    // Advance past the first comma
     while (*(line - 1) != ',')
         ++line;
 
@@ -657,9 +642,10 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
         "f",
         "b",
     };
-    const gsize expected_function_names_len = G_N_ELEMENTS(expected_function_names);
+    const size_t expected_function_names_len =
+        G_N_ELEMENTS(expected_function_names);
 
-    /* Just expect that we've got an FN matching out expected function names */
+    // Just expect that we've got an FN matching out expected function names
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
                                                 expected_function_names_len,
                                                 has_function_name,
@@ -674,7 +660,7 @@ has_function_line(const char *line,
 {
     const char *expected_function_line = *(static_cast<const char * const *>(user_data));
 
-    /* Advance past "FN:" */
+    // Advance past "FN:"
     line += 3;
 
     Gjs::AutoChar actual{g_strndup(line, strlen(expected_function_line))};
@@ -702,7 +688,8 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
         "1",
         "3",
     };
-    const gsize expected_function_lines_len = G_N_ELEMENTS(expected_function_lines);
+    const size_t expected_function_lines_len =
+        G_N_ELEMENTS(expected_function_lines);
 
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
                                                 expected_function_lines_len,
@@ -722,12 +709,12 @@ hit_count_is_more_than_for_function(const char *line,
                                     const void *user_data)
 {
     auto data = static_cast<const FunctionHitCountData *>(user_data);
-    char                 *detected_function = NULL;
+    char* detected_function = nullptr;
     unsigned int         hit_count;
     size_t max_buf_size;
     int nmatches;
 
-    /* Advance past "FNDA:" */
+    // Advance past "FNDA:"
     line += 5;
 
     max_buf_size = strcspn(line, "\n");
@@ -784,8 +771,7 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
         {"f", 1},
         {"b", 1},
     };
-
-    const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
+    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -826,8 +812,7 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
         {"f", 1},
         {"b", 1},
     };
-
-    const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
+    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -863,8 +848,7 @@ static void test_function_hit_counts_written_to_coverage_data(
         {"f", 1},
         {"b", 1},
     };
-
-    const gsize expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
+    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken
      * and the first should not have been */
@@ -894,7 +878,6 @@ static void test_total_function_coverage_written_to_coverage_data(
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* More than one assert per test is bad, but we are testing interlinked concepts */
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "FNF:", "3");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
@@ -914,13 +897,13 @@ line_hit_count_is_more_than(const char *line,
     auto data = static_cast<const LineCountIsMoreThanData *>(user_data);
 
     const char *coverage_line = &line[3];
-    char *comma_ptr = NULL;
+    char* comma_ptr = nullptr;
 
     unsigned int lineno = strtol(coverage_line, &comma_ptr, 10);
 
     g_assert_cmpint(comma_ptr[0], ==, ',');
 
-    char *end_ptr = NULL;
+    char* end_ptr = nullptr;
 
     unsigned int value = strtol(&comma_ptr[1], &end_ptr, 10);
 
@@ -966,7 +949,7 @@ static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* Hits on all lines, including both lines with a condition (3 and 4) */
+    // Hits on all lines, including both lines with a condition (3 and 4)
     const LineCountIsMoreThanData data[] = {{1, 0}, {2, 0}, {3, 0}, {4, 0}};
 
     assert_coverage_data_matches_value_for_key(coverage_data_contents, "DA:",
@@ -985,7 +968,6 @@ static void test_full_line_tally_written_to_coverage_data(void* fixture_data,
                                           fixture->tmp_js_script,
                                           fixture->lcov_output);
 
-    /* More than one assert per test is bad, but we are testing interlinked concepts */
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "LF:", "1");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
@@ -1001,7 +983,7 @@ static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
         write_statistics_and_get_coverage_data(fixture->coverage,
                                                fixture->lcov_output);
 
-    /* No files were executed, so the coverage data is empty. */
+    // No files were executed, so the coverage data is empty.
     g_assert_cmpstr(coverage_data_contents, ==, "\n");
     g_free(coverage_data_contents);
 }
@@ -1025,10 +1007,8 @@ typedef struct _GjsCoverageMultipleSourcesFixture {
     GFile *second_js_source_file;
 } GjsCoverageMultpleSourcesFixutre;
 
-static void
-gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixture_data,
-                                                                         gconstpointer user_data)
-{
+static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
+    void* fixture_data, const void* user_data) {
     gjs_coverage_fixture_set_up(fixture_data, user_data);
 
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
@@ -1040,19 +1020,13 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixt
      * we need to destroy the previously constructed one and construct it again */
     char *first_js_script_path = g_file_get_path(fixture->base_fixture.tmp_js_script);
     char *second_js_script_path = g_file_get_path(fixture->second_js_source_file);
-    char *coverage_paths[] = {
-        first_js_script_path,
-        second_js_script_path,
-        NULL
-    };
+    char* coverage_paths[] = {first_js_script_path, second_js_script_path,
+                              nullptr};
 
     g_object_unref(fixture->base_fixture.context);
     g_object_unref(fixture->base_fixture.coverage);
     char *output_path = g_file_get_path(fixture->base_fixture.tmp_output_dir);
-    char *search_paths[] = {
-        output_path,
-        NULL
-    };
+    char* search_paths[] = {output_path, nullptr};
 
     fixture->base_fixture.context = gjs_context_new_with_search_path(search_paths);
     fixture->base_fixture.coverage =
@@ -1070,7 +1044,7 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixt
                                     base_name_without_extension, ";\n",
                                     "let a = FirstScript.f;\n"
                                     "\n",
-                                    NULL);
+                                    nullptr);
 
     replace_file(fixture->second_js_source_file, mock_script);
 
@@ -1080,9 +1054,8 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(gpointer fixt
 }
 
 static void
-gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(gpointer      fixture_data,
-                                                                      gconstpointer user_data)
-{
+gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(
+    void* fixture_data, const void* user_data) {
     GjsCoverageMultpleSourcesFixutre *fixture = (GjsCoverageMultpleSourcesFixutre *) fixture_data;
     g_object_unref(fixture->second_js_source_file);
 
@@ -1121,8 +1094,7 @@ assert_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
                                      const size_t                    expected_size,
                                      const char                     *section_start)
 {
-    gsize i;
-    for (i = 0; i < expected_size; ++i) {
+    for (size_t i = 0; i < expected_size; ++i) {
         if (strncmp(&section_start[3],
                     expected[i].source_file_path,
                     strlen (expected[i].source_file_path)) == 0) {
@@ -1181,8 +1153,7 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
             '2'
         }
     };
-
-    const gsize expected_len = G_N_ELEMENTS(expected);
+    const size_t expected_len = G_N_ELEMENTS(expected);
 
     const char *first_sf_record = line_starting_with(coverage_data_contents, "SF:");
     assert_coverage_data_for_source_file(expected, expected_len, first_sf_record);
@@ -1196,23 +1167,15 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
 }
 
 typedef struct _FixturedTest {
-    gsize            fixture_size;
+    size_t fixture_size;
     GTestFixtureFunc set_up;
     GTestFixtureFunc tear_down;
 } FixturedTest;
 
-static void
-add_test_for_fixture(const char      *name,
-                     FixturedTest    *fixture,
-                     GTestFixtureFunc test_func,
-                     gconstpointer    user_data)
-{
-    g_test_add_vtable(name,
-                      fixture->fixture_size,
-                      user_data,
-                      fixture->set_up,
-                      test_func,
-                      fixture->tear_down);
+static void add_test_for_fixture(const char* name, FixturedTest* fixture,
+                                 GTestFixtureFunc test_func) {
+    g_test_add_vtable(name, fixture->fixture_size, nullptr, fixture->set_up,
+                      test_func, fixture->tear_down);
 }
 
 void gjs_test_add_tests_for_coverage()
@@ -1225,88 +1188,71 @@ void gjs_test_add_tests_for_coverage()
 
     add_test_for_fixture("/gjs/coverage/file_duplicated_into_output_path",
                          &coverage_fixture,
-                         test_covered_file_is_duplicated_into_output_if_path,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/file_duplicated_full_resource_path",
-                         &coverage_fixture,
-                         test_covered_file_is_duplicated_into_output_if_resource,
-                         NULL);
+                         test_covered_file_is_duplicated_into_output_if_path);
+    add_test_for_fixture(
+        "/gjs/coverage/file_duplicated_full_resource_path", &coverage_fixture,
+        test_covered_file_is_duplicated_into_output_if_resource);
     add_test_for_fixture("/gjs/coverage/contents_preserved_accumulate_mode",
-                         &coverage_fixture,
-                         test_previous_contents_preserved,
-                         NULL);
+                         &coverage_fixture, test_previous_contents_preserved);
     add_test_for_fixture("/gjs/coverage/new_contents_appended_accumulate_mode",
-                         &coverage_fixture,
-                         test_new_contents_written,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/expected_source_file_name_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_expected_source_file_name_written_to_coverage_data,
-                         NULL);
+                         &coverage_fixture, test_new_contents_written);
+    add_test_for_fixture(
+        "/gjs/coverage/expected_source_file_name_written_to_coverage_data",
+        &coverage_fixture,
+        test_expected_source_file_name_written_to_coverage_data);
     add_test_for_fixture("/gjs/coverage/entry_not_written_for_nonexistent_file",
                          &coverage_fixture,
-                         test_expected_entry_not_written_for_nonexistent_file,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/single_branch_coverage_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_single_branch_coverage_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/multiple_branch_coverage_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_multiple_branch_coverage_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/branches_for_multiple_case_statements_fallthrough",
-                         &coverage_fixture,
-                         test_branches_for_multiple_case_statements_fallthrough,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/not_hit_branch_point_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_branch_not_hit_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/function_names_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_function_names_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/function_lines_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_function_lines_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/function_hit_counts_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_function_hit_counts_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/big_function_hit_counts_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_function_hit_counts_for_big_functions_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/little_function_hit_counts_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_function_hit_counts_for_little_functions_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/total_function_coverage_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_total_function_coverage_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/single_line_hit_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_single_line_hit_written_to_coverage_data,
-                         NULL);
+                         test_expected_entry_not_written_for_nonexistent_file);
+    add_test_for_fixture(
+        "/gjs/coverage/single_branch_coverage_written_to_coverage_data",
+        &coverage_fixture,
+        test_single_branch_coverage_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/multiple_branch_coverage_written_to_coverage_data",
+        &coverage_fixture,
+        test_multiple_branch_coverage_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/branches_for_multiple_case_statements_fallthrough",
+        &coverage_fixture,
+        test_branches_for_multiple_case_statements_fallthrough);
+    add_test_for_fixture(
+        "/gjs/coverage/not_hit_branch_point_written_to_coverage_data",
+        &coverage_fixture, test_branch_not_hit_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/function_names_written_to_coverage_data",
+        &coverage_fixture, test_function_names_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/function_lines_written_to_coverage_data",
+        &coverage_fixture, test_function_lines_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/function_hit_counts_written_to_coverage_data",
+        &coverage_fixture, test_function_hit_counts_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/big_function_hit_counts_written_to_coverage_data",
+        &coverage_fixture,
+        test_function_hit_counts_for_big_functions_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/little_function_hit_counts_written_to_coverage_data",
+        &coverage_fixture,
+        test_function_hit_counts_for_little_functions_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/total_function_coverage_written_to_coverage_data",
+        &coverage_fixture,
+        test_total_function_coverage_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/single_line_hit_written_to_coverage_data",
+        &coverage_fixture, test_single_line_hit_written_to_coverage_data);
     add_test_for_fixture("/gjs/coverage/hits_on_multiline_if_cond",
-                         &coverage_fixture,
-                         test_hits_on_multiline_if_cond,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/full_line_tally_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_full_line_tally_written_to_coverage_data,
-                         NULL);
+                         &coverage_fixture, test_hits_on_multiline_if_cond);
+    add_test_for_fixture(
+        "/gjs/coverage/full_line_tally_written_to_coverage_data",
+        &coverage_fixture, test_full_line_tally_written_to_coverage_data);
     add_test_for_fixture("/gjs/coverage/no_hits_for_unexecuted_file",
                          &coverage_fixture,
-                         test_no_hits_to_coverage_data_for_unexecuted,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/end_of_record_section_written_to_coverage_data",
-                         &coverage_fixture,
-                         test_end_of_record_section_written_to_coverage_data,
-                         NULL);
+                         test_no_hits_to_coverage_data_for_unexecuted);
+    add_test_for_fixture(
+        "/gjs/coverage/end_of_record_section_written_to_coverage_data",
+        &coverage_fixture, test_end_of_record_section_written_to_coverage_data);
 
     FixturedTest coverage_for_multiple_files_to_single_output_fixture = {
         sizeof(GjsCoverageMultpleSourcesFixutre),
@@ -1314,12 +1260,12 @@ void gjs_test_add_tests_for_coverage()
         gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down
     };
 
-    add_test_for_fixture("/gjs/coverage/multiple_source_file_records_written_to_coverage_data",
-                         &coverage_for_multiple_files_to_single_output_fixture,
-                         test_multiple_source_file_records_written_to_coverage_data,
-                         NULL);
-    add_test_for_fixture("/gjs/coverage/correct_line_coverage_data_written_for_both_sections",
-                         &coverage_for_multiple_files_to_single_output_fixture,
-                         test_correct_line_coverage_data_written_for_both_source_file_sections,
-                         NULL);
+    add_test_for_fixture(
+        "/gjs/coverage/multiple_source_file_records_written_to_coverage_data",
+        &coverage_for_multiple_files_to_single_output_fixture,
+        test_multiple_source_file_records_written_to_coverage_data);
+    add_test_for_fixture(
+        "/gjs/coverage/correct_line_coverage_data_written_for_both_sections",
+        &coverage_for_multiple_files_to_single_output_fixture,
+        test_correct_line_coverage_data_written_for_both_source_file_sections);
 }

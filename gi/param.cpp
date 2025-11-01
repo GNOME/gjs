@@ -63,24 +63,20 @@ struct Param : Gjs::AutoParam {
  * was not resolved; and true if id was resolved.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-param_resolve(JSContext       *context,
-              JS::HandleObject obj,
-              JS::HandleId     id,
-              bool            *resolved)
-{
-    if (!param_value(context, obj)) {
-        /* instance, not prototype */
+static bool param_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                          bool* resolved) {
+    if (!param_value(cx, obj)) {
+        // instance, not prototype
         *resolved = false;
         return true;
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(cx, id, &name))
         return false;
     if (!name) {
         *resolved = false;
-        return true; /* not resolved, but no error */
+        return true;  // not resolved, but no error
     }
 
     GI::Repository repo;
@@ -99,10 +95,10 @@ param_resolve(JSContext       *context,
                   "Defining method %s in prototype for GObject.ParamSpec",
                   method_info->name());
 
-        if (!gjs_define_function(context, obj, G_TYPE_PARAM, method_info.ref()))
+        if (!gjs_define_function(cx, obj, G_TYPE_PARAM, method_info.ref()))
             return false;
 
-        *resolved = true; /* we defined the prop in obj */
+        *resolved = true;  // we defined the prop in obj
     }
 
     return true;
@@ -133,7 +129,7 @@ static void param_finalize(JS::GCContext*, JSObject* obj) {
     gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
                         priv);
     if (!priv)
-        return; /* wrong class? */
+        return;  // wrong class?
 
     GJS_DEC_COUNTER(param);
     JS::SetReservedSlot(obj, POINTER, JS::UndefinedValue());
@@ -173,39 +169,34 @@ struct JSClass gjs_param_class = {
     &gjs_param_class_ops, &class_spec};
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject*
-gjs_lookup_param_prototype(JSContext    *context)
-{
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedObject in_object(
-        context, gjs_lookup_namespace_object_by_name(context, atoms.gobject()));
+static JSObject* gjs_lookup_param_prototype(JSContext* cx) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject in_object{
+        cx, gjs_lookup_namespace_object_by_name(cx, atoms.gobject())};
 
     if (G_UNLIKELY (!in_object))
         return nullptr;
 
-    JS::RootedValue value(context);
-    if (!JS_GetPropertyById(context, in_object, atoms.param_spec(), &value) ||
+    JS::RootedValue value{cx};
+    if (!JS_GetPropertyById(cx, in_object, atoms.param_spec(), &value) ||
         G_UNLIKELY(!value.isObject()))
         return nullptr;
 
-    JS::RootedObject constructor(context, &value.toObject());
+    JS::RootedObject constructor{cx, &value.toObject()};
     g_assert(constructor);
 
-    if (!JS_GetPropertyById(context, constructor, atoms.prototype(), &value) ||
+    if (!JS_GetPropertyById(cx, constructor, atoms.prototype(), &value) ||
         G_UNLIKELY(!value.isObjectOrNull()))
         return nullptr;
 
     return value.toObjectOrNull();
 }
 
-bool
-gjs_define_param_class(JSContext       *context,
-                       JS::HandleObject in_object)
-{
-    JS::RootedObject prototype(context), constructor(context);
+bool gjs_define_param_class(JSContext* cx, JS::HandleObject in_object) {
+    JS::RootedObject prototype{cx}, constructor{cx};
     if (!gjs_init_class_dynamic(
-            context, in_object, nullptr, "GObject", "ParamSpec",
-            &gjs_param_class, gjs_param_constructor, 0,
+            cx, in_object, nullptr, "GObject", "ParamSpec", &gjs_param_class,
+            gjs_param_constructor, 0,
             proto_props,  // props of prototype
             nullptr,      // funcs of prototype
             nullptr,      // props of constructor, MyConstructor.myprop
@@ -213,13 +204,13 @@ gjs_define_param_class(JSContext       *context,
             &prototype, &constructor))
         return false;
 
-    if (!gjs_wrapper_define_gtype_prop(context, constructor, G_TYPE_PARAM))
+    if (!gjs_wrapper_define_gtype_prop(cx, constructor, G_TYPE_PARAM))
         return false;
 
     GI::Repository repo;
     GI::AutoObjectInfo info{
         repo.find_by_gtype<GI::InfoTag::OBJECT>(G_TYPE_PARAM).value()};
-    if (!gjs_define_static_methods(context, constructor, G_TYPE_PARAM, info))
+    if (!gjs_define_static_methods(cx, constructor, G_TYPE_PARAM, info))
         return false;
 
     gjs_debug(GJS_DEBUG_GPARAM,
@@ -228,12 +219,7 @@ gjs_define_param_class(JSContext       *context,
     return true;
 }
 
-JSObject*
-gjs_param_from_g_param(JSContext    *context,
-                       GParamSpec   *gparam)
-{
-    JSObject *obj;
-
+JSObject* gjs_param_from_g_param(JSContext* cx, GParamSpec* gparam) {
     if (!gparam)
         return nullptr;
 
@@ -243,9 +229,9 @@ gjs_param_from_g_param(JSContext    *context,
               gparam->name,
               g_type_name(gparam->owner_type));
 
-    JS::RootedObject proto(context, gjs_lookup_param_prototype(context));
+    JS::RootedObject proto{cx, gjs_lookup_param_prototype(cx)};
 
-    obj = JS_NewObjectWithGivenProto(context, JS::GetClass(proto), proto);
+    JSObject* obj = JS_NewObjectWithGivenProto(cx, JS::GetClass(proto), proto);
 
     GJS_INC_COUNTER(param);
     auto* priv = new Param(gparam);
@@ -258,31 +244,24 @@ gjs_param_from_g_param(JSContext    *context,
     return obj;
 }
 
-GParamSpec*
-gjs_g_param_from_param(JSContext       *context,
-                       JS::HandleObject obj)
-{
+GParamSpec* gjs_g_param_from_param(JSContext* cx, JS::HandleObject obj) {
     if (!obj)
         return nullptr;
 
-    return param_value(context, obj);
+    return param_value(cx, obj);
 }
 
-bool
-gjs_typecheck_param(JSContext       *context,
-                    JS::HandleObject object,
-                    GType            expected_type,
-                    bool             throw_error)
-{
+bool gjs_typecheck_param(JSContext* cx, JS::HandleObject object,
+                         GType expected_type, bool throw_error) {
     bool result;
 
-    if (!gjs_typecheck_instance(context, object, &gjs_param_class, throw_error))
+    if (!gjs_typecheck_instance(cx, object, &gjs_param_class, throw_error))
         return false;
 
-    GParamSpec* param = param_value(context, object);
+    GParamSpec* param = param_value(cx, object);
     if (!param) {
         if (throw_error) {
-            gjs_throw_custom(context, JSEXN_TYPEERR, nullptr,
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                              "Object is GObject.ParamSpec.prototype, not an "
                              "object instance - cannot convert to a GObject."
                              "ParamSpec instance");
@@ -297,7 +276,7 @@ gjs_typecheck_param(JSContext       *context,
         result = true;
 
     if (!result && throw_error) {
-        gjs_throw_custom(context, JSEXN_TYPEERR, nullptr,
+        gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                          "Object is of type %s - cannot convert to %s",
                          g_type_name(G_TYPE_FROM_INSTANCE(param)),
                          g_type_name(expected_type));

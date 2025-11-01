@@ -5,7 +5,6 @@
 
 #include <config.h>
 
-#include <stdlib.h>  // for free, size_t
 #include <string.h>  // for strcmp, strlen
 
 #include <new>
@@ -46,7 +45,7 @@ struct _GjsCoverage {
 };
 
 typedef struct {
-    gchar **prefixes;
+    char** prefixes;
     GjsContext *context;
     JS::Heap<JSObject*> global;
 
@@ -66,7 +65,7 @@ enum {
     PROP_N
 };
 
-static GParamSpec *properties[PROP_N] = { NULL, };
+static GParamSpec* properties[PROP_N];
 
 [[nodiscard]] static char* get_file_identifier(GFile* source_file) {
     char *path = g_file_get_path(source_file);
@@ -106,15 +105,13 @@ static GErrorResult<> copy_source_file_to_coverage_output(
     return Ok{};
 }
 
-/* This function will strip a URI scheme and return
- * the string with the URI scheme stripped or NULL
- * if the path was not a valid URI
- */
+// This function will strip a URI scheme and return the string with the URI
+// scheme stripped or nullptr if the path was not a valid URI
 [[nodiscard]] static char* strip_uri_scheme(const char* potential_uri) {
     char *uri_header = g_uri_parse_scheme(potential_uri);
 
     if (uri_header) {
-        gsize offset = strlen(uri_header);
+        size_t offset = strlen(uri_header);
         g_free(uri_header);
 
         /* g_uri_parse_scheme only parses the name
@@ -123,7 +120,7 @@ static GErrorResult<> copy_source_file_to_coverage_output(
         return g_strdup(potential_uri + offset + 4);
     }
 
-    return NULL;
+    return nullptr;
 }
 
 /* This function will return a string of pathname
@@ -201,7 +198,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
 
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    /* Create output directory if it doesn't exist */
+    // Create output directory if it doesn't exist
     Gjs::AutoError error;
     if (!g_file_make_directory_with_parents(priv->output_dir, nullptr,
                                             error.out())) {
@@ -221,7 +218,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
         return Err(error.release());
 
     Gjs::AutoStrv lcov_lines{g_strsplit(lcov.get(), "\n", -1)};
-    const char* test_name = NULL;
+    const char* test_name = nullptr;
     bool ignoring_file = false;
 
     for (const char * const *iter = lcov_lines.get(); *iter; iter++) {
@@ -243,7 +240,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
                 continue;
             }
 
-            /* Now we can write the test name before writing the source file */
+            // Now we can write the test name before writing the source file
             MOZ_TRY(write_line(ostream, test_name));
 
             /* The source file could be a resource, so we must use
@@ -326,26 +323,26 @@ bootstrap_coverage(GjsCoverage *coverage)
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     auto* gjs = GjsContextPrivate::from_object(priv->context);
-    JSContext* context = gjs->context();
+    JSContext* cx = gjs->context();
 
-    JS::RootedObject debugger_global(
-        context, gjs_create_global_object(context, GjsGlobalType::DEBUGGER));
+    JS::RootedObject debugger_global{
+        cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER)};
     {
-        JSAutoRealm ar(context, debugger_global);
-        JS::RootedObject debuggee{context, gjs->global()};
-        if (!JS_WrapObject(context, &debuggee))
+        JSAutoRealm ar{cx, debugger_global};
+        JS::RootedObject debuggee{cx, gjs->global()};
+        if (!JS_WrapObject(cx, &debuggee))
             return false;
 
-        JS::RootedValue v_debuggee{context, JS::ObjectValue(*debuggee)};
-        if (!JS_SetPropertyById(context, debugger_global,
-                                gjs->atoms().debuggee(), v_debuggee) ||
-            !gjs_define_global_properties(context, debugger_global,
+        JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
+        if (!JS_SetPropertyById(cx, debugger_global, gjs->atoms().debuggee(),
+                                v_debuggee) ||
+            !gjs_define_global_properties(cx, debugger_global,
                                           GjsGlobalType::DEBUGGER,
                                           "GJS coverage", "coverage"))
             return false;
 
-        /* Add a tracer, as suggested by jdm on #jsapi */
-        JS_AddExtraGCRootsTracer(context, coverage_tracer, coverage);
+        // Add a tracer, as suggested by jdm on #jsapi
+        JS_AddExtraGCRootsTracer(cx, coverage_tracer, coverage);
 
         priv->global = debugger_global;
     }
@@ -363,9 +360,10 @@ gjs_coverage_constructed(GObject *object)
     new (&priv->global) JS::Heap<JSObject*>();
 
     if (!bootstrap_coverage(coverage)) {
-        JSContext *context = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
-        Gjs::AutoMainRealm ar{context};
-        gjs_log_exception(context);
+        JSContext* cx = static_cast<JSContext*>(
+            gjs_context_get_native_context(priv->context));
+        Gjs::AutoMainRealm ar{cx};
+        gjs_log_exception(cx);
     }
 }
 
@@ -379,7 +377,7 @@ gjs_coverage_set_property(GObject      *object,
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     switch (prop_id) {
     case PROP_PREFIXES:
-        g_assert(priv->prefixes == NULL);
+        g_assert(priv->prefixes == nullptr);
         priv->prefixes = (char **) g_value_dup_boxed (value);
         break;
     case PROP_CONTEXT:
@@ -484,12 +482,9 @@ gjs_coverage_new (const char * const *prefixes,
                   GjsContext         *context,
                   GFile              *output_dir)
 {
-    GjsCoverage *coverage =
-        GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE,
-                                  "prefixes", prefixes,
-                                  "context", context,
-                                  "output-directory", output_dir,
-                                  NULL));
+    GjsCoverage* coverage = GJS_COVERAGE(
+        g_object_new(GJS_TYPE_COVERAGE, "prefixes", prefixes, "context",
+                     context, "output-directory", output_dir, nullptr));
 
     return coverage;
 }

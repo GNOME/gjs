@@ -4,8 +4,7 @@
 // SPDX-FileCopyrightText: 2021 Canonical Ltd.
 // SPDX-FileContributor: Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GI_CLOSURE_H_
-#define GI_CLOSURE_H_
+#pragma once
 
 #include <config.h>
 
@@ -83,7 +82,7 @@ class Closure : public GClosure {
                                                     JSObject* callable,
                                                     const char* description,
                                                     int signal_id) {
-        auto* self = new Closure(cx, callable, false /* root */, description);
+        auto* self = new Closure(cx, callable, /* root = */ false, description);
         self->add_finalize_notifier<Closure>();
         g_closure_set_meta_marshal(self, gjs_int_to_pointer(signal_id),
                                    marshal_cb);
@@ -92,7 +91,7 @@ class Closure : public GClosure {
 
     // COMPAT: constexpr in C++23
     JSObject* callable() const { return m_callable.get(); }
-    [[nodiscard]] constexpr JSContext* context() const { return m_cx; }
+    [[nodiscard]] constexpr JSContext* cx() const { return m_cx; }
     [[nodiscard]] constexpr bool is_valid() const { return !!m_cx; }
     GJS_JSAPI_RETURN_CONVENTION bool invoke(JS::HandleObject,
                                             const JS::HandleValueArray&,
@@ -136,5 +135,3 @@ class Closure : public GClosure {
 };
 
 }  // namespace Gjs
-
-#endif  // GI_CLOSURE_H_

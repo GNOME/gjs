@@ -9,11 +9,11 @@
 
 #ifdef G_OS_UNIX
 #    include <errno.h>
-#    include <fcntl.h> /* for FD_CLOEXEC */
+#    include <fcntl.h>  // for FD_CLOEXEC
 #    include <stdarg.h>
-#    include <unistd.h> /* for close, write */
+#    include <unistd.h>  // for close, write
 
-#    include <glib-unix.h> /* for g_unix_open_pipe */
+#    include <glib-unix.h>  // for g_unix_open_pipe
 #endif
 
 #include "gjs/auto.h"
@@ -110,7 +110,7 @@ void gjs_test_tools_ref_other_thread(GObject* object, GError** error) {
     // cppcheck-suppress memleak
 }
 
-static gpointer emit_test_signal_other_thread_func(gpointer data) {
+static void* emit_test_signal_other_thread_func(void* data) {
     g_signal_emit_by_name(data, "test");
     return nullptr;
 }
@@ -290,7 +290,7 @@ GObject* gjs_test_tools_get_weak() {
 GObject* gjs_test_tools_get_weak_other_thread(GError** error) {
     auto* thread = g_thread_try_new(
         "weak_get", [](void*) -> void* { return gjs_test_tools_get_weak(); },
-        NULL, error);
+        nullptr, error);
     if (!thread)
         return nullptr;
 
@@ -322,12 +322,12 @@ static gboolean throw_errno_prefix(GError** error, const char* prefix) {
     return FALSE;
 }
 
-#endif /* G_OS_UNIX */
+#endif  // G_OS_UNIX
 
 /**
  * gjs_open_bytes:
  * @bytes: bytes to send to the pipe
- * @error: Return location for a #GError, or %NULL
+ * @error: Return location for a #GError, or nullptr
  *
  * Creates a pipe and sends @bytes to it, such that it is suitable for passing
  * to g_subprocess_launcher_take_fd().
@@ -341,7 +341,7 @@ int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
     ssize_t bytes_written;
 
     g_return_val_if_fail(bytes, -1);
-    g_return_val_if_fail(error == NULL || *error == NULL, -1);
+    g_return_val_if_fail(error == nullptr || *error == nullptr, -1);
 
 #ifdef G_OS_UNIX
     if (!g_unix_open_pipe(pipefd, FD_CLOEXEC, error))

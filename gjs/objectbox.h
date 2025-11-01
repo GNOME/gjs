@@ -29,7 +29,7 @@ class ObjectBox {
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* object_for_c_ptr(JSContext*, ObjectBox*);
 
-    void trace(JSTracer* trc);
+    void trace(JSTracer*);
 
  private:
     explicit ObjectBox(JSObject*);

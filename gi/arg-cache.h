@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <scampa.giovanni@gmail.com>
 // SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GI_ARG_CACHE_H_
-#define GI_ARG_CACHE_H_
+#pragma once
 
 #include <config.h>
 
@@ -103,15 +102,15 @@ struct Argument {
     virtual ~Argument() = default;
 
     GJS_JSAPI_RETURN_CONVENTION
-    virtual bool in(JSContext* cx, GjsFunctionCallState*,
-                    GIArgument* in_argument, JS::HandleValue value);
+    virtual bool in(JSContext*, GjsFunctionCallState*, GIArgument* in_argument,
+                    JS::HandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
-    virtual bool out(JSContext* cx, GjsFunctionCallState*,
-                     GIArgument* out_argument, JS::MutableHandleValue value);
+    virtual bool out(JSContext*, GjsFunctionCallState*,
+                     GIArgument* out_argument, JS::MutableHandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
-    virtual bool release(JSContext* cx, GjsFunctionCallState*,
+    virtual bool release(JSContext*, GjsFunctionCallState*,
                          GIArgument* in_argument, GIArgument* out_argument);
 
     virtual GjsArgumentFlags flags() const {
@@ -287,5 +286,3 @@ struct ArgsCache {
 };
 
 }  // namespace Gjs
-
-#endif  // GI_ARG_CACHE_H_

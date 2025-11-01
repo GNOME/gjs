@@ -30,26 +30,20 @@ const JSPropertySpec CairoSolidPattern::proto_props[] = {
 // clang-format on
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-createRGB_func(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
+static bool createRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     double red, green, blue;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(context, "createRGB", argv, "fff",
-                             "red", &red,
-                             "green", &green,
-                             "blue", &blue))
+    if (!gjs_parse_call_args(cx, "createRGB", argv, "fff", "red", &red, "green",
+                             &green, "blue", &blue))
         return false;
 
     pattern = cairo_pattern_create_rgb(red, green, blue);
-    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+    if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 
-    JSObject* pattern_wrapper = CairoSolidPattern::from_c_ptr(context, pattern);
+    JSObject* pattern_wrapper = CairoSolidPattern::from_c_ptr(cx, pattern);
     if (!pattern_wrapper)
         return false;
     cairo_pattern_destroy(pattern);
@@ -60,27 +54,20 @@ createRGB_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-createRGBA_func(JSContext *context,
-                unsigned   argc,
-                JS::Value *vp)
-{
+static bool createRGBA_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     double red, green, blue, alpha;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(context, "createRGBA", argv, "ffff",
-                             "red", &red,
-                             "green", &green,
-                             "blue", &blue,
-                             "alpha", &alpha))
+    if (!gjs_parse_call_args(cx, "createRGBA", argv, "ffff", "red", &red,
+                             "green", &green, "blue", &blue, "alpha", &alpha))
         return false;
 
     pattern = cairo_pattern_create_rgba(red, green, blue, alpha);
-    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+    if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 
-    JSObject* pattern_wrapper = CairoSolidPattern::from_c_ptr(context, pattern);
+    JSObject* pattern_wrapper = CairoSolidPattern::from_c_ptr(cx, pattern);
     if (!pattern_wrapper)
         return false;
     cairo_pattern_destroy(pattern);

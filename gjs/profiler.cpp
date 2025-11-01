@@ -89,10 +89,10 @@ struct _GjsProfiler {
      */
     ProfilingStack stack;
 
-    /* The context being profiled */
+    // The context being profiled
     JSContext *cx;
 
-    /* Buffers and writes our sampled stacks */
+    // Buffers and writes our sampled stacks
     SysprofCaptureWriter* capture;
     GSource* periodic_flush;
 
@@ -101,54 +101,53 @@ struct _GjsProfiler {
     // Cache previous values of counters so that we don't overrun the output
     // with counters that don't change very often
     uint64_t last_counter_values[GJS_N_COUNTERS];
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 
-    /* The filename to write to */
+    // The filename to write to
     char *filename;
 
-    /* An FD to capture to */
+    // An FD to capture to
     int fd;
 
 #ifdef ENABLE_PROFILER
-    /* Our POSIX timer to wakeup SIGPROF */
+    // Our POSIX timer to wakeup SIGPROF
     timer_t timer;
 
-    /* Cached copy of our pid */
+    // Cached copy of our pid
     GPid pid;
 
-    /* Timing information */
+    // Timing information
     int64_t gc_begin_time;
     int64_t sweep_begin_time;
     int64_t group_sweep_begin_time;
     const char* gc_reason;  // statically allocated
 
-    /* GLib signal handler ID for SIGUSR2 */
+    // GLib signal handler ID for SIGUSR2
     unsigned sigusr2_id;
     unsigned counter_base;  // index of first GObject memory counter
     unsigned gc_counter_base;  // index of first GC stats counter
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 
-    /* If we are currently sampling */
+    // If we are currently sampling
     unsigned running : 1;
 };
 
 static GjsContext *profiling_context;
 
 #ifdef ENABLE_PROFILER
-/*
+/**
  * gjs_profiler_extract_maps:
  *
  * This function will write the mapped section information to the
  * capture file so that the callgraph builder can generate symbols
  * from the stack addresses provided.
  *
- * Returns: %TRUE if successful; otherwise %FALSE and the profile
- *   should abort.
+ * Returns: true if successful; otherwise false and the profile should abort.
  */
 [[nodiscard]] static bool gjs_profiler_extract_maps(GjsProfiler* self) {
     int64_t now = g_get_monotonic_time() * 1000L;
 
-    g_assert(((void) "Profiler must be set up before extracting maps", self));
+    g_assert(self && "Profiler must be set up before extracting maps");
 
     Gjs::AutoChar path{g_strdup_printf("/proc/%jd/maps", intmax_t(self->pid))};
 
@@ -247,7 +246,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
 
 #endif  /* ENABLE_PROFILER */
 
-/*
+/**
  * _gjs_profiler_new:
  * @context: The #GjsContext to profile
  *
@@ -298,7 +297,7 @@ _gjs_profiler_new(GjsContext *context)
     return self;
 }
 
-/*
+/**
  * _gjs_profiler_free:
  * @self: A #GjsProfiler
  *
@@ -332,14 +331,14 @@ _gjs_profiler_free(GjsProfiler *self)
     g_free(self);
 }
 
-/*
+/**
  * _gjs_profiler_is_running:
  * @self: A #GjsProfiler
  *
  * Checks if the profiler is currently running. This means that the JS
  * profiler is enabled and POSIX signal timers are registered.
  *
- * Returns: %TRUE if the profiler is active.
+ * Returns: true if the profiler is active.
  */
 bool
 _gjs_profiler_is_running(GjsProfiler *self)
@@ -355,9 +354,9 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
                                  void*) {
     GjsProfiler *self = gjs_context_get_profiler(profiling_context);
 
-    g_assert(((void) "SIGPROF handler called with invalid signal info", info));
-    g_assert(((void) "SIGPROF handler called with other signal",
-              info->si_signo == SIGPROF));
+    g_assert(info && "SIGPROF handler called with invalid signal info");
+    g_assert(info->si_signo == SIGPROF &&
+             "SIGPROF handler called with other signal");
 
     /*
      * NOTE:
@@ -402,7 +401,7 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
         if (label_length > 0) {
             label_length = MIN(label_length, available_length);
 
-            /* Start copying the label to the final string */
+            // Start copying the label to the final string
             memcpy(position, label, label_length);
             available_length -= label_length;
             position += label_length;
@@ -484,7 +483,7 @@ static gboolean profiler_auto_flush_cb(void* user_data) {
     return G_SOURCE_CONTINUE;
 }
 
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 
 /**
  * gjs_profiler_start:
@@ -535,7 +534,7 @@ gjs_profiler_start(GjsProfiler *self)
         return;
     }
 
-    /* Automatically flush to be resilient against SIGINT, etc */
+    // Automatically flush to be resilient against SIGINT, etc
     if (!self->periodic_flush) {
         self->periodic_flush =
             g_timeout_source_new_seconds(FLUSH_DELAY_SECONDS);
@@ -563,7 +562,7 @@ gjs_profiler_start(GjsProfiler *self)
         return;
     }
 
-    /* Setup our signal handler for SIGPROF delivery */
+    // Setup our signal handler for SIGPROF delivery
     sa.sa_flags = SA_RESTART | SA_SIGINFO;
     sa.sa_sigaction = gjs_profiler_sigprof;
     sigemptyset(&sa.sa_mask);
@@ -596,13 +595,13 @@ gjs_profiler_start(GjsProfiler *self)
         return;
     }
 
-    /* Calculate sampling interval */
+    // Calculate sampling interval
     its.it_interval.tv_sec = 0;
     its.it_interval.tv_nsec = NSEC_PER_SEC / SAMPLES_PER_SEC;
     its.it_value.tv_sec = 0;
     its.it_value.tv_nsec = NSEC_PER_SEC / SAMPLES_PER_SEC;
 
-    /* Now start this timer */
+    // Now start this timer
     if (timer_settime(self->timer, 0, &its, &old_its) != 0) {
         g_warning("Failed to enable profiler timer: %s", g_strerror(errno));
         timer_delete(self->timer);
@@ -613,20 +612,20 @@ gjs_profiler_start(GjsProfiler *self)
 
     self->running = true;
 
-    /* Notify the JS runtime of where to put stack info */
+    // Notify the JS runtime of where to put stack info
     js::SetContextProfilingStack(self->cx, &self->stack);
 
-    /* Start recording stack info */
+    // Start recording stack info
     js::EnableContextProfilingStack(self->cx, true);
 
     g_message("Profiler started");
 
-#else  /* !ENABLE_PROFILER */
+#else  // !ENABLE_PROFILER
 
     self->running = true;
     g_message("Profiler is disabled. Recompile with it enabled to use.");
 
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 }
 
 /**
@@ -646,7 +645,7 @@ gjs_profiler_start(GjsProfiler *self)
 void
 gjs_profiler_stop(GjsProfiler *self)
 {
-    /* Note: can be called from a signal handler */
+    // Note: can be called from a signal handler
 
     g_assert(self);
 
@@ -669,7 +668,7 @@ gjs_profiler_stop(GjsProfiler *self)
 
     g_message("Profiler stopped");
 
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 
     self->running = false;
 }
@@ -692,9 +691,9 @@ gjs_profiler_sigusr2(void *data)
     return G_SOURCE_CONTINUE;
 }
 
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 
-/*
+/**
  * _gjs_profiler_setup_signals:
  * @context: a #GjsContext with a profiler attached
  *
@@ -720,12 +719,12 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
 
     self->sigusr2_id = g_unix_signal_add(SIGUSR2, gjs_profiler_sigusr2, context);
 
-#else  /* !ENABLE_PROFILER */
+#else  // !ENABLE_PROFILER
 
     g_message("Profiler is disabled. Not setting up signals.");
     (void)self;
 
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 }
 
 /**
@@ -739,7 +738,7 @@ _gjs_profiler_setup_signals(GjsProfiler *self,
  *
  * This function should only be called from the JS thread.
  *
- * Returns: %TRUE if the signal was handled.
+ * Returns: true if the signal was handled.
  */
 bool
 gjs_profiler_chain_signal(GjsContext *context,
@@ -764,7 +763,7 @@ gjs_profiler_chain_signal(GjsContext *context,
     (void)context;
     (void)info;
 
-#endif  /* ENABLE_PROFILER */
+#endif  // ENABLE_PROFILER
 
     return false;
 }
@@ -777,7 +776,7 @@ gjs_profiler_chain_signal(GjsContext *context,
  * Set the capture writer to which profiling data is written when the @self
  * is stopped.
  */
-void gjs_profiler_set_capture_writer(GjsProfiler* self, gpointer capture) {
+void gjs_profiler_set_capture_writer(GjsProfiler* self, void* capture) {
     g_return_if_fail(self);
     g_return_if_fail(!self->running);
 
@@ -786,7 +785,7 @@ void gjs_profiler_set_capture_writer(GjsProfiler* self, gpointer capture) {
     self->target_capture =
         capture ? sysprof_capture_writer_ref(
                       reinterpret_cast<SysprofCaptureWriter*>(capture))
-                : NULL;
+                : nullptr;
 #else
     // Unused in the no-profiler case
     (void)capture;

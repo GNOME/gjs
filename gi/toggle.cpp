@@ -17,7 +17,7 @@
 #include "gi/toggle.h"
 #include "util/log.h"
 
-/* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+// No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
 inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
                   const ObjectInstance* object GJS_USED_VERBOSE_LIFECYCLE) {
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p (%s @ %p)", did,
@@ -138,12 +138,10 @@ bool ToggleQueue::handle_toggle(Handler handler) {
     return true;
 }
 
-void
-ToggleQueue::shutdown(void)
-{
+void ToggleQueue::shutdown() {
     debug("shutdown", nullptr);
-    g_assert(((void)"Queue should have been emptied before shutting down",
-              q.empty()));
+    g_assert(q.empty() &&
+             "Queue should have been emptied before shutting down");
     m_shutdown = true;
 }
 
@@ -189,8 +187,8 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
     }
 
     if (m_idle_id) {
-        g_assert(((void) "Should always enqueue with the same handler",
-                  m_toggle_handler == handler));
+        g_assert(m_toggle_handler == handler &&
+                 "Should always enqueue with the same handler");
         return;
     }
 

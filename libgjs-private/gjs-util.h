@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2012 Giovanni Campagna <scampa.giovanni@gmail.com>
  */
 
-#ifndef LIBGJS_PRIVATE_GJS_UTIL_H_
-#define LIBGJS_PRIVATE_GJS_UTIL_H_
+#pragma once
 
 #include <locale.h>
 
@@ -64,11 +63,11 @@ typedef GLogWriterOutput (*GjsGLogWriterFunc)(GLogLevelFlags level,
                                               void* user_data);
 
 GJS_EXPORT
-void gjs_log_set_writer_func(GjsGLogWriterFunc func, gpointer user_data,
+void gjs_log_set_writer_func(GjsGLogWriterFunc func, void* user_data,
                              GDestroyNotify user_data_free);
 
 GJS_EXPORT
-void gjs_log_set_writer_default();
+void gjs_log_set_writer_default(void);
 
 /* For imports.gettext */
 typedef enum
@@ -168,5 +167,3 @@ GJS_EXPORT
 void gjs_clear_terminal(void);
 
 G_END_DECLS
-
-#endif /* LIBGJS_PRIVATE_GJS_UTIL_H_ */

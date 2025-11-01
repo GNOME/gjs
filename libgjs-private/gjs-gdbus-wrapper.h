@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2011 Giovanni Campagna
  */
 
-#ifndef LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
-#define LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_
+#pragma once
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -40,9 +39,13 @@ GJS_EXPORT
 GType                  gjs_dbus_implementation_get_type (void);
 
 GJS_EXPORT
-void                   gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self, gchar *property, GVariant *newvalue);
+void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,
+                                                   char* property,
+                                                   GVariant* newvalue);
 GJS_EXPORT
-void                   gjs_dbus_implementation_emit_signal           (GjsDBusImplementation *self, gchar *signal_name, GVariant *parameters);
+void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
+                                         char* signal_name,
+                                         GVariant* parameters);
 
 GJS_EXPORT
 void gjs_dbus_implementation_unexport(GjsDBusImplementation* self);
@@ -51,5 +54,3 @@ void gjs_dbus_implementation_unexport_from_connection(
     GjsDBusImplementation* self, GDBusConnection* connection);
 
 G_END_DECLS
-
-#endif /* LIBGJS_PRIVATE_GJS_GDBUS_WRAPPER_H_ */

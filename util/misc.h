@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef UTIL_MISC_H_
-#define UTIL_MISC_H_
+#pragma once
 
 #include <config.h>
 
@@ -21,8 +20,9 @@ bool    gjs_environment_variable_is_set   (const char *env_variable_name);
 
 char** gjs_g_strv_concat(char*** strv_array, int len);
 
-/*
+/**
  * LogFile:
+ *
  * RAII class encapsulating access to a FILE* pointer that must be closed,
  * unless it is an already-open fallback file such as stdout or stderr.
  */
@@ -57,5 +57,3 @@ class LogFile {
     bool has_error() { return !!m_errmsg; }
     const char* errmsg() { return m_errmsg; }
 };
-
-#endif  // UTIL_MISC_H_

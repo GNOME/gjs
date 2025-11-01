@@ -215,9 +215,9 @@ class GjsGlobal : GjsBaseGlobal {
 
         JS::Value v_importer =
             gjs_get_global_slot(global, GjsGlobalSlot::IMPORTS);
-        g_assert(((void) "importer should be defined before passing null "
-                  "importer to GjsGlobal::define_properties",
-                  v_importer.isObject()));
+        g_assert(v_importer.isObject() &&
+                 "importer should be defined before passing null importer to "
+                 "GjsGlobal::define_properties");
         JS::RootedObject root_importer(cx, &v_importer.toObject());
 
         // Wrapping is a no-op if the importer is already in the same realm.
@@ -546,7 +546,7 @@ bool gjs_global_source_map_get(
  * @realm_name: (nullable): name of the realm, for debug output
  * @bootstrap_script: (nullable): name of a bootstrap script (found at
  * resource://org/gnome/gjs/modules/script/_bootstrap/@bootstrap_script) or
- * %NULL for none
+ * nullptr for none
  *
  * Defines properties on the global object such as 'window' and 'imports', and
  * runs a bootstrap JS script on the global object to define any properties

@@ -547,7 +547,7 @@ describe('An interface', function () {
             Name: 'ObjectWithSetter',
             Implements: [AnInterface],
             required() {},
-            set some_prop(value) {  /* setter without getter */// jshint ignore:line
+            set some_prop(value) {  // setter without getter
                 this.overridden_some_prop_setter_called = true;
             },
         });

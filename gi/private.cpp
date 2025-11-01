@@ -265,7 +265,7 @@ static bool gjs_register_interface(JSContext* cx, unsigned argc,
                                      &interface_type))
         return false;
 
-    /* create a custom JSClass */
+    // create a custom JSClass
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     if (!module)
         return false;  // error will have been thrown already
@@ -296,7 +296,7 @@ static bool gjs_register_interface_with_class(JSContext* cx, unsigned argc,
                                      &interface_type))
         return false;
 
-    /* create a custom JSClass */
+    // create a custom JSClass
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     if (!module)
         return false;  // error will have been thrown already
@@ -350,7 +350,7 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
         return false;
     }
 
-    /* We checked parent above, in ObjectBase::for_js_typecheck() */
+    // We checked parent above, in ObjectBase::for_js_typecheck()
     g_assert(parent_priv);
 
     GTypeQuery query;
@@ -406,7 +406,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
                                 &instance_type))
         return false;
 
-    /* create a custom JSClass */
+    // create a custom JSClass
     JS::RootedObject module(cx, gjs_lookup_private_namespace(cx));
     JS::RootedObject constructor(cx), prototype(cx);
     if (!ObjectPrototype::define_class(cx, module, Nothing{}, instance_type,
@@ -475,7 +475,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
                              &params_obj))
         return false;
 
-    /* we only support standard accumulators for now */
+    // we only support standard accumulators for now
     GSignalAccumulator accumulator;
     switch (accumulator_enum) {
         case 1:
@@ -525,8 +525,8 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     unsigned signal_id = g_signal_newv(
         signal_name.get(), gtype, GSignalFlags(flags),
-        /* class closure */ nullptr, accumulator, /* accu_data */ nullptr,
-        /* c_marshaller */ nullptr, return_type, n_parameters, params);
+        /* class closure = */ nullptr, accumulator, /* accu_data = */ nullptr,
+        /* c_marshaller = */ nullptr, return_type, n_parameters, params);
 
     // FIXME: what if ID is greater than int32 max?
     args.rval().setInt32(signal_id);
@@ -566,34 +566,31 @@ GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_associate_closure(JSContext* context, unsigned argc,
-                                  JS::Value* vp) {
+static bool gjs_associate_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
-    JS::RootedObject func_obj(context);
-    JS::RootedObject target_obj(context);
-    Gjs::Closure::Ptr closure;
+    JS::RootedObject func_obj{cx};
+    JS::RootedObject target_obj{cx};
     Gjs::AutoGValue value(G_TYPE_CLOSURE);
-    ObjectInstance* obj;
 
-    if (!gjs_parse_call_args(context, "associateClosure", argv, "oo", "object",
+    if (!gjs_parse_call_args(cx, "associateClosure", argv, "oo", "object",
                              &target_obj, "func", &func_obj))
         return false;
 
     g_assert(JS::IsCallable(func_obj) &&
              "associateClosure's function must be callable");
 
-    obj = ObjectInstance::for_js(context, target_obj);
+    ObjectInstance* obj = ObjectInstance::for_js(cx, target_obj);
     if (!obj)
         return false;
 
-    closure =
-        Gjs::Closure::create_marshaled(context, func_obj, "wrapped", false);
+    Gjs::Closure::Ptr closure =
+        Gjs::Closure::create_marshaled(cx, func_obj, "wrapped", false);
 
-    if (!obj->associate_closure(context, closure))
+    if (!obj->associate_closure(cx, closure))
         return false;
 
     g_value_set_boxed(&value, closure);
-    return gjs_value_from_g_value(context, argv.rval(), &value);
+    return gjs_value_from_g_value(cx, argv.rval(), &value);
 }
 
 static JSFunctionSpec private_module_funcs[] = {

@@ -6,6 +6,7 @@
 
 #include <config.h>
 
+#include <limits.h>  // for INT_MAX
 #include <stdint.h>
 #include <string.h>
 
@@ -1079,8 +1080,8 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
     Gjs::GErrorResult<> invoke(const mozilla::Span<const GIArgument>& in_args,
                                const mozilla::Span<GIArgument>& out_args,
                                GIArgument* return_value) const {
-        g_assert(in_args.size() <= G_MAXINT);
-        g_assert(out_args.size() <= G_MAXINT);
+        g_assert(in_args.size() <= INT_MAX);
+        g_assert(out_args.size() <= INT_MAX);
         GError* error = nullptr;
         return this->bool_gerror(
             gi_function_info_invoke(ptr(), in_args.data(), in_args.size(),
@@ -1810,7 +1811,7 @@ static_assert(sizeof(StackTypeInfo) == sizeof(GITypeInfo),
 
 }  // namespace GI
 
-/* For use of GI::OwnedInfo<TAG> in GC hash maps */
+// For use of GI::OwnedInfo<TAG> in GC hash maps
 namespace JS {
 template <GI::InfoTag TAG>
 struct GCPolicy<GI::OwnedInfo<TAG>>

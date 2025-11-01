@@ -16,16 +16,13 @@ enum class GjsStringTermination {
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
-                                     const char* encoding,
-                                     GjsStringTermination string_termination,
+JSString* gjs_decode_from_uint8array(JSContext*, JS::HandleObject uint8array,
+                                     const char* encoding, GjsStringTermination,
                                      bool fatal);
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
-                                   const char* encoding,
-                                   GjsStringTermination string_termination);
+JSObject* gjs_encode_to_uint8array(JSContext*, JS::HandleString,
+                                   const char* encoding, GjsStringTermination);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_define_text_encoding_stuff(JSContext* cx,
-                                    JS::MutableHandleObject module);
+bool gjs_define_text_encoding_stuff(JSContext*, JS::MutableHandleObject module);

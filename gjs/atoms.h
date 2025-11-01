@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 // SPDX-FileCopyrightText: 2018 Marco Trevisan <marco.trevisan@canonical.com>
 
-#ifndef GJS_ATOMS_H_
-#define GJS_ATOMS_H_
+#pragma once
 
 #include <config.h>
 
@@ -86,7 +85,8 @@ class JSTracer;
 // clang-format on
 
 struct GjsAtom {
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool init(JSContext*, const char* str);
 
     /* It's OK to return JS::HandleId here, to avoid an extra root, with the
      * caveat that you should not use this value after the GjsContext has been
@@ -102,16 +102,18 @@ struct GjsAtom {
 };
 
 struct GjsSymbolAtom : GjsAtom {
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool init(JSContext*, const char* str);
 };
 
 class GjsAtoms {
  public:
-    GjsAtoms(void) {}
-    ~GjsAtoms(void) {}  // prevents giant destructor from being inlined
-    GJS_JSAPI_RETURN_CONVENTION bool init_atoms(JSContext* cx);
+    GjsAtoms() {}
+    ~GjsAtoms() {}  // prevents giant destructor from being inlined
+    GJS_JSAPI_RETURN_CONVENTION
+    bool init_atoms(JSContext*);
 
-    void trace(JSTracer* trc);
+    void trace(JSTracer*);
 
 #define DECLARE_ATOM_MEMBER(identifier, str) GjsAtom identifier;
 #define DECLARE_SYMBOL_ATOM_MEMBER(identifier, str) GjsSymbolAtom identifier;
@@ -125,5 +127,3 @@ class GjsAtoms {
 #    undef FOR_EACH_ATOM
 #    undef FOR_EACH_SYMBOL_ATOM
 #endif
-
-#endif  // GJS_ATOMS_H_

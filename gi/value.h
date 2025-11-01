@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_VALUE_H_
-#define GI_VALUE_H_
+#pragma once
 
 #include <config.h>
 
@@ -248,18 +247,9 @@ std::string gvalue_to_string(GValue* gvalue) {
 using AutoGValueVector = std::vector<Gjs::AutoGValue>;
 
 GJS_JSAPI_RETURN_CONVENTION
-bool       gjs_value_to_g_value         (JSContext      *context,
-                                         JS::HandleValue value,
-                                         GValue         *gvalue);
+bool gjs_value_to_g_value(JSContext*, JS::HandleValue, GValue*);
 GJS_JSAPI_RETURN_CONVENTION
-bool       gjs_value_to_g_value_no_copy (JSContext      *context,
-                                         JS::HandleValue value,
-                                         GValue         *gvalue);
+bool gjs_value_to_g_value_no_copy(JSContext*, JS::HandleValue, GValue*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_value_from_g_value(JSContext             *context,
-                            JS::MutableHandleValue value_p,
-                            const GValue          *gvalue);
-
-
-#endif  // GI_VALUE_H_
+bool gjs_value_from_g_value(JSContext*, JS::MutableHandleValue, const GValue*);

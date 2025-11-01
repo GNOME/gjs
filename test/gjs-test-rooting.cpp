@@ -50,18 +50,12 @@ static void on_gc(JSContext*, JSGCStatus status, JS::GCReason, void*) {
     g_mutex_unlock(&gc_lock);
 }
 
-static void
-setup(GjsRootingFixture *fx,
-      gconstpointer      unused)
-{
+static void setup(GjsRootingFixture* fx, const void* unused) {
     gjs_unit_test_fixture_setup(PARENT(fx), unused);
     JS_SetGCCallback(PARENT(fx)->cx, on_gc, fx);
 }
 
-static void
-teardown(GjsRootingFixture *fx,
-         gconstpointer      unused)
-{
+static void teardown(GjsRootingFixture* fx, const void* unused) {
     gjs_unit_test_fixture_teardown(PARENT(fx), unused);
 }
 
@@ -231,9 +225,7 @@ static void test_maybe_owned_object_destroyed_after_notify(
     delete fx->obj;
 }
 
-void
-gjs_test_add_tests_for_rooting(void)
-{
+void gjs_test_add_tests_for_rooting() {
 #define ADD_ROOTING_TEST(path, f)                                      \
     g_test_add("/rooting/" path, GjsRootingFixture, nullptr, setup, f, \
                teardown);

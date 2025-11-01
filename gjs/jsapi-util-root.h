@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2017 Endless Mobile, Inc.
 // SPDX-FileCopyrightText: 2019 Canonical, Ltd.
 
-#ifndef GJS_JSAPI_UTIL_ROOT_H_
-#define GJS_JSAPI_UTIL_ROOT_H_
+#pragma once
 
 #include <config.h>
 
@@ -64,7 +63,7 @@ class GjsMaybeOwned {
     JS::Heap<JSObject*> m_heap;
     std::unique_ptr<JS::PersistentRootedObject> m_root;
 
-    /* No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1. */
+    // No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
     inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned %p %s", this,
                             what);
@@ -255,5 +254,3 @@ struct GCPolicy<Gjs::WeakPtr<T>> {
 };
 
 }  // namespace JS
-
-#endif  // GJS_JSAPI_UTIL_ROOT_H_

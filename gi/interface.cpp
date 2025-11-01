@@ -33,7 +33,7 @@ InterfacePrototype::InterfacePrototype(Maybe<const GI::InterfaceInfo> info,
     GJS_INC_COUNTER(interface);
 }
 
-InterfacePrototype::~InterfacePrototype(void) {
+InterfacePrototype::~InterfacePrototype() {
     g_clear_pointer(&m_vtable, g_type_default_interface_unref);
     GJS_DEC_COUNTER(interface);
 }
@@ -65,7 +65,7 @@ bool InterfacePrototype::new_enumerate_impl(
 }
 
 // See GIWrapperBase::resolve().
-bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
+bool InterfacePrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved) {
     /* If we have no GIRepository information then this interface was defined
      * from within GJS. In that case, it has no properties that need to be
@@ -76,7 +76,7 @@ bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     }
 
     JS::UniqueChars prop_name;
-    if (!gjs_get_string_id(context, id, &prop_name))
+    if (!gjs_get_string_id(cx, id, &prop_name))
         return false;
     if (!prop_name) {
         *resolved = false;
@@ -86,7 +86,7 @@ bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     Maybe<GI::AutoFunctionInfo> method_info{m_info->method(prop_name.get())};
 
     if (method_info && method_info->is_method()) {
-        if (!gjs_define_function(context, obj, m_gtype, method_info.ref()))
+        if (!gjs_define_function(cx, obj, m_gtype, method_info.ref()))
             return false;
 
         *resolved = true;
@@ -97,7 +97,7 @@ bool InterfacePrototype::resolve_impl(JSContext* context, JS::HandleObject obj,
     return true;
 }
 
-/*
+/**
  * InterfaceBase::has_instance:
  *
  * JSNative implementation of `[Symbol.hasInstance]()`. This method is never
@@ -162,21 +162,18 @@ JSFunctionSpec InterfaceBase::static_methods[] = {
 };
 // clang-format on
 
-bool
-gjs_lookup_interface_constructor(JSContext             *context,
-                                 GType                  gtype,
-                                 JS::MutableHandleValue value_p)
-{
+bool gjs_lookup_interface_constructor(JSContext* cx, GType gtype,
+                                      JS::MutableHandleValue value_p) {
     GI::Repository repo;
     Maybe<GI::AutoRegisteredTypeInfo> interface_info{repo.find_by_gtype(gtype)};
     if (!interface_info) {
-        gjs_throw(context, "Cannot expose non introspectable interface %s",
+        gjs_throw(cx, "Cannot expose non introspectable interface %s",
                   g_type_name(gtype));
         return false;
     }
 
     JSObject* constructor =
-        gjs_lookup_generic_constructor(context, interface_info.ref());
+        gjs_lookup_generic_constructor(cx, interface_info.ref());
     if (G_UNLIKELY(!constructor))
         return false;
 

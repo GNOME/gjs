@@ -133,7 +133,7 @@ void gjs_log_init() {
             log_file = debug_output;
         }
 
-        /* avoid truncating in case we're using shared logfile */
+        // avoid truncating in case we're using shared logfile
         s_log_file = std::make_unique<LogFile>(log_file.c_str());
         if (s_log_file->has_error()) {
             fprintf(stderr, "Failed to open log file `%s': %s\n",
@@ -151,7 +151,7 @@ void gjs_log_init() {
         s_enabled_topics.fill(topics == nullptr);
         if (topics) {
             Gjs::AutoStrv prefixes{g_strsplit(topics, ";", -1)};
-            for (unsigned i = 0; prefixes[i] != NULL; i++) {
+            for (unsigned i = 0; prefixes[i] != nullptr; i++) {
                 GjsDebugTopic topic = prefix_to_topic(prefixes[i]);
                 if (topic != GJS_DEBUG_LAST)
                     s_enabled_topics[topic] = true;
@@ -176,7 +176,7 @@ write_to_stream(FILE       *logfp,
                 const char *prefix,
                 const char *s)
 {
-    /* seek to end to avoid truncating in case we're using shared logfile */
+    // seek to end to avoid truncating in case we're using shared logfile
     (void)fseek(logfp, 0, SEEK_END);
 
     fprintf(logfp, "%*s: %s", PREFIX_LENGTH, prefix, s);
@@ -201,9 +201,9 @@ gjs_debug(GjsDebugTopic topic,
     va_end (args);
 
     if (s_timer) {
-        static gdouble previous = 0.0;
-        gdouble total = g_timer_elapsed(s_timer, NULL) * 1000.0;
-        gdouble since = total - previous;
+        static double previous = 0.0;
+        double total = g_timer_elapsed(s_timer, nullptr) * 1000.0;
+        double since = total - previous;
         const char *ts_suffix;
         char *s2;
 

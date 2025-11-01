@@ -62,10 +62,10 @@ function _proxyInvoker(methodName, sync, inSignature, argArray) {
     var cancellable = null;
     let fdList = null;
 
-    /* Convert argArray to a *real* array */
+    // Convert argArray to a *real* array
     argArray = Array.prototype.slice.call(argArray);
 
-    /* The default replyFunc only logs the responses */
+    // The default replyFunc only logs the responses
     replyFunc = _logReply;
 
     var signatureLength = inSignature.length;

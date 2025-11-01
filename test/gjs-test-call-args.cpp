@@ -289,10 +289,7 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FN("objectInvalidType", object_invalid_type, 0, 0),
     JS_FS_END};
 
-static void
-setup(GjsUnitTestFixture *fx,
-      gconstpointer       unused)
-{
+static void setup(GjsUnitTestFixture* fx, const void* unused) {
     gjs_unit_test_fixture_setup(fx, unused);
 
     JS::RootedObject global{fx->cx, JS::CurrentGlobalOrNull(fx->cx)};
@@ -300,10 +297,7 @@ setup(GjsUnitTestFixture *fx,
     g_assert_true(success);
 }
 
-static void
-run_code(GjsUnitTestFixture *fx,
-         gconstpointer       code)
-{
+static void run_code(GjsUnitTestFixture* fx, const void* code) {
     const char *script = (const char *) code;
 
     JS::SourceText<mozilla::Utf8Unit> source;
@@ -321,10 +315,8 @@ run_code(GjsUnitTestFixture *fx,
     g_assert_true(ok);
 }
 
-static void
-run_code_expect_exception(GjsUnitTestFixture *fx,
-                          gconstpointer       code)
-{
+static void run_code_expect_exception(GjsUnitTestFixture* fx,
+                                      const void* code) {
     const char *script = (const char *) code;
 
     JS::SourceText<mozilla::Utf8Unit> source;
@@ -341,17 +333,15 @@ run_code_expect_exception(GjsUnitTestFixture *fx,
     Gjs::AutoChar message{gjs_test_get_exception_message(fx->cx)};
     g_assert_nonnull(message);
 
-    /* Cheap way to shove an expected exception message into the data argument */
+    // Cheap way to shove an expected exception message into the data argument
     const char *expected_msg = strstr((const char *) code, "//");
-    if (expected_msg != NULL) {
+    if (expected_msg != nullptr) {
         expected_msg += 2;
         assert_match(message, expected_msg);
     }
 }
 
-void
-gjs_test_add_tests_for_parse_call_args(void)
-{
+void gjs_test_add_tests_for_parse_call_args() {
 #define ADD_CALL_ARGS_TEST_BASE(path, code, f)                         \
     g_test_add("/callargs/" path, GjsUnitTestFixture, code, setup, f,  \
                gjs_unit_test_fixture_teardown)

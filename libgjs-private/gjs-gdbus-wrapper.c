@@ -6,6 +6,7 @@
 
 #include <config.h>
 
+#include <stdbool.h>
 #include <string.h>  // for strcmp
 
 #include <gio/gio.h>
@@ -27,15 +28,15 @@ enum {
     SIGNAL_LAST,
 };
 
-static guint signals[SIGNAL_LAST];
+static unsigned signals[SIGNAL_LAST];
 
 struct _GjsDBusImplementationPrivate {
     GDBusInterfaceVTable  vtable;
     GDBusInterfaceInfo   *ifaceinfo;
 
-    // from gchar* to GVariant*
+    // from char* to GVariant*
     GHashTable           *outstanding_properties;
-    guint                 idle_id;
+    unsigned idle_id;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
@@ -53,16 +54,18 @@ static inline void _g_variant_unref0(void* value) {
         g_variant_unref(value);
 }
 
-static gboolean gjs_dbus_implementation_check_interface(
-    GjsDBusImplementation* self, GDBusConnection* connection,
-    const char* object_path, const char* interface_name, GError** error) {
+static bool gjs_dbus_implementation_check_interface(GjsDBusImplementation* self,
+                                                    GDBusConnection* connection,
+                                                    const char* object_path,
+                                                    const char* interface_name,
+                                                    GError** error) {
     const char* exported_object_path;
 
     if (!g_dbus_interface_skeleton_has_connection(
             G_DBUS_INTERFACE_SKELETON(self), connection)) {
         g_set_error_literal(error, G_DBUS_ERROR, G_DBUS_ERROR_DISCONNECTED,
                             "Wrong connection");
-        return FALSE;
+        return false;
     }
     exported_object_path = g_dbus_interface_skeleton_get_object_path(
         G_DBUS_INTERFACE_SKELETON(self));
@@ -71,27 +74,28 @@ static gboolean gjs_dbus_implementation_check_interface(
             error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
             "Wrong object path %s for %s", object_path,
             exported_object_path ? exported_object_path : "unexported object");
-        return FALSE;
+        return false;
     }
     if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
         g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE,
                     "Unknown interface %s on %s", interface_name,
                     self->priv->ifaceinfo->name);
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
-static gboolean gjs_dbus_implementation_check_property(
-    GjsDBusImplementation* self, const char* interface_name,
-    const char* property_name, GError** error) {
+static bool gjs_dbus_implementation_check_property(GjsDBusImplementation* self,
+                                                   const char* interface_name,
+                                                   const char* property_name,
+                                                   GError** error) {
     if (!g_dbus_interface_info_lookup_property(self->priv->ifaceinfo,
                                                property_name)) {
         g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
                     "Unknown property %s on %s", property_name, interface_name);
-        return FALSE;
+        return false;
     }
-    return TRUE;
+    return true;
 }
 
 static void gjs_dbus_implementation_method_call(
@@ -198,9 +202,10 @@ gjs_dbus_implementation_finalize(GObject *object) {
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->finalize(object);
 }
 
-static void
-gjs_dbus_implementation_set_property(GObject *object, guint property_id, const GValue *value, GParamSpec *pspec)
-{
+static void gjs_dbus_implementation_set_property(GObject* object,
+                                                 unsigned property_id,
+                                                 const GValue* value,
+                                                 GParamSpec* pspec) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
 
     switch (property_id) {
@@ -261,11 +266,11 @@ gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
     GVariantBuilder invalidated_props;
     GHashTableIter iter;
     GVariant *val;
-    gchar *prop_name;
 
     g_variant_builder_init(&changed_props, G_VARIANT_TYPE_VARDICT);
     g_variant_builder_init(&invalidated_props, G_VARIANT_TYPE_STRING_ARRAY);
 
+    char* prop_name;
     g_hash_table_iter_init(&iter, self->priv->outstanding_properties);
     while (g_hash_table_iter_next(&iter, (void**) &prop_name, (void**) &val)) {
         if (val)
@@ -370,8 +375,7 @@ gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
                      G_TYPE_VARIANT /* parameters */);
 }
 
-static gboolean
-idle_cb (gpointer data) {
+static gboolean idle_cb(void* data) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (data);
 
     g_dbus_interface_skeleton_flush(skeleton);
@@ -387,11 +391,9 @@ idle_cb (gpointer data) {
  * Queue a PropertyChanged signal for emission, or update the one queued
  * adding @property
  */
-void
-gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self,
-                                               gchar                 *property,
-                                               GVariant              *newvalue)
-{
+void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,
+                                                   char* property,
+                                                   GVariant* newvalue) {
     g_hash_table_replace(self->priv->outstanding_properties,
                          g_strdup(property),
                          _g_variant_ref_sink0(newvalue));
@@ -409,11 +411,9 @@ gjs_dbus_implementation_emit_property_changed (GjsDBusImplementation *self,
  * Emits a signal named @signal_name from the object and interface represented
  * by @self. This signal has no destination.
  */
-void
-gjs_dbus_implementation_emit_signal (GjsDBusImplementation *self,
-                                     gchar                 *signal_name,
-                                     GVariant              *parameters)
-{
+void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
+                                         char* signal_name,
+                                         GVariant* parameters) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
     GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
     const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);

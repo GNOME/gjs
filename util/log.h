@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef UTIL_LOG_H_
-#define UTIL_LOG_H_
+#pragma once
 
 #include <config.h>
 
@@ -50,12 +49,12 @@ typedef enum {
  * should be off by default.
  */
 
-/* Whether to be verbose about JavaScript property access and resolution */
+// Whether to be verbose about JavaScript property access and resolution
 #ifndef GJS_VERBOSE_ENABLE_PROPS
 #define GJS_VERBOSE_ENABLE_PROPS 0
 #endif
 
-/* Whether to be verbose about JavaScript function arg and closure marshaling */
+// Whether to be verbose about JavaScript function arg and closure marshaling
 #ifndef GJS_VERBOSE_ENABLE_MARSHAL
 #define GJS_VERBOSE_ENABLE_MARSHAL 0
 #endif
@@ -67,20 +66,17 @@ typedef enum {
 #define GJS_VERBOSE_ENABLE_LIFECYCLE 0
 #endif
 
-/* Whether to log all gobject-introspection types and methods we use
- */
+// Whether to log all gobject-introspection types and methods we use
 #ifndef GJS_VERBOSE_ENABLE_GI_USAGE
 #define GJS_VERBOSE_ENABLE_GI_USAGE 0
 #endif
 
-/* Whether to log all callback GClosure debugging (finalizing, invalidating etc)
- */
+// Whether to log all callback GClosure debugging (finalizing, invalidating etc)
 #ifndef GJS_VERBOSE_ENABLE_GCLOSURE
 #define GJS_VERBOSE_ENABLE_GCLOSURE 0
 #endif
 
-/* Whether to log all GObject signal debugging
- */
+// Whether to log all GObject signal debugging
 #ifndef GJS_VERBOSE_ENABLE_GSIGNAL
 #define GJS_VERBOSE_ENABLE_GSIGNAL 0
 #endif
@@ -154,7 +150,5 @@ typedef enum {
 void gjs_log_init();
 void gjs_log_cleanup();
 
-[[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic topic,
-                                             const char* format, ...);
-
-#endif  // UTIL_LOG_H_
+[[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic, const char* format,
+                                             ...);

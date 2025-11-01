@@ -34,21 +34,18 @@ JSObject* CairoPSSurface::new_proto(JSContext* cx, JSProtoKey) {
     return JS_NewObjectWithGivenProto(cx, nullptr, parent_proto);
 }
 
-cairo_surface_t* CairoPSSurface::constructor_impl(JSContext* context,
+cairo_surface_t* CairoPSSurface::constructor_impl(JSContext* cx,
                                                   const JS::CallArgs& argv) {
     Gjs::AutoChar filename;
     double width, height;
     cairo_surface_t *surface;
-    if (!gjs_parse_call_args(context, "PSSurface", argv, "Fff",
-                             "filename", &filename,
-                             "width", &width,
-                             "height", &height))
+    if (!gjs_parse_call_args(cx, "PSSurface", argv, "Fff", "filename",
+                             &filename, "width", &width, "height", &height))
         return nullptr;
 
     surface = cairo_ps_surface_create(filename, width, height);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface),
-                                "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return nullptr;
 
     return surface;
@@ -73,11 +70,10 @@ const JSFunctionSpec CairoPSSurface::proto_funcs[] = {
     JS_FS_END};
 
 #else
-JSObject* CairoPSSurface::from_c_ptr(JSContext* context,
-                                     cairo_surface_t* surface) {
-    gjs_throw(context,
-        "could not create PS surface, recompile cairo and gjs with "
-        "PS support.");
+JSObject* CairoPSSurface::from_c_ptr(JSContext* cx, cairo_surface_t* surface) {
+    gjs_throw(cx,
+              "could not create PS surface, recompile cairo and gjs with PS "
+              "support.");
     return nullptr;
 }
-#endif /* CAIRO_HAS_PS_SURFACE */
+#endif  // CAIRO_HAS_PS_SURFACE

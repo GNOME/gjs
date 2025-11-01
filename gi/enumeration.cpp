@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <stddef.h>  // for size_t
 #include <inttypes.h>
 
 #include <glib-object.h>
@@ -24,11 +25,8 @@
 #include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_define_enum_value(JSContext* context,
-                                  JS::HandleObject in_object,
+static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
                                   const GI::ValueInfo info) {
-    gsize i;
-
     const char* value_name = info.name();
     int64_t value_val = info.value();
 
@@ -37,7 +35,7 @@ static bool gjs_define_enum_value(JSContext* context,
      * Convert back to all SOUTH_WEST.
      */
     Gjs::AutoChar fixed_name{g_ascii_strup(value_name, -1)};
-    for (i = 0; fixed_name[i]; ++i) {
+    for (size_t i = 0; fixed_name[i]; ++i) {
         char c = fixed_name[i];
         if (!(('A' <= c && c <= 'Z') ||
               ('0' <= c && c <= '9')))
@@ -48,11 +46,11 @@ static bool gjs_define_enum_value(JSContext* context,
               "Defining enum value %s (fixed from %s) %" PRId64,
               fixed_name.get(), value_name, value_val);
 
-    if (!JS_DefineProperty(context, in_object,
-                           fixed_name, (double) value_val,
+    if (!JS_DefineProperty(cx, in_object, fixed_name,
+                           static_cast<double>(value_val),
                            GJS_MODULE_PROP_FLAGS)) {
-        gjs_throw(context,
-                  "Unable to define enumeration value %s %" G_GINT64_FORMAT
+        gjs_throw(cx,
+                  "Unable to define enumeration value %s %" PRId64
                   " (no memory most likely)",
                   fixed_name.get(), value_val);
         return false;
@@ -61,19 +59,19 @@ static bool gjs_define_enum_value(JSContext* context,
     return true;
 }
 
-bool gjs_define_enum_values(JSContext* context, JS::HandleObject in_object,
+bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
                             const GI::EnumInfo info) {
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
      */
     for (GI::AutoValueInfo value_info : info.values()) {
-        if (!gjs_define_enum_value(context, in_object, value_info))
+        if (!gjs_define_enum_value(cx, in_object, value_info))
             return false;
     }
     return true;
 }
 
-bool gjs_define_enumeration(JSContext* context, JS::HandleObject in_object,
+bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
                             const GI::EnumInfo info) {
     /* An enumeration is simply an object containing integer attributes for
      * each enum value. It does not have a special JSClass.
@@ -86,26 +84,28 @@ bool gjs_define_enumeration(JSContext* context, JS::HandleObject in_object,
 
     const char* enum_name = info.name();
 
-    JS::RootedObject enum_obj(context, JS_NewPlainObject(context));
+    JS::RootedObject enum_obj{cx, JS_NewPlainObject(cx)};
     if (!enum_obj) {
-        gjs_throw(context, "Could not create enumeration %s.%s", info.ns(),
+        gjs_throw(cx, "Could not create enumeration %s.%s", info.ns(),
                   enum_name);
         return false;
     }
 
     GType gtype = info.gtype();
 
-    if (!gjs_define_enum_values(context, enum_obj, info) ||
-        !gjs_define_static_methods(context, enum_obj, gtype, info) ||
-        !gjs_wrapper_define_gtype_prop(context, enum_obj, gtype))
+    if (!gjs_define_enum_values(cx, enum_obj, info) ||
+        !gjs_define_static_methods(cx, enum_obj, gtype, info) ||
+        !gjs_wrapper_define_gtype_prop(cx, enum_obj, gtype))
         return false;
 
     gjs_debug(GJS_DEBUG_GENUM, "Defining %s.%s as %p", info.ns(), enum_name,
               enum_obj.get());
 
-    if (!JS_DefineProperty(context, in_object, enum_name, enum_obj,
+    if (!JS_DefineProperty(cx, in_object, enum_name, enum_obj,
                            GJS_MODULE_PROP_FLAGS)) {
-        gjs_throw(context, "Unable to define enumeration property (no memory most likely)");
+        gjs_throw(
+            cx,
+            "Unable to define enumeration property (no memory most likely)");
         return false;
     }
 

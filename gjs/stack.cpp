@@ -30,9 +30,7 @@ gjs_context_print_stack_stderr(GjsContext *context)
     js::DumpBacktrace(cx, stderr);
 }
 
-void
-gjs_dumpstack(void)
-{
+void gjs_dumpstack() {
     Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
     GList *iter;
 

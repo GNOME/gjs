@@ -84,48 +84,47 @@ static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
 }
 
 bool gjs_struct_foreign_convert_to_gi_argument(
-    JSContext* context, JS::Value value, const GI::StructInfo info,
+    JSContext* cx, JS::Value value, const GI::StructInfo info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
     GjsArgumentFlags flags, GIArgument* arg) {
     GjsForeignInfo *foreign;
 
-    foreign = gjs_struct_foreign_lookup(context, info);
+    foreign = gjs_struct_foreign_lookup(cx, info);
     if (!foreign)
         return false;
 
-    if (!foreign->to_func(context, value, arg_name, argument_type, transfer,
-                          flags, arg))
+    if (!foreign->to_func(cx, value, arg_name, argument_type, transfer, flags,
+                          arg))
         return false;
 
     return true;
 }
 
-bool gjs_struct_foreign_convert_from_gi_argument(JSContext* context,
+bool gjs_struct_foreign_convert_from_gi_argument(JSContext* cx,
                                                  JS::MutableHandleValue value_p,
                                                  const GI::StructInfo info,
                                                  GIArgument* arg) {
-    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(context, info);
+    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(cx, info);
     if (!foreign)
         return false;
 
-    if (!foreign->from_func(context, value_p, arg))
+    if (!foreign->from_func(cx, value_p, arg))
         return false;
 
     return true;
 }
 
-bool gjs_struct_foreign_release_gi_argument(JSContext* context,
-                                            GITransfer transfer,
+bool gjs_struct_foreign_release_gi_argument(JSContext* cx, GITransfer transfer,
                                             const GI::StructInfo info,
                                             GIArgument* arg) {
-    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(context, info);
+    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(cx, info);
     if (!foreign)
         return false;
 
     if (!foreign->release_func)
         return true;
 
-    if (!foreign->release_func(context, transfer, arg))
+    if (!foreign->release_func(cx, transfer, arg))
         return false;
 
     return true;

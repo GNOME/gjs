@@ -22,7 +22,7 @@ using mozilla::Maybe;
  * with something that gives us both the introspection name
  * and a memory address.
  */
-bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
+bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                 const char* objtype,
                                 Maybe<const GI::BaseInfo> info, GType gtype,
                                 const void* native_address,
@@ -46,7 +46,7 @@ bool gjs_wrapper_to_string_func(JSContext* context, JSObject* this_obj,
 
     out << ']';
 
-    return gjs_string_from_utf8(context, out.str().c_str(), rval);
+    return gjs_string_from_utf8(cx, out.str().c_str(), rval);
 }
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,

@@ -114,7 +114,7 @@ describe('Tweener', function () {
         Tweener.pauseTweens(objectA);
         // This should do nothing
         expect(Tweener.pauseTweens(objectB, 'quux')).toBeFalsy();
-        /* Pause and resume should be equal to doing nothing */
+        // Pause and resume should be equal to doing nothing
         Tweener.pauseTweens(objectC, 'baaz');
         Tweener.resumeTweens(objectC, 'baaz');
 
@@ -227,7 +227,7 @@ describe('Tweener', function () {
             foo: 200,
             time: 0.1,
             onStart: () => {
-                /* The immediate tween should set it to 50 before we run */
+                // The immediate tween should set it to 50 before we run
                 expect(object.foo).toEqual(50);
             },
         });

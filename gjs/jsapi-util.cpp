@@ -80,22 +80,19 @@ throw_property_lookup_error(JSContext       *cx,
  * SpiderMonkey will emit a warning if the property is not present, so don't
  * use this if you expect the property not to be present some of the time.
  */
-bool
-gjs_object_require_property(JSContext             *context,
-                            JS::HandleObject       obj,
-                            const char            *obj_description,
-                            JS::HandleId           property_name,
-                            JS::MutableHandleValue value)
-{
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* obj_description,
+                                 JS::HandleId property_name,
+                                 JS::MutableHandleValue value) {
     value.setUndefined();
 
-    if (G_UNLIKELY(!JS_GetPropertyById(context, obj, property_name, value)))
+    if (G_UNLIKELY(!JS_GetPropertyById(cx, obj, property_name, value)))
         return false;
 
     if (G_LIKELY(!value.isUndefined()))
         return true;
 
-    throw_property_lookup_error(context, obj, obj_description, property_name,
+    throw_property_lookup_error(cx, obj, obj_description, property_name,
                                 "its value was undefined");
     return false;
 }
@@ -138,7 +135,7 @@ gjs_object_require_property(JSContext       *cx,
     return false;
 }
 
-/* Converts JS string value to UTF-8 string. */
+// Converts JS string value to UTF-8 string.
 bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
                                  const char* description,
                                  JS::HandleId property_name,
@@ -194,57 +191,55 @@ gjs_object_require_converted_property(JSContext       *cx,
     return false;
 }
 
-void
-gjs_throw_constructor_error(JSContext *context)
-{
-    gjs_throw(context,
-              "Constructor called as normal method. Use 'new SomeObject()' not 'SomeObject()'");
+void gjs_throw_constructor_error(JSContext* cx) {
+    gjs_throw(cx,
+              "Constructor called as normal method. Use 'new SomeObject()' not "
+              "'SomeObject()'");
 }
 
-void gjs_throw_abstract_constructor_error(JSContext* context,
+void gjs_throw_abstract_constructor_error(JSContext* cx,
                                           const JS::CallArgs& args) {
     const JSClass *proto_class;
     const char *name = "anonymous";
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedObject callee(context, &args.callee());
-    JS::RootedValue prototype(context);
-    if (JS_GetPropertyById(context, callee, atoms.prototype(), &prototype)) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject callee{cx, &args.callee()};
+    JS::RootedValue prototype{cx};
+    if (JS_GetPropertyById(cx, callee, atoms.prototype(), &prototype)) {
         proto_class = JS::GetClass(&prototype.toObject());
         name = proto_class->name;
     }
 
-    gjs_throw(context, "You cannot construct new instances of '%s'", name);
+    gjs_throw(cx, "You cannot construct new instances of '%s'", name);
 }
 
-JSObject* gjs_build_string_array(JSContext* context,
+JSObject* gjs_build_string_array(JSContext* cx,
                                  const std::vector<std::string>& strings) {
-    JS::RootedValueVector elems(context);
+    JS::RootedValueVector elems{cx};
     if (!elems.reserve(strings.size())) {
-        JS_ReportOutOfMemory(context);
+        JS_ReportOutOfMemory(cx);
         return nullptr;
     }
 
     for (const std::string& string : strings) {
         JS::ConstUTF8CharsZ chars(string.c_str(), string.size());
-        JS::RootedValue element(context,
-            JS::StringValue(JS_NewStringCopyUTF8Z(context, chars)));
+        JS::RootedValue element{
+            cx, JS::StringValue(JS_NewStringCopyUTF8Z(cx, chars))};
         elems.infallibleAppend(element);
     }
 
-    return JS::NewArrayObject(context, elems);
+    return JS::NewArrayObject(cx, elems);
 }
 
-JSObject* gjs_define_string_array(JSContext* context,
-                                  JS::HandleObject in_object,
+JSObject* gjs_define_string_array(JSContext* cx, JS::HandleObject in_object,
                                   const char* array_name,
                                   const std::vector<std::string>& strings,
                                   unsigned attrs) {
-    JS::RootedObject array(context, gjs_build_string_array(context, strings));
+    JS::RootedObject array{cx, gjs_build_string_array(cx, strings)};
     if (!array)
         return nullptr;
 
-    if (!JS_DefineProperty(context, in_object, array_name, array, attrs))
+    if (!JS_DefineProperty(cx, in_object, array_name, array, attrs))
         return nullptr;
 
     return array;
@@ -593,16 +588,14 @@ void gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
  *
  * Returns: %true if an exception was logged, %false if there was none pending.
  */
-bool
-gjs_log_exception(JSContext  *context)
-{
-    JS::RootedValue exc(context);
-    if (!JS_GetPendingException(context, &exc))
+bool gjs_log_exception(JSContext* cx) {
+    JS::RootedValue exc{cx};
+    if (!JS_GetPendingException(cx, &exc))
         return false;
 
-    JS_ClearPendingException(context);
+    JS_ClearPendingException(cx);
 
-    gjs_log_exception_full(context, exc, nullptr, G_LOG_LEVEL_WARNING);
+    gjs_log_exception_full(cx, exc, nullptr, G_LOG_LEVEL_WARNING);
     return true;
 }
 
@@ -636,7 +629,7 @@ bool gjs_log_exception_uncaught(JSContext* cx) {
 static void _linux_get_self_process_size(long* rss_size)  // NOLINT(runtime/int)
 {
     char *iter;
-    gsize len;
+    gsize len;  // Do not use size_t, may be different width
     int i;
 
     *rss_size = 0;
@@ -661,17 +654,14 @@ static uint64_t linux_rss_trigger;
 static int64_t last_gc_check_time;
 #endif
 
-void
-gjs_gc_if_needed (JSContext *context)
-{
+void gjs_gc_if_needed(JSContext* cx) {
 #ifdef __linux__
     {
         long rss_size;  // NOLINT(runtime/int)
-        gint64 now;
 
         /* We rate limit GCs to at most one per 5 frames.
            One frame is 16666 microseconds (1000000/60)*/
-        now = g_get_monotonic_time();
+        int64_t now = g_get_monotonic_time();
         if (now - last_gc_check_time < 5 * 16666)
             return;
 
@@ -693,16 +683,16 @@ gjs_gc_if_needed (JSContext *context)
             return;  // doesn't make sense
         uint64_t rss_usize = rss_size;
         if (rss_usize > linux_rss_trigger) {
-            linux_rss_trigger = MIN(G_MAXUINT32, rss_usize * 1.25);
-            JS::NonIncrementalGC(context, JS::GCOptions::Shrink,
+            linux_rss_trigger = MIN(UINT32_MAX, rss_usize * 1.25);
+            JS::NonIncrementalGC(cx, JS::GCOptions::Shrink,
                                  Gjs::GCReason::LINUX_RSS_TRIGGER);
         } else if (rss_size < (0.75 * linux_rss_trigger)) {
-            /* If we've shrunk by 75%, lower the trigger */
+            // If we've shrunk by 75%, lower the trigger
             linux_rss_trigger = rss_usize * 1.25;
         }
     }
 #else  // !__linux__
-    (void)context;
+    (void)cx;
 #endif
 }
 
@@ -711,11 +701,9 @@ gjs_gc_if_needed (JSContext *context)
  *
  * Low level version of gjs_context_maybe_gc().
  */
-void
-gjs_maybe_gc (JSContext *context)
-{
-    JS_MaybeGC(context);
-    gjs_gc_if_needed(context);
+void gjs_maybe_gc(JSContext* cx) {
+    JS_MaybeGC(cx);
+    gjs_gc_if_needed(cx);
 }
 
 const char* gjs_explain_gc_reason(JS::GCReason reason) {

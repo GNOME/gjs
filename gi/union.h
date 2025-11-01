@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_UNION_H_
-#define GI_UNION_H_
+#pragma once
 
 #include <config.h>
 
@@ -46,12 +45,12 @@ class UnionPrototype
     friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
                                     GI::AutoUnionInfo, GI::UnionInfo>;
 
-    explicit UnionPrototype(const GI::UnionInfo info, GType gtype);
-    ~UnionPrototype(void);
+    explicit UnionPrototype(const GI::UnionInfo, GType);
+    ~UnionPrototype();
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static bool define_class(JSContext* cx, JS::HandleObject in_object,
+    static bool define_class(JSContext*, JS::HandleObject in_object,
                              const GI::UnionInfo);
 };
 
@@ -59,13 +58,11 @@ class UnionInstance
     : public BoxedInstance<UnionBase, UnionPrototype, UnionInstance> {
     friend class GIWrapperInstance<UnionBase, UnionPrototype, UnionInstance>;
 
-    explicit UnionInstance(UnionPrototype* prototype, JS::HandleObject obj);
-    ~UnionInstance(void);
+    explicit UnionInstance(UnionPrototype*, JS::HandleObject);
+    ~UnionInstance();
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* new_for_c_union(JSContext*, const GI::UnionInfo,
                                      void* gboxed);
 };
-
-#endif  // GI_UNION_H_

@@ -33,12 +33,12 @@
 struct JSFunctionSpec;
 struct JSPropertySpec;
 
-/* Reserved slots of JSNative accessor wrappers */
+// Reserved slots of JSNative accessor wrappers
 enum {
     DYNAMIC_PROPERTY_PRIVATE_SLOT,
 };
 
-bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
+bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
                             JS::HandleObject parent_proto, const char* ns_name,
                             const char* class_name, const JSClass* clasp,
                             JSNative constructor_native, unsigned nargs,
@@ -47,12 +47,12 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
                             JSFunctionSpec* static_fs,
                             JS::MutableHandleObject prototype,
                             JS::MutableHandleObject constructor) {
-    /* Without a name, JS_NewObject fails */
-    g_assert (clasp->name != NULL);
+    // Without a name, JS_NewObject() fails
+    g_assert(clasp->name != nullptr);
 
     /* gjs_init_class_dynamic only makes sense for instantiable classes,
        use JS_InitClass for static classes like Math */
-    g_assert (constructor_native != NULL);
+    g_assert(constructor_native != nullptr);
 
     /* Class initialization consists of five parts:
        - building a prototype
@@ -64,42 +64,41 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
     */
 
     if (parent_proto) {
-        prototype.set(JS_NewObjectWithGivenProto(context, clasp, parent_proto));
+        prototype.set(JS_NewObjectWithGivenProto(cx, clasp, parent_proto));
     } else {
         /* JS_NewObject will use Object.prototype as the prototype if the
          * clasp's constructor is not a built-in class.
          */
-        prototype.set(JS_NewObject(context, clasp));
+        prototype.set(JS_NewObject(cx, clasp));
     }
     if (!prototype)
         return false;
 
-    if (proto_ps && !JS_DefineProperties(context, prototype, proto_ps))
+    if (proto_ps && !JS_DefineProperties(cx, prototype, proto_ps))
         return false;
-    if (proto_fs && !JS_DefineFunctions(context, prototype, proto_fs))
+    if (proto_fs && !JS_DefineFunctions(cx, prototype, proto_fs))
         return false;
 
     Gjs::AutoChar full_function_name{
         g_strdup_printf("%s_%s", ns_name, class_name)};
-    JSFunction* constructor_fun =
-        JS_NewFunction(context, constructor_native, nargs, JSFUN_CONSTRUCTOR,
-                       full_function_name);
+    JSFunction* constructor_fun = JS_NewFunction(
+        cx, constructor_native, nargs, JSFUN_CONSTRUCTOR, full_function_name);
     if (!constructor_fun)
         return false;
 
     constructor.set(JS_GetFunctionObject(constructor_fun));
 
-    if (static_ps && !JS_DefineProperties(context, constructor, static_ps))
+    if (static_ps && !JS_DefineProperties(cx, constructor, static_ps))
         return false;
-    if (static_fs && !JS_DefineFunctions(context, constructor, static_fs))
+    if (static_fs && !JS_DefineFunctions(cx, constructor, static_fs))
         return false;
 
-    if (!JS_LinkConstructorAndPrototype(context, constructor, prototype))
+    if (!JS_LinkConstructorAndPrototype(cx, constructor, prototype))
         return false;
 
     /* The constructor defined by JS_InitClass has no property attributes, but this
        is a more useful default for gjs */
-    return JS_DefineProperty(context, in_object, class_name, constructor,
+    return JS_DefineProperty(cx, in_object, class_name, constructor,
                              GJS_MODULE_PROP_FLAGS);
 }
 
@@ -110,17 +109,13 @@ bool gjs_init_class_dynamic(JSContext* context, JS::HandleObject in_object,
         return name;
 }
 
-bool
-gjs_typecheck_instance(JSContext       *context,
-                       JS::HandleObject obj,
-                       const JSClass   *static_clasp,
-                       bool             throw_error)
-{
-    if (!JS_InstanceOf(context, obj, static_clasp, NULL)) {
+bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,
+                            const JSClass* static_clasp, bool throw_error) {
+    if (!JS_InstanceOf(cx, obj, static_clasp, nullptr)) {
         if (throw_error) {
             const JSClass* obj_class = JS::GetClass(obj);
 
-            gjs_throw_custom(context, JSEXN_TYPEERR, nullptr,
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                              "Object %p is not a subclass of %s, it's a %s",
                              obj.get(), static_clasp->name,
                              format_dynamic_class_name(obj_class->name));
@@ -132,21 +127,18 @@ gjs_typecheck_instance(JSContext       *context,
     return true;
 }
 
-JSObject*
-gjs_construct_object_dynamic(JSContext                  *context,
-                             JS::HandleObject            proto,
-                             const JS::HandleValueArray& args)
-{
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
-    JS::RootedObject constructor(context);
+JSObject* gjs_construct_object_dynamic(JSContext* cx, JS::HandleObject proto,
+                                       const JS::HandleValueArray& args) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    JS::RootedObject constructor{cx};
 
-    if (!gjs_object_require_property(context, proto, "prototype",
+    if (!gjs_object_require_property(cx, proto, "prototype",
                                      atoms.constructor(), &constructor))
-        return NULL;
+        return nullptr;
 
-    JS::RootedValue v_constructor(context, JS::ObjectValue(*constructor));
-    JS::RootedObject object(context);
-    if (!JS::Construct(context, v_constructor, args, &object))
+    JS::RootedValue v_constructor{cx, JS::ObjectValue(*constructor)};
+    JS::RootedObject object{cx};
+    if (!JS::Construct(cx, v_constructor, args, &object))
         return nullptr;
 
     return object;

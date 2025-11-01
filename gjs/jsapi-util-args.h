@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
 // SPDX-FileContributor: Authored by: Philip Chimento <philip@endlessm.com>
 
-#ifndef GJS_JSAPI_UTIL_ARGS_H_
-#define GJS_JSAPI_UTIL_ARGS_H_
+#pragma once
 
 #include <config.h>
 
@@ -39,8 +38,8 @@ namespace detail {
 
     fchar++;
     fmt_string++;
-    g_assert(((void) "Invalid format string, parameter required after '?'",
-              *fchar != '\0'));
+    g_assert(*fchar != '\0' &&
+             "Invalid format string, parameter required after '?'");
     return true;
 }
 
@@ -167,7 +166,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
         return Err("Invalid format string combination ?u");
     if (!value.isNumber() || !JS::ToNumber(cx, value, &num))
         return Err("Couldn't convert to unsigned integer");
-    if (num > G_MAXUINT32 || num < 0)
+    if (num > INT32_MAX || num < 0)
         return Err("Value %f is out of range", num);
     *ref = num;
     return JS::Ok();
@@ -241,13 +240,13 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
         nullable = check_nullable(fchar, fmt_required);
         fmt_required++;
     } else {
-        /* No more args passed in JS, only optional formats left */
+        // No more args passed in JS, only optional formats left
         if (args.length() <= param_ix)
             return true;
 
         fchar = fmt_optional;
-        g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
-                  *fchar != '\0'));
+        g_assert(*fchar != '\0' &&
+                 "Wrong number of parameters passed to gjs_parse_call_args()");
         nullable = check_nullable(fchar, fmt_optional);
         fmt_optional++;
     }
@@ -287,7 +286,7 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
 
 }  // namespace detail
 
-/* Empty-args version of the template */
+// Empty-args version of the template
 GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
     JSContext* cx, const char* function_name, const JS::CallArgs& args,
     const char* format) {
@@ -298,8 +297,8 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
         format++;
     }
 
-    g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
-              *format == '\0'));
+    g_assert(*format == '\0' &&
+             "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!ignore_trailing_args && args.length() > 0) {
         gjs_throw(cx, "Error invoking %s: Expected 0 arguments, got %d",
@@ -312,7 +311,7 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
 
 /**
  * gjs_parse_call_args:
- * @context:
+ * @cx:
  * @function_name: The name of the function being called
  * @args: #JS::CallArgs from #JSNative function
  * @format: Printf-like format specifier containing the expected arguments
@@ -377,8 +376,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     if (!optional_args)
         n_required = n_total;
 
-    g_assert(((void) "Wrong number of parameters passed to gjs_parse_call_args()",
-              sizeof...(Args) / 2 == n_total));
+    g_assert(sizeof...(Args) / 2 == n_total &&
+             "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!args.requireAtLeast(cx, function_name, n_required))
         return false;
@@ -402,5 +401,3 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
     return detail::parse_call_args_helper(cx, function_name, args, fmt_required,
                                           fmt_optional, 0, params...);
 }
-
-#endif  // GJS_JSAPI_UTIL_ARGS_H_

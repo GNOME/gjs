@@ -38,7 +38,7 @@ main(int argc, char **argv)
     setlocale(LC_ALL, "");
 
     GIRepository* repo = gi_repository_dup_default();
-    if (g_getenv("GJS_USE_UNINSTALLED_FILES") != NULL) {
+    if (g_getenv("GJS_USE_UNINSTALLED_FILES") != nullptr) {
         gi_repository_prepend_search_path(repo, g_getenv("TOP_BUILDDIR"));
     } else {
         gi_repository_prepend_search_path(repo, INSTTESTDIR);
@@ -48,16 +48,16 @@ main(int argc, char **argv)
 
     const char *coverage_prefix = g_getenv("GJS_UNIT_COVERAGE_PREFIX");
     const char *coverage_output_path = g_getenv("GJS_UNIT_COVERAGE_OUTPUT");
-    const char *search_path[] = { "resource:///org/gjs/jsunit", NULL };
+    const char* search_path[] = {"resource:///org/gjs/jsunit", nullptr};
 
     if (coverage_prefix)
         gjs_coverage_enable();
 
     GjsContext *cx = gjs_context_new_with_search_path((char **)search_path);
-    GjsCoverage *coverage = NULL;
+    GjsCoverage* coverage = nullptr;
 
     if (coverage_prefix) {
-        const char *coverage_prefixes[2] = { coverage_prefix, NULL };
+        const char* coverage_prefixes[2] = {coverage_prefix, nullptr};
 
         if (!coverage_output_path) {
             bail_out(cx, "GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PREFIX");
@@ -68,7 +68,7 @@ main(int argc, char **argv)
         g_object_unref(output);
     }
 
-    GError *error = NULL;
+    GError* error = nullptr;
     bool success;
     uint8_t code;
     uint8_t u8_exitcode_ignored;

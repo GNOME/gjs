@@ -1068,7 +1068,7 @@ describe('Register GType name', function () {
         const GTypeTestAutoName = GObject.registerClass(
             class GTypeTestAutoName extends GObject.Object {});
 
-        /* Update this test if the file is moved */
+        // Update this test if the file is moved
         expect(GTypeTestAutoName.$gtype.name).toEqual(
             'Gjs_js_testGObjectClass_GTypeTestAutoName');
     });
@@ -1078,7 +1078,7 @@ describe('Register GType name', function () {
         const GTypeTestAutoName = GObject.registerClass(
             class GTypeTestAutoCla$$Name extends GObject.Object { });
 
-        /* Update this test if the file is moved */
+        // Update this test if the file is moved
         expect(GTypeTestAutoName.$gtype.name).toEqual(
             'Gjs_js_testGObjectClass_GTypeTestAutoCla__Name');
     });

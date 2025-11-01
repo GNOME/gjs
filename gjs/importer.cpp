@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for size_t, strcmp, strlen
 
 #ifdef _WIN32
@@ -94,15 +95,11 @@ importer_to_string(JSContext *cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-define_meta_properties(JSContext       *context,
-                       JS::HandleObject module_obj,
-                       const char      *parse_name,
-                       const char      *module_name,
-                       JS::HandleObject parent)
-{
-    bool parent_is_module;
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
+                                   const char* parse_name,
+                                   const char* module_name,
+                                   JS::HandleObject parent) {
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
     /* For these meta-properties, don't set ENUMERATE since we wouldn't want to
      * copy these symbols to any other object for example. RESOLVING is used to
@@ -113,35 +110,33 @@ define_meta_properties(JSContext       *context,
     /* We define both __moduleName__ and __parentModule__ to null
      * on the root importer
      */
-    parent_is_module = parent && JS_InstanceOf(context, parent,
-                                               &gjs_importer_class, nullptr);
+    bool parent_is_module =
+        parent && JS_InstanceOf(cx, parent, &gjs_importer_class, nullptr);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent %p of %p '%s' is mod %d",
               parent.get(), module_obj.get(),
               module_name ? module_name : "<root>", parent_is_module);
 
     if (parse_name != nullptr) {
-        JS::RootedValue file(context);
-        if (!gjs_string_from_utf8(context, parse_name, &file))
-            return false;
-        if (!JS_DefinePropertyById(context, module_obj, atoms.file(), file,
-                                   attrs))
+        JS::RootedValue file{cx};
+        if (!gjs_string_from_utf8(cx, parse_name, &file) ||
+            !JS_DefinePropertyById(cx, module_obj, atoms.file(), file, attrs))
             return false;
     }
 
     /* Null is used instead of undefined for backwards compatibility with code
      * that explicitly checks for null. */
-    JS::RootedValue module_name_val(context, JS::NullValue());
-    JS::RootedValue parent_module_val(context, JS::NullValue());
-    JS::RootedValue module_path(context, JS::NullValue());
-    JS::RootedValue to_string_tag(context);
+    JS::RootedValue module_name_val{cx, JS::NullValue()};
+    JS::RootedValue parent_module_val{cx, JS::NullValue()};
+    JS::RootedValue module_path{cx, JS::NullValue()};
+    JS::RootedValue to_string_tag{cx};
     if (parent_is_module) {
-        if (!gjs_string_from_utf8(context, module_name, &module_name_val))
+        if (!gjs_string_from_utf8(cx, module_name, &module_name_val))
             return false;
         parent_module_val.setObject(*parent);
 
-        JS::RootedValue parent_module_path(context);
-        if (!JS_GetPropertyById(context, parent, atoms.module_path(),
+        JS::RootedValue parent_module_path{cx};
+        if (!JS_GetPropertyById(cx, parent, atoms.module_path(),
                                 &parent_module_path))
             return false;
 
@@ -150,43 +145,39 @@ define_meta_properties(JSContext       *context,
             module_path_buf = g_strdup(module_name);
         } else {
             JS::UniqueChars parent_path =
-                gjs_string_to_utf8(context, parent_module_path);
+                gjs_string_to_utf8(cx, parent_module_path);
             if (!parent_path)
                 return false;
             module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }
-        if (!gjs_string_from_utf8(context, module_path_buf, &module_path))
+        if (!gjs_string_from_utf8(cx, module_path_buf, &module_path))
             return false;
 
         Gjs::AutoChar to_string_tag_buf{
             g_strdup_printf("GjsModule %s", module_path_buf.get())};
-        if (!gjs_string_from_utf8(context, to_string_tag_buf, &to_string_tag))
+        if (!gjs_string_from_utf8(cx, to_string_tag_buf, &to_string_tag))
             return false;
     } else {
-        to_string_tag.setString(JS_AtomizeString(context, "GjsModule"));
+        to_string_tag.setString(JS_AtomizeString(cx, "GjsModule"));
     }
 
-    if (!JS_DefinePropertyById(context, module_obj, atoms.module_name(),
-                               module_name_val, attrs))
+    if (!JS_DefinePropertyById(cx, module_obj, atoms.module_name(),
+                               module_name_val, attrs) ||
+        !JS_DefinePropertyById(cx, module_obj, atoms.parent_module(),
+                               parent_module_val, attrs) ||
+        !JS_DefinePropertyById(cx, module_obj, atoms.module_path(), module_path,
+                               attrs))
         return false;
 
-    if (!JS_DefinePropertyById(context, module_obj, atoms.parent_module(),
-                               parent_module_val, attrs))
-        return false;
-
-    if (!JS_DefinePropertyById(context, module_obj, atoms.module_path(),
-                               module_path, attrs))
-        return false;
-
-    JS::RootedId to_string_tag_name(
-        context, JS::PropertyKey::Symbol(JS::GetWellKnownSymbol(
-                     context, JS::SymbolCode::toStringTag)));
-    return JS_DefinePropertyById(context, module_obj, to_string_tag_name,
+    JS::RootedId to_string_tag_name{
+        cx, JS::PropertyKey::Symbol(
+                JS::GetWellKnownSymbol(cx, JS::SymbolCode::toStringTag))};
+    return JS_DefinePropertyById(cx, module_obj, to_string_tag_name,
                                  to_string_tag, attrs);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool import_directory(JSContext* context, JS::HandleObject obj,
+static bool import_directory(JSContext* cx, JS::HandleObject obj,
                              const char* name,
                              const std::vector<std::string>& full_paths) {
     gjs_debug(GJS_DEBUG_IMPORTER,
@@ -195,7 +186,7 @@ static bool import_directory(JSContext* context, JS::HandleObject obj,
 
     // We define a sub-importer that has only the given directories on its
     // search path.
-    return !!gjs_define_importer(context, obj, name, full_paths, false);
+    return !!gjs_define_importer(cx, obj, name, full_paths, false);
 }
 
 /* Make the property we set in gjs_module_import() permanent;
@@ -250,23 +241,20 @@ seal_import(JSContext       *cx,
  * in robustness. (You can still come up with ways of defeating
  * the attempt to clean up.)
  */
-static void
-cancel_import(JSContext       *context,
-              JS::HandleObject obj,
-              const char      *name)
-{
+static void cancel_import(JSContext* cx, JS::HandleObject obj,
+                          const char* name) {
     gjs_debug(GJS_DEBUG_IMPORTER,
               "Cleaning up from failed import of '%s'",
               name);
 
-    if (!JS_DeleteProperty(context, obj, name)) {
+    if (!JS_DeleteProperty(cx, obj, name)) {
         gjs_debug(GJS_DEBUG_IMPORTER,
                   "Failed to delete '%s' in importer",
                   name);
     }
 }
 
-/*
+/**
  * gjs_import_native_module:
  * @cx: the #JSContext
  * @importer: the root importer
@@ -303,16 +291,13 @@ bool gjs_import_native_module(JSContext* cx, JS::HandleObject importer,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-import_module_init(JSContext       *context,
-                   GFile           *file,
-                   JS::HandleObject module_obj)
-{
-    gsize script_len = 0;
+static bool import_module_init(JSContext* cx, GFile* file,
+                               JS::HandleObject module_obj) {
+    gsize script_len = 0;  // Do not use size_t, may be different width
     Gjs::AutoError error;
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(context);
-    JS::RootedValue ignored(context);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+    JS::RootedValue ignored{cx};
 
     Gjs::AutoChar script;
     if (!g_file_load_contents(file, nullptr, script.out(), &script_len, nullptr,
@@ -320,7 +305,7 @@ import_module_init(JSContext       *context,
         if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_IS_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_DIRECTORY) &&
             !g_error_matches(error, G_IO_ERROR, G_IO_ERROR_NOT_FOUND)) {
-            gjs_throw_gerror_message(context, error);
+            gjs_throw_gerror_message(cx, error);
             return false;
         }
 
@@ -340,7 +325,7 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
     bool found;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
-    /* First we check if js module has already been loaded  */
+    // First we check if js module has already been loaded
     if (!JS_HasPropertyById(cx, in_object, atoms.module_init(), &found))
         return nullptr;
     if (found) {
@@ -441,15 +426,11 @@ static bool attempt_import(JSContext* cx, JS::HandleObject obj,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-import_file_on_module(JSContext       *context,
-                      JS::HandleObject obj,
-                      JS::HandleId     id,
-                      const char      *name,
-                      GFile           *file)
-{
-    if (!attempt_import(context, obj, id, name, file)) {
-        cancel_import(context, obj, name);
+static bool import_file_on_module(JSContext* cx, JS::HandleObject obj,
+                                  JS::HandleId id, const char* name,
+                                  GFile* file) {
+    if (!attempt_import(cx, obj, id, name, file)) {
+        cancel_import(cx, obj, name);
         return false;
     }
 
@@ -457,47 +438,45 @@ import_file_on_module(JSContext       *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool do_import(JSContext* context, JS::HandleObject obj,
-                      JS::HandleId id) {
-    JS::RootedObject search_path(context);
-    guint32 search_path_len;
-    guint32 i;
+static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
+    JS::RootedObject search_path{cx};
     bool exists, is_array;
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
-    if (!gjs_object_require_property(context, obj, "importer",
-                                     atoms.search_path(), &search_path))
+    if (!gjs_object_require_property(cx, obj, "importer", atoms.search_path(),
+                                     &search_path))
         return false;
 
-    if (!JS::IsArrayObject(context, search_path, &is_array))
+    if (!JS::IsArrayObject(cx, search_path, &is_array))
         return false;
     if (!is_array) {
-        gjs_throw(context, "searchPath property on importer is not an array");
+        gjs_throw(cx, "searchPath property on importer is not an array");
         return false;
     }
 
-    if (!JS::GetArrayLength(context, search_path, &search_path_len)) {
-        gjs_throw(context, "searchPath array has no length");
+    uint32_t search_path_len;
+    if (!JS::GetArrayLength(cx, search_path, &search_path_len)) {
+        gjs_throw(cx, "searchPath array has no length");
         return false;
     }
 
     JS::UniqueChars name;
-    if (!gjs_get_string_id(context, id, &name))
+    if (!gjs_get_string_id(cx, id, &name))
         return false;
     if (!name) {
-        gjs_throw(context, "Importing invalid module name");
+        gjs_throw(cx, "Importing invalid module name");
         return false;
     }
 
     // null if this is the root importer
-    JS::RootedValue parent(context);
-    if (!JS_GetPropertyById(context, obj, atoms.parent_module(), &parent))
+    JS::RootedValue parent{cx};
+    if (!JS_GetPropertyById(cx, obj, atoms.parent_module(), &parent))
         return false;
 
-    /* First try importing an internal module like gi */
+    // First try importing an internal module like gi
     if (parent.isNull() &&
         Gjs::NativeModuleDefineFuncs::get().is_registered(name.get())) {
-        if (!gjs_import_native_module(context, obj, name.get()))
+        if (!gjs_import_native_module(cx, obj, name.get()))
             return false;
 
         gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported module '%s'",
@@ -507,12 +486,12 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
 
     Gjs::AutoChar filename{g_strdup_printf("%s.js", name.get())};
     std::vector<std::string> directories;
-    JS::RootedValue elem(context);
-    JS::RootedString str(context);
+    JS::RootedValue elem{cx};
+    JS::RootedString str{cx};
 
-    for (i = 0; i < search_path_len; ++i) {
+    for (uint32_t i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
-        if (!JS_GetElement(context, search_path, i, &elem)) {
+        if (!JS_GetElement(cx, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
@@ -523,31 +502,30 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
             continue;
 
         if (!elem.isString()) {
-            gjs_throw(context, "importer searchPath contains non-string");
+            gjs_throw(cx, "importer searchPath contains non-string");
             return false;
         }
 
         str = elem.toString();
-        JS::UniqueChars dirname(JS_EncodeStringToUTF8(context, str));
+        JS::UniqueChars dirname{JS_EncodeStringToUTF8(cx, str)};
         if (!dirname)
             return false;
 
-        /* Ignore empty path elements */
+        // Ignore empty path elements
         if (dirname[0] == '\0')
             continue;
 
         Gjs::AutoUnref<GFile> directory{
             g_file_new_for_commandline_arg(dirname.get())};
 
-        /* Try importing __init__.js and loading the symbol from it */
+        // Try importing __init__.js and loading the symbol from it
         bool found = false;
-        if (!import_symbol_from_init_js(context, obj, directory, name.get(),
-                                        &found))
+        if (!import_symbol_from_init_js(cx, obj, directory, name.get(), &found))
             return false;
         if (found)
             return true;
 
-        /* Second try importing a directory (a sub-importer) */
+        // Second try importing a directory (a sub-importer)
         Gjs::AutoUnref<GFile> file{g_file_get_child(directory, name.get())};
 
         if (g_file_query_file_type(file, GFileQueryInfoFlags(0), nullptr) ==
@@ -568,7 +546,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
         if (!directories.empty())
             continue;
 
-        /* Third, if it's not a directory, try importing a file */
+        // Third, if it's not a directory, try importing a file
         file = g_file_get_child(directory, filename.get());
         exists = g_file_query_exists(file, nullptr);
 
@@ -580,7 +558,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
             continue;
         }
 
-        if (import_file_on_module(context, obj, id, name.get(), file)) {
+        if (import_file_on_module(cx, obj, id, name.get(), file)) {
             gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported module '%s'",
                       name.get());
             return true;
@@ -594,7 +572,7 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
     }
 
     if (!directories.empty()) {
-        if (!import_directory(context, obj, name.get(), directories))
+        if (!import_directory(cx, obj, name.get(), directories))
             return false;
 
         gjs_debug(GJS_DEBUG_IMPORTER, "successfully imported directory '%s'",
@@ -604,43 +582,42 @@ static bool do_import(JSContext* context, JS::HandleObject obj,
 
     /* If no exception occurred, the problem is just that we got to the
      * end of the path. Be sure an exception is set. */
-    g_assert(!JS_IsExceptionPending(context));
-    gjs_throw_custom(context, JSEXN_ERR, "ImportError",
+    g_assert(!JS_IsExceptionPending(cx));
+    gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
                      "No JS module '%s' found in search path", name.get());
     return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
+static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
                                    JS::MutableHandleIdVector properties,
                                    bool enumerable_only [[maybe_unused]]) {
-    guint32 search_path_len;
-    guint32 i;
     bool is_array;
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
-    JS::RootedObject search_path(context);
-    if (!gjs_object_require_property(context, object, "importer",
+    JS::RootedObject search_path{cx};
+    if (!gjs_object_require_property(cx, object, "importer",
                                      atoms.search_path(), &search_path))
         return false;
 
-    if (!JS::IsArrayObject(context, search_path, &is_array))
+    if (!JS::IsArrayObject(cx, search_path, &is_array))
         return false;
     if (!is_array) {
-        gjs_throw(context, "searchPath property on importer is not an array");
+        gjs_throw(cx, "searchPath property on importer is not an array");
         return false;
     }
 
-    if (!JS::GetArrayLength(context, search_path, &search_path_len)) {
-        gjs_throw(context, "searchPath array has no length");
+    uint32_t search_path_len;
+    if (!JS::GetArrayLength(cx, search_path, &search_path_len)) {
+        gjs_throw(cx, "searchPath array has no length");
         return false;
     }
 
-    JS::RootedValue elem(context);
-    JS::RootedString str(context);
-    for (i = 0; i < search_path_len; ++i) {
+    JS::RootedValue elem{cx};
+    JS::RootedString str{cx};
+    for (uint32_t i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
-        if (!JS_GetElement(context, search_path, i, &elem)) {
+        if (!JS_GetElement(cx, search_path, i, &elem)) {
             /* this means there was an exception, while elem.isUndefined()
              * means no element found
              */
@@ -651,12 +628,12 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
             continue;
 
         if (!elem.isString()) {
-            gjs_throw(context, "importer searchPath contains non-string");
+            gjs_throw(cx, "importer searchPath contains non-string");
             return false;
         }
 
         str = elem.toString();
-        JS::UniqueChars dirname(JS_EncodeStringToUTF8(context, str));
+        JS::UniqueChars dirname{JS_EncodeStringToUTF8(cx, str)};
         if (!dirname)
             return false;
 
@@ -665,10 +642,10 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         Gjs::AutoUnref<GFile> file{
             g_file_get_child(directory, MODULE_INIT_FILENAME)};
 
-        if (!load_module_elements(context, object, properties, file))
+        if (!load_module_elements(cx, object, properties, file))
             return false;
 
-        /* new_for_commandline_arg handles resource:/// paths */
+        // new_for_commandline_arg handles resource:/// paths
         Gjs::AutoUnref<GFileEnumerator> direnum{g_file_enumerate_children(
             directory, "standard::name,standard::type", G_FILE_QUERY_INFO_NONE,
             nullptr, nullptr)};
@@ -676,38 +653,38 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
         while (true) {
             GFileInfo *info;
             GFile *file;
-            if (!direnum ||
-                !g_file_enumerator_iterate(direnum, &info, &file, NULL, NULL))
+            if (!direnum || !g_file_enumerator_iterate(direnum, &info, &file,
+                                                       nullptr, nullptr))
                 break;
-            if (info == NULL || file == NULL)
+            if (info == nullptr || file == nullptr)
                 break;
 
             Gjs::AutoChar filename{g_file_get_basename(file)};
 
-            /* skip hidden files and directories (.svn, .git, ...) */
+            // skip hidden files and directories (.svn, .git, ...)
             if (filename.get()[0] == '.')
                 continue;
 
-            /* skip module init file */
+            // skip module init file
             if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
                 continue;
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                jsid id = gjs_intern_string_to_id(context, filename);
+                jsid id = gjs_intern_string_to_id(cx, filename);
                 if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
-                    JS_ReportOutOfMemory(context);
+                    JS_ReportOutOfMemory(cx);
                     return false;
                 }
             } else if (g_str_has_suffix(filename, ".js")) {
                 Gjs::AutoChar filename_noext{
                     g_strndup(filename, strlen(filename) - 3)};
-                jsid id = gjs_intern_string_to_id(context, filename_noext);
+                jsid id = gjs_intern_string_to_id(cx, filename_noext);
                 if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
-                    JS_ReportOutOfMemory(context);
+                    JS_ReportOutOfMemory(cx);
                     return false;
                 }
             }
@@ -719,18 +696,14 @@ static bool importer_new_enumerate(JSContext* context, JS::HandleObject object,
 /* The *resolved out parameter, on success, should be false to indicate that id
  * was not resolved; and true if id was resolved. */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-importer_resolve(JSContext        *context,
-                 JS::HandleObject  obj,
-                 JS::HandleId      id,
-                 bool             *resolved)
-{
+static bool importer_resolve(JSContext* cx, JS::HandleObject obj,
+                             JS::HandleId id, bool* resolved) {
     if (!id.isString()) {
         *resolved = false;
         return true;
     }
 
-    const GjsAtoms& atoms = GjsContextPrivate::atoms(context);
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (id == atoms.module_init() || id == atoms.to_string() ||
         id == atoms.value_of()) {
         *resolved = false;
@@ -745,7 +718,7 @@ importer_resolve(JSContext        *context,
         return true;
     }
 
-    if (!do_import(context, obj, id))
+    if (!do_import(cx, obj, id))
         return false;
 
     *resolved = true;
@@ -778,38 +751,37 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
     static std::vector<std::string> gjs_search_path;
     static bool search_path_initialized = false;
 
-    /* not thread safe */
+    // not thread safe
 
     if (!search_path_initialized) {
         const char* const* system_data_dirs;
         const char *envstr;
-        gsize i;
 
-        /* in order of priority */
+        // in order of priority
 
-        /* $GJS_PATH */
+        // $GJS_PATH
         envstr = g_getenv("GJS_PATH");
         if (envstr) {
             char **dirs, **d;
             dirs = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
-            for (d = dirs; *d != NULL; d++)
+            for (d = dirs; *d != nullptr; d++)
                 gjs_search_path.push_back(*d);
-            /* we assume the array and strings are allocated separately */
+            // we assume the array and strings are allocated separately
             g_free(dirs);
         }
 
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/script/");
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/core/");
 
-        /* $XDG_DATA_DIRS /gjs-1.0 */
+        // $XDG_DATA_DIRS /gjs-1.0
         system_data_dirs = g_get_system_data_dirs();
-        for (i = 0; system_data_dirs[i] != NULL; ++i) {
+        for (size_t i = 0; system_data_dirs[i] != nullptr; ++i) {
             Gjs::AutoChar s{
                 g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr)};
             gjs_search_path.push_back(s.get());
         }
 
-        /* ${datadir}/share/gjs-1.0 */
+        // ${datadir}/share/gjs-1.0
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
         char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
@@ -870,38 +842,38 @@ static JSObject* gjs_importer_define_proto(JSContext* cx) {
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_create_importer(
-    JSContext* context, const char* importer_name,
+    JSContext* cx, const char* importer_name,
     const std::vector<std::string>& initial_search_path,
     bool add_standard_search_path, JS::HandleObject in_object) {
     std::vector<std::string> search_paths = initial_search_path;
     if (add_standard_search_path) {
-        /* Stick the "standard" shared search path after the provided one. */
+        // Stick the "standard" shared search path after the provided one.
         const std::vector<std::string>& gjs_search_path = gjs_get_search_path();
         search_paths.insert(search_paths.end(), gjs_search_path.begin(),
                             gjs_search_path.end());
     }
 
-    JS::RootedObject proto(context, gjs_importer_define_proto(context));
+    JS::RootedObject proto{cx, gjs_importer_define_proto(cx)};
     if (!proto)
         return nullptr;
 
-    JS::RootedObject importer(
-        context,
-        JS_NewObjectWithGivenProto(context, &gjs_importer_class, proto));
+    JS::RootedObject importer{
+        cx, JS_NewObjectWithGivenProto(cx, &gjs_importer_class, proto)};
     if (!importer)
         return nullptr;
 
     gjs_debug_lifecycle(GJS_DEBUG_IMPORTER, "importer constructor, obj %p",
                         importer.get());
 
-    /* API users can replace this property from JS, is the idea */
+    // API users can replace this property from JS, is the idea
     if (!gjs_define_string_array(
-            context, importer, "searchPath", search_paths,
+            cx, importer, "searchPath", search_paths,
             // settable (no READONLY) but not deletable (PERMANENT)
             JSPROP_PERMANENT | JSPROP_RESOLVING))
         return nullptr;
 
-    if (!define_meta_properties(context, importer, NULL, importer_name, in_object))
+    if (!define_meta_properties(cx, importer, nullptr, importer_name,
+                                in_object))
         return nullptr;
 
     return importer;
@@ -909,15 +881,14 @@ static JSObject* gjs_create_importer(
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_define_importer(
-    JSContext* context, JS::HandleObject in_object, const char* importer_name,
+    JSContext* cx, JS::HandleObject in_object, const char* importer_name,
     const std::vector<std::string>& initial_search_path,
     bool add_standard_search_path) {
-    JS::RootedObject importer(
-        context,
-        gjs_create_importer(context, importer_name, initial_search_path,
-                            add_standard_search_path, in_object));
+    JS::RootedObject importer{
+        cx, gjs_create_importer(cx, importer_name, initial_search_path,
+                                add_standard_search_path, in_object)};
 
-    if (!JS_DefineProperty(context, in_object, importer_name, importer,
+    if (!JS_DefineProperty(cx, in_object, importer_name, importer,
                            GJS_MODULE_PROP_FLAGS))
         return nullptr;
 

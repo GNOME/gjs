@@ -1888,7 +1888,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     if (has_callback_destroy()) {
         GDestroyNotify destroy_notify = nullptr;
         if (trampoline) {
-            /* Adding another reference and a DestroyNotify that unsets it */
+            // Adding another reference and a DestroyNotify that unsets it
             g_closure_ref(trampoline);
             destroy_notify = [](void* data) {
                 g_assert(data);

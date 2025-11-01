@@ -173,7 +173,7 @@ describe('GLib string function overrides', function () {
 
     // TODO: Add Regress.func_not_nullable_untyped_gpointer_in and move to testRegress.js
     it('GLib.str_hash errors when marshalling null to a not-nullable parameter', function () {
-        // This tests that we don't marshal null to a not-nullable untyped gpointer.
+        // This tests that we don't marshal null to a not-nullable untyped pointer.
         expect(() => GLib.str_hash(null)).toThrowError(
             /Argument [a-z]+ may not be null/
         );

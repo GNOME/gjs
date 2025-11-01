@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2018 Philip Chimento <philip.chimento@gmail.com>
 
-#ifndef GJS_DEPRECATION_H_
-#define GJS_DEPRECATION_H_
+#pragma once
 
 #include <config.h>
 
@@ -21,12 +20,9 @@ enum GjsDeprecationMessageId : unsigned {
     LastValue,  // insert new elements before this one
 };
 
-void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
-                                            GjsDeprecationMessageId message,
+void _gjs_warn_deprecated_once_per_callsite(JSContext*, GjsDeprecationMessageId,
                                             unsigned max_frames = 1);
 
 void _gjs_warn_deprecated_once_per_callsite(
-    JSContext* cx, GjsDeprecationMessageId id,
-    const std::vector<std::string>& args, unsigned max_frames = 1);
-
-#endif  // GJS_DEPRECATION_H_
+    JSContext*, GjsDeprecationMessageId, const std::vector<std::string>& args,
+    unsigned max_frames = 1);

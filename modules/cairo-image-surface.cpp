@@ -25,21 +25,19 @@ JSObject* CairoImageSurface::new_proto(JSContext* cx, JSProtoKey) {
     return JS_NewObjectWithGivenProto(cx, nullptr, parent_proto);
 }
 
-cairo_surface_t* CairoImageSurface::constructor_impl(JSContext* context,
+cairo_surface_t* CairoImageSurface::constructor_impl(JSContext* cx,
                                                      const JS::CallArgs& argv) {
     int format, width, height;
     cairo_surface_t *surface;
 
     // create_for_data optional parameter
-    if (!gjs_parse_call_args(context, "ImageSurface", argv, "iii",
-                             "format", &format,
-                             "width", &width,
-                             "height", &height))
+    if (!gjs_parse_call_args(cx, "ImageSurface", argv, "iii", "format", &format,
+                             "width", &width, "height", &height))
         return nullptr;
 
     surface = cairo_image_surface_create((cairo_format_t) format, width, height);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return nullptr;
 
     return surface;
@@ -52,25 +50,21 @@ const JSPropertySpec CairoImageSurface::proto_props[] = {
 // clang-format on
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-createFromPNG_func(JSContext *context,
-                   unsigned   argc,
-                   JS::Value *vp)
-{
+static bool createFromPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     Gjs::AutoChar filename;
     cairo_surface_t *surface;
 
-    if (!gjs_parse_call_args(context, "createFromPNG", argv, "F",
-                             "filename", &filename))
+    if (!gjs_parse_call_args(cx, "createFromPNG", argv, "F", "filename",
+                             &filename))
         return false;
 
     surface = cairo_image_surface_create_from_png(filename);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
 
-    JSObject* surface_wrapper = CairoImageSurface::from_c_ptr(context, surface);
+    JSObject* surface_wrapper = CairoImageSurface::from_c_ptr(cx, surface);
     if (!surface_wrapper)
         return false;
 
@@ -81,26 +75,22 @@ createFromPNG_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-getFormat_func(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
-    GJS_GET_THIS(context, argc, vp, rec, obj);
+static bool getFormat_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, rec, obj);
     cairo_format_t format;
 
     if (argc > 1) {
-        gjs_throw(context, "ImageSurface.getFormat() takes no arguments");
+        gjs_throw(cx, "ImageSurface.getFormat() takes no arguments");
         return false;
     }
 
-    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
     if (!surface)
         return false;
 
     format = cairo_image_surface_get_format(surface);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
 
     rec.rval().setInt32(format);
@@ -108,26 +98,22 @@ getFormat_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-getWidth_func(JSContext *context,
-              unsigned   argc,
-              JS::Value *vp)
-{
-    GJS_GET_THIS(context, argc, vp, rec, obj);
+static bool getWidth_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, rec, obj);
     int width;
 
     if (argc > 1) {
-        gjs_throw(context, "ImageSurface.getWidth() takes no arguments");
+        gjs_throw(cx, "ImageSurface.getWidth() takes no arguments");
         return false;
     }
 
-    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
     if (!surface)
         return false;
 
     width = cairo_image_surface_get_width(surface);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
 
     rec.rval().setInt32(width);
@@ -135,26 +121,22 @@ getWidth_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-getHeight_func(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
-    GJS_GET_THIS(context, argc, vp, rec, obj);
+static bool getHeight_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, rec, obj);
     int height;
 
     if (argc > 1) {
-        gjs_throw(context, "ImageSurface.getHeight() takes no arguments");
+        gjs_throw(cx, "ImageSurface.getHeight() takes no arguments");
         return false;
     }
 
-    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
     if (!surface)
         return false;
 
     height = cairo_image_surface_get_height(surface);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
 
     rec.rval().setInt32(height);
@@ -162,26 +144,22 @@ getHeight_func(JSContext *context,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-getStride_func(JSContext *context,
-               unsigned   argc,
-               JS::Value *vp)
-{
-    GJS_GET_THIS(context, argc, vp, rec, obj);
+static bool getStride_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_GET_THIS(cx, argc, vp, rec, obj);
     int stride;
 
     if (argc > 1) {
-        gjs_throw(context, "ImageSurface.getStride() takes no arguments");
+        gjs_throw(cx, "ImageSurface.getStride() takes no arguments");
         return false;
     }
 
-    cairo_surface_t* surface = CairoSurface::for_js(context, obj);
+    cairo_surface_t* surface = CairoSurface::for_js(cx, obj);
     if (!surface)
         return false;
 
     stride = cairo_image_surface_get_stride(surface);
 
-    if (!gjs_cairo_check_status(context, cairo_surface_status(surface), "surface"))
+    if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
 
     rec.rval().setInt32(stride);

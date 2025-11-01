@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2012 Red Hat, Inc.
 
-#ifndef GI_INTERFACE_H_
-#define GI_INTERFACE_H_
+#pragma once
 
 #include <config.h>
 
@@ -67,7 +66,7 @@ class InterfaceBase : public GIWrapperBase<InterfaceBase, InterfacePrototype,
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool has_instance(JSContext* cx, unsigned argc, JS::Value* vp);
+    static bool has_instance(JSContext*, unsigned, JS::Value*);
 };
 
 class InterfacePrototype
@@ -87,23 +86,23 @@ class InterfacePrototype
     GTypeInterface* m_vtable;
 
     explicit InterfacePrototype(mozilla::Maybe<const GI::InterfaceInfo>, GType);
-    ~InterfacePrototype(void);
+    ~InterfacePrototype();
 
     // JSClass operations
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool resolve_impl(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+    bool resolve_impl(JSContext*, JS::HandleObject, JS::HandleId,
                       bool* resolved);
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool new_enumerate_impl(JSContext* cx, JS::HandleObject obj,
+    bool new_enumerate_impl(JSContext*, JS::HandleObject,
                             JS::MutableHandleIdVector properties,
                             bool only_enumerable);
 
     // JS methods
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool has_instance_impl(JSContext* cx, const JS::CallArgs& args);
+    bool has_instance_impl(JSContext*, const JS::CallArgs&);
 };
 
 class InterfaceInstance
@@ -119,12 +118,9 @@ class InterfaceInstance
         : GIWrapperInstance(prototype, obj) {
         g_assert_not_reached();
     }
-    [[noreturn]] ~InterfaceInstance(void) { g_assert_not_reached(); }
+    [[noreturn]] ~InterfaceInstance() { g_assert_not_reached(); }
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_lookup_interface_constructor(JSContext             *context,
-                                      GType                  gtype,
-                                      JS::MutableHandleValue value_p);
-
-#endif  // GI_INTERFACE_H_
+bool gjs_lookup_interface_constructor(JSContext*, GType,
+                                      JS::MutableHandleValue);

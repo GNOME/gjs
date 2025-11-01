@@ -26,19 +26,16 @@ JSObject* CairoLinearGradient::new_proto(JSContext* cx, JSProtoKey) {
 }
 
 cairo_pattern_t* CairoLinearGradient::constructor_impl(
-    JSContext* context, const JS::CallArgs& argv) {
+    JSContext* cx, const JS::CallArgs& argv) {
     double x0, y0, x1, y1;
     cairo_pattern_t* pattern;
-    if (!gjs_parse_call_args(context, "LinearGradient", argv, "ffff",
-                             "x0", &x0,
-                             "y0", &y0,
-                             "x1", &x1,
-                             "y1", &y1))
+    if (!gjs_parse_call_args(cx, "LinearGradient", argv, "ffff", "x0", &x0,
+                             "y0", &y0, "x1", &x1, "y1", &y1))
         return nullptr;
 
     pattern = cairo_pattern_create_linear(x0, y0, x1, y1);
 
-    if (!gjs_cairo_check_status(context, cairo_pattern_status(pattern), "pattern"))
+    if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return nullptr;
 
     return pattern;

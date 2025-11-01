@@ -7,8 +7,6 @@
 
 #include <config.h>
 
-#include <stddef.h>  // for NULL
-
 #include <utility>   // for move, swap
 
 #include <glib-object.h>
@@ -34,7 +32,7 @@ struct Fixture {
 static void gjs_test_object_init(GjsTestObject*) {}
 void gjs_test_object_class_init(GjsTestObjectClass*) {}
 static GjsTestObject* gjs_test_object_new() {
-    return GJS_TEST_OBJECT(g_object_new(gjs_test_object_get_type(), NULL));
+    return GJS_TEST_OBJECT(g_object_new(gjs_test_object_get_type(), nullptr));
 }
 
 static void setup(Fixture* fx, const void*) {
@@ -593,7 +591,7 @@ static void test_gjs_error_out() {
 #define ADD_AUTOPTRTEST(path, func) \
     g_test_add(path, Fixture, nullptr, setup, func, teardown);
 
-void gjs_test_add_tests_for_jsapi_utils(void) {
+void gjs_test_add_tests_for_jsapi_utils() {
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/size",
                     test_gjs_autopointer_size);
     g_test_add_func("/gjs/jsapi-utils/gjs-autopointer/constructor/empty",

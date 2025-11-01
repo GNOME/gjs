@@ -52,7 +52,7 @@ GJS_EXPORT GJS_USE bool gjs_context_eval_module_file(GjsContext* js_context,
                                                      uint8_t* exit_status_p,
                                                      GError** error);
 GJS_EXPORT GJS_USE bool gjs_context_eval(GjsContext* js_context,
-                                         const char* script, gssize script_len,
+                                         const char* script, ssize_t script_len,
                                          const char* filename,
                                          int* exit_status_p, GError** error);
 GJS_EXPORT GJS_USE bool gjs_context_register_module(GjsContext* context,
@@ -64,7 +64,7 @@ GJS_EXPORT GJS_USE bool gjs_context_eval_module(GjsContext* context,
                                                 uint8_t* exit_code,
                                                 GError** error);
 GJS_EXPORT GJS_USE bool gjs_context_define_string_array(
-    GjsContext* js_context, const char* array_name, gssize array_length,
+    GjsContext* js_context, const char* array_name, ssize_t array_length,
     const char** array_values, GError** error);
 
 GJS_EXPORT void gjs_context_set_argv(GjsContext* js_context,

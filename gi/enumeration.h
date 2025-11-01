@@ -2,8 +2,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2008 litl, LLC
 
-#ifndef GI_ENUMERATION_H_
-#define GI_ENUMERATION_H_
+#pragma once
 
 #include <config.h>
 
@@ -19,5 +18,3 @@ bool gjs_define_enum_values(JSContext*, JS::HandleObject in_object,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enumeration(JSContext*, JS::HandleObject in_object,
                             const GI::EnumInfo);
-
-#endif  // GI_ENUMERATION_H_

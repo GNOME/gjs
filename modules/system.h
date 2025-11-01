@@ -3,8 +3,7 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2012 Red Hat, Inc.
 
-#ifndef MODULES_SYSTEM_H_
-#define MODULES_SYSTEM_H_
+#pragma once
 
 #include <config.h>
 
@@ -13,7 +12,4 @@
 #include "gjs/macros.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_js_define_system_stuff(JSContext              *context,
-                                JS::MutableHandleObject module);
-
-#endif  // MODULES_SYSTEM_H_
+bool gjs_js_define_system_stuff(JSContext*, JS::MutableHandleObject module);
