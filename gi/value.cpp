@@ -1162,7 +1162,9 @@ static bool gjs_value_from_g_value_internal(
         JSObject *obj;
 
         obj = gjs_param_from_g_param(cx, gparam);
-        value_p.setObjectOrNull(obj);
+        if (!obj)
+            return false;
+        value_p.setObject(*obj);
     } else if (is_introspected_signal && g_type_is_a(gtype, G_TYPE_POINTER)) {
         if (!introspection_info) {
             gjs_throw(cx, "Unknown signal.");

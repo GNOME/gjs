@@ -89,8 +89,11 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     g_param_spec_set_qdata(new_pspec, ObjectBase::custom_property_quark(),
                            GINT_TO_POINTER(1));
 
-    args.rval().setObject(*gjs_param_from_g_param(cx, new_pspec));
+    JSObject* obj = gjs_param_from_g_param(cx, new_pspec);
+    if (!obj)
+        return false;
 
+    args.rval().setObject(*obj);
     return true;
 }
 

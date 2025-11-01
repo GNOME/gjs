@@ -230,8 +230,12 @@ JSObject* gjs_param_from_g_param(JSContext* cx, GParamSpec* gparam) {
               g_type_name(gparam->owner_type));
 
     JS::RootedObject proto{cx, gjs_lookup_param_prototype(cx)};
+    if (!proto)
+        return nullptr;
 
     JSObject* obj = JS_NewObjectWithGivenProto(cx, JS::GetClass(proto), proto);
+    if (!obj)
+        return nullptr;
 
     GJS_INC_COUNTER(param);
     auto* priv = new Param(gparam);
