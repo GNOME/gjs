@@ -716,17 +716,20 @@ void GjsCallbackTrampoline::prepare_shutdown() {
     s_forever_closure_list.clear();
 }
 
+void GjsCallbackTrampoline::invoke_callback_closure(ffi_cif*, void* result,
+                                                    void** ffi_args,
+                                                    void* data) {
+    auto** args = reinterpret_cast<GIArgument**>(ffi_args);
+    g_assert(data && "Trampoline data is not set");
+    Gjs::Closure::Ptr trampoline{static_cast<GjsCallbackTrampoline*>(data),
+                                 Gjs::TakeOwnership{}};
+
+    trampoline.as<GjsCallbackTrampoline>()->callback_closure(args, result);
+}
+
 ffi_closure* GjsCallbackTrampoline::create_closure() {
-    auto callback = [](ffi_cif*, void* result, void** ffi_args, void* data) {
-        auto** args = reinterpret_cast<GIArgument**>(ffi_args);
-        g_assert(data && "Trampoline data is not set");
-        Gjs::Closure::Ptr trampoline{static_cast<GjsCallbackTrampoline*>(data),
-                                     Gjs::TakeOwnership{}};
-
-        trampoline.as<GjsCallbackTrampoline>()->callback_closure(args, result);
-    };
-
-    return m_info.create_closure(&m_cif, callback, this);
+    return m_info.create_closure(
+        &m_cif, &GjsCallbackTrampoline::invoke_callback_closure, this);
 }
 
 bool GjsCallbackTrampoline::initialize() {
