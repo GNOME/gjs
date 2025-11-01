@@ -995,7 +995,7 @@ static bool gjs_value_from_g_value_internal(
             return Gjs::c_value_to_js(cx, Gjs::gvalue_get<int>(gvalue),
                                       value_p);
         case G_TYPE_UINT:
-            return Gjs::c_value_to_js(cx, Gjs::gvalue_get<unsigned int>(gvalue),
+            return Gjs::c_value_to_js(cx, Gjs::gvalue_get<unsigned>(gvalue),
                                       value_p);
         case G_TYPE_LONG:
             return Gjs::c_value_to_js<Gjs::Tag::Long>(

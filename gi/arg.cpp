@@ -674,14 +674,13 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_ptrarray(JSContext* cx, JS::Value array_value,
                                   unsigned length, GITransfer transfer,
                                   const GI::TypeInfo param_info, void** arr_p) {
-    unsigned int i;
     JS::RootedObject array_obj{cx, array_value.toObjectOrNull()};
     JS::RootedValue elem{cx};
 
     // Always one extra element, to cater for null terminated arrays
     Gjs::AutoPointer<void*> array{array_allocate<void*>(length + 1)};
 
-    for (i = 0; i < length; i++) {
+    for (unsigned i = 0; i < length; i++) {
         GIArgument arg;
         gjs_arg_unset(&arg);
 

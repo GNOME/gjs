@@ -369,10 +369,11 @@ out:
  *
  * Returns: the position at which @item was inserted
  */
-unsigned int gjs_list_store_insert_sorted(GListStore *store, GObject *item,
-                                          GjsCompareDataFunc compare_func,
-                                          void *user_data) {
-  return g_list_store_insert_sorted(store, item, (GCompareDataFunc)compare_func, user_data);
+unsigned gjs_list_store_insert_sorted(GListStore* store, GObject* item,
+                                      GjsCompareDataFunc compare_func,
+                                      void* user_data) {
+    return g_list_store_insert_sorted(
+        store, item, (GCompareDataFunc)compare_func, user_data);
 }
 
 /**

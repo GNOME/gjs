@@ -90,7 +90,7 @@ inline constexpr Tag::RealT<TAG> gvalue_get(const GValue* gvalue) {
         return gvalue->data[0].v_uint;
     else if constexpr (std::is_same_v<TAG, int>)
         return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<TAG, unsigned int>)
+    else if constexpr (std::is_same_v<TAG, unsigned>)
         return gvalue->data[0].v_uint;
     else if constexpr (std::is_same_v<TAG, Tag::Long>)
         return gvalue->data[0].v_long;
@@ -131,7 +131,7 @@ void gvalue_set(GValue* gvalue, Tag::RealT<TAG> value) {
         gvalue->data[0].v_uint = value;
     else if constexpr (std::is_same_v<TAG, int>)
         gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<TAG, unsigned int>)
+    else if constexpr (std::is_same_v<TAG, unsigned>)
         gvalue->data[0].v_uint = value;
     else if constexpr (std::is_same_v<TAG, Tag::Long>)
         gvalue->data[0].v_long = value;

@@ -251,7 +251,7 @@ struct MarshallingInfo<Tag::Enum> {
 
 template <>
 struct MarshallingInfo<Tag::UnsignedEnum> {
-    using real_type = unsigned int;
+    using real_type = unsigned;
     using containing_tag = uint32_t;
     using jsvalue_pack_type = double;
 };

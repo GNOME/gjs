@@ -1372,7 +1372,7 @@ static JSNative get_getter_for_property(
         case G_TYPE_INT:
             return &ObjectBase::prop_getter<int>;
         case G_TYPE_UINT:
-            return &ObjectBase::prop_getter<unsigned int>;
+            return &ObjectBase::prop_getter<unsigned>;
         case G_TYPE_CHAR:
             return &ObjectBase::prop_getter<signed char>;
         case G_TYPE_UCHAR:
@@ -1480,7 +1480,7 @@ static JSNative get_setter_for_property(
         case G_TYPE_INT:
             return &ObjectBase::prop_setter<int>;
         case G_TYPE_UINT:
-            return &ObjectBase::prop_setter<unsigned int>;
+            return &ObjectBase::prop_setter<unsigned>;
         case G_TYPE_CHAR:
             return &ObjectBase::prop_setter<signed char>;
         case G_TYPE_UCHAR:
@@ -3068,7 +3068,6 @@ bool ObjectBase::emit(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     GQuark signal_detail;
     GSignalQuery signal_query;
-    unsigned int i;
 
     gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
                       args.length());
@@ -3110,7 +3109,7 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     Gjs::AutoGValue& instance = instance_and_args.emplace_back(gtype());
     g_value_set_instance(&instance, m_ptr);
 
-    for (i = 0; i < signal_query.n_params; ++i) {
+    for (unsigned i = 0; i < signal_query.n_params; ++i) {
         GType gtype = signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE;
         Gjs::AutoGValue& value = instance_and_args.emplace_back(gtype);
         if ((signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0) {

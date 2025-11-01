@@ -643,14 +643,13 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
 
 typedef struct _FunctionHitCountData {
     const char   *function;
-    unsigned int hit_count_minimum;
+    unsigned hit_count_minimum;
 } FunctionHitCountData;
 
 static void hit_count_is_more_than_for_function(const char* line,
                                                 const void* user_data) {
     auto data = static_cast<const FunctionHitCountData *>(user_data);
     char* detected_function = nullptr;
-    unsigned int         hit_count;
     size_t max_buf_size;
     int nmatches;
 
@@ -661,6 +660,7 @@ static void hit_count_is_more_than_for_function(const char* line,
     detected_function = g_new(char, max_buf_size + 1);
     Gjs::AutoChar format_string{g_strdup_printf("%%5u,%%%zus", max_buf_size)};
 
+    unsigned hit_count;
     // clang-format off
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
 _Pragma("GCC diagnostic push")
@@ -818,8 +818,8 @@ static void test_total_function_coverage_written_to_coverage_data(
 }
 
 typedef struct _LineCountIsMoreThanData {
-    unsigned int expected_lineno;
-    unsigned int expected_to_be_more_than;
+    unsigned expected_lineno;
+    unsigned expected_to_be_more_than;
 } LineCountIsMoreThanData;
 
 static void line_hit_count_is_more_than(const char* line,
@@ -829,13 +829,13 @@ static void line_hit_count_is_more_than(const char* line,
     const char *coverage_line = &line[3];
     char* comma_ptr = nullptr;
 
-    unsigned int lineno = strtol(coverage_line, &comma_ptr, 10);
+    unsigned lineno = strtol(coverage_line, &comma_ptr, 10);
 
     g_assert_cmpint(comma_ptr[0], ==, ',');
 
     char* end_ptr = nullptr;
 
-    unsigned int value = strtol(&comma_ptr[1], &end_ptr, 10);
+    unsigned value = strtol(&comma_ptr[1], &end_ptr, 10);
 
     g_assert_true(end_ptr[0] == '\0' || end_ptr[0] == '\n');
 
@@ -1006,7 +1006,7 @@ static void test_multiple_source_file_records_written_to_coverage_data(
 typedef struct _ExpectedSourceFileCoverageData {
     const char              *source_file_path;
     LineCountIsMoreThanData *more_than;
-    unsigned int            n_more_than_matchers;
+    unsigned n_more_than_matchers;
     const char              expected_lines_hit_character;
     const char              expected_lines_found_character;
 } ExpectedSourceFileCoverageData;
