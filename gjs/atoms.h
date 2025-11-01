@@ -85,13 +85,13 @@ class JSTracer;
 // clang-format on
 
 struct GjsAtom {
-    GJS_JSAPI_RETURN_CONVENTION
-    bool init(JSContext*, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext*, const char* str);
 
     /* It's OK to return JS::HandleId here, to avoid an extra root, with the
      * caveat that you should not use this value after the GjsContext has been
      * destroyed.*/
-    [[nodiscard]] JS::HandleId operator()() const {
+    [[nodiscard]]
+    JS::HandleId operator()() const {
         return JS::HandleId::fromMarkedLocation(&m_jsid.get());
     }
 
@@ -110,8 +110,7 @@ class GjsAtoms {
  public:
     GjsAtoms() {}
     ~GjsAtoms() {}  // prevents giant destructor from being inlined
-    GJS_JSAPI_RETURN_CONVENTION
-    bool init_atoms(JSContext*);
+    GJS_JSAPI_RETURN_CONVENTION bool init_atoms(JSContext*);
 
     void trace(JSTracer*);
 

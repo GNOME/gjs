@@ -167,8 +167,7 @@ static gboolean gjs_dbus_implementation_property_set(
     return TRUE;
 }
 
-static void
-gjs_dbus_implementation_init(GjsDBusImplementation *self) {
+static void gjs_dbus_implementation_init(GjsDBusImplementation* self) {
     GjsDBusImplementationPrivate* priv =
         gjs_dbus_implementation_get_instance_private(self);
 
@@ -192,8 +191,7 @@ static void gjs_dbus_implementation_dispose(GObject* object) {
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->dispose(object);
 }
 
-static void
-gjs_dbus_implementation_finalize(GObject *object) {
+static void gjs_dbus_implementation_finalize(GObject* object) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
 
     g_dbus_interface_info_unref (self->priv->ifaceinfo);
@@ -217,22 +215,22 @@ static void gjs_dbus_implementation_set_property(GObject* object,
     }
 }
 
-static GDBusInterfaceInfo *
-gjs_dbus_implementation_get_info (GDBusInterfaceSkeleton *skeleton) {
+static GDBusInterfaceInfo* gjs_dbus_implementation_get_info(
+    GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
 
     return self->priv->ifaceinfo;
 }
 
-static GDBusInterfaceVTable *
-gjs_dbus_implementation_get_vtable (GDBusInterfaceSkeleton *skeleton) {
+static GDBusInterfaceVTable* gjs_dbus_implementation_get_vtable(
+    GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
 
     return &(self->priv->vtable);
 }
 
-static GVariant *
-gjs_dbus_implementation_get_properties (GDBusInterfaceSkeleton *skeleton) {
+static GVariant* gjs_dbus_implementation_get_properties(
+    GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
 
     GDBusInterfaceInfo *info = self->priv->ifaceinfo;
@@ -258,8 +256,7 @@ gjs_dbus_implementation_get_properties (GDBusInterfaceSkeleton *skeleton) {
     return g_variant_builder_end(&builder);
 }
 
-static void
-gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
+static void gjs_dbus_implementation_flush(GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
     GVariantBuilder changed_props;
@@ -305,8 +302,7 @@ gjs_dbus_implementation_flush (GDBusInterfaceSkeleton *skeleton) {
     g_clear_handle_id(&self->priv->idle_id, g_source_remove);
 }
 
-void
-gjs_dbus_implementation_class_init(GjsDBusImplementationClass *klass) {
+void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
     GDBusInterfaceSkeletonClass *skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS(klass);
 
@@ -445,8 +441,7 @@ void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
  * To unexport @self from only a single connection, use
  * gjs_dbus_implementation_skeleton_unexport_from_connection()
  */
-void
-gjs_dbus_implementation_unexport(GjsDBusImplementation *self) {
+void gjs_dbus_implementation_unexport(GjsDBusImplementation* self) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
 
     g_hash_table_remove_all(self->priv->outstanding_properties);
@@ -465,9 +460,8 @@ gjs_dbus_implementation_unexport(GjsDBusImplementation *self) {
  * To stop exporting on all connections the interface is exported on,
  * use gjs_dbus_implementation_unexport().
  */
-void
-gjs_dbus_implementation_unexport_from_connection(GjsDBusImplementation *self,
-                                                 GDBusConnection       *connection) {
+void gjs_dbus_implementation_unexport_from_connection(
+    GjsDBusImplementation* self, GDBusConnection* connection) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
     GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
 

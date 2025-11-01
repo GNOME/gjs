@@ -205,10 +205,8 @@ static JSFunctionSpec gjs_byte_array_module_funcs[] = {
     JS_FN("toString", to_string_func, 2, 0),
     JS_FS_END};
 
-bool
-gjs_define_byte_array_stuff(JSContext              *cx,
-                            JS::MutableHandleObject module)
-{
+bool gjs_define_byte_array_stuff(JSContext* cx,
+                                 JS::MutableHandleObject module) {
     module.set(JS_NewPlainObject(cx));
     return JS_DefineFunctions(cx, module, gjs_byte_array_module_funcs);
 }

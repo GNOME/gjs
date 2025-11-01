@@ -101,7 +101,8 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
                              GJS_MODULE_PROP_FLAGS);
 }
 
-[[nodiscard]] static const char* format_dynamic_class_name(const char* name) {
+[[nodiscard]]
+static const char* format_dynamic_class_name(const char* name) {
     if (g_str_has_prefix(name, "_private_"))
         return name + strlen("_private_");
     else
@@ -144,13 +145,10 @@ JSObject* gjs_construct_object_dynamic(JSContext* cx, JS::HandleObject proto,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-define_native_accessor_wrapper(JSContext      *cx,
-                               JSNative        call,
-                               unsigned        nargs,
-                               const char     *func_name,
-                               JS::HandleValue private_slot)
-{
+static JSObject* define_native_accessor_wrapper(JSContext* cx, JSNative call,
+                                                unsigned nargs,
+                                                const char* func_name,
+                                                JS::HandleValue private_slot) {
     JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0, func_name);
     if (!func)
         return nullptr;
@@ -224,9 +222,7 @@ bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
  *
  * Returns: the JS::Value that was passed to gjs_define_property_dynamic().
  */
-JS::Value
-gjs_dynamic_property_private_slot(JSObject *accessor_obj)
-{
+JS::Value gjs_dynamic_property_private_slot(JSObject* accessor_obj) {
     return js::GetFunctionNativeReserved(accessor_obj,
                                          DYNAMIC_PROPERTY_PRIVATE_SLOT);
 }

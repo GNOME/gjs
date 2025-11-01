@@ -28,7 +28,8 @@ static std::unordered_map<std::string, LoadedStatus> foreign_modules{
 
 using StructID = std::pair<std::string, std::string>;
 struct StructIDHash {
-    [[nodiscard]] size_t operator()(StructID val) const {
+    [[nodiscard]]
+    size_t operator()(StructID val) const {
         std::hash<std::string> hasher;
         return hasher(val.first) ^ hasher(val.second);
     }
@@ -36,8 +37,9 @@ struct StructIDHash {
 static std::unordered_map<StructID, GjsForeignInfo*, StructIDHash>
     foreign_structs_table;
 
-[[nodiscard]] static bool gjs_foreign_load_foreign_module(
-    JSContext* cx, const char* gi_namespace) {
+[[nodiscard]]
+static bool gjs_foreign_load_foreign_module(JSContext* cx,
+                                            const char* gi_namespace) {
     auto entry = foreign_modules.find(gi_namespace);
     if (entry == foreign_modules.end())
         return false;

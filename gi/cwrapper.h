@@ -82,8 +82,8 @@ class CWrapperPointerOps {
      * class, or that no private data has been set yet on the wrapper. To
      * distinguish between these two cases, use for_js_typecheck().
      */
-    [[nodiscard]] static Wrapped* for_js(JSContext* cx,
-                                         JS::HandleObject wrapper) {
+    [[nodiscard]]
+    static Wrapped* for_js(JSContext* cx, JS::HandleObject wrapper) {
         if (!JS_InstanceOf(cx, wrapper, &Base::klass, nullptr))
             return nullptr;
 
@@ -95,8 +95,9 @@ class CWrapperPointerOps {
      *
      * Checks if the given wrapper object has the right JSClass (Base::klass).
      */
-    [[nodiscard]] static bool typecheck(JSContext* cx, JS::HandleObject wrapper,
-                                        JS::CallArgs* args = nullptr) {
+    [[nodiscard]]
+    static bool typecheck(JSContext* cx, JS::HandleObject wrapper,
+                          JS::CallArgs* args = nullptr) {
         return JS_InstanceOf(cx, wrapper, &Base::klass, args);
     }
 
@@ -139,7 +140,8 @@ class CWrapperPointerOps {
      * and cannot trigger a GC, so it's safe to use from finalize() and trace().
      * (It can return null if no private data has been set yet on the wrapper.)
      */
-    [[nodiscard]] static Wrapped* for_js_nocheck(JSObject* wrapper) {
+    [[nodiscard]]
+    static Wrapped* for_js_nocheck(JSObject* wrapper) {
         return JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 
@@ -153,7 +155,8 @@ class CWrapperPointerOps {
      * Returns true if a private C pointer has already been associated with the
      * wrapper object.
      */
-    [[nodiscard]] static bool has_private(JSObject* wrapper) {
+    [[nodiscard]]
+    static bool has_private(JSObject* wrapper) {
         return !!JS::GetMaybePtrFromReservedSlot<Wrapped>(wrapper, POINTER);
     }
 

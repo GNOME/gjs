@@ -28,10 +28,7 @@ GJS_FOR_EACH_COUNTER(GJS_DEFINE_COUNTER)
 static Gjs::Memory::Counter* counters[] = {
     GJS_FOR_EACH_COUNTER(GJS_LIST_COUNTER)};
 
-void
-gjs_memory_report(const char *where,
-                  bool        die_if_leaks)
-{
+void gjs_memory_report(const char* where, bool die_if_leaks) {
     int i;
     int n_counters;
     int64_t total_objects;

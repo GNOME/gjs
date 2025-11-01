@@ -62,9 +62,7 @@ static bool writeToPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool flush_func(JSContext* cx,
-                unsigned argc,
-                JS::Value* vp) {
+bool flush_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, argv, obj);
 
     if (argc > 1) {
@@ -86,9 +84,7 @@ bool flush_func(JSContext* cx,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-bool finish_func(JSContext* cx,
-                 unsigned argc,
-                 JS::Value* vp) {
+bool finish_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, argv, obj);
 
     if (argc > 1) {

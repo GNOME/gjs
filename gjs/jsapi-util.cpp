@@ -53,13 +53,10 @@
 #include "gjs/macros.h"
 #include "gjs/module.h"
 
-static void
-throw_property_lookup_error(JSContext       *cx,
-                            JS::HandleObject obj,
-                            const char      *description,
-                            JS::HandleId     property_name,
-                            const char      *reason)
-{
+static void throw_property_lookup_error(JSContext* cx, JS::HandleObject obj,
+                                        const char* description,
+                                        JS::HandleId property_name,
+                                        const char* reason) {
     /* remember gjs_throw() is a no-op if JS_GetProperty() already set an
      * exception
      */
@@ -97,13 +94,9 @@ bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
     return false;
 }
 
-bool
-gjs_object_require_property(JSContext       *cx,
-                            JS::HandleObject obj,
-                            const char      *description,
-                            JS::HandleId     property_name,
-                            bool            *value)
-{
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name, bool* value) {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         prop_value.isBoolean()) {
@@ -116,13 +109,9 @@ gjs_object_require_property(JSContext       *cx,
     return false;
 }
 
-bool
-gjs_object_require_property(JSContext       *cx,
-                            JS::HandleObject obj,
-                            const char      *description,
-                            JS::HandleId     property_name,
-                            int32_t         *value)
-{
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name, int32_t* value) {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         prop_value.isInt32()) {
@@ -154,13 +143,10 @@ bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
     return false;
 }
 
-bool
-gjs_object_require_property(JSContext              *cx,
-                            JS::HandleObject        obj,
-                            const char             *description,
-                            JS::HandleId            property_name,
-                            JS::MutableHandleObject value)
-{
+bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
+                                 const char* description,
+                                 JS::HandleId property_name,
+                                 JS::MutableHandleObject value) {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         prop_value.isObject()) {
@@ -173,13 +159,10 @@ gjs_object_require_property(JSContext              *cx,
     return false;
 }
 
-bool
-gjs_object_require_converted_property(JSContext       *cx,
-                                      JS::HandleObject obj,
-                                      const char      *description,
-                                      JS::HandleId     property_name,
-                                      uint32_t        *value)
-{
+bool gjs_object_require_converted_property(JSContext* cx, JS::HandleObject obj,
+                                           const char* description,
+                                           JS::HandleId property_name,
+                                           uint32_t* value) {
     JS::RootedValue prop_value(cx);
     if (JS_GetPropertyById(cx, obj, property_name, &prop_value) &&
         JS::ToUint32(cx, prop_value, value)) {

@@ -55,13 +55,9 @@ typedef enum _test_signed_enum {
     MINUS_ONE
 } test_signed_enum_t;
 
-#define JSNATIVE_TEST_FUNC_BEGIN(name)                      \
-    static bool                                             \
-    name(JSContext *cx,                                     \
-         unsigned   argc,                                   \
-         JS::Value *vp)                                     \
-    {                                                       \
-        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);   \
+#define JSNATIVE_TEST_FUNC_BEGIN(name)                              \
+    static bool name(JSContext* cx, unsigned argc, JS::Value* vp) { \
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);           \
         bool retval;
 
 #define JSNATIVE_TEST_FUNC_END           \

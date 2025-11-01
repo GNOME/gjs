@@ -171,11 +171,7 @@ void gjs_log_cleanup() {
 
 #define PREFIX_LENGTH 12
 
-static void
-write_to_stream(FILE       *logfp,
-                const char *prefix,
-                const char *s)
-{
+static void write_to_stream(FILE* logfp, const char* prefix, const char* s) {
     // seek to end to avoid truncating in case we're using shared logfile
     (void)fseek(logfp, 0, SEEK_END);
 
@@ -185,11 +181,7 @@ write_to_stream(FILE       *logfp,
     fflush(logfp);
 }
 
-void
-gjs_debug(GjsDebugTopic topic,
-          const char   *format,
-          ...)
-{
+void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
     va_list args;
     char *s;
 

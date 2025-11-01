@@ -208,10 +208,12 @@ void CairoRegion::finalize_impl(JS::GCContext*, cairo_region_t* region) {
     cairo_region_destroy(region);
 }
 
-GJS_JSAPI_RETURN_CONVENTION static bool region_to_gi_argument(
-    JSContext* cx, JS::Value value, const char* arg_name,
-    GjsArgumentType argument_type, GITransfer transfer, GjsArgumentFlags flags,
-    GIArgument* arg) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool region_to_gi_argument(JSContext* cx, JS::Value value,
+                                  const char* arg_name,
+                                  GjsArgumentType argument_type,
+                                  GITransfer transfer, GjsArgumentFlags flags,
+                                  GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
             Gjs::AutoChar display_name{

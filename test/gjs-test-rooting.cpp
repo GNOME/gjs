@@ -27,9 +27,7 @@ struct GjsRootingFixture : GjsUnitTestFixture {
     GjsMaybeOwned* obj;  // only used in callback test cases
 };
 
-static JSObject *
-test_obj_new(GjsRootingFixture *fx)
-{
+static JSObject* test_obj_new(GjsRootingFixture* fx) {
     return JS::NewObjectWithStashedPointer(fx->cx, fx,
                                            [](GjsRootingFixture* data) {
                                                g_assert_false(data->finalized);
@@ -56,9 +54,7 @@ static void teardown(GjsRootingFixture* fx, const void* unused) {
     gjs_unit_test_fixture_teardown(fx, unused);
 }
 
-static void
-wait_for_gc(GjsRootingFixture *fx)
-{
+static void wait_for_gc(GjsRootingFixture* fx) {
     int count = g_atomic_int_get(&gc_counter);
 
     JS_GC(fx->cx);

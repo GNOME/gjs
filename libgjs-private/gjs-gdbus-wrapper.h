@@ -36,7 +36,7 @@ struct _GjsDBusImplementationClass {
 typedef struct _GjsDBusImplementationClass GjsDBusImplementationClass;
 
 GJS_EXPORT
-GType                  gjs_dbus_implementation_get_type (void);
+GType gjs_dbus_implementation_get_type(void);
 
 GJS_EXPORT
 void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,

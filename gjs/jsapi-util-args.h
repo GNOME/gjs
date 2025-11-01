@@ -31,8 +31,8 @@
 
 namespace detail {
 
-[[nodiscard]] GJS_ALWAYS_INLINE static inline bool check_nullable(
-    const char*& fchar, const char*& fmt_string) {
+[[nodiscard]] GJS_ALWAYS_INLINE
+static inline bool check_nullable(const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
         return false;
 
@@ -199,10 +199,9 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
 /* Special case: treat pointer-to-enum as pointer-to-int, but use enable_if to
  * prevent instantiation for any other types besides pointer-to-enum */
 template <typename T, typename std::enable_if_t<std::is_enum_v<T>, int> = 0>
-GJS_ALWAYS_INLINE static inline ParseArgsResult assign(JSContext* cx, char c,
-                                                       bool nullable,
-                                                       JS::HandleValue value,
-                                                       T* ref) {
+GJS_ALWAYS_INLINE
+static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
+                                     JS::HandleValue value, T* ref) {
     /* Sadly, we cannot use std::underlying_type<T> here; the underlying type of
      * an enum is implementation-defined, so it would not be clear what letter
      * to use in the format string. For the same reason, we can only support
@@ -219,8 +218,8 @@ template <typename T>
 static inline void free_if_necessary(T param_ref [[maybe_unused]]) {}
 
 template <typename T>
-GJS_ALWAYS_INLINE static inline void free_if_necessary(
-    JS::Rooted<T>* param_ref) {
+GJS_ALWAYS_INLINE
+static inline void free_if_necessary(JS::Rooted<T>* param_ref) {
     // This is not exactly right, since before we consumed a JS::Value there may
     // have been something different inside the handle. But it has already been
     // clobbered at this point anyhow.
@@ -228,10 +227,12 @@ GJS_ALWAYS_INLINE static inline void free_if_necessary(
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
-    JSContext* cx, const char* function_name, const JS::CallArgs& args,
-    const char*& fmt_required, const char*& fmt_optional, unsigned param_ix,
-    const char* param_name, T param_ref) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool parse_call_args_helper(JSContext* cx, const char* function_name,
+                                   const JS::CallArgs& args,
+                                   const char*& fmt_required,
+                                   const char*& fmt_optional, unsigned param_ix,
+                                   const char* param_name, T param_ref) {
     bool nullable = false;
     const char *fchar = fmt_required;
 
@@ -268,10 +269,13 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
 }
 
 template <typename T, typename... Args>
-GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
-    JSContext* cx, const char* function_name, const JS::CallArgs& args,
-    const char*& fmt_required, const char*& fmt_optional, unsigned param_ix,
-    const char* param_name, T param_ref, Args... params) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool parse_call_args_helper(JSContext* cx, const char* function_name,
+                                   const JS::CallArgs& args,
+                                   const char*& fmt_required,
+                                   const char*& fmt_optional, unsigned param_ix,
+                                   const char* param_name, T param_ref,
+                                   Args... params) {
     if (!parse_call_args_helper(cx, function_name, args, fmt_required,
                                 fmt_optional, param_ix, param_name, param_ref))
         return false;
@@ -288,9 +292,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool parse_call_args_helper(
 }  // namespace detail
 
 // Empty-args version of the template
-GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
-    JSContext* cx, const char* function_name, const JS::CallArgs& args,
-    const char* format) {
+GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]]
+static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
+                                const JS::CallArgs& args, const char* format) {
     bool ignore_trailing_args = false;
 
     if (*format == '!') {
@@ -348,9 +352,10 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * the handle is set to null.
  */
 template <typename... Args>
-GJS_JSAPI_RETURN_CONVENTION static bool gjs_parse_call_args(
-    JSContext* cx, const char* function_name, const JS::CallArgs& args,
-    const char* format, Args... params) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
+                                const JS::CallArgs& args, const char* format,
+                                Args... params) {
     const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
     bool optional_args = false, ignore_trailing_args = false;

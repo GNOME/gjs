@@ -32,7 +32,7 @@ void gjs_unit_test_destroy_context(GjsUnitTestFixture*);
 
 void gjs_unit_test_fixture_teardown(GjsUnitTestFixture*, const void* unused);
 
-void gjs_test_add_tests_for_coverage ();
+void gjs_test_add_tests_for_coverage();
 
 void gjs_test_add_tests_for_parse_call_args();
 

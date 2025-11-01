@@ -35,7 +35,7 @@ static gboolean debugging = false;
 static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
-static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
+static gboolean parse_profile_arg(const char*, const char*, void*, GError**);
 
 using GjsAutoGOptionContext =
     Gjs::AutoPointer<GOptionContext, GOptionContext, g_option_context_free>;
@@ -72,7 +72,8 @@ static GOptionEntry entries[] = {
     {"debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode"},
     {nullptr}};
 
-[[nodiscard]] static Gjs::AutoStrv strndupv(int n, char* const* strv) {
+[[nodiscard]]
+static Gjs::AutoStrv strndupv(int n, char* const* strv) {
     Gjs::AutoPointer<GStrvBuilder, GStrvBuilder, g_strv_builder_unref> builder{
         g_strv_builder_new()};
 
@@ -82,7 +83,8 @@ static GOptionEntry entries[] = {
     return g_strv_builder_end(builder);
 }
 
-[[nodiscard]] static Gjs::AutoStrv strcatv(char** strv1, char** strv2) {
+[[nodiscard]]
+static Gjs::AutoStrv strcatv(char** strv1, char** strv2) {
     if (strv1 == nullptr && strv2 == nullptr)
         return nullptr;
     if (strv1 == nullptr)
@@ -106,10 +108,7 @@ static gboolean parse_profile_arg(const char* option_name [[maybe_unused]],
     return true;
 }
 
-static void
-check_script_args_for_stray_gjs_args(int           argc,
-                                     char * const *argv)
-{
+static void check_script_args_for_stray_gjs_args(int argc, char* const* argv) {
     Gjs::AutoError error;
     Gjs::AutoStrv new_coverage_prefixes;
     Gjs::AutoChar new_coverage_output_path;

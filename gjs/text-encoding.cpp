@@ -229,7 +229,8 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
     return JS_NewUCStringCopyN(cx, unicode_bytes, bytes_written / 2);
 }
 
-[[nodiscard]] static bool is_utf8_label(const char* encoding) {
+[[nodiscard]]
+static bool is_utf8_label(const char* encoding) {
     // We could be smarter about utf8 synonyms here.
     // For now, we handle any casing and trailing/leading
     // whitespace.
@@ -248,7 +249,8 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
 
 // Finds the length of a given data array, stopping at the first 0 byte.
 template <class T>
-[[nodiscard]] static size_t zero_terminated_length(const T* data, size_t len) {
+[[nodiscard]]
+static size_t zero_terminated_length(const T* data, size_t len) {
     if (!data || len == 0)
         return 0;
 

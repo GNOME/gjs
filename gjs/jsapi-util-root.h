@@ -69,9 +69,7 @@ class GjsMaybeOwned {
                             what);
     }
 
-    void
-    teardown_rooting()
-    {
+    void teardown_rooting() {
         debug("teardown_rooting()");
         g_assert(m_root);
 
@@ -90,13 +88,15 @@ class GjsMaybeOwned {
     }
 
     // COMPAT: constexpr in C++23
-    [[nodiscard]] JSObject* get() const {
+    [[nodiscard]]
+    JSObject* get() const {
         return m_root ? m_root->get() : m_heap.get();
     }
 
     // Use debug_addr() only for debug logging, because it is unbarriered.
     // COMPAT: constexpr in C++23
-    [[nodiscard]] const void* debug_addr() const {
+    [[nodiscard]]
+    const void* debug_addr() const {
         return m_root ? m_root->get() : m_heap.unbarrieredGet();
     }
 
@@ -126,7 +126,8 @@ class GjsMaybeOwned {
     // wrapper with stack rooting. However, you must not do this if the
     // JSContext can be destroyed while the Handle is live.
     // COMPAT: constexpr in C++23
-    [[nodiscard]] JS::HandleObject handle() {
+    [[nodiscard]]
+    JS::HandleObject handle() {
         g_assert(m_root);
         return *m_root;
     }
@@ -200,10 +201,7 @@ class GjsMaybeOwned {
 
     /* Tracing makes no sense in the rooted case, because JS::PersistentRooted
      * already takes care of that. */
-    void
-    trace(JSTracer   *tracer,
-          const char *name)
-    {
+    void trace(JSTracer* tracer, const char* name) {
         debug("trace()");
         g_assert(!m_root);
         JS::TraceEdge(tracer, &m_heap, name);

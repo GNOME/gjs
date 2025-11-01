@@ -67,7 +67,8 @@ enum {
 
 static GParamSpec* properties[PROP_N];
 
-[[nodiscard]] static char* get_file_identifier(GFile* source_file) {
+[[nodiscard]]
+static char* get_file_identifier(GFile* source_file) {
     char *path = g_file_get_path(source_file);
     if (!path)
         path = g_file_get_uri(source_file);
@@ -107,7 +108,8 @@ static GErrorResult<> copy_source_file_to_coverage_output(
 
 // This function will strip a URI scheme and return the string with the URI
 // scheme stripped or nullptr if the path was not a valid URI
-[[nodiscard]] static char* strip_uri_scheme(const char* potential_uri) {
+[[nodiscard]]
+static char* strip_uri_scheme(const char* potential_uri) {
     char *uri_header = g_uri_parse_scheme(potential_uri);
 
     if (uri_header) {
@@ -136,8 +138,8 @@ static GErrorResult<> copy_source_file_to_coverage_output(
  * As a special case, child paths that are a URI automatically return the full
  * URI path with the URI scheme and leading slash stripped out.
  */
-[[nodiscard]] static char* find_diverging_child_components(GFile* child,
-                                                           GFile* parent) {
+[[nodiscard]]
+static char* find_diverging_child_components(GFile* child, GFile* parent) {
     Gjs::AutoUnref<GFile> ancestor{parent, Gjs::TakeOwnership{}};
     while (ancestor) {
         char *relpath = g_file_get_relative_path(ancestor, child);
@@ -159,8 +161,9 @@ static GErrorResult<> copy_source_file_to_coverage_output(
     return strip_uri_scheme(child_uri);
 }
 
-[[nodiscard]] static bool filename_has_coverage_prefixes(GjsCoverage* self,
-                                                         const char* filename) {
+[[nodiscard]]
+static bool filename_has_coverage_prefixes(GjsCoverage* self,
+                                           const char* filename) {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(self));
     Gjs::AutoChar workdir{g_get_current_dir()};
     Gjs::AutoChar abs_filename{g_canonicalize_filename(filename, workdir)};
@@ -277,9 +280,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
  * directory as the scanned files. It will provide coverage data for all files
  * ending with ".js" in the coverage directories.
  */
-void
-gjs_coverage_write_statistics(GjsCoverage *coverage)
-{
+void gjs_coverage_write_statistics(GjsCoverage* coverage) {
     auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
     auto cx = static_cast<JSContext*>(
         gjs_context_get_native_context(priv->coverage_context));
@@ -304,9 +305,7 @@ static void gjs_coverage_init(GjsCoverage*) {
             " You must call this function before creating any GjsContext.");
 }
 
-static void
-coverage_tracer(JSTracer *trc, void *data)
-{
+static void coverage_tracer(JSTracer* trc, void* data) {
     GjsCoverage *coverage = (GjsCoverage *) data;
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
@@ -314,9 +313,7 @@ coverage_tracer(JSTracer *trc, void *data)
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-bootstrap_coverage(GjsCoverage *coverage)
-{
+static bool bootstrap_coverage(GjsCoverage* coverage) {
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
     auto* gjs = GjsContextPrivate::from_object(priv->coverage_context);
@@ -347,9 +344,7 @@ bootstrap_coverage(GjsCoverage *coverage)
     return true;
 }
 
-static void
-gjs_coverage_constructed(GObject *object)
-{
+static void gjs_coverage_constructed(GObject* object) {
     G_OBJECT_CLASS(gjs_coverage_parent_class)->constructed(object);
 
     GjsCoverage *coverage = GJS_COVERAGE(object);
@@ -364,12 +359,8 @@ gjs_coverage_constructed(GObject *object)
     }
 }
 
-static void
-gjs_coverage_set_property(GObject      *object,
-                          unsigned int  prop_id,
-                          const GValue *value,
-                          GParamSpec   *pspec)
-{
+static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
+                                      const GValue* value, GParamSpec* pspec) {
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
     switch (prop_id) {
@@ -391,9 +382,7 @@ gjs_coverage_set_property(GObject      *object,
     }
 }
 
-static void
-gjs_coverage_dispose(GObject *object)
-{
+static void gjs_coverage_dispose(GObject* object) {
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
@@ -409,9 +398,7 @@ gjs_coverage_dispose(GObject *object)
     G_OBJECT_CLASS(gjs_coverage_parent_class)->dispose(object);
 }
 
-static void
-gjs_coverage_finalize (GObject *object)
-{
+static void gjs_coverage_finalize(GObject* object) {
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
@@ -422,9 +409,7 @@ gjs_coverage_finalize (GObject *object)
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }
 
-static void
-gjs_coverage_class_init (GjsCoverageClass *klass)
-{
+static void gjs_coverage_class_init(GjsCoverageClass* klass) {
     GObjectClass *object_class = (GObjectClass *) klass;
 
     object_class->constructed = gjs_coverage_constructed;

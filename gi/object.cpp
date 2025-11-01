@@ -121,7 +121,8 @@ G_DEFINE_QUARK(gjs::instance-strings, ObjectBase::instance_strings)
 // clang-format on
 G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
 
-[[nodiscard]] static GQuark gjs_object_priv_quark() {
+[[nodiscard]]
+static GQuark gjs_object_priv_quark() {
     static GQuark val = 0;
     if (G_UNLIKELY (!val))
         val = g_quark_from_static_string ("gjs::private");
@@ -169,9 +170,7 @@ bool ObjectInstance::check_gobject_finalized(const char* for_what) const {
     return !m_gobj_finalized;
 }
 
-ObjectInstance *
-ObjectInstance::for_gobject(GObject *gobj)
-{
+ObjectInstance* ObjectInstance::for_gobject(GObject* gobj) {
     auto priv = static_cast<ObjectInstance *>(g_object_get_qdata(gobj,
                                                                  gjs_object_priv_quark()));
 
@@ -1163,8 +1162,9 @@ static JSNative get_getter_for_type(const GI::TypeInfo type_info,
     }
 }
 
-[[nodiscard]] static JSNative get_setter_for_type(const GI::TypeInfo type_info,
-                                                  GITransfer transfer) {
+[[nodiscard]]
+static JSNative get_setter_for_type(const GI::TypeInfo type_info,
+                                    GITransfer transfer) {
     switch (type_info.tag()) {
         case GI_TYPE_TAG_BOOLEAN:
             return ObjectBase::prop_setter_simple_type_func<Gjs::Tag::GBoolean>;
@@ -1209,8 +1209,9 @@ static JSNative get_getter_for_type(const GI::TypeInfo type_info,
 // Wrap a call to JS::NewObjectWithStashedPointer() while ensuring the pointer
 // is properly deleted if the call fails.
 template <typename T, typename... Ts>
-GJS_JSAPI_RETURN_CONVENTION static inline JSObject*
-new_object_with_stashed_pointer(JSContext* cx, Ts... args) {
+GJS_JSAPI_RETURN_CONVENTION
+static inline JSObject* new_object_with_stashed_pointer(JSContext* cx,
+                                                        Ts... args) {
     std::unique_ptr<T> data = std::make_unique<T>(args...);
     JSObject* obj = JS::NewObjectWithStashedPointer(
         cx, data.get(), [](T* data) { delete data; });

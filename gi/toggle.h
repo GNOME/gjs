@@ -61,10 +61,12 @@ public:
 
     void lock();
     void maybe_unlock();
-    [[nodiscard]] bool is_locked() const {
+    [[nodiscard]]
+    bool is_locked() const {
         return m_holder != std::thread::id();
     }
-    [[nodiscard]] bool owns_lock() const {
+    [[nodiscard]]
+    bool owns_lock() const {
         return m_holder == std::this_thread::get_id();
     }
 
@@ -76,10 +78,11 @@ public:
     std::deque<Item>::const_iterator find_operation_locked(
         const ObjectInstance*, Direction) const;
 
-    static gboolean idle_handle_toggle(void *data);
-    static void idle_destroy_notify(void *data);
+    static gboolean idle_handle_toggle(void* data);
+    static void idle_destroy_notify(void* data);
 
-    [[nodiscard]] static ToggleQueue& get_default_unlocked() {
+    [[nodiscard]]
+    static ToggleQueue& get_default_unlocked() {
         static ToggleQueue the_singleton;
         return the_singleton;
     }
@@ -105,7 +108,8 @@ public:
     // Queues a toggle to be processed in idle time.
     void enqueue(ObjectInstance*, Direction, Handler);
 
-    [[nodiscard]] static Locked get_default() {
+    [[nodiscard]]
+    static Locked get_default() {
         return Locked(&get_default_unlocked());
     }
 };

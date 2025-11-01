@@ -143,7 +143,8 @@ static GjsContext *profiling_context;
  *
  * Returns: true if successful; otherwise false and the profile should abort.
  */
-[[nodiscard]] static bool gjs_profiler_extract_maps(GjsProfiler* self) {
+[[nodiscard]]
+static bool gjs_profiler_extract_maps(GjsProfiler* self) {
     int64_t now = g_get_monotonic_time() * 1000L;
 
     g_assert(self && "Profiler must be set up before extracting maps");
@@ -196,7 +197,8 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
     counter->value.v64 = 0;
 }
 
-[[nodiscard]] static bool gjs_profiler_define_counters(GjsProfiler* self) {
+[[nodiscard]]
+static bool gjs_profiler_define_counters(GjsProfiler* self) {
     int64_t now = g_get_monotonic_time() * 1000L;
 
     g_assert(self && "Profiler must be set up before defining counters");
@@ -305,9 +307,7 @@ GjsProfiler* _gjs_profiler_new(GjsContext* gjs_context) {
  * If the profiler is running, it will be stopped. This may result in blocking
  * to write the contents of the buffer to the underlying file-descriptor.
  */
-void
-_gjs_profiler_free(GjsProfiler *self)
-{
+void _gjs_profiler_free(GjsProfiler* self) {
     if (!self)
         return;
 
@@ -339,9 +339,7 @@ _gjs_profiler_free(GjsProfiler *self)
  *
  * Returns: true if the profiler is active.
  */
-bool
-_gjs_profiler_is_running(GjsProfiler *self)
-{
+bool _gjs_profiler_is_running(GjsProfiler* self) {
     g_return_val_if_fail(self, false);
 
     return self->running;
@@ -496,9 +494,7 @@ static gboolean profiler_auto_flush_cb(void* user_data) {
  *
  * You should call gjs_profiler_stop() when the profiler is no longer needed.
  */
-void
-gjs_profiler_start(GjsProfiler *self)
-{
+void gjs_profiler_start(GjsProfiler* self) {
     g_return_if_fail(self);
     if (self->running)
         return;
@@ -638,9 +634,7 @@ gjs_profiler_start(GjsProfiler *self)
  * This may block while writing to disk. Generally, the writes are delivered to
  * a tmpfs device, and are therefore negligible.
  */
-void
-gjs_profiler_stop(GjsProfiler *self)
-{
+void gjs_profiler_stop(GjsProfiler* self) {
     // Note: can be called from a signal handler
 
     g_assert(self);
@@ -671,9 +665,7 @@ gjs_profiler_stop(GjsProfiler *self)
 
 #ifdef ENABLE_PROFILER
 
-static gboolean
-gjs_profiler_sigusr2(void *data)
-{
+static gboolean gjs_profiler_sigusr2(void* data) {
     GjsContext* gjs_context = GJS_CONTEXT(data);
     GjsProfiler* current_profiler = gjs_context_get_profiler(gjs_context);
 
@@ -791,10 +783,7 @@ void gjs_profiler_set_capture_writer(GjsProfiler* self, void* capture) {
  * Set the file to which profiling data is written when the @self is stopped. By
  * default, this is `gjs-$PID.syscap` in the current directory.
  */
-void
-gjs_profiler_set_filename(GjsProfiler *self,
-                          const char  *filename)
-{
+void gjs_profiler_set_filename(GjsProfiler* self, const char* filename) {
     g_return_if_fail(self);
     g_return_if_fail(!self->running);
 

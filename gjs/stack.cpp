@@ -38,8 +38,7 @@ void gjs_dumpstack() {
     }
 }
 
-std::string
-gjs_dumpstack_string() {
+std::string gjs_dumpstack_string() {
     std::string out;
     std::ostringstream all_traces;
 

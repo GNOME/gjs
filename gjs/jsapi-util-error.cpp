@@ -92,9 +92,10 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
     return true;
 }
 
-[[gnu::format(printf, 4, 0)]] static void gjs_throw_valist(
-    JSContext* cx, JSExnType error_kind, const char* error_name,
-    const char* format, va_list args) {
+[[gnu::format(printf, 4, 0)]]
+static void gjs_throw_valist(JSContext* cx, JSExnType error_kind,
+                             const char* error_name, const char* format,
+                             va_list args) {
     Gjs::AutoChar s{g_strdup_vprintf(format, args)};
     auto fallback = mozilla::MakeScopeExit([cx, &s]() {
         // try just reporting it to error handler? should not
@@ -174,8 +175,8 @@ void gjs_throw(JSContext* cx, const char* format, ...) {
 /* Like gjs_throw, but allows to customize the error class and 'name' property.
  * Mainly used for throwing TypeError instead of error.
  */
-void gjs_throw_custom(JSContext *cx, JSExnType kind, const char *error_name,
-                      const char *format, ...) {
+void gjs_throw_custom(JSContext* cx, JSExnType kind, const char* error_name,
+                      const char* format, ...) {
     va_list args;
 
     va_start(args, format);

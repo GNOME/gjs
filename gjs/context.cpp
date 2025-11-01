@@ -235,9 +235,7 @@ static void gjs_context_init(GjsContext* self) {
     gjs_context_make_current(self);
 }
 
-static void
-gjs_context_class_init(GjsContextClass *klass)
-{
+static void gjs_context_class_init(GjsContextClass* klass) {
     GObjectClass *object_class = G_OBJECT_CLASS (klass);
     GParamSpec *pspec;
 
@@ -388,9 +386,7 @@ void GjsContextPrivate::warn_about_unhandled_promise_rejections() {
     m_unhandled_rejection_stacks.clear();
 }
 
-static void
-gjs_context_dispose(GObject *object)
-{
+static void gjs_context_dispose(GObject* object) {
     gjs_debug(GJS_DEBUG_CONTEXT, "JS shutdown sequence");
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
@@ -506,9 +502,7 @@ GjsContextPrivate::~GjsContextPrivate() {
     g_clear_pointer(&m_repl_history_path, g_free);
 }
 
-static void
-gjs_context_finalize(GObject *object)
-{
+static void gjs_context_finalize(GObject* object) {
     if (gjs_context_get_current() == (GjsContext*)object)
         gjs_context_make_current(nullptr);
 
@@ -526,9 +520,7 @@ gjs_context_finalize(GObject *object)
     g_mutex_unlock(&contexts_lock);
 }
 
-static void
-gjs_context_constructed(GObject *object)
-{
+static void gjs_context_constructed(GObject* object) {
     GjsContext* self = GJS_CONTEXT(object);
 
     G_OBJECT_CLASS(gjs_context_parent_class)->constructed(object);
@@ -874,9 +866,7 @@ GjsContext* gjs_context_new() {
     return (GjsContext*)g_object_new(GJS_TYPE_CONTEXT, nullptr);
 }
 
-GjsContext*
-gjs_context_new_with_search_path(char** search_path)
-{
+GjsContext* gjs_context_new_with_search_path(char** search_path) {
     return (GjsContext*)g_object_new(GJS_TYPE_CONTEXT, "search-path",
                                      search_path, nullptr);
 }
@@ -929,7 +919,8 @@ void GjsContextPrivate::schedule_gc_if_needed() {
     schedule_gc_internal(false);
 }
 
-void GjsContextPrivate::on_garbage_collection(JSGCStatus status, JS::GCReason reason) {
+void GjsContextPrivate::on_garbage_collection(JSGCStatus status,
+                                              JS::GCReason reason) {
     if (m_profiler)
         _gjs_profiler_set_gc_status(m_profiler, status, reason);
 
@@ -1853,9 +1844,7 @@ AutoInternalRealm::AutoInternalRealm(JSContext* cx)
  *
  * Returns: (transfer none) (nullable): a #GjsProfiler
  */
-GjsProfiler *
-gjs_context_get_profiler(GjsContext *self)
-{
+GjsProfiler* gjs_context_get_profiler(GjsContext* self) {
     return GjsContextPrivate::from_object(self)->profiler();
 }
 

@@ -555,10 +555,9 @@ static bool gjs_lookup_constructor(JSContext* cx, unsigned argc,
     return gjs_lookup_object_constructor(cx, gtype, args.rval());
 }
 
-template <GjsSymbolAtom GjsAtoms::*member>
-GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
-                                                      unsigned argc,
-                                                      JS::Value* vp) {
+template <GjsSymbolAtom GjsAtoms::* member>
+GJS_JSAPI_RETURN_CONVENTION
+static bool symbol_getter(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     args.rval().setSymbol((atoms.*member)().toSymbol());

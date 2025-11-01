@@ -156,7 +156,8 @@ static bool type_needs_release(const GI::TypeInfo& type_info, GITypeTag tag) {
     }
 }
 
-[[nodiscard]] static inline bool is_string_type(GITypeTag tag) {
+[[nodiscard]]
+static inline bool is_string_type(GITypeTag tag) {
     return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
 }
 
@@ -196,10 +197,11 @@ static bool type_needs_out_release(const GI::TypeInfo& type_info,
 // required GIArgument type, for the in parameters of a C function call.
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
-    JSContext* cx, JS::HandleValue value, const GI::TypeInfo type_info,
-    GITransfer transfer, const char* arg_name, GjsArgumentType arg_type,
-    T** list_p) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_to_g_list(JSContext* cx, JS::HandleValue value,
+                                const GI::TypeInfo type_info,
+                                GITransfer transfer, const char* arg_name,
+                                GjsArgumentType arg_type, T** list_p) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
 
     // While a list can be NULL in C, that means empty array in JavaScript, it
@@ -279,8 +281,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     return true;
 }
 
-[[nodiscard]] static GHashTable* create_hash_table_for_key_type(
-    GITypeTag key_type) {
+[[nodiscard]]
+static GHashTable* create_hash_table_for_key_type(GITypeTag key_type) {
     /* Don't use key/value destructor functions here, because we can't construct
      * correct ones in general if the value type is complex. Rely on the
      * type-aware gi_argument_release functions. */
@@ -290,9 +292,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
 }
 
 template <typename IntTag>
-GJS_JSAPI_RETURN_CONVENTION static bool hashtable_int_key(JSContext* cx,
-                                                          JS::HandleValue value,
-                                                          void** pointer_out) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool hashtable_int_key(JSContext* cx, JS::HandleValue value,
+                              void** pointer_out) {
     using IntType = Gjs::Tag::RealT<IntTag>;
     static_assert(std::is_integral_v<IntType>, "Need an integer");
     bool out_of_range = false;
@@ -437,8 +439,8 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
 }
 
 template <typename TAG>
-[[nodiscard]] static Gjs::Tag::RealT<TAG>* heap_value_new_from_arg(
-    GIArgument* val_arg) {
+[[nodiscard]]
+static Gjs::Tag::RealT<TAG>* heap_value_new_from_arg(GIArgument* val_arg) {
     auto* heap_val = g_new(Gjs::Tag::RealT<TAG>, 1);
     *heap_val = gjs_arg_get<TAG>(val_arg);
 
@@ -532,7 +534,8 @@ _Pragma("GCC diagnostic pop")
 }
 
 template <typename T>
-[[nodiscard]] constexpr T* array_allocate(size_t length) {
+[[nodiscard]]
+constexpr T* array_allocate(size_t length) {
     if constexpr (std::is_same_v<T, char*>)
         return g_new0(char*, length);
 
@@ -542,8 +545,9 @@ template <typename T>
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
-    JSContext* cx, JS::HandleValue value, Gjs::Tag::RealT<TAG>* out) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool js_value_to_c_strict(JSContext* cx, JS::HandleValue value,
+                                 Gjs::Tag::RealT<TAG>* out) {
     if constexpr (Gjs::type_has_js_getter<TAG,
                                           Gjs::HolderMode::ContainingType>())
         return Gjs::js_value_to_c<TAG>(cx, value, out);
@@ -556,8 +560,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool js_value_to_c_strict(
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_auto_array(
-    JSContext* cx, JS::Value array_value, size_t length, void** arr_p) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_to_auto_array(JSContext* cx, JS::Value array_value,
+                                    size_t length, void** arr_p) {
     using RealT = Gjs::Tag::RealT<T>;
 
     JS::RootedObject array(cx, array_value.toObjectOrNull());
@@ -1463,9 +1468,12 @@ bool value_to_interface_gi_argument_internal(
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION inline static bool gjs_arg_set_from_js_value(
-    JSContext* cx, JS::HandleValue value, GIArgument* arg, const char* arg_name,
-    GjsArgumentType arg_type) {
+GJS_JSAPI_RETURN_CONVENTION
+inline static bool gjs_arg_set_from_js_value(JSContext* cx,
+                                             JS::HandleValue value,
+                                             GIArgument* arg,
+                                             const char* arg_name,
+                                             GjsArgumentType arg_type) {
     bool out_of_range = false;
 
     if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
@@ -1708,9 +1716,11 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool basic_array_to_linked_list(
-    JSContext* cx, JS::HandleValue value, GITypeTag element_tag,
-    const char* arg_name, GjsArgumentType arg_type, T** list_p) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool basic_array_to_linked_list(JSContext* cx, JS::HandleValue value,
+                                       GITypeTag element_tag,
+                                       const char* arg_name,
+                                       GjsArgumentType arg_type, T** list_p) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
              "use gjs_array_to_g_list() for lists containing non-basic types");
@@ -2294,9 +2304,10 @@ bool gjs_array_from_strv(JSContext* cx, JS::MutableHandleValue value_out,
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
-    JSContext* cx, JS::MutableHandleValue value_p, const GI::TypeInfo type_info,
-    GITransfer transfer, T* list) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_array_from_g_list(JSContext* cx, JS::MutableHandleValue value_p,
+                                  const GI::TypeInfo type_info,
+                                  GITransfer transfer, T* list) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     JS::RootedValueVector elems(cx);
     GI::AutoTypeInfo element_type{type_info.element_type()};
@@ -2326,9 +2337,12 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_from_g_list(
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_basic_c_array(
-    JSContext* cx, JS::MutableHandleValueVector elems, GITypeTag element_tag,
-    GIArgument* arg, void* array, size_t length) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool fill_vector_from_basic_c_array(JSContext* cx,
+                                           JS::MutableHandleValueVector elems,
+                                           GITypeTag element_tag,
+                                           GIArgument* arg, void* array,
+                                           size_t length) {
     using T = Gjs::Tag::RealT<TAG>;
     for (size_t i = 0; i < length; i++) {
         gjs_arg_set<TAG>(arg, *(static_cast<T*>(array) + i));
@@ -2341,7 +2355,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_basic_c_array(
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_carray(
+GJS_JSAPI_RETURN_CONVENTION
+static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     const GI::TypeInfo element_type, GIArgument* arg, void* array,
     size_t length, GITransfer transfer = GI_TRANSFER_EVERYTHING) {
@@ -2669,8 +2684,8 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION static bool
-fill_vector_from_basic_zero_terminated_c_array(
+GJS_JSAPI_RETURN_CONVENTION
+static bool fill_vector_from_basic_zero_terminated_c_array(
     JSContext* cx, JS::MutableHandleValueVector elems, GITypeTag element_tag,
     GIArgument* arg, void* c_array) {
     using T = Gjs::Tag::RealT<TAG>;
@@ -2691,8 +2706,8 @@ fill_vector_from_basic_zero_terminated_c_array(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION static bool
-fill_vector_from_zero_terminated_pointer_carray(
+GJS_JSAPI_RETURN_CONVENTION
+static bool fill_vector_from_zero_terminated_pointer_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     const GI::TypeInfo param_info, GIArgument* arg, void* c_array,
     GITransfer transfer = GI_TRANSFER_EVERYTHING) {
@@ -2718,7 +2733,8 @@ fill_vector_from_zero_terminated_pointer_carray(
     return true;
 }
 
-GJS_JSAPI_RETURN_CONVENTION static bool fill_vector_from_zero_terminated_non_pointer_carray(
+GJS_JSAPI_RETURN_CONVENTION
+static bool fill_vector_from_zero_terminated_non_pointer_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
     const GI::TypeInfo param_info, GIArgument* arg, size_t element_size,
     void* c_array, GITransfer transfer = GI_TRANSFER_EVERYTHING) {
@@ -3036,9 +3052,10 @@ bool gjs_value_from_basic_gptrarray_gi_argument(
 }
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool array_from_basic_linked_list(
-    JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
-    T* list) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool array_from_basic_linked_list(JSContext* cx,
+                                         JS::MutableHandleValue value_out,
+                                         GITypeTag element_tag, T* list) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     g_assert(
         GI_TYPE_TAG_IS_BASIC(element_tag) &&
@@ -3502,9 +3519,10 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 // GIArgument after a C function call succeeds or fails.
 
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool gjs_g_arg_release_g_list(
-    JSContext* cx, GITransfer transfer, const GI::TypeInfo type_info,
-    GjsArgumentFlags flags, GIArgument* arg) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool gjs_g_arg_release_g_list(JSContext* cx, GITransfer transfer,
+                                     const GI::TypeInfo type_info,
+                                     GjsArgumentFlags flags, GIArgument* arg) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
 

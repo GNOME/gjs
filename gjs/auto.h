@@ -198,7 +198,8 @@ using AutoChar =
 // free(). It would cause crashes if SpiderMonkey were to stop supporting
 // embedders using the system allocator in the future. In that case, this
 // function would have to copy the string.
-[[nodiscard]] inline AutoChar js_chars_to_glib(JS::UniqueChars&& js_chars) {
+[[nodiscard]]
+inline AutoChar js_chars_to_glib(JS::UniqueChars&& js_chars) {
     return {js_chars.release()};
 }
 

@@ -303,7 +303,8 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
                                  JSPROP_ENUMERATE);
 }
 
-[[nodiscard]] static JSProtoKey proto_key_from_error_enum(int val) {
+[[nodiscard]]
+static JSProtoKey proto_key_from_error_enum(int val) {
     switch (val) {
     case GJS_JS_ERROR_EVAL_ERROR:
         return JSProto_EvalError;
@@ -326,10 +327,7 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-gjs_error_from_js_gerror(JSContext *cx,
-                         GError    *gerror)
-{
+static JSObject* gjs_error_from_js_gerror(JSContext* cx, GError* gerror) {
     JS::RootedValueArray<1> error_args(cx);
     if (!gjs_string_from_utf8(cx, gerror->message, error_args[0]))
         return nullptr;

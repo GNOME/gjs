@@ -106,16 +106,20 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
     mozilla::Maybe<const GI::FieldInfo> lookup_field(JSContext*,
                                                      JSString* prop_name);
 
-    [[nodiscard]] bool can_allocate_directly_without_pointers() const {
+    [[nodiscard]]
+    bool can_allocate_directly_without_pointers() const {
         return m_can_allocate_directly_without_pointers;
     }
-    [[nodiscard]] bool can_allocate_directly() const {
+    [[nodiscard]]
+    bool can_allocate_directly() const {
         return m_can_allocate_directly;
     }
-    [[nodiscard]] bool has_zero_args_constructor() const {
+    [[nodiscard]]
+    bool has_zero_args_constructor() const {
         return m_zero_args_constructor >= 0;
     }
-    [[nodiscard]] bool has_default_constructor() const {
+    [[nodiscard]]
+    bool has_default_constructor() const {
         return m_default_constructor >= 0;
     }
     [[nodiscard]]
@@ -124,7 +128,8 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
         return *info().methods()[m_zero_args_constructor];
     }
     // The ID is traced from the object, so it's OK to create a handle from it.
-    [[nodiscard]] JS::HandleId default_constructor_name() const {
+    [[nodiscard]]
+    JS::HandleId default_constructor_name() const {
         return JS::HandleId::fromMarkedLocation(
             m_default_constructor_name.unsafeAddress());
     }
@@ -217,14 +222,16 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     bool init_from_props(JSContext*, JS::Value props_value);
 
     template <class FieldInstance>
-    GJS_JSAPI_RETURN_CONVENTION bool get_nested_interface_object(
-        JSContext*, JSObject* parent_obj, const GI::FieldInfo,
-        const GI::UnownedInfo<FieldInstance::TAG>,
-        JS::MutableHandleValue) const;
+    GJS_JSAPI_RETURN_CONVENTION
+    bool get_nested_interface_object(JSContext*, JSObject* parent_obj,
+                                     const GI::FieldInfo,
+                                     const GI::UnownedInfo<FieldInstance::TAG>,
+                                     JS::MutableHandleValue) const;
     template <class FieldBase>
-    GJS_JSAPI_RETURN_CONVENTION bool set_nested_interface_object(
-        JSContext*, const GI::FieldInfo, const GI::UnownedInfo<FieldBase::TAG>,
-        JS::HandleValue);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool set_nested_interface_object(JSContext*, const GI::FieldInfo,
+                                     const GI::UnownedInfo<FieldBase::TAG>,
+                                     JS::HandleValue);
 
     GJS_JSAPI_RETURN_CONVENTION
     static void* copy_ptr(JSContext* cx, GType gtype, void* ptr) {
@@ -261,8 +268,9 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
 
  protected:
     template <typename... Args>
-    GJS_JSAPI_RETURN_CONVENTION static JSObject* new_for_c_struct_impl(
-        JSContext*, const BoxedInfo, void* gboxed, Args&&...);
+    GJS_JSAPI_RETURN_CONVENTION
+    static JSObject* new_for_c_struct_impl(JSContext*, const BoxedInfo,
+                                           void* gboxed, Args&&...);
 
  protected:
     using BaseClass::debug_lifecycle;

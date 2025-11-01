@@ -70,18 +70,14 @@ void ToggleQueue::handle_all_toggles(Handler handler) {
         ;
 }
 
-gboolean
-ToggleQueue::idle_handle_toggle(void *data)
-{
+gboolean ToggleQueue::idle_handle_toggle(void* data) {
     auto self = Locked(static_cast<ToggleQueue*>(data));
     self->handle_all_toggles(self->m_toggle_handler);
 
     return G_SOURCE_REMOVE;
 }
 
-void
-ToggleQueue::idle_destroy_notify(void *data)
-{
+void ToggleQueue::idle_destroy_notify(void* data) {
     auto self = Locked(static_cast<ToggleQueue*>(data));
     self->m_idle_id = 0;
     self->m_toggle_handler = nullptr;

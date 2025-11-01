@@ -75,7 +75,7 @@ class AutoReportException {
     JSContext *m_cx;
 
 public:
-    explicit AutoReportException(JSContext *cx) : m_cx(cx) {}
+    explicit AutoReportException(JSContext* cx) : m_cx(cx) {}
 
     ~AutoReportException() {
         if (!JS_IsExceptionPending(m_cx))
@@ -237,10 +237,9 @@ std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
-[[nodiscard]] static bool gjs_console_eval_and_print(JSContext* cx,
-                                                     JS::HandleObject global,
-                                                     const std::string& bytes,
-                                                     int lineno) {
+[[nodiscard]]
+static bool gjs_console_eval_and_print(JSContext* cx, JS::HandleObject global,
+                                       const std::string& bytes, int lineno) {
     JS::SourceText<mozilla::Utf8Unit> source;
     if (!source.init(cx, bytes.c_str(), bytes.size(),
                      JS::SourceOwnership::Borrowed))

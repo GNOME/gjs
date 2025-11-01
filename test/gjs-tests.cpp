@@ -314,7 +314,8 @@ static void gjstest_test_func_gjs_context_eval_module_file_fail_instantiate() {
     g_test_assert_expected_messages();
 }
 
-static void gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_warning() {
+static void
+gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_warning() {
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     AutoError error;
 
@@ -359,7 +360,8 @@ static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw() {
     g_test_assert_expected_messages();
 }
 
-static void gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw() {
+static void
+gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw() {
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     AutoError error;
 
@@ -498,7 +500,8 @@ static void gjstest_test_func_gjs_context_eval_module_unregistered() {
     g_assert_cmpuint(exit_status, ==, 1);
 }
 
-static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw() {
+static void
+gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw() {
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     AutoError error;
 
@@ -508,7 +511,8 @@ static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw() 
     g_assert_error(error, GJS_ERROR, GJS_ERROR_FAILED);
 }
 
-static void gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw() {
+static void
+gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw() {
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     AutoError error;
 
@@ -1221,10 +1225,7 @@ static void gjstest_test_func_gjs_context_eval_file_source_map() {
 }  // namespace Test
 }  // namespace Gjs
 
-int
-main(int    argc,
-     char **argv)
-{
+int main(int argc, char** argv) {
     using namespace Gjs::Test;  // NOLINT(build/namespaces)
 
     // Avoid interference in the tests from stray environment variable

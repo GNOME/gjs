@@ -26,9 +26,7 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->realm = JS::EnterRealm(fx->cx, gjs->global());
 }
 
-void
-gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
-{
+void gjs_unit_test_destroy_context(GjsUnitTestFixture* fx) {
     Gjs::AutoChar message = gjs_test_get_exception_message(fx->cx);
     if (message)
         g_printerr("**\n%s\n", message.get());

@@ -14,22 +14,22 @@
 
 #include <gjs/gjs.h>
 
-[[noreturn]] static void bail_out(GjsContext* gjs_context, const char* msg) {
+[[noreturn]]
+static void bail_out(GjsContext* gjs_context, const char* msg) {
     g_object_unref(gjs_context);
     g_print("Bail out! %s\n", msg);
     exit(1);
 }
 
-[[noreturn]] static void bail_out(GjsContext* gjs_context, GError* error) {
+[[noreturn]]
+static void bail_out(GjsContext* gjs_context, GError* error) {
     g_print("Bail out! %s\n", error->message);
     g_object_unref(gjs_context);
     g_error_free(error);
     exit(1);
 }
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     if (argc < 2)
         g_error("Need a test file");
 

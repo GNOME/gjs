@@ -93,8 +93,8 @@ class FundamentalPrototype
         if (m_unref_function)
             m_unref_function(ptr);
     }
-    [[nodiscard]] bool call_get_value_function(const GValue* value,
-                                               void** ptr_out) const {
+    [[nodiscard]]
+    bool call_get_value_function(const GValue* value, void** ptr_out) const {
         if (!m_get_value_function)
             return false;
 
@@ -156,7 +156,8 @@ class FundamentalInstance
 
     void ref() { get_prototype()->call_ref_function(m_ptr); }
     void unref() { get_prototype()->call_unref_function(m_ptr); }
-    [[nodiscard]] bool set_value(GValue* gvalue) const {
+    [[nodiscard]]
+    bool set_value(GValue* gvalue) const {
         return get_prototype()->call_set_value_function(gvalue, m_ptr);
     }
 

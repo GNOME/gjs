@@ -60,59 +60,65 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(JSContext*,
                                                       UnpackT*) = delete;
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<signed char>(
-    JSContext* cx, JS::HandleValue value, int32_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<signed char>(JSContext* cx, JS::HandleValue value,
+                                       int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool
-    js_value_to_c<signed short>  // NOLINT(runtime/int)
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<signed short>  // NOLINT(runtime/int)
     (JSContext* cx, JS::HandleValue value, int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<int32_t>(
-    JSContext* cx, JS::HandleValue value, int32_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<int32_t>(JSContext* cx, JS::HandleValue value,
+                                   int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<unsigned char>(
-    JSContext* cx, JS::HandleValue value, int32_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<unsigned char>(JSContext* cx, JS::HandleValue value,
+                                         int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<unsigned char>(
-    JSContext* cx, JS::HandleValue value, uint32_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<unsigned char>(JSContext* cx, JS::HandleValue value,
+                                         uint32_t* out) {
     return JS::ToUint32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool
-    js_value_to_c<unsigned short>  // NOLINT(runtime/int)
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<unsigned short>  // NOLINT(runtime/int)
     (JSContext* cx, JS::HandleValue value, int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool
-    js_value_to_c<unsigned short>  // NOLINT(runtime/int)
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<unsigned short>  // NOLINT(runtime/int)
     (JSContext* cx, JS::HandleValue value, uint32_t* out) {
     return JS::ToUint32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint32_t>(
-    JSContext* cx, JS::HandleValue value, uint32_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<uint32_t>(JSContext* cx, JS::HandleValue value,
+                                    uint32_t* out) {
     return JS::ToUint32(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<char32_t>(
-    JSContext* cx, JS::HandleValue value, char32_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<char32_t>(JSContext* cx, JS::HandleValue value,
+                                    char32_t* out) {
     uint32_t tmp;
     bool retval = JS::ToUint32(cx, value, &tmp);
     *out = tmp;
@@ -120,8 +126,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<char32_t>(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<int64_t>(
-    JSContext* cx, JS::HandleValue value, int64_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<int64_t>(JSContext* cx, JS::HandleValue value,
+                                   int64_t* out) {
     if (value.isBigInt()) {
         *out = JS::ToBigInt64(value.toBigInt());
         return true;
@@ -130,8 +137,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<int64_t>(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint64_t>(
-    JSContext* cx, JS::HandleValue value, uint64_t* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<uint64_t>(JSContext* cx, JS::HandleValue value,
+                                    uint64_t* out) {
     if (value.isBigInt()) {
         *out = JS::ToBigUint64(value.toBigInt());
         return true;
@@ -140,33 +148,38 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint64_t>(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<uint32_t>(
-    JSContext* cx, JS::HandleValue value, double* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<uint32_t>(JSContext* cx, JS::HandleValue value,
+                                    double* out) {
     return JS::ToNumber(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<float>(
-    JSContext* cx, JS::HandleValue value, double* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<float>(JSContext* cx, JS::HandleValue value,
+                                 double* out) {
     return JS::ToNumber(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<double>(
-    JSContext* cx, JS::HandleValue value, double* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<double>(JSContext* cx, JS::HandleValue value,
+                                  double* out) {
     return JS::ToNumber(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<Tag::GBoolean>(
-    JSContext*, JS::HandleValue value, gboolean* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<Tag::GBoolean>(JSContext*, JS::HandleValue value,
+                                         gboolean* out) {
     *out = !!JS::ToBoolean(value);
     return true;
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<Tag::GType>(
-    JSContext* cx, JS::HandleValue value, GType* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<Tag::GType>(JSContext* cx, JS::HandleValue value,
+                                      GType* out) {
     if (!value.isObject())
         return false;
 
@@ -183,15 +196,17 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<Tag::GType>(
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<GValue>(
-    JSContext* cx, JS::HandleValue value, GValue* out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<GValue>(JSContext* cx, JS::HandleValue value,
+                                  GValue* out) {
     *out = G_VALUE_INIT;
     return gjs_value_to_g_value(cx, value, out);
 }
 
 template <>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<char*>(
-    JSContext* cx, JS::HandleValue value, char** out) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c<char*>(JSContext* cx, JS::HandleValue value,
+                                 char** out) {
     if (value.isNull()) {
         *out = nullptr;
         return true;
@@ -208,12 +223,14 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c<char*>(
 }
 
 template <typename BigT>
-[[nodiscard]] inline constexpr BigT max_safe_big_number() {
+[[nodiscard]]
+inline constexpr BigT max_safe_big_number() {
     return (BigT(1) << std::numeric_limits<double>::digits) - 1;
 }
 
 template <typename BigT>
-[[nodiscard]] inline constexpr BigT min_safe_big_number() {
+[[nodiscard]]
+inline constexpr BigT min_safe_big_number() {
     if constexpr (std::is_signed_v<BigT>)
         return -(max_safe_big_number<BigT>());
 
@@ -223,8 +240,9 @@ template <typename BigT>
 template <typename WantedType, typename TAG,
           typename = std::enable_if_t<!std::is_same_v<Tag::RealT<TAG>, TAG>>,
           typename U>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
-    JSContext* cx, JS::HandleValue value, U* out, bool* out_of_range) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value, U* out,
+                                  bool* out_of_range) {
     using T = Tag::RealT<TAG>;
     static_assert(std::numeric_limits<T>::max() >=
                           std::numeric_limits<WantedType>::max() &&
@@ -301,16 +319,17 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
 
 template <typename WantedType, typename T,
           typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
-    JSContext* cx, JS::HandleValue value, T* out, bool* out_of_range) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value, T* out,
+                                  bool* out_of_range) {
     return js_value_to_c_checked<WantedType, T, void, T>(cx, value, out,
                                                          out_of_range);
 }
 
 template <typename WantedType, typename TAG, typename U>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
-    JSContext* cx, JS::HandleValue value, TypeWrapper<U>* out,
-    bool* out_of_range) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value,
+                                  TypeWrapper<U>* out, bool* out_of_range) {
     static_assert(std::is_integral_v<WantedType>);
 
     if constexpr (std::is_same_v<WantedType, U>) {
@@ -346,9 +365,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c_checked(
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
-    JSContext* cx [[maybe_unused]], Tag::RealT<TAG> value,
-    JS::MutableHandleValue js_value_p) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool c_value_to_js(JSContext* cx [[maybe_unused]], Tag::RealT<TAG> value,
+                          JS::MutableHandleValue js_value_p) {
     using T = Tag::RealT<TAG>;
 
     if constexpr (std::is_same_v<TAG, bool> ||
@@ -387,15 +406,17 @@ GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
 // inferring template parameter
 template <typename T,
           typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
-GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js(
-    JSContext* cx, T value, JS::MutableHandleValue js_value_p) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool c_value_to_js(JSContext* cx, T value,
+                          JS::MutableHandleValue js_value_p) {
     return c_value_to_js<T>(cx, value, js_value_p);
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
-    JSContext* cx [[maybe_unused]], Tag::RealT<TAG> value,
-    JS::MutableHandleValue js_value_p) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool c_value_to_js_checked(JSContext* cx [[maybe_unused]],
+                                  Tag::RealT<TAG> value,
+                                  JS::MutableHandleValue js_value_p) {
     using T = Tag::RealT<TAG>;
     if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
         if (value < Gjs::min_safe_big_number<T>() ||
@@ -423,8 +444,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
 // inferring template parameter
 template <typename T,
           typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
-GJS_JSAPI_RETURN_CONVENTION inline bool c_value_to_js_checked(
-    JSContext* cx, T value, JS::MutableHandleValue js_value_p) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool c_value_to_js_checked(JSContext* cx, T value,
+                                  JS::MutableHandleValue js_value_p) {
     return c_value_to_js_checked<T>(cx, value, js_value_p);
 }
 

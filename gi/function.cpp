@@ -275,7 +275,7 @@ static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo ret_type,
 
 void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
                                                            const char* reason,
-                                                           bool        dump_stack) {
+                                                           bool dump_stack) {
     std::ostringstream message;
 
     message << "Attempting to run a JS callback " << when << ". "

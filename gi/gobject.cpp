@@ -32,7 +32,8 @@
 
 static std::unordered_map<GType, AutoParamArray> class_init_properties;
 
-[[nodiscard]] static JSContext* current_js_context() {
+[[nodiscard]]
+static JSContext* current_js_context() {
     GjsContext* gjs = gjs_context_get_current();
     return static_cast<JSContext*>(gjs_context_get_native_context(gjs));
 }

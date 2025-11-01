@@ -29,10 +29,7 @@ typedef struct _GjsCoverageFixture {
     GFile *lcov_output;
 } GjsCoverageFixture;
 
-static void
-replace_file(GFile      *file,
-              const char *contents)
-{
+static void replace_file(GFile* file, const char* contents) {
     Gjs::AutoError error;
     g_file_replace_contents(
         file, contents, strlen(contents), /* etag = */ nullptr,
@@ -41,9 +38,7 @@ replace_file(GFile      *file,
     g_assert_no_error(error);
 }
 
-static void
-recursive_delete_dir(GFile *dir)
-{
+static void recursive_delete_dir(GFile* dir) {
     GFileEnumerator* files =
         g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
                                   G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
@@ -114,10 +109,7 @@ static void gjs_coverage_fixture_tear_down(void* fixture_data, const void*) {
     g_object_unref(fixture->gjs_context);
 }
 
-static const char *
-line_starting_with(const char *data,
-                   const char *needle)
-{
+static const char* line_starting_with(const char* data, const char* needle) {
     const size_t needle_length = strlen(needle);
     const char  *iter = data;
 
@@ -134,10 +126,8 @@ line_starting_with(const char *data,
     return nullptr;
 }
 
-static char *
-write_statistics_and_get_coverage_data(GjsCoverage *coverage,
-                                       GFile       *lcov_output)
-{
+static char* write_statistics_and_get_coverage_data(GjsCoverage* coverage,
+                                                    GFile* lcov_output) {
     gjs_coverage_write_statistics(coverage);
 
     char  *coverage_data_contents;
@@ -149,9 +139,7 @@ write_statistics_and_get_coverage_data(GjsCoverage *coverage,
     return coverage_data_contents;
 }
 
-static char *
-get_script_identifier(GFile *script)
-{
+static char* get_script_identifier(GFile* script) {
     char *filename = g_file_get_path(script);
     if (!filename)
         filename = g_file_get_uri(script);
@@ -174,11 +162,9 @@ static char* eval_script_and_get_coverage_data(GjsContext* gjs_context,
     return write_statistics_and_get_coverage_data(coverage, lcov_output);
 }
 
-static void
-assert_coverage_data_contains_value_for_key(const char *data,
-                                            const char *key,
-                                            const char *value)
-{
+static void assert_coverage_data_contains_value_for_key(const char* data,
+                                                        const char* key,
+                                                        const char* value) {
     const char *sf_line = line_starting_with(data, key);
 
     g_assert_nonnull(sf_line);
@@ -190,26 +176,18 @@ assert_coverage_data_contains_value_for_key(const char *data,
 using CoverageDataMatchFunc = void (*)(const char *value,
                                        const void *user_data);
 
-static void
-assert_coverage_data_matches_value_for_key(const char            *data,
-                                           const char            *key,
-                                           CoverageDataMatchFunc  match,
-                                           const void            *user_data)
-{
+static void assert_coverage_data_matches_value_for_key(
+    const char* data, const char* key, CoverageDataMatchFunc match,
+    const void* user_data) {
     const char *line = line_starting_with(data, key);
 
     g_assert_nonnull(line);
     (*match)(line, user_data);
 }
 
-static void
-assert_coverage_data_matches_values_for_key(const char            *data,
-                                            const char            *key,
-                                            size_t                 n,
-                                            CoverageDataMatchFunc  match,
-                                            const void            *user_data,
-                                            size_t                 data_size)
-{
+static void assert_coverage_data_matches_values_for_key(
+    const char* data, const char* key, size_t n, CoverageDataMatchFunc match,
+    const void* user_data, size_t data_size) {
     const char *line = line_starting_with (data, key);
     // Keep matching. If we fail to match one of them then bail out
     char *data_iterator = (char *) user_data;
@@ -257,11 +235,8 @@ static void test_covered_file_is_duplicated_into_output_if_resource(
     g_free(js_script_dirname);
 }
 
-static GFile *
-get_output_file_for_script_on_disk(GFile *script,
-                                   GFile *output_dir)
-
-{
+static GFile* get_output_file_for_script_on_disk(GFile* script,
+                                                 GFile* output_dir) {
     char *base = g_file_get_basename(script);
     GFile *output = g_file_get_child(output_dir, base);
 
@@ -269,10 +244,8 @@ get_output_file_for_script_on_disk(GFile *script,
     return output;
 }
 
-static char *
-get_output_path_for_script_on_disk(GFile *script,
-                                   GFile *output_dir)
-{
+static char* get_output_path_for_script_on_disk(GFile* script,
+                                                GFile* output_dir) {
     GFile *output = get_output_file_for_script_on_disk(script, output_dir);
     char *output_path = g_file_get_path(output);
     g_object_unref(output);
@@ -375,10 +348,8 @@ typedef struct _BranchLineData {
     BranchTaken taken;
 } BranchLineData;
 
-static void
-branch_at_line_should_be_taken(const char *line,
-                               const void *user_data)
-{
+static void branch_at_line_should_be_taken(const char* line,
+                                           const void* user_data) {
     auto branch_data = static_cast<const BranchLineData *>(user_data);
     int line_no, branch_id, block_no, hit_count_num, nmatches;
     char hit_count[20];  // can hold maxint64 (19 digits) + nul terminator
@@ -539,9 +510,7 @@ static void test_branches_for_multiple_case_statements_fallthrough(
     g_free(coverage_data_contents);
 }
 
-static void
-any_line_matches_not_executed_branch(const char *data)
-{
+static void any_line_matches_not_executed_branch(const char* data) {
     const char *line = line_starting_with(data, "BRDA:");
 
     while (line) {
@@ -587,10 +556,7 @@ static void test_branch_not_hit_written_to_coverage_data(void* fixture_data,
     g_free(coverage_data_contents);
 }
 
-static void
-has_function_name(const char *line,
-                  const void *user_data)
-{
+static void has_function_name(const char* line, const void* user_data) {
     const char *expected_function_name = *(static_cast<const char * const *>(user_data));
 
     // Advance past "FN:"
@@ -635,10 +601,7 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
     g_free(coverage_data_contents);
 }
 
-static void
-has_function_line(const char *line,
-                  const void *user_data)
-{
+static void has_function_line(const char* line, const void* user_data) {
     const char *expected_function_line = *(static_cast<const char * const *>(user_data));
 
     // Advance past "FN:"
@@ -683,10 +646,8 @@ typedef struct _FunctionHitCountData {
     unsigned int hit_count_minimum;
 } FunctionHitCountData;
 
-static void
-hit_count_is_more_than_for_function(const char *line,
-                                    const void *user_data)
-{
+static void hit_count_is_more_than_for_function(const char* line,
+                                                const void* user_data) {
     auto data = static_cast<const FunctionHitCountData *>(user_data);
     char* detected_function = nullptr;
     unsigned int         hit_count;
@@ -861,10 +822,8 @@ typedef struct _LineCountIsMoreThanData {
     unsigned int expected_to_be_more_than;
 } LineCountIsMoreThanData;
 
-static void
-line_hit_count_is_more_than(const char *line,
-                            const void *user_data)
-{
+static void line_hit_count_is_more_than(const char* line,
+                                        const void* user_data) {
     auto data = static_cast<const LineCountIsMoreThanData *>(user_data);
 
     const char *coverage_line = &line[3];
@@ -1052,11 +1011,9 @@ typedef struct _ExpectedSourceFileCoverageData {
     const char              expected_lines_found_character;
 } ExpectedSourceFileCoverageData;
 
-static void
-assert_coverage_data_for_source_file(ExpectedSourceFileCoverageData *expected,
-                                     const size_t                    expected_size,
-                                     const char                     *section_start)
-{
+static void assert_coverage_data_for_source_file(
+    ExpectedSourceFileCoverageData* expected, const size_t expected_size,
+    const char* section_start) {
     for (size_t i = 0; i < expected_size; ++i) {
         if (strncmp(&section_start[3],
                     expected[i].source_file_path,
@@ -1139,8 +1096,7 @@ static void add_test_for_fixture(const char* name, FixturedTest* fixture,
                       test_func, fixture->tear_down);
 }
 
-void gjs_test_add_tests_for_coverage()
-{
+void gjs_test_add_tests_for_coverage() {
     FixturedTest coverage_fixture = {
         sizeof(GjsCoverageFixture),
         gjs_coverage_fixture_set_up,

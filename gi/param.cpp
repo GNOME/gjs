@@ -49,8 +49,8 @@ struct Param : Gjs::AutoParam {
         : Gjs::AutoParam(param, Gjs::TakeOwnership{}) {}
 };
 
-[[nodiscard]] static GParamSpec* param_value(JSContext* cx,
-                                             JS::HandleObject obj) {
+[[nodiscard]]
+static GParamSpec* param_value(JSContext* cx, JS::HandleObject obj) {
     if (!JS_InstanceOf(cx, obj, &gjs_param_class, nullptr))
         return nullptr;
 

@@ -148,5 +148,5 @@ typedef enum {
 void gjs_log_init();
 void gjs_log_cleanup();
 
-[[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic, const char* format,
-                                             ...);
+[[gnu::format(printf, 2, 3)]]
+void gjs_debug(GjsDebugTopic, const char* format, ...);

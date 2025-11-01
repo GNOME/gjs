@@ -28,16 +28,15 @@ GJS_EXPORT
 void gjs_profiler_set_capture_writer(GjsProfiler* self, void* capture);
 
 GJS_EXPORT
-void gjs_profiler_set_filename(GjsProfiler *self,
-                               const char  *filename);
+void gjs_profiler_set_filename(GjsProfiler* self, const char* filename);
 GJS_EXPORT
 void gjs_profiler_set_fd(GjsProfiler* self, int fd);
 
 GJS_EXPORT
-void gjs_profiler_start(GjsProfiler *self);
+void gjs_profiler_start(GjsProfiler* self);
 
 GJS_EXPORT
-void gjs_profiler_stop(GjsProfiler *self);
+void gjs_profiler_stop(GjsProfiler* self);
 
 G_END_DECLS
 

@@ -65,11 +65,7 @@ static JSObject* gjs_define_importer(JSContext*, JS::HandleObject, const char*,
                                      const std::vector<std::string>&, bool);
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-importer_to_string(JSContext *cx,
-                   unsigned   argc,
-                   JS::Value *vp)
-{
+static bool importer_to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, importer);
 
     Gjs::AutoChar output;
@@ -193,12 +189,8 @@ static bool import_directory(JSContext* cx, JS::HandleObject obj,
  * the import successfully completes.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-seal_import(JSContext       *cx,
-            JS::HandleObject obj,
-            JS::HandleId     id,
-            const char      *name)
-{
+static bool seal_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                        const char* name) {
     JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_descr(cx);
 
     if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &maybe_descr) ||
@@ -745,7 +737,8 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
     JS_FN("toString", importer_to_string, 0, 0),
     JS_FS_END};
 
-[[nodiscard]] static const std::vector<std::string>& gjs_get_search_path() {
+[[nodiscard]]
+static const std::vector<std::string>& gjs_get_search_path() {
     static std::vector<std::string> gjs_search_path;
     static bool search_path_initialized = false;
 
