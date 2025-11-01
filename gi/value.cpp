@@ -157,8 +157,8 @@ static bool maybe_release_signal_value(JSContext* cx,
     if (!gjs_arg_set_from_gvalue(cx, &arg, gvalue))
         return false;
 
-    if (!gjs_gi_argument_release(cx, transfer, type_info,
-                                 GjsArgumentFlags::ARG_OUT, &arg)) {
+    if (!gjs_gi_argument_release(cx, transfer, type_info, &arg,
+                                 GjsArgumentFlags::ARG_OUT)) {
         gjs_throw(cx, "Cannot release argument %s value, we're gonna leak!",
                   arg_info.name());
         return false;

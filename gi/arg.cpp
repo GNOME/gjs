@@ -4058,7 +4058,7 @@ static bool gjs_g_arg_release_internal(
 
                     gjs_arg_set(&arg_iter, g_ptr_array_index(array, i));
                     if (!gjs_gi_argument_release(cx, transfer, element_type,
-                                                 flags, &arg_iter))
+                                                 &arg_iter, flags))
                         return false;
                 }
             }
@@ -4140,8 +4140,8 @@ static bool gjs_g_arg_release_internal(
 }
 
 bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
-                             const GI::TypeInfo type_info,
-                             GjsArgumentFlags flags, GIArgument* arg) {
+                             const GI::TypeInfo type_info, GIArgument* arg,
+                             GjsArgumentFlags flags /* = NONE */) {
     if (transfer == GI_TRANSFER_NOTHING &&
         !is_transfer_in_nothing(transfer, flags))
         return true;

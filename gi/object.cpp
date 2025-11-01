@@ -509,8 +509,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
         return prop_getter_impl<void>(cx, pspec, args[0]);
     }
 
-    return gjs_gi_argument_release(cx, transfer, type_info,
-                                   GjsArgumentFlags::ARG_OUT, &ret);
+    return gjs_gi_argument_release(cx, transfer, type_info, &ret,
+                                   GjsArgumentFlags::ARG_OUT);
 }
 
 class ObjectPropertyPspecCaller {

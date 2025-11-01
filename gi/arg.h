@@ -179,14 +179,8 @@ bool gjs_value_from_basic_gptrarray_gi_argument(JSContext*,
                                                 GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release(JSContext*, GITransfer, const GI::TypeInfo,
-                             GjsArgumentFlags, GIArgument*);
-GJS_JSAPI_RETURN_CONVENTION
-inline bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
-                                    const GI::TypeInfo type_info,
-                                    GIArgument* arg) {
-    return gjs_gi_argument_release(cx, transfer, type_info,
-                                   GjsArgumentFlags::NONE, arg);
-}
+                             GIArgument*,
+                             GjsArgumentFlags = GjsArgumentFlags::NONE);
 void gjs_gi_argument_release_basic(GITransfer, GITypeTag, GjsArgumentFlags,
                                    GIArgument*);
 void gjs_gi_argument_release_basic_glist(GITransfer, GITypeTag element_tag,
