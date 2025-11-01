@@ -4169,7 +4169,7 @@ void gjs_gi_argument_release_basic(GITransfer transfer, GITypeTag type_tag,
 
 bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
                                     const GI::TypeInfo type_info,
-                                    GjsArgumentFlags flags, GIArgument* arg) {
+                                    GIArgument* arg) {
     /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
      * GI_TRANSFER_CONTAINER:
      * - non-containers: treated as GI_TRANSFER_EVERYTHING
@@ -4188,7 +4188,8 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
         return true;
 
     return gjs_g_arg_release_internal(cx, transfer, type_info, tag,
-                                      GJS_ARGUMENT_ARGUMENT, flags, arg);
+                                      GJS_ARGUMENT_ARGUMENT,
+                                      GjsArgumentFlags::ARG_IN, arg);
 }
 
 void gjs_gi_argument_release_basic_in_array(GITransfer transfer,

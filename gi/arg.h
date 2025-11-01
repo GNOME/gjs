@@ -224,14 +224,7 @@ bool gjs_gi_argument_release_in_array(JSContext*, GITransfer,
                                       const GI::TypeInfo, GIArgument*);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_gi_argument_release_in_arg(JSContext*, GITransfer, const GI::TypeInfo,
-                                    GjsArgumentFlags, GIArgument*);
-GJS_JSAPI_RETURN_CONVENTION
-inline bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
-                                           const GI::TypeInfo type_info,
-                                           GIArgument* arg) {
-    return gjs_gi_argument_release_in_arg(cx, transfer, type_info,
-                                          GjsArgumentFlags::ARG_IN, arg);
-}
+                                    GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool _gjs_flags_value_is_valid(JSContext*, GType, int64_t value);
