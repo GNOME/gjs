@@ -100,7 +100,7 @@ static void wait_for_gc(GjsUnitTestFixture* fx) {
 }
 
 static void teardown(GjsUnitTestFixture* fx, const void*) {
-    for (auto pair : s_toggle_history)
+    for (auto& pair : s_toggle_history)
         ToggleQueue::get_default()->cancel(pair.first);
 
     s_toggle_history.clear();

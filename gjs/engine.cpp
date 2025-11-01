@@ -54,7 +54,7 @@ static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
 static void on_promise_unhandled_rejection(
     JSContext* cx, bool mutedErrors [[maybe_unused]], JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
-    auto gjs = static_cast<GjsContextPrivate*>(data);
+    auto* gjs = static_cast<GjsContextPrivate*>(data);
     uint64_t id = JS::GetPromiseID(promise);
 
     if (state == JS::PromiseRejectionHandlingState::Handled) {

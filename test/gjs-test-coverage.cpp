@@ -350,7 +350,7 @@ typedef struct _BranchLineData {
 
 static void branch_at_line_should_be_taken(const char* line,
                                            const void* user_data) {
-    auto branch_data = static_cast<const BranchLineData *>(user_data);
+    auto* branch_data = static_cast<const BranchLineData*>(user_data);
     int line_no, branch_id, block_no, hit_count_num, nmatches;
     char hit_count[20];  // can hold maxint64 (19 digits) + nul terminator
 
@@ -648,7 +648,7 @@ typedef struct _FunctionHitCountData {
 
 static void hit_count_is_more_than_for_function(const char* line,
                                                 const void* user_data) {
-    auto data = static_cast<const FunctionHitCountData *>(user_data);
+    auto* data = static_cast<const FunctionHitCountData*>(user_data);
     char* detected_function = nullptr;
     size_t max_buf_size;
     int nmatches;
@@ -824,7 +824,7 @@ typedef struct _LineCountIsMoreThanData {
 
 static void line_hit_count_is_more_than(const char* line,
                                         const void* user_data) {
-    auto data = static_cast<const LineCountIsMoreThanData *>(user_data);
+    auto* data = static_cast<const LineCountIsMoreThanData*>(user_data);
 
     const char *coverage_line = &line[3];
     char* comma_ptr = nullptr;

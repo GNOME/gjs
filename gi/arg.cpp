@@ -2539,7 +2539,8 @@ static bool gjs_array_from_carray_internal(JSContext* cx,
                 }
 
                 for (size_t i = 0; i < length; i++) {
-                    auto value = static_cast<char*>(array) + (element_size * i);
+                    auto* value =
+                        static_cast<char*>(array) + (element_size * i);
                     // use the storage tag instead of element tag to handle
                     // enums and flags
                     set_arg_from_carray_element(&arg, storage_element_type,

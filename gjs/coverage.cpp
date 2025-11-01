@@ -164,7 +164,8 @@ static char* find_diverging_child_components(GFile* child, GFile* parent) {
 [[nodiscard]]
 static bool filename_has_coverage_prefixes(GjsCoverage* self,
                                            const char* filename) {
-    auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(self));
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
     Gjs::AutoChar workdir{g_get_current_dir()};
     Gjs::AutoChar abs_filename{g_canonicalize_filename(filename, workdir)};
 
@@ -281,8 +282,9 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
  * ending with ".js" in the coverage directories.
  */
 void gjs_coverage_write_statistics(GjsCoverage* coverage) {
-    auto priv = static_cast<GjsCoveragePrivate *>(gjs_coverage_get_instance_private(coverage));
-    auto cx = static_cast<JSContext*>(
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(coverage));
+    auto* cx = static_cast<JSContext*>(
         gjs_context_get_native_context(priv->coverage_context));
     Gjs::AutoMainRealm ar{cx};
 
@@ -388,7 +390,7 @@ static void gjs_coverage_dispose(GObject* object) {
 
     /* Decomission objects inside of the JSContext before disposing of the
      * context */
-    auto cx = static_cast<JSContext*>(
+    auto* cx = static_cast<JSContext*>(
         gjs_context_get_native_context(priv->coverage_context));
     JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, coverage);
     priv->global = nullptr;

@@ -171,8 +171,8 @@ bool ObjectInstance::check_gobject_finalized(const char* for_what) const {
 }
 
 ObjectInstance* ObjectInstance::for_gobject(GObject* gobj) {
-    auto priv = static_cast<ObjectInstance *>(g_object_get_qdata(gobj,
-                                                                 gjs_object_priv_quark()));
+    auto* priv = static_cast<ObjectInstance*>(
+        g_object_get_qdata(gobj, gjs_object_priv_quark()));
 
     if (priv)
         priv->check_js_object_finalized();

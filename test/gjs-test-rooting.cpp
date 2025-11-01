@@ -183,7 +183,7 @@ static void test_maybe_owned_switch_to_unrooted_allows_collection(
 }
 
 static void context_destroyed(JSContext*, void* data) {
-    auto fx = static_cast<GjsRootingFixture *>(data);
+    auto* fx = static_cast<GjsRootingFixture*>(data);
     g_assert_false(fx->notify_called);
     g_assert_false(fx->finalized);
     fx->notify_called = true;
