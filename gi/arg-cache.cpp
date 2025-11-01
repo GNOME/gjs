@@ -1763,17 +1763,17 @@ bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
 GJS_JSAPI_RETURN_CONVENTION
 bool FallbackIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                     JS::HandleValue value) {
-    return gjs_value_to_gi_argument(cx, value, m_type_info, m_arg_name,
-                                    GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
-                                    arg);
+    return gjs_value_to_gi_argument(cx, value, m_type_info,
+                                    GJS_ARGUMENT_ARGUMENT, m_transfer, arg,
+                                    flags(), m_arg_name);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 bool FallbackInOut::in(JSContext* cx, GjsFunctionCallState* state,
                        GIArgument* arg, JS::HandleValue value) {
-    return gjs_value_to_gi_argument(cx, value, m_type_info, m_arg_name,
-                                    GJS_ARGUMENT_ARGUMENT, m_transfer, flags(),
-                                    arg) &&
+    return gjs_value_to_gi_argument(cx, value, m_type_info,
+                                    GJS_ARGUMENT_ARGUMENT, m_transfer, arg,
+                                    flags(), m_arg_name) &&
            set_inout_parameter(state, arg);
 }
 

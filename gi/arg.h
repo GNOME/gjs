@@ -63,18 +63,10 @@ size_t gjs_type_get_element_size(GITypeTag element_tag, const GI::TypeInfo);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_gi_argument(JSContext*, JS::HandleValue, const GI::TypeInfo,
-                              const char* arg_name, GjsArgumentType, GITransfer,
-                              GjsArgumentFlags, GIArgument*);
+                              GjsArgumentType, GITransfer, GIArgument*,
+                              GjsArgumentFlags = GjsArgumentFlags::NONE,
+                              const char* arg_name = nullptr);
 
-GJS_JSAPI_RETURN_CONVENTION
-bool inline gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
-                                     const GI::TypeInfo type_info,
-                                     GjsArgumentType argument_type,
-                                     GITransfer transfer, GIArgument* arg) {
-    return gjs_value_to_gi_argument(cx, value, type_info,
-                                    /* arg name = */ nullptr, argument_type,
-                                    transfer, GjsArgumentFlags::NONE, arg);
-}
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_basic_gi_argument(JSContext*, JS::HandleValue, GITypeTag,
                                     GIArgument*, const char* arg_name,

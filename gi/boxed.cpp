@@ -713,9 +713,9 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
     }
 
     GIArgument arg;
-    if (!gjs_value_to_gi_argument(cx, value, type_info, field_info.name(),
-                                  GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING,
-                                  GjsArgumentFlags::MAY_BE_NULL, &arg))
+    if (!gjs_value_to_gi_argument(
+            cx, value, type_info, GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING, &arg,
+            GjsArgumentFlags::MAY_BE_NULL, field_info.name()))
         return false;
 
     bool success = true;

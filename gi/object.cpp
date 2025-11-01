@@ -884,9 +884,9 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     JS::RootedValue value{cx, args[0]};
     GIArgument arg;
 
-    if (!gjs_value_to_gi_argument(cx, value, type_info, property_info.name(),
-                                  GJS_ARGUMENT_ARGUMENT, transfer,
-                                  GjsArgumentFlags::ARG_IN, &arg)) {
+    if (!gjs_value_to_gi_argument(cx, value, type_info, GJS_ARGUMENT_ARGUMENT,
+                                  transfer, &arg, GjsArgumentFlags::ARG_IN,
+                                  property_info.name())) {
         // Unlikely to happen, but we fallback to gvalue mode, just in case
         JS_ClearPendingException(cx);
         Gjs::AutoTypeClass<GObjectClass> klass{gtype()};

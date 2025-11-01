@@ -498,9 +498,9 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
             !value_to_ghashtable_key(cx, key_js, key_tag, &key_ptr) ||
             !JS_GetPropertyById(cx, props, cur_id, &val_js) ||
             // Type check and convert value to a C type
-            !gjs_value_to_gi_argument(cx, val_js, value_type, nullptr,
+            !gjs_value_to_gi_argument(cx, val_js, value_type,
                                       GJS_ARGUMENT_HASH_ELEMENT, transfer,
-                                      GjsArgumentFlags::MAY_BE_NULL, &val_arg))
+                                      &val_arg, GjsArgumentFlags::MAY_BE_NULL))
             return false;
 
         // Use heap-allocated values for types that don't fit in a pointer
@@ -1980,9 +1980,10 @@ bool gjs_value_to_byte_array_gi_argument(JSContext* cx, JS::HandleValue value,
 
 bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
                               const GI::TypeInfo type_info,
-                              const char* arg_name, GjsArgumentType arg_type,
-                              GITransfer transfer, GjsArgumentFlags flags,
-                              GIArgument* arg) {
+                              GjsArgumentType arg_type, GITransfer transfer,
+                              GIArgument* arg,
+                              GjsArgumentFlags flags /* = NONE */,
+                              const char* arg_name /* = nullptr */) {
     GITypeTag type_tag = type_info.tag();
 
     if (type_info.is_basic()) {
@@ -2151,10 +2152,10 @@ bool gjs_value_to_callback_out_arg(JSContext* cx, JS::HandleValue value,
         flags |= GjsArgumentFlags::CALLER_ALLOCATES;
 
     return gjs_value_to_gi_argument(
-        cx, value, type_info, arg_info.name(),
+        cx, value, type_info,
         (arg_info.is_return_value() ? GJS_ARGUMENT_RETURN_VALUE
                                     : GJS_ARGUMENT_ARGUMENT),
-        arg_info.ownership_transfer(), flags, arg);
+        arg_info.ownership_transfer(), arg, flags, arg_info.name());
 }
 
 ///// "FROM" MARSHALLERS ///////////////////////////////////////////////////////
