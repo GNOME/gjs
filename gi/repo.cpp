@@ -447,8 +447,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static JSObject* lookup_namespace(JSContext* cx, JSObject* global,
                                   JS::HandleId ns_name) {
     JS::RootedObject native_registry(cx, gjs_get_native_registry(global));
-    auto priv = GjsContextPrivate::from_cx(cx);
-    const GjsAtoms& atoms = priv->atoms();
+    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject gi(cx);
 
     if (!gjs_global_registry_get(cx, native_registry, atoms.gi(), &gi))
