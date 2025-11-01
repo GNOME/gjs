@@ -1219,7 +1219,7 @@ static bool gjs_value_from_g_value_internal(
         if (!FundamentalInstance::object_for_gvalue(cx, gvalue, gtype, &obj))
             return false;
 
-        value_p.setObjectOrNull(obj);
+        value_p.setObject(*obj);
     } else {
         gjs_throw(cx, "Don't know how to convert GType %s to JavaScript object",
                   g_type_name(gtype));
