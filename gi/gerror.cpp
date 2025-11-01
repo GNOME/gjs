@@ -72,15 +72,15 @@ GQuark ErrorBase::domain() const { return get_prototype()->domain(); }
 
 // See GIWrapperBase::constructor().
 bool ErrorInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
-                                     const JS::CallArgs& argv) {
-    if (argv.length() != 1 || !argv[0].isObject()) {
+                                     const JS::CallArgs& args) {
+    if (args.length() != 1 || !args[0].isObject()) {
         gjs_throw(cx,
                   "Invalid parameters passed to GError constructor, expected "
                   "one object");
         return false;
     }
 
-    JS::RootedObject params_obj{cx, &argv[0].toObject()};
+    JS::RootedObject params_obj{cx, &args[0].toObject()};
     JS::UniqueChars message;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (!gjs_object_require_property(cx, params_obj, "GError constructor",

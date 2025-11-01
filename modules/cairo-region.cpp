@@ -194,8 +194,8 @@ const JSFunctionSpec CairoRegion::proto_funcs[] = {
     JS_FS_END};
 
 cairo_region_t* CairoRegion::constructor_impl(JSContext* cx,
-                                              const JS::CallArgs& argv) {
-    if (!gjs_parse_call_args(cx, "Region", argv, ""))
+                                              const JS::CallArgs& args) {
+    if (!gjs_parse_call_args(cx, "Region", args, ""))
         return nullptr;
 
     return cairo_region_create();

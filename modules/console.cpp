@@ -280,7 +280,7 @@ std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     volatile bool eof, exit_warning;  // accessed after setjmp()
     JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
     volatile int lineno;     // accessed after setjmp()
@@ -366,7 +366,7 @@ static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     g_fprintf(stdout, "\n");
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 

@@ -26,10 +26,10 @@ JSObject* CairoLinearGradient::new_proto(JSContext* cx, JSProtoKey) {
 }
 
 cairo_pattern_t* CairoLinearGradient::constructor_impl(
-    JSContext* cx, const JS::CallArgs& argv) {
+    JSContext* cx, const JS::CallArgs& args) {
     double x0, y0, x1, y1;
     cairo_pattern_t* pattern;
-    if (!gjs_parse_call_args(cx, "LinearGradient", argv, "ffff", "x0", &x0,
+    if (!gjs_parse_call_args(cx, "LinearGradient", args, "ffff", "x0", &x0,
                              "y0", &y0, "x1", &x1, "y1", &y1))
         return nullptr;
 

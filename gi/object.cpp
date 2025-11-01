@@ -2740,10 +2740,10 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
 
 // See GIWrapperBase::constructor()
 bool ObjectInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
-                                      const JS::CallArgs& argv) {
+                                      const JS::CallArgs& args) {
     JS::RootedValue initer{cx};
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
-    const auto& new_target = argv.newTarget();
+    const auto& new_target = args.newTarget();
     bool has_gtype;
 
     g_assert(new_target.isObject() && "new.target needs to be an object");
@@ -2762,7 +2762,7 @@ bool ObjectInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
 
     return gjs_object_require_property(cx, object, "GObject instance",
                                        gjs->atoms().init(), &initer) &&
-           gjs->call_function(object, initer, argv, argv.rval());
+           gjs->call_function(object, initer, args, args.rval());
 }
 
 void ObjectInstance::trace_impl(JSTracer* tracer) {
@@ -3064,21 +3064,21 @@ bool ObjectBase::emit(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->emit_impl(cx, args);
 }
 
-bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
+bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     GQuark signal_detail;
     GSignalQuery signal_query;
     unsigned int i;
 
     gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
-                      argv.length());
+                      args.length());
 
     if (!check_gobject_finalized("emit any signal on")) {
-        argv.rval().setUndefined();
+        args.rval().setUndefined();
         return true;
     }
 
     JS::UniqueChars signal_name;
-    if (!gjs_parse_call_args(cx, "emit", argv, "!s", "signal name",
+    if (!gjs_parse_call_args(cx, "emit", args, "!s", "signal name",
                              &signal_name))
         return false;
 
@@ -3096,10 +3096,10 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
 
     g_signal_query(signal_id, &signal_query);
 
-    if ((argv.length() - 1) != signal_query.n_params) {
+    if ((args.length() - 1) != signal_query.n_params) {
         gjs_throw(cx, "Signal '%s' on %s requires %d args got %d",
                   signal_name.get(), type_name(), signal_query.n_params,
-                  argv.length() - 1);
+                  args.length() - 1);
         return false;
     }
 
@@ -3113,10 +3113,10 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
         GType gtype = signal_query.param_types[i] & ~G_SIGNAL_TYPE_STATIC_SCOPE;
         Gjs::AutoGValue& value = instance_and_args.emplace_back(gtype);
         if ((signal_query.param_types[i] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0) {
-            if (!gjs_value_to_g_value_no_copy(cx, argv[i + 1], &value))
+            if (!gjs_value_to_g_value_no_copy(cx, args[i + 1], &value))
                 return false;
         } else {
-            if (!gjs_value_to_g_value(cx, argv[i + 1], &value))
+            if (!gjs_value_to_g_value(cx, args[i + 1], &value))
                 return false;
         }
 
@@ -3140,7 +3140,7 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
     if (signal_query.return_type == G_TYPE_NONE) {
         g_signal_emitv(instance_and_args.data(), signal_id, signal_detail,
                        nullptr);
-        argv.rval().setUndefined();
+        args.rval().setUndefined();
         std::for_each(args_to_steal.begin(), args_to_steal.end(),
                       [](Gjs::AutoGValue* value) { value->steal(); });
         return true;
@@ -3153,7 +3153,7 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& argv) {
     std::for_each(args_to_steal.begin(), args_to_steal.end(),
                   [](Gjs::AutoGValue* value) { value->steal(); });
 
-    return gjs_value_from_g_value(cx, argv.rval(), &rvalue);
+    return gjs_value_from_g_value(cx, args.rval(), &rvalue);
 }
 
 bool ObjectInstance::signal_match_arguments_from_object(

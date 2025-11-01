@@ -185,10 +185,10 @@ bool FundamentalInstance::invoke_constructor(JSContext* cx,
 // See GIWrapperBase::constructor().
 bool FundamentalInstance::constructor_impl(JSContext* cx,
                                            JS::HandleObject object,
-                                           const JS::CallArgs& argv) {
+                                           const JS::CallArgs& args) {
     GIArgument ret_value;
 
-    if (!invoke_constructor(cx, object, argv, &ret_value) ||
+    if (!invoke_constructor(cx, object, args, &ret_value) ||
         !associate_js_instance(cx, object, gjs_arg_get<void*>(&ret_value)))
         return false;
 

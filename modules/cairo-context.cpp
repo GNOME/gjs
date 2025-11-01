@@ -240,11 +240,11 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 GJS_JSAPI_RETURN_CONVENTION
 cairo_t* CairoContext::constructor_impl(JSContext* cx,
-                                        const JS::CallArgs& argv) {
+                                        const JS::CallArgs& args) {
     cairo_t *cr;
 
     JS::RootedObject surface_wrapper{cx};
-    if (!gjs_parse_call_args(cx, "Context", argv, "o", "surface",
+    if (!gjs_parse_call_args(cx, "Context", args, "o", "surface",
                              &surface_wrapper))
         return nullptr;
 

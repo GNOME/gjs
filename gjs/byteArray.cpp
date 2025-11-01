@@ -109,10 +109,10 @@ static bool from_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool from_gbytes_func(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject bytes_obj{cx};
 
-    if (!gjs_parse_call_args(cx, "fromGBytes", argv, "o", "bytes", &bytes_obj))
+    if (!gjs_parse_call_args(cx, "fromGBytes", args, "o", "bytes", &bytes_obj))
         return false;
 
     if (!StructBase::typecheck(cx, bytes_obj, G_TYPE_BYTES))
@@ -129,7 +129,7 @@ static bool from_gbytes_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         if (!empty_array || !define_legacy_tostring(cx, empty_array))
             return false;
 
-        argv.rval().setObject(*empty_array);
+        args.rval().setObject(*empty_array);
         return true;
     }
 
@@ -151,7 +151,7 @@ static bool from_gbytes_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!obj || !define_legacy_tostring(cx, obj))
         return false;
 
-    argv.rval().setObject(*obj);
+    args.rval().setObject(*obj);
     return true;
 }
 

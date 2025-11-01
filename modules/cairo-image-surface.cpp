@@ -26,12 +26,12 @@ JSObject* CairoImageSurface::new_proto(JSContext* cx, JSProtoKey) {
 }
 
 cairo_surface_t* CairoImageSurface::constructor_impl(JSContext* cx,
-                                                     const JS::CallArgs& argv) {
+                                                     const JS::CallArgs& args) {
     int format, width, height;
     cairo_surface_t *surface;
 
     // create_for_data optional parameter
-    if (!gjs_parse_call_args(cx, "ImageSurface", argv, "iii", "format", &format,
+    if (!gjs_parse_call_args(cx, "ImageSurface", args, "iii", "format", &format,
                              "width", &width, "height", &height))
         return nullptr;
 
@@ -51,11 +51,11 @@ const JSPropertySpec CairoImageSurface::proto_props[] = {
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool createFromPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     Gjs::AutoChar filename;
     cairo_surface_t *surface;
 
-    if (!gjs_parse_call_args(cx, "createFromPNG", argv, "F", "filename",
+    if (!gjs_parse_call_args(cx, "createFromPNG", args, "F", "filename",
                              &filename))
         return false;
 
@@ -70,7 +70,7 @@ static bool createFromPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     cairo_surface_destroy(surface);
 
-    argv.rval().setObject(*surface_wrapper);
+    args.rval().setObject(*surface_wrapper);
     return true;
 }
 

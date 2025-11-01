@@ -35,11 +35,11 @@ JSObject* CairoSVGSurface::new_proto(JSContext* cx, JSProtoKey) {
 }
 
 cairo_surface_t* CairoSVGSurface::constructor_impl(JSContext* cx,
-                                                   const JS::CallArgs& argv) {
+                                                   const JS::CallArgs& args) {
     Gjs::AutoChar filename;
     double width, height;
     cairo_surface_t *surface;
-    if (!gjs_parse_call_args(cx, "SVGSurface", argv, "Fff", "filename",
+    if (!gjs_parse_call_args(cx, "SVGSurface", args, "Fff", "filename",
                              &filename, "width", &width, "height", &height))
         return nullptr;
 

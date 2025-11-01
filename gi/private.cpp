@@ -387,12 +387,12 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     JS::UniqueChars name;
     GTypeFlags type_flags;
     JS::RootedObject parent(cx), interfaces(cx), properties(cx);
-    if (!gjs_parse_call_args(cx, "register_type", argv, "osioo", "parent",
+    if (!gjs_parse_call_args(cx, "register_type", args, "osioo", "parent",
                              &parent, "name", &name, "flags", &type_flags,
                              "interfaces", &interfaces, "properties",
                              &properties))
@@ -417,7 +417,7 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto* priv = ObjectPrototype::for_js(cx, prototype);
     priv->set_type_qdata();
 
-    argv.rval().setObject(*constructor);
+    args.rval().setObject(*constructor);
 
     return true;
 }
@@ -425,12 +425,12 @@ static bool gjs_register_type(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_register_type_with_class(JSContext* cx, unsigned argc,
                                          JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     JS::UniqueChars name;
     GTypeFlags type_flags;
     JS::RootedObject klass(cx), parent(cx), interfaces(cx), properties(cx);
-    if (!gjs_parse_call_args(cx, "register_type_with_class", argv, "oosioo",
+    if (!gjs_parse_call_args(cx, "register_type_with_class", args, "oosioo",
                              "class", &klass, "parent", &parent, "name", &name,
                              "flags", &type_flags, "interfaces", &interfaces,
                              "properties", &properties))
@@ -458,7 +458,7 @@ static bool gjs_register_type_with_class(JSContext* cx, unsigned argc,
     priv->set_interfaces(iface_types, n_interfaces);
     priv->set_type_qdata();
 
-    return create_wrapper_array(cx, prototype, instance_type, argv.rval());
+    return create_wrapper_array(cx, prototype, instance_type, args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -567,12 +567,12 @@ GJS_JSAPI_RETURN_CONVENTION static bool symbol_getter(JSContext* cx,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_associate_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject func_obj{cx};
     JS::RootedObject target_obj{cx};
     Gjs::AutoGValue value(G_TYPE_CLOSURE);
 
-    if (!gjs_parse_call_args(cx, "associateClosure", argv, "oo", "object",
+    if (!gjs_parse_call_args(cx, "associateClosure", args, "oo", "object",
                              &target_obj, "func", &func_obj))
         return false;
 
@@ -590,7 +590,7 @@ static bool gjs_associate_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
 
     g_value_set_boxed(&value, closure);
-    return gjs_value_from_g_value(cx, argv.rval(), &value);
+    return gjs_value_from_g_value(cx, args.rval(), &value);
 }
 
 static JSFunctionSpec private_module_funcs[] = {

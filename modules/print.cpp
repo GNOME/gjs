@@ -33,7 +33,7 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     if (argc != 1) {
         gjs_throw(cx, "Must pass a single argument to log()");
@@ -43,7 +43,7 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* JS::ToString might throw, in which case we will only log that the value
      * could not be converted to string */
     JS::AutoSaveExceptionState exc_state(cx);
-    JS::RootedString jstr(cx, JS::ToString(cx, argv[0]));
+    JS::RootedString jstr{cx, JS::ToString(cx, args[0])};
     exc_state.restore();
 
     if (!jstr) {
@@ -57,15 +57,15 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     g_message("JS LOG: %s", s.get());
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_log_error(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
+    if ((argc != 1 && argc != 2) || !args[0].isObject()) {
         gjs_throw(
             cx,
             "Must pass an exception and optionally a message to logError()");
@@ -78,26 +78,26 @@ static bool gjs_log_error(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* JS::ToString might throw, in which case we will only log that the
          * value could not be converted to string */
         JS::AutoSaveExceptionState exc_state(cx);
-        jstr = JS::ToString(cx, argv[1]);
+        jstr = JS::ToString(cx, args[1]);
         exc_state.restore();
     }
 
-    gjs_log_exception_full(cx, argv[0], jstr, G_LOG_LEVEL_WARNING);
+    gjs_log_exception_full(cx, args[0], jstr, G_LOG_LEVEL_WARNING);
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
+static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& args,
                                  std::string* buffer) {
     g_assert(buffer && "forgot out parameter");
     buffer->clear();
-    for (unsigned n = 0; n < argv.length(); ++n) {
+    for (unsigned n = 0; n < args.length(); ++n) {
         /* JS::ToString might throw, in which case we will only log that the
          * value could not be converted to string */
         JS::AutoSaveExceptionState exc_state(cx);
-        JS::RootedString jstr(cx, JS::ToString(cx, argv[n]));
+        JS::RootedString jstr{cx, JS::ToString(cx, args[n])};
         exc_state.restore();
 
         if (jstr) {
@@ -106,7 +106,7 @@ static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
                 return false;
 
             *buffer += s.get();
-            if (n < (argv.length() - 1))
+            if (n < (args.length() - 1))
                 *buffer += ' ';
         } else {
             *buffer = "<invalid string>";
@@ -118,29 +118,29 @@ static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_print(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     std::string buffer;
-    if (!gjs_print_parse_args(cx, argv, &buffer))
+    if (!gjs_print_parse_args(cx, args, &buffer))
         return false;
 
     g_print("%s\n", buffer.c_str());
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_printerr(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     std::string buffer;
-    if (!gjs_print_parse_args(cx, argv, &buffer))
+    if (!gjs_print_parse_args(cx, args, &buffer))
         return false;
 
     g_printerr("%s\n", buffer.c_str());
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 

@@ -1192,19 +1192,19 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
     }
 }
 
-bool Function::call(JSContext* cx, unsigned js_argc, JS::Value* vp) {
-    JS::CallArgs js_argv = JS::CallArgsFromVp(js_argc, vp);
-    JS::RootedObject callee{cx, &js_argv.callee()};
+bool Function::call(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedObject callee{cx, &args.callee()};
 
     Function* priv;
-    if (!Function::for_js_typecheck(cx, callee, &priv, &js_argv))
+    if (!Function::for_js_typecheck(cx, callee, &priv, &args))
         return false;
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p",
                       callee.get(), priv);
 
     g_assert(priv);
-    return priv->invoke(cx, js_argv);
+    return priv->invoke(cx, args);
 }
 
 Function::~Function() {

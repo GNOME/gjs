@@ -45,24 +45,24 @@
  * SpiderMonkey can move objects around in memory during garbage collection, and
  * it can also deduplicate identical instances of objects in memory. */
 static bool gjs_address_of(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj{cx};
 
-    if (!gjs_parse_call_args(cx, "addressOf", argv, "o", "object", &target_obj))
+    if (!gjs_parse_call_args(cx, "addressOf", args, "o", "object", &target_obj))
         return false;
 
     Gjs::AutoChar pointer_string{g_strdup_printf("%p", target_obj.get())};
-    return gjs_string_from_utf8(cx, pointer_string, argv.rval());
+    return gjs_string_from_utf8(cx, pointer_string, args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
                                    JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj(cx);
     GObject *obj;
 
-    if (!gjs_parse_call_args(cx, "addressOfGObject", argv, "o", "object",
+    if (!gjs_parse_call_args(cx, "addressOfGObject", args, "o", "object",
                              &target_obj))
         return false;
 
@@ -72,35 +72,35 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
     }
 
     Gjs::AutoChar pointer_string{g_strdup_printf("%p", obj)};
-    return gjs_string_from_utf8(cx, pointer_string, argv.rval());
+    return gjs_string_from_utf8(cx, pointer_string, args.rval());
 }
 
 static bool gjs_refcount(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj{cx};
     GObject *obj;
 
-    if (!gjs_parse_call_args(cx, "refcount", argv, "o", "object", &target_obj))
+    if (!gjs_parse_call_args(cx, "refcount", args, "o", "object", &target_obj))
         return false;
 
     if (!ObjectBase::to_c_ptr(cx, target_obj, &obj))
         return false;
     if (!obj) {
         // Object already disposed, treat as refcount 0
-        argv.rval().setInt32(0);
+        args.rval().setInt32(0);
         return true;
     }
 
-    argv.rval().setInt32(obj->ref_count);
+    args.rval().setInt32(obj->ref_count);
     return true;
 }
 
 static bool gjs_breakpoint(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    if (!gjs_parse_call_args(cx, "breakpoint", argv, ""))
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    if (!gjs_parse_call_args(cx, "breakpoint", args, ""))
         return false;
     G_BREAKPOINT();
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
@@ -131,18 +131,18 @@ static bool gjs_dump_heap(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static bool gjs_gc(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
-    if (!gjs_parse_call_args(cx, "gc", argv, ""))
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    if (!gjs_parse_call_args(cx, "gc", args, ""))
         return false;
     JS_GC(cx);
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 static bool gjs_exit(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     int32_t ecode;
-    if (!gjs_parse_call_args(cx, "exit", argv, "i", "ecode", &ecode))
+    if (!gjs_parse_call_args(cx, "exit", args, "i", "ecode", &ecode))
         return false;
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
@@ -152,7 +152,7 @@ static bool gjs_exit(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {
-    JS::CallArgs rec = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     // Workaround for a bug in SpiderMonkey where tzset is not called before
     // localtime_r, see https://bugzilla.mozilla.org/show_bug.cgi?id=1004706
@@ -160,7 +160,7 @@ static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {
 
     JS::ResetTimeZone();
 
-    rec.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
