@@ -2533,7 +2533,7 @@ static bool gjs_array_from_carray_internal(JSContext* cx,
                                interface_info.as<GI::InfoTag::STRUCT>()) {
                     element_size = struct_info->size();
                 } else {
-                    auto storage =
+                    GITypeTag storage =
                         interface_info.as<GI::InfoTag::ENUM>()->storage_type();
                     element_size = basic_type_element_size(storage);
                 }

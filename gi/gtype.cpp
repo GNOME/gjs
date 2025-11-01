@@ -42,7 +42,8 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
     friend CWrapperPointerOps<GTypeObj, void>;
     friend CWrapper<GTypeObj, void>;
 
-    static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_gtype;
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_gtype;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GTYPE;
 
     // JSClass operations

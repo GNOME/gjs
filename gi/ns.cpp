@@ -60,7 +60,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
 
-    static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_ns;
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_ns;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
 
     explicit Ns(const char* ns_name)

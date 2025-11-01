@@ -122,7 +122,7 @@ bool ToggleQueue::handle_toggle(Handler handler) {
     if (q.empty())
         return false;
 
-    auto const& item = q.front();
+    const Item& item = q.front();
     if (item.direction == UP)
         debug("handle UP", item.object);
     else

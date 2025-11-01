@@ -147,7 +147,7 @@ void gjs_log_init() {
         s_log_file = std::make_unique<LogFile>(nullptr, stderr);
 
     if (s_debug_log_enabled) {
-        auto* topics = g_getenv("GJS_DEBUG_TOPICS");
+        const char* topics = g_getenv("GJS_DEBUG_TOPICS");
         s_enabled_topics.fill(topics == nullptr);
         if (topics) {
             Gjs::AutoStrv prefixes{g_strsplit(topics, ";", -1)};

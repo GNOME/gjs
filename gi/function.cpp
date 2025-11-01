@@ -79,7 +79,8 @@ class Function : public CWrapper<Function> {
     friend CWrapperPointerOps<Function>;
     friend CWrapper<Function>;
 
-    static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_function;
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_function;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GFUNCTION;
 
     GI::AutoCallableInfo m_info;

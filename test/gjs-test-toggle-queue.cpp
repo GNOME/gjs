@@ -209,7 +209,7 @@ static void test_toggle_queue_empty_cancel(GjsUnitTestFixture*, const void*) {
 }
 
 static void test_toggle_queue_enqueue_one(GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
 
@@ -221,7 +221,7 @@ static void test_toggle_queue_enqueue_one(GjsUnitTestFixture* fx, const void*) {
 
 static void test_toggle_queue_enqueue_one_cancel(GjsUnitTestFixture* fx,
                                                  const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
 
@@ -236,7 +236,7 @@ static void test_toggle_queue_enqueue_one_cancel(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_enqueue_many_equal(GjsUnitTestFixture* fx,
                                                  const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::DOWN, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -254,7 +254,7 @@ static void test_toggle_queue_enqueue_many_equal(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_enqueue_many_equal_cancel(GjsUnitTestFixture* fx,
                                                         const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::DOWN, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -269,7 +269,7 @@ static void test_toggle_queue_enqueue_many_equal_cancel(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_enqueue_more_up(GjsUnitTestFixture* fx,
                                               const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -293,7 +293,7 @@ static void test_toggle_queue_enqueue_more_up(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_enqueue_only_up(GjsUnitTestFixture* fx,
                                               const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -319,7 +319,7 @@ static void test_toggle_queue_enqueue_only_up(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_handle_more_up(GjsUnitTestFixture* fx,
                                              const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -344,7 +344,7 @@ static void test_toggle_queue_handle_more_up(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_handle_only_up(GjsUnitTestFixture* fx,
                                              const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -371,7 +371,7 @@ static void test_toggle_queue_handle_only_up(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_enqueue_only_up_cancel(GjsUnitTestFixture* fx,
                                                      const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
     tq->enqueue(instance, ::ToggleQueue::Direction::UP, toggles_handler);
@@ -389,7 +389,7 @@ static void test_toggle_queue_enqueue_only_up_cancel(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_object_from_main_thread(GjsUnitTestFixture* fx,
                                                       const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
 
     AutoUnref<GObject> reffed{instance->ptr(), TakeOwnership{}};
@@ -405,7 +405,7 @@ static void test_toggle_queue_object_from_main_thread(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_object_from_main_thread_already_enqueued(
     GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     AutoUnref<GObject> reffed;
     AutoError error;
 
@@ -430,7 +430,7 @@ static void test_toggle_queue_object_from_main_thread_already_enqueued(
 
 static void test_toggle_queue_object_from_main_thread_unref_already_enqueued(
     GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     AutoUnref<GObject> reffed;
     AutoError error;
 
@@ -456,7 +456,7 @@ static void test_toggle_queue_object_from_main_thread_unref_already_enqueued(
 
 static void test_toggle_queue_object_from_other_thread_ref_unref(
     GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
 
     AutoError error;
     gjs_test_tools_ref_other_thread(instance->ptr(), &error);
@@ -481,7 +481,7 @@ static void test_toggle_queue_object_from_other_thread_ref_unref(
 
 static void test_toggle_queue_object_handle_up(GjsUnitTestFixture* fx,
                                                const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     AutoError error;
@@ -500,7 +500,7 @@ static void test_toggle_queue_object_handle_up(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_object_handle_up_down(GjsUnitTestFixture* fx,
                                                     const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     AutoError error;
@@ -522,7 +522,7 @@ static void test_toggle_queue_object_handle_up_down(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_object_handle_up_down_delayed(
     GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     AutoError error;
@@ -551,7 +551,7 @@ static void test_toggle_queue_object_handle_up_down_delayed(
 
 static void test_toggle_queue_object_handle_up_down_on_gc(
     GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
 
     AutoError error;
     gjs_test_tools_ref_other_thread(instance->ptr(), &error);
@@ -576,7 +576,7 @@ static void test_toggle_queue_object_handle_up_down_on_gc(
 
 static void test_toggle_queue_object_handle_many_up(GjsUnitTestFixture* fx,
                                                     const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     AutoError error;
@@ -601,7 +601,7 @@ static void test_toggle_queue_object_handle_many_up(GjsUnitTestFixture* fx,
 
 static void test_toggle_queue_object_handle_many_up_and_down(
     GjsUnitTestFixture* fx, const void*) {
-    auto* instance = new_test_gobject(fx);
+    ::ObjectInstance* instance = new_test_gobject(fx);
     auto* instance_test = reinterpret_cast<ObjectInstance*>(instance);
 
     // This is something similar to what is happening on #297

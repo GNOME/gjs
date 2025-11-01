@@ -420,7 +420,7 @@ bool gjs_global_is_type(JSContext* cx, GjsGlobalType type) {
 }
 
 GjsGlobalType gjs_global_get_type(JSContext* cx) {
-    auto global = JS::CurrentGlobalOrNull(cx);
+    JSObject* global = JS::CurrentGlobalOrNull(cx);
 
     g_assert(global &&
              "gjs_global_get_type called before a realm was entered.");

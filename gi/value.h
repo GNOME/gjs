@@ -224,8 +224,8 @@ void gvalue_take(GValue* gvalue, Tag::RealT<TAG> value) {
 
 template <typename TAG>
 std::string gvalue_to_string(GValue* gvalue) {
-    auto str =
-        std::string("GValue of type ") + G_VALUE_TYPE_NAME(gvalue) + ": ";
+    std::string str{std::string{"GValue of type "}  // NOLINT(whitespace/braces)
+                    + G_VALUE_TYPE_NAME(gvalue) + ": "};
 
     if constexpr (std::is_same_v<TAG, char*>) {
         str += std::string("\"") + Gjs::gvalue_get<TAG>(gvalue) + '"';

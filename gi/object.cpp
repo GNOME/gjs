@@ -108,7 +108,7 @@ bool ObjectInstance::s_weak_pointer_callback = false;
 decltype(ObjectInstance::s_wrapped_gobject_list)
     ObjectInstance::s_wrapped_gobject_list;
 
-static const auto DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
+static const uintptr_t DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_object_prototype_from_info(
@@ -222,7 +222,7 @@ void ObjectInstance::set_object_qdata() {
 }
 
 void ObjectInstance::unset_object_qdata() {
-    auto priv_quark = gjs_object_priv_quark();
+    GQuark priv_quark = gjs_object_priv_quark();
     if (g_object_get_qdata(m_ptr, priv_quark) == this)
         g_object_steal_qdata(m_ptr, priv_quark);
 }
@@ -2132,7 +2132,7 @@ void ObjectInstance::wrapped_gobj_dispose_notify(
 }
 
 void ObjectInstance::track_gobject_finalization() {
-    auto quark = ObjectBase::disposed_quark();
+    GQuark quark = ObjectBase::disposed_quark();
     g_object_steal_qdata(m_ptr, quark);
     g_object_set_qdata_full(m_ptr, quark, this, [](void* data) {
         auto* self = static_cast<ObjectInstance*>(data);
@@ -2143,7 +2143,7 @@ void ObjectInstance::track_gobject_finalization() {
 }
 
 void ObjectInstance::ignore_gobject_finalization() {
-    auto quark = ObjectBase::disposed_quark();
+    GQuark quark = ObjectBase::disposed_quark();
     if (g_object_get_qdata(m_ptr, quark) == this) {
         g_object_steal_qdata(m_ptr, quark);
         g_object_set_qdata(m_ptr, quark, gjs_int_to_pointer(DISPOSED_OBJECT));
@@ -2268,7 +2268,7 @@ void ObjectInstance::toggle_up() {
         // FIXME: thread the context through somehow. Maybe by looking up the
         // realm that obj belongs to.
         debug_lifecycle("Rooting wrapper");
-        auto* cx = GjsContextPrivate::from_current_context()->context();
+        JSContext* cx = GjsContextPrivate::from_current_context()->context();
         switch_to_rooted(cx);
     }
 }
@@ -2744,7 +2744,7 @@ bool ObjectInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
                                       const JS::CallArgs& args) {
     JS::RootedValue initer{cx};
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
-    const auto& new_target = args.newTarget();
+    const JS::MutableHandleValue& new_target = args.newTarget();
     bool has_gtype;
 
     g_assert(new_target.isObject() && "new.target needs to be an object");

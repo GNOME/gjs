@@ -96,7 +96,7 @@ void gjs_test_tools_save_object_unreffed(GObject* object) {
 
 void gjs_test_tools_clear_saved() {
     if (!FinalizedObjectsLocked()->count(s_tmp_object)) {
-        auto* object = s_tmp_object.exchange(nullptr);
+        GObject* object = s_tmp_object.exchange(nullptr);
         g_clear_object(&object);
     } else {
         s_tmp_object = nullptr;
@@ -104,7 +104,8 @@ void gjs_test_tools_clear_saved() {
 }
 
 void gjs_test_tools_ref_other_thread(GObject* object, GError** error) {
-    auto* thread = g_thread_try_new("ref_object", g_object_ref, object, error);
+    GThread* thread =
+        g_thread_try_new("ref_object", g_object_ref, object, error);
     if (thread)
         g_thread_join(thread);
     // cppcheck-suppress memleak
@@ -117,7 +118,7 @@ static void* emit_test_signal_other_thread_func(void* data) {
 
 void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
                                                   GError** error) {
-    auto* thread =
+    GThread* thread =
         g_thread_try_new("emit_signal_object",
                          emit_test_signal_other_thread_func, object, error);
     if (thread)
@@ -181,7 +182,7 @@ static void* ref_thread_func(void* data) {
 }
 
 void gjs_test_tools_unref_other_thread(GObject* object, GError** error) {
-    auto* thread =
+    GThread* thread =
         g_thread_try_new("unref_object", ref_thread_func,
                          ref_thread_data_new(object, -1, UNREF), error);
     if (thread)
@@ -226,7 +227,7 @@ GThread* gjs_test_tools_delayed_ref_unref_other_thread(GObject* object,
 }
 
 void gjs_test_tools_run_dispose_other_thread(GObject* object, GError** error) {
-    auto* thread = g_thread_try_new(
+    GThread* thread = g_thread_try_new(
         "run_dispose",
         [](void* object) -> void* {
             g_object_run_dispose(G_OBJECT(object));
@@ -288,7 +289,7 @@ GObject* gjs_test_tools_get_weak() {
  * Returns: (transfer full)
  */
 GObject* gjs_test_tools_get_weak_other_thread(GError** error) {
-    auto* thread = g_thread_try_new(
+    GThread* thread = g_thread_try_new(
         "weak_get", [](void*) -> void* { return gjs_test_tools_get_weak(); },
         nullptr, error);
     if (!thread)
