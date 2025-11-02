@@ -71,28 +71,6 @@ do_Get_Upstream_Base () {
     echo '-----------------------------------------'
 }
 
-do_Compare_With_Upstream_Base () {
-    echo '-----------------------------------------'
-    echo 'Comparing the code with upstream merge base'
-
-    sort < /cwd/base-report.txt > /cwd/base-report-sorted.txt
-    sort < /cwd/head-report.txt > /cwd/head-report-sorted.txt
-
-    NEW_WARNINGS=$(comm -13 /cwd/base-report-sorted.txt /cwd/head-report-sorted.txt | wc -l)
-    REMOVED_WARNINGS=$(comm -23 /cwd/base-report-sorted.txt /cwd/head-report-sorted.txt | wc -l)
-    if test "$NEW_WARNINGS" -ne 0; then
-        echo '-----------------------------------------'
-        echo "### $NEW_WARNINGS new warning(s) found by $1 ###"
-        echo '-----------------------------------------'
-        diff -U0 /cwd/base-report.txt /cwd/head-report.txt || true
-        echo '-----------------------------------------'
-        exit 1
-    else
-        echo "$REMOVED_WARNINGS warning(s) were fixed."
-        echo "=> $1 Ok"
-    fi
-}
-
 do_Create_Artifacts_Folder () {
     # Create the artifacts folders
     save_dir="$(pwd)"
@@ -164,39 +142,6 @@ elif test "$1" = "SH_CHECKS"; then
     sudo ninja -C _build install
     installed-tests/scripts/testExamples.sh > scripts.log
     do_Check_Script_Errors
-
-elif test "$1" = "CPPLINT"; then
-    do_Print_Labels 'C/C++ Linter report '
-
-    mapfile -t cpplint_files < <(find . -name \*.cpp -or -name \*.h | sort)
-    cpplint --quiet --filter=-build/include_what_you_use \
-        "${cpplint_files[@]}" 2>&1 >/dev/null | \
-        tee "$save_dir"/analysis/head-report.txt | \
-        sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
-        > /cwd/head-report.txt
-    cat "$save_dir"/analysis/head-report.txt
-    echo
-
-    do_Get_Upstream_Base
-    if test "$(git rev-parse HEAD)" = "$(git rev-parse ci-upstream-base)"; then
-        echo '-----------------------------------------'
-        echo 'Running against upstream'
-        echo '=> cpplint: Nothing to do'
-        do_Done
-        exit 0
-    fi
-    git checkout ci-upstream-base
-    # files may have changed
-    mapfile -t cpplint_files < <(find . -name \*.cpp -or -name \*.h | sort)
-    cpplint --quiet --filter=-build/include_what_you_use \
-        "${cpplint_files[@]}" 2>&1 >/dev/null | \
-        tee "$save_dir"/analysis/base-report.txt | \
-        sed -E -e 's/:[0-9]+:/:LINE:/' -e 's/  +/ /g' \
-        > /cwd/base-report.txt
-    echo
-
-    # Compare the report with merge base and fail if new warnings are found
-    do_Compare_With_Upstream_Base "cpplint"
 
 elif test "$1" = "UPSTREAM_BASE"; then
     do_Get_Upstream_Base

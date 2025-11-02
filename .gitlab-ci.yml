@@ -277,7 +277,7 @@ cpplint:
     - .gjs-alpine
   script:
     - cpplint --version
-    - test/test-ci.sh CPPLINT
+    - tools/run_cpplint.sh
   except:
     refs:
       - schedules
