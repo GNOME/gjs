@@ -120,15 +120,7 @@ G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
 G_DEFINE_QUARK(gjs::instance-strings, ObjectBase::instance_strings)
 // clang-format on
 G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
-
-[[nodiscard]]
-static GQuark gjs_object_priv_quark() {
-    static GQuark val = 0;
-    if (G_UNLIKELY (!val))
-        val = g_quark_from_static_string ("gjs::private");
-
-    return val;
-}
+[[nodiscard]] static G_DEFINE_QUARK(gjs::private, gjs_object_priv);
 
 bool ObjectBase::is_custom_js_class() {
     return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
