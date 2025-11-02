@@ -398,6 +398,34 @@ function _init() {
         return _unpackVariant(variant, deep);
     };
 
+    // Provide overrides for one-shot idle/timeout functions in GLib.
+    // The original functions are not introspectable, as they don't have
+    // "full" variants with a GDestroy parameter for the callback.
+
+    this.idle_add_once = function (priority, callback) {
+        const id = this.idle_add(priority, () => {
+            callback();
+            return this.SOURCE_REMOVE;
+        });
+        return id;
+    };
+
+    this.timeout_add_once = function (priority, interval, callback) {
+        const id = this.timeout_add(priority, interval, () => {
+            callback();
+            return this.SOURCE_REMOVE;
+        });
+        return id;
+    };
+
+    this.timeout_add_seconds_once = function (priority, interval, callback) {
+        const id = this.timeout_add_seconds(priority, interval, () => {
+            callback();
+            return this.SOURCE_REMOVE;
+        });
+        return id;
+    };
+
     // Prevent user code from calling GLib string manipulation functions that
     // return the same string that was passed in. These can't be annotated
     // properly, and will mostly crash.
