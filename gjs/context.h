@@ -36,9 +36,12 @@ G_DECLARE_FINAL_TYPE(GjsContext, gjs_context, GJS, CONTEXT, GObject);
 
 /* These class macros are not defined by G_DECLARE_FINAL_TYPE, but are kept for
  * backwards compatibility */
-#define GJS_CONTEXT_CLASS(klass)      (G_TYPE_CHECK_CLASS_CAST ((klass), GJS_TYPE_CONTEXT, GjsContextClass))
-#define GJS_IS_CONTEXT_CLASS(klass)   (G_TYPE_CHECK_CLASS_TYPE ((klass), GJS_TYPE_CONTEXT))
-#define GJS_CONTEXT_GET_CLASS(obj)    (G_TYPE_INSTANCE_GET_CLASS ((obj), GJS_TYPE_CONTEXT, GjsContextClass))
+#define GJS_CONTEXT_CLASS(klass) \
+    (G_TYPE_CHECK_CLASS_CAST((klass), GJS_TYPE_CONTEXT, GjsContextClass))
+#define GJS_IS_CONTEXT_CLASS(klass) \
+    (G_TYPE_CHECK_CLASS_TYPE((klass), GJS_TYPE_CONTEXT))
+#define GJS_CONTEXT_GET_CLASS(obj) \
+    (G_TYPE_INSTANCE_GET_CLASS((obj), GJS_TYPE_CONTEXT, GjsContextClass))
 
 typedef void (*GjsContextInRealmFunc)(GjsContext*, void*);
 

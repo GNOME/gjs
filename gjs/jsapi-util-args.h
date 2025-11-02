@@ -392,7 +392,8 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
                       function_name, n_required, args.length());
         } else {
             gjs_throw(cx,
-                      "Error invoking %s: Expected minimum %d arguments (and %d optional), got %d",
+                      "Error invoking %s: Expected minimum %d arguments (and "
+                      "%d optional), got %d",
                       function_name, n_required, n_total - n_required,
                       args.length());
         }

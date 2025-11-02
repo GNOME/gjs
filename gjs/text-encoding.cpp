@@ -113,7 +113,8 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
     // some dialectal characters are in the supplemental plane
     // Adding a padding of 12 prevents a few dialectal characters
     // from requiring a reallocation.
-    size_t buffer_size = std::max(bytes_len * 2 + 12, static_cast<size_t>(256u));
+    size_t buffer_size =
+        std::max(bytes_len * 2 + 12, static_cast<size_t>(256u));
 
     // Cast data to correct input types
     const char* input = reinterpret_cast<const char*>(bytes);

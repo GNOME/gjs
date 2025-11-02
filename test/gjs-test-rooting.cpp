@@ -243,8 +243,9 @@ void gjs_test_add_tests_for_rooting() {
 #define ADD_CONTEXT_DESTROY_TEST(path, f) \
     g_test_add("/rooting/" path, GjsRootingFixture, nullptr, setup, f, nullptr);
 
-    ADD_CONTEXT_DESTROY_TEST("maybe-owned/notify-callback-called-on-context-destroy",
-                             test_maybe_owned_notify_callback_called_on_context_destroy);
+    ADD_CONTEXT_DESTROY_TEST(
+        "maybe-owned/notify-callback-called-on-context-destroy",
+        test_maybe_owned_notify_callback_called_on_context_destroy);
     ADD_CONTEXT_DESTROY_TEST("maybe-owned/object-destroyed-after-notify",
                              test_maybe_owned_object_destroyed_after_notify);
 

@@ -287,7 +287,8 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
 
-        script = g_strdup("const Console = imports.console; Console.interact();");
+        script =
+            g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
         program_name = gjs_argv[0];
@@ -361,7 +362,9 @@ int main(int argc, char** argv) {
     Gjs::AutoUnref<GjsCoverage> coverage;
     if (coverage_prefixes) {
         if (!coverage_output_path)
-            g_error("--coverage-output is required when taking coverage statistics");
+            g_error(
+                "--coverage-output is required when taking coverage "
+                "statistics");
 
         Gjs::AutoUnref<GFile> output{
             g_file_new_for_commandline_arg(coverage_output_path)};

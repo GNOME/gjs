@@ -139,12 +139,14 @@ static GVariant* gjs_dbus_implementation_property_get(
                                                 property_name, error))
         return NULL;
 
-    g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_GET], 0, property_name, &value);
+    g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_GET], 0, property_name,
+                  &value);
 
     /* Marshaling GErrors is not supported, so this is the best we can do
        (GIO will assert if value is NULL and error is not set) */
     if (!value)
-        g_set_error(error, g_quark_from_static_string("gjs-error-domain"), 0, "Property retrieval failed");
+        g_set_error(error, g_quark_from_static_string("gjs-error-domain"), 0,
+                    "Property retrieval failed");
 
     return value;
 }
@@ -162,7 +164,8 @@ static gboolean gjs_dbus_implementation_property_set(
                                                 property_name, error))
         return FALSE;
 
-    g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_SET], 0, property_name, value);
+    g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_SET], 0, property_name,
+                  value);
 
     return TRUE;
 }
@@ -244,12 +247,14 @@ static GVariant* gjs_dbus_implementation_get_properties(
         GVariant *value;
 
         /* If we have a cached value, we use that instead of querying again */
-        if ((value = (GVariant*) g_hash_table_lookup(self->priv->outstanding_properties, prop->name))) {
+        if ((value = (GVariant*)g_hash_table_lookup(
+                 self->priv->outstanding_properties, prop->name))) {
             g_variant_builder_add(&builder, "{sv}", prop->name, value);
             continue;
         }
 
-        g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_GET], 0, prop->name, &value);
+        g_signal_emit(self, signals[SIGNAL_HANDLE_PROPERTY_GET], 0, prop->name,
+                      &value);
         g_variant_builder_add(&builder, "{sv}", prop->name, value);
     }
 
@@ -277,11 +282,12 @@ static void gjs_dbus_implementation_flush(GDBusInterfaceSkeleton* skeleton) {
     }
 
     GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
-    const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);
-    GVariant *properties = g_variant_new("(s@a{sv}@as)",
-                                         self->priv->ifaceinfo->name,
-                                         g_variant_builder_end(&changed_props),
-                                         g_variant_builder_end(&invalidated_props));
+    const char* object_path =
+        g_dbus_interface_skeleton_get_object_path(skeleton);
+    GVariant* properties =
+        g_variant_new("(s@a{sv}@as)", self->priv->ifaceinfo->name,
+                      g_variant_builder_end(&changed_props),
+                      g_variant_builder_end(&invalidated_props));
     g_variant_ref_sink(properties);
 
     for (const GList *iter = connections; iter; iter = iter->next) {
@@ -304,7 +310,8 @@ static void gjs_dbus_implementation_flush(GDBusInterfaceSkeleton* skeleton) {
 
 void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
     GObjectClass *gobject_class = G_OBJECT_CLASS(klass);
-    GDBusInterfaceSkeletonClass *skeleton_class = G_DBUS_INTERFACE_SKELETON_CLASS(klass);
+    GDBusInterfaceSkeletonClass* skeleton_class =
+        G_DBUS_INTERFACE_SKELETON_CLASS(klass);
 
     gobject_class->dispose = gjs_dbus_implementation_dispose;
     gobject_class->finalize = gjs_dbus_implementation_finalize;
@@ -315,12 +322,14 @@ void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
     skeleton_class->get_properties = gjs_dbus_implementation_get_properties;
     skeleton_class->flush = gjs_dbus_implementation_flush;
 
-    g_object_class_install_property(gobject_class, PROP_G_INTERFACE_INFO,
-                                    g_param_spec_boxed("g-interface-info",
-                                                       "Interface Info",
-                                                       "A DBusInterfaceInfo representing the exported object",
-                                                       G_TYPE_DBUS_INTERFACE_INFO,
-                                                       (GParamFlags) (G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY)));
+    g_object_class_install_property(
+        gobject_class, PROP_G_INTERFACE_INFO,
+        g_param_spec_boxed(
+            "g-interface-info", "Interface Info",
+            "A DBusInterfaceInfo representing the exported object",
+            G_TYPE_DBUS_INTERFACE_INFO,
+            (GParamFlags)(G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE |
+                          G_PARAM_CONSTRUCT_ONLY)));
 
     /**
      * GjsDBusImplementation::handle-method-call:
@@ -412,7 +421,8 @@ void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
                                          GVariant* parameters) {
     GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON(self);
     GList *connections = g_dbus_interface_skeleton_get_connections(skeleton);
-    const char *object_path = g_dbus_interface_skeleton_get_object_path(skeleton);
+    const char* object_path =
+        g_dbus_interface_skeleton_get_object_path(skeleton);
 
     _g_variant_ref_sink0(parameters);
 

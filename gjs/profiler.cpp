@@ -418,7 +418,8 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
             size_t dynamic_string_length = strlen(dynamic_string);
 
             if (dynamic_string_length > 0) {
-                size_t remaining_length = MIN(available_length, dynamic_string_length);
+                size_t remaining_length =
+                    MIN(available_length, dynamic_string_length);
                 memcpy(position, dynamic_string, remaining_length);
                 position += remaining_length;
             }
@@ -560,7 +561,8 @@ void gjs_profiler_start(GjsProfiler* self) {
     sigemptyset(&sa.sa_mask);
 
     if (sigaction(SIGPROF, &sa, nullptr) == -1) {
-        g_warning("Failed to register sigaction handler: %s", g_strerror(errno));
+        g_warning("Failed to register sigaction handler: %s",
+                  g_strerror(errno));
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;

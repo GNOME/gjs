@@ -385,7 +385,8 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
         allocate_directly();
     } else if (proto->has_default_constructor()) {
         js::ESClass es_class = js::ESClass::Other;
-        if (proto->can_allocate_directly() && args.length() == 1 && args[0].isObject()) {
+        if (proto->can_allocate_directly() && args.length() == 1 &&
+            args[0].isObject()) {
             JS::RootedObject arg0{cx, &args[0].toObject()};
             if (!JS::GetBuiltinClass(cx, arg0, &es_class))
                 return false;

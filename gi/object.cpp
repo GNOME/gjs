@@ -436,7 +436,8 @@ static bool simple_getters_caller(const GI::TypeInfo type_info, GObject* obj,
                 GI::AutoBaseInfo interface_info{type_info.interface()};
 
                 if (interface_info.is_enum_or_flags()) {
-                    return simple_getter_caller<Gjs::Tag::Enum>(obj, native_address, out_arg);
+                    return simple_getter_caller<Gjs::Tag::Enum>(
+                        obj, native_address, out_arg);
                 }
                 return simple_getter_caller<void*>(obj, native_address, out_arg);
             }
@@ -837,7 +838,8 @@ static bool simple_setters_caller(const GI::TypeInfo type_info, GIArgument* arg,
                 GI::AutoBaseInfo interface_info{type_info.interface()};
 
                 if (interface_info.is_enum_or_flags()) {
-                    return simple_setter_caller<Gjs::Tag::Enum>(arg, obj, native_address);
+                    return simple_setter_caller<Gjs::Tag::Enum>(arg, obj,
+                                                                native_address);
                 }
                 return simple_setter_caller<void*>(arg, obj, native_address);
             }
@@ -3878,8 +3880,9 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             gjs_throw(cx, "Tried to deal with a vfunc that wasn't callable");
             return false;
         }
-        trampoline = GjsCallbackTrampoline::create(
-            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true, !is_static);
+        trampoline = GjsCallbackTrampoline::create(cx, callable, vfunc.ref(),
+                                                   GI_SCOPE_TYPE_NOTIFIED, true,
+                                                   !is_static);
         if (!trampoline)
             return false;
 

@@ -354,9 +354,10 @@ void gjs_test_add_tests_for_parse_call_args() {
     ADD_CALL_ARGS_TEST_XFAIL("too-many-args-fails",
                              "intArgNoAssert(1, 2)"
                              "//*Expected 1 arguments, got 2");
-    ADD_CALL_ARGS_TEST_XFAIL("too-many-args-fails-when-more-than-optional",
-                             "optionalIntArgsNoAssert(1, 2, 3)"
-                             "//*Expected minimum 1 arguments (and 1 optional), got 3");
+    ADD_CALL_ARGS_TEST_XFAIL(
+        "too-many-args-fails-when-more-than-optional",
+        "optionalIntArgsNoAssert(1, 2, 3)"
+        "//*Expected minimum 1 arguments (and 1 optional), got 3");
     ADD_CALL_ARGS_TEST_XFAIL("too-few-args-fails",
                              "intArgNoAssert()//*At least 1 argument required, "
                              "but only 0 passed");
@@ -424,9 +425,10 @@ void gjs_test_add_tests_for_parse_call_args() {
         "invalid-jsstring-type",
         "JSStringInvalidType(1)"
         "//*Wrong type for i, got JS::MutableHandleString");
-    ADD_CALL_ARGS_TEST_XFAIL("invalid-object-type",
-                             "objectInvalidType(1)"
-                             "//*Wrong type for i, got JS::MutableHandleObject");
+    ADD_CALL_ARGS_TEST_XFAIL(
+        "invalid-object-type",
+        "objectInvalidType(1)"
+        "//*Wrong type for i, got JS::MutableHandleObject");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-boolean",
                              "boolArgNoAssert({})//*Not a boolean");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-object",

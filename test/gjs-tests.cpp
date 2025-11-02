@@ -1251,8 +1251,10 @@ int main(int argc, char** argv) {
 
     g_message("Using C++ random seed %u\n", cpp_random_seed);
 
-    g_test_add_func("/gjs/context/construct/destroy", gjstest_test_func_gjs_context_construct_destroy);
-    g_test_add_func("/gjs/context/construct/eval", gjstest_test_func_gjs_context_construct_eval);
+    g_test_add_func("/gjs/context/construct/destroy",
+                    gjstest_test_func_gjs_context_construct_destroy);
+    g_test_add_func("/gjs/context/construct/eval",
+                    gjstest_test_func_gjs_context_construct_eval);
     g_test_add_func("/gjs/context/argv",
                     gjstest_test_func_gjs_context_argv_array);
     g_test_add_func("/gjs/context/eval/dynamic-import",
@@ -1290,10 +1292,12 @@ int main(int argc, char** argv) {
                     gjstest_test_func_gjs_context_register_module_non_existent);
     g_test_add_func("/gjs/context/eval-module/unregistered",
                     gjstest_test_func_gjs_context_eval_module_unregistered);
-    g_test_add_func("/gjs/gobject/js_defined_type", gjstest_test_func_gjs_gobject_js_defined_type);
+    g_test_add_func("/gjs/gobject/js_defined_type",
+                    gjstest_test_func_gjs_gobject_js_defined_type);
     g_test_add_func("/gjs/gobject/without_introspection",
                     gjstest_test_func_gjs_gobject_without_introspection);
-    g_test_add_func("/gjs/profiler/start_stop", gjstest_test_profiler_start_stop);
+    g_test_add_func("/gjs/profiler/start_stop",
+                    gjstest_test_profiler_start_stop);
     g_test_add_func("/util/misc/strv/concat/null",
                     gjstest_test_func_util_misc_strv_concat_null);
     g_test_add_func("/util/misc/strv/concat/pointers",
@@ -1309,16 +1313,20 @@ int main(int argc, char** argv) {
     g_test_add_func(
         "/gjs/context/eval-module-file/exit-code-omitted-no-warning",
         gjstest_test_func_gjs_context_eval_module_file_exit_code_omitted_no_warning);
-    g_test_add_func("/gjs/context/eval-file/exit-code-omitted-no-throw",
-                    gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw);
-    g_test_add_func("/gjs/context/eval-file/exit-code-omitted-throw",
-                    gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw);
+    g_test_add_func(
+        "/gjs/context/eval-file/exit-code-omitted-no-throw",
+        gjstest_test_func_gjs_context_eval_file_exit_code_omitted_no_throw);
+    g_test_add_func(
+        "/gjs/context/eval-file/exit-code-omitted-throw",
+        gjstest_test_func_gjs_context_eval_file_exit_code_omitted_throw);
     g_test_add_func("/gjs/context/eval/exit-code-omitted-throw",
                     gjstest_test_func_gjs_context_eval_exit_code_omitted_throw);
-    g_test_add_func("/gjs/context/eval/exit-code-omitted-no-throw",
-                    gjstest_test_func_gjs_context_eval_exit_code_omitted_no_throw);
-    g_test_add_func("/gjs/context/eval-module/exit-code-omitted-throw",
-                    gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw);
+    g_test_add_func(
+        "/gjs/context/eval/exit-code-omitted-no-throw",
+        gjstest_test_func_gjs_context_eval_exit_code_omitted_no_throw);
+    g_test_add_func(
+        "/gjs/context/eval-module/exit-code-omitted-throw",
+        gjstest_test_func_gjs_context_eval_module_exit_code_omitted_throw);
     g_test_add_func(
         "/gjs/context/eval-module/exit-code-omitted-no-throw",
         gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw);

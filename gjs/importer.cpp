@@ -144,7 +144,8 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                 gjs_string_to_utf8(cx, parent_module_path);
             if (!parent_path)
                 return false;
-            module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
+            module_path_buf =
+                g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }
         if (!gjs_string_from_utf8(cx, module_path_buf, &module_path))
             return false;

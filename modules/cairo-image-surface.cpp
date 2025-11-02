@@ -28,14 +28,13 @@ JSObject* CairoImageSurface::new_proto(JSContext* cx, JSProtoKey) {
 cairo_surface_t* CairoImageSurface::constructor_impl(JSContext* cx,
                                                      const JS::CallArgs& args) {
     int format, width, height;
-    cairo_surface_t *surface;
-
     // create_for_data optional parameter
     if (!gjs_parse_call_args(cx, "ImageSurface", args, "iii", "format", &format,
                              "width", &width, "height", &height))
         return nullptr;
 
-    surface = cairo_image_surface_create((cairo_format_t) format, width, height);
+    cairo_surface_t* surface =
+        cairo_image_surface_create((cairo_format_t)format, width, height);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return nullptr;

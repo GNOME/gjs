@@ -248,22 +248,20 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
-    pspec = g_param_spec_boxed("search-path",
-                               "Search path",
-                               "Path where modules to import should reside",
-                               G_TYPE_STRV,
-                               (GParamFlags) (G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boxed(
+        "search-path", "Search path",
+        "Path where modules to import should reside", G_TYPE_STRV,
+        (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
                                     pspec);
     g_param_spec_unref(pspec);
 
-    pspec = g_param_spec_string("program-name",
-                                "Program Name",
-                                "The filename of the launched JS program",
-                                "",
-                                (GParamFlags) (G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_string(
+        "program-name", "Program Name",
+        "The filename of the launched JS program", "",
+        (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
@@ -291,10 +289,10 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      *
      * You may only have one context with the profiler enabled at a time.
      */
-    pspec = g_param_spec_boolean("profiler-enabled", "Profiler enabled",
-                                 "Whether to profile JS code run by this context",
-                                 FALSE,
-                                 GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boolean(
+        "profiler-enabled", "Profiler enabled",
+        "Whether to profile JS code run by this context", FALSE,
+        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
     g_object_class_install_property(object_class, PROP_PROFILER_ENABLED, pspec);
     g_param_spec_unref(pspec);
 
@@ -305,10 +303,10 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      * stops the profiler. This property also implies that
      * #GjsContext:profiler-enabled is set.
      */
-    pspec = g_param_spec_boolean("profiler-sigusr2", "Profiler SIGUSR2",
-                                 "Whether to activate the profiler on SIGUSR2",
-                                 FALSE,
-                                 GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+    pspec = g_param_spec_boolean(
+        "profiler-sigusr2", "Profiler SIGUSR2",
+        "Whether to activate the profiler on SIGUSR2", FALSE,
+        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
     g_object_class_install_property(object_class, PROP_PROFILER_SIGUSR2, pspec);
     g_param_spec_unref(pspec);
 
@@ -376,12 +374,14 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
 void GjsContextPrivate::warn_about_unhandled_promise_rejections() {
     for (auto& kv : m_unhandled_rejection_stacks) {
         const char* stack = kv.second.get();
-        g_warning("Unhandled promise rejection. To suppress this warning, add "
-                  "an error handler to your promise chain with .catch() or a "
-                  "try-catch block around your await expression. %s%s",
-                  stack ? "Stack trace of the failed promise:\n" :
-                    "Unfortunately there is no stack trace of the failed promise.",
-                  stack ? stack : "");
+        g_warning(
+            "Unhandled promise rejection. To suppress this warning, add an "
+            "error handler to your promise chain with .catch() or a try-catch "
+            "block around your await expression. %s%s",
+            stack ? "Stack trace of the failed promise:\n"
+                  : "Unfortunately there is no stack trace of the failed "
+                    "promise.",
+            stack ? stack : "");
     }
     m_unhandled_rejection_stacks.clear();
 }
@@ -900,7 +900,8 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
                                               nullptr);
 
     if (force_gc)
-        g_source_set_name_by_id(m_auto_gc_id, "[gjs] Garbage Collection (Big Hammer)");
+        g_source_set_name_by_id(m_auto_gc_id,
+                                "[gjs] Garbage Collection (Big Hammer)");
     else
         g_source_set_name_by_id(m_auto_gc_id, "[gjs] Garbage Collection");
 }
@@ -1077,7 +1078,9 @@ bool GjsContextPrivate::run_jobs_fallible() {
                     /* System.exit() is an uncatchable exception, but does not
                      * indicate a bug. Log everything else. */
                     if (!should_exit(nullptr))
-                        g_critical("Promise callback terminated with uncatchable exception");
+                        g_critical(
+                            "Promise callback terminated with uncatchable "
+                            "exception");
                     retval = false;
                     continue;
                 }
@@ -1393,7 +1396,8 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
 }
 
 bool GjsContextPrivate::set_main_loop_hook(JSObject* callable) {
-    g_assert(JS::IsCallable(callable) && "main loop hook must be a callable object");
+    g_assert(JS::IsCallable(callable) &&
+             "main loop hook must be a callable object");
 
     if (!callable) {
         m_main_loop_hook = nullptr;

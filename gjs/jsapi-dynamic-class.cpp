@@ -149,7 +149,8 @@ static JSObject* define_native_accessor_wrapper(JSContext* cx, JSNative call,
                                                 unsigned nargs,
                                                 const char* func_name,
                                                 JS::HandleValue private_slot) {
-    JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0, func_name);
+    JSFunction* func =
+        js::NewFunctionWithReserved(cx, call, nargs, 0, func_name);
     if (!func)
         return nullptr;
 

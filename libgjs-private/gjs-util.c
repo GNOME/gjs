@@ -15,7 +15,7 @@
 #include <glib-object.h>
 #include <girepository/girepository.h>
 #include <glib.h>
-#include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, textdomain */
+#include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, ... */
 
 #include "libgjs-private/gjs-util.h"
 #include "util/console.h"

@@ -426,26 +426,23 @@ static void gjs_coverage_class_init(GjsCoverageClass* klass) {
     object_class->finalize = gjs_coverage_finalize;
     object_class->set_property = gjs_coverage_set_property;
 
-    properties[PROP_PREFIXES] = g_param_spec_boxed("prefixes",
-                                                   "Prefixes",
-                                                   "Prefixes of files on which to perform coverage analysis",
-                                                   G_TYPE_STRV,
-                                                   (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
-    properties[PROP_CONTEXT] = g_param_spec_object("context",
-                                                   "Context",
-                                                   "A context to gather coverage stats for",
-                                                   GJS_TYPE_CONTEXT,
-                                                   (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
-    properties[PROP_CACHE] = g_param_spec_object("cache",
-                                                 "Deprecated property",
-                                                 "Has no effect",
-                                                 G_TYPE_FILE,
-                                                 (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE | G_PARAM_DEPRECATED));
-    properties[PROP_OUTPUT_DIRECTORY] =
-        g_param_spec_object("output-directory", "Output directory",
-                            "Directory handle at which to output coverage statistics",
-                            G_TYPE_FILE,
-                            (GParamFlags) (G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE | G_PARAM_STATIC_STRINGS));
+    properties[PROP_PREFIXES] = g_param_spec_boxed(
+        "prefixes", "Prefixes",
+        "Prefixes of files on which to perform coverage analysis", G_TYPE_STRV,
+        (GParamFlags)(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
+    properties[PROP_CONTEXT] = g_param_spec_object(
+        "context", "Context", "A context to gather coverage stats for",
+        GJS_TYPE_CONTEXT,
+        (GParamFlags)(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
+    properties[PROP_CACHE] = g_param_spec_object(
+        "cache", "Deprecated property", "Has no effect", G_TYPE_FILE,
+        (GParamFlags)(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE |
+                      G_PARAM_DEPRECATED));
+    properties[PROP_OUTPUT_DIRECTORY] = g_param_spec_object(
+        "output-directory", "Output directory",
+        "Directory handle at which to output coverage statistics", G_TYPE_FILE,
+        (GParamFlags)(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE |
+                      G_PARAM_STATIC_STRINGS));
 
     g_object_class_install_properties(object_class,
                                       PROP_N,

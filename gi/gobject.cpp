@@ -65,7 +65,8 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
         unsigned flags = GJS_MODULE_PROP_FLAGS | JSPROP_READONLY;
         Gjs::AutoChar camel_name{gjs_hyphen_to_camel(pspec->name)};
 
-        if (g_param_spec_get_qdata(pspec, ObjectBase::custom_property_quark())) {
+        if (g_param_spec_get_qdata(pspec,
+                                   ObjectBase::custom_property_quark())) {
             JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> jsprop(cx);
             JS::RootedObject holder(cx);
             JS::RootedObject getter(cx);

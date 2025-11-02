@@ -284,8 +284,9 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         }
 
         if (signal_query.n_params + 1 != n_param_values) {
-            gjs_debug(GJS_DEBUG_GCLOSURE,
-                      "Signal handler being called with wrong number of parameters");
+            gjs_debug(
+                GJS_DEBUG_GCLOSURE,
+                "Signal handler being called with wrong number of parameters");
             return;
         }
     }
@@ -348,7 +349,8 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         no_copy = false;
 
         if (i >= 1 && signal_query.signal_id) {
-            no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
+            no_copy = (signal_query.param_types[i - 1] &
+                       G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
         }
 
         if (arg_details.array_len_index_for != -1) {
@@ -909,9 +911,10 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         if (!FundamentalBase::to_gvalue(cx, fundamental_object, gvalue))
             return false;
     } else {
-        gjs_debug(GJS_DEBUG_GCLOSURE, "JS::Value is number %d gtype fundamental %d transformable to int %d from int %d",
-                  value.isNumber(),
-                  G_TYPE_IS_FUNDAMENTAL(gtype),
+        gjs_debug(GJS_DEBUG_GCLOSURE,
+                  "JS::Value is number %d gtype fundamental %d transformable "
+                  "to int %d from int %d",
+                  value.isNumber(), G_TYPE_IS_FUNDAMENTAL(gtype),
                   g_value_type_transformable(gtype, G_TYPE_INT),
                   g_value_type_transformable(G_TYPE_INT, gtype));
 
@@ -1036,7 +1039,8 @@ static bool gjs_value_from_g_value_internal(
     } else if (gtype == G_TYPE_ARRAY || gtype == G_TYPE_BYTE_ARRAY ||
                gtype == G_TYPE_PTR_ARRAY) {
         if (gtype == G_TYPE_BYTE_ARRAY) {
-            auto* byte_array = static_cast<GByteArray*>(g_value_get_boxed(gvalue));
+            auto* byte_array =
+                static_cast<GByteArray*>(g_value_get_boxed(gvalue));
             JSObject* array = gjs_byte_array_from_byte_array(cx, byte_array);
             if (!array) {
                 gjs_throw(cx, "Couldn't convert GByteArray to a Uint8Array");
