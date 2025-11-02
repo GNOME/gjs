@@ -187,8 +187,8 @@ static inline GErrorResult<> write_line(GOutputStream* out, const char* line) {
 }
 
 [[nodiscard]]
-GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
-    GjsCoverage* coverage, JSContext* cx) {
+GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
+                                                              JSContext* cx) {
     if (!s_coverage_enabled) {
         g_critical(
             "Code coverage requested, but gjs_coverage_enable() was not called."
@@ -196,7 +196,8 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
         return Gjs::AutoUnref<GFile>{};
     }
 
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
 
     // Create output directory if it doesn't exist
     Gjs::AutoError error;
@@ -235,7 +236,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
             continue;
         } else if (g_str_has_prefix(*iter, "SF:")) {
             const char *filename = *iter + 3;
-            if (!filename_has_coverage_prefixes(coverage, filename)) {
+            if (!filename_has_coverage_prefixes(self, filename)) {
                 ignoring_file = true;
                 continue;
             }
@@ -269,7 +270,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
 
 /**
  * gjs_coverage_write_statistics:
- * @coverage: A #GjsCoverage
+ * @self: A #GjsCoverage
  * @output_directory: A directory to write coverage information to.
  *
  * Scripts which were provided as part of the #GjsCoverage:prefixes construction
@@ -281,15 +282,15 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
  * directory as the scanned files. It will provide coverage data for all files
  * ending with ".js" in the coverage directories.
  */
-void gjs_coverage_write_statistics(GjsCoverage* coverage) {
+void gjs_coverage_write_statistics(GjsCoverage* self) {
     auto* priv = static_cast<GjsCoveragePrivate*>(
-        gjs_coverage_get_instance_private(coverage));
+        gjs_coverage_get_instance_private(self));
     auto* cx = static_cast<JSContext*>(
         gjs_context_get_native_context(priv->coverage_context));
     Gjs::AutoMainRealm ar{cx};
 
     GErrorResult<Gjs::AutoUnref<GFile>> result{
-        write_statistics_internal(coverage, cx)};
+        write_statistics_internal(self, cx)};
     if (result.isErr()) {
         g_critical("Error writing coverage data: %s",
                    result.inspectErr()->message);
@@ -308,15 +309,17 @@ static void gjs_coverage_init(GjsCoverage*) {
 }
 
 static void coverage_tracer(JSTracer* trc, void* data) {
-    GjsCoverage *coverage = (GjsCoverage *) data;
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    GjsCoverage* self = GJS_COVERAGE(data);
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
 
     JS::TraceEdge<JSObject*>(trc, &priv->global, "Coverage global object");
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool bootstrap_coverage(GjsCoverage* coverage) {
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+static bool bootstrap_coverage(GjsCoverage* self) {
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
 
     auto* gjs = GjsContextPrivate::from_object(priv->coverage_context);
     JSContext* cx = gjs->context();
@@ -338,7 +341,7 @@ static bool bootstrap_coverage(GjsCoverage* coverage) {
             return false;
 
         // Add a tracer, as suggested by jdm on #jsapi
-        JS_AddExtraGCRootsTracer(cx, coverage_tracer, coverage);
+        JS_AddExtraGCRootsTracer(cx, coverage_tracer, self);
 
         priv->global = debugger_global;
     }
@@ -349,11 +352,12 @@ static bool bootstrap_coverage(GjsCoverage* coverage) {
 static void gjs_coverage_constructed(GObject* object) {
     G_OBJECT_CLASS(gjs_coverage_parent_class)->constructed(object);
 
-    GjsCoverage *coverage = GJS_COVERAGE(object);
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    GjsCoverage* self = GJS_COVERAGE(object);
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
     new (&priv->global) JS::Heap<JSObject*>();
 
-    if (!bootstrap_coverage(coverage)) {
+    if (!bootstrap_coverage(self)) {
         JSContext* cx = static_cast<JSContext*>(
             gjs_context_get_native_context(priv->coverage_context));
         Gjs::AutoMainRealm ar{cx};
@@ -363,8 +367,9 @@ static void gjs_coverage_constructed(GObject* object) {
 
 static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
                                       const GValue* value, GParamSpec* pspec) {
-    GjsCoverage *coverage = GJS_COVERAGE(object);
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    GjsCoverage* self = GJS_COVERAGE(object);
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
     switch (prop_id) {
     case PROP_PREFIXES:
         g_assert(priv->prefixes == nullptr);
@@ -385,14 +390,15 @@ static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
 }
 
 static void gjs_coverage_dispose(GObject* object) {
-    GjsCoverage *coverage = GJS_COVERAGE(object);
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    GjsCoverage* self = GJS_COVERAGE(object);
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
 
     /* Decomission objects inside of the JSContext before disposing of the
      * context */
     auto* cx = static_cast<JSContext*>(
         gjs_context_get_native_context(priv->coverage_context));
-    JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, coverage);
+    JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, self);
     priv->global = nullptr;
 
     g_clear_object(&priv->coverage_context);
@@ -401,8 +407,9 @@ static void gjs_coverage_dispose(GObject* object) {
 }
 
 static void gjs_coverage_finalize(GObject* object) {
-    GjsCoverage *coverage = GJS_COVERAGE(object);
-    GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
+    GjsCoverage* self = GJS_COVERAGE(object);
+    auto* priv = static_cast<GjsCoveragePrivate*>(
+        gjs_coverage_get_instance_private(self));
 
     g_strfreev(priv->prefixes);
     g_clear_object(&priv->output_dir);
@@ -464,11 +471,9 @@ static void gjs_coverage_class_init(GjsCoverageClass* klass) {
  */
 GjsCoverage* gjs_coverage_new(const char* const* prefixes,
                               GjsContext* coverage_context, GFile* output_dir) {
-    GjsCoverage* coverage = GJS_COVERAGE(g_object_new(
-        GJS_TYPE_COVERAGE, "prefixes", prefixes, "context", coverage_context,
-        "output-directory", output_dir, nullptr));
-
-    return coverage;
+    return GJS_COVERAGE(g_object_new(GJS_TYPE_COVERAGE, "prefixes", prefixes,
+                                     "context", coverage_context,
+                                     "output-directory", output_dir, nullptr));
 }
 
 /**
