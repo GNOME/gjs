@@ -378,18 +378,18 @@ static void branch_at_line_should_be_taken(const char* line,
     g_assert_cmpint(branch_id, ==, branch_data->expected_id);
 
     switch (branch_data->taken) {
-    case NOT_EXECUTED:
-        g_assert_cmpint(hit_count_num, ==, -1);
-        break;
-    case NOT_TAKEN:
-        g_assert_cmpint(hit_count_num, ==, 0);
-        break;
-    case TAKEN:
-        g_assert_cmpint(hit_count_num, >, 0);
-        break;
-    default:
-        g_assert_true(false && "Invalid branch state");
-    };
+        case NOT_EXECUTED:
+            g_assert_cmpint(hit_count_num, ==, -1);
+            break;
+        case NOT_TAKEN:
+            g_assert_cmpint(hit_count_num, ==, 0);
+            break;
+        case TAKEN:
+            g_assert_cmpint(hit_count_num, >, 0);
+            break;
+        default:
+            g_assert_true(false && "Invalid branch state");
+    }
 }
 
 static void test_single_branch_coverage_written_to_coverage_data(

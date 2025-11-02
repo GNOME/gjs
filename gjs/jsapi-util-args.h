@@ -367,14 +367,14 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
 
     for (fmt_iter = format; *fmt_iter; fmt_iter++) {
         switch (*fmt_iter) {
-        case '|':
-            n_required = n_total;
-            optional_args = true;
-            continue;
-        case '?':
-            continue;
-        default:
-            n_total++;
+            case '|':
+                n_required = n_total;
+                optional_args = true;
+                continue;
+            case '?':
+                continue;
+            default:
+                n_total++;
         }
     }
 

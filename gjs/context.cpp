@@ -815,18 +815,18 @@ static void gjs_context_get_property(GObject* object, unsigned prop_id,
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
     switch (prop_id) {
-    case PROP_PROGRAM_NAME:
-        g_value_set_string(value, gjs->program_name());
-        break;
-    case PROP_PROGRAM_PATH:
-        g_value_set_string(value, gjs->program_path());
-        break;
-    case PROP_REPL_HISTORY_PATH:
-        g_value_set_string(value, gjs->repl_history_path());
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-        break;
+        case PROP_PROGRAM_NAME:
+            g_value_set_string(value, gjs->program_name());
+            break;
+        case PROP_PROGRAM_PATH:
+            g_value_set_string(value, gjs->program_path());
+            break;
+        case PROP_REPL_HISTORY_PATH:
+            g_value_set_string(value, gjs->repl_history_path());
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+            break;
     }
 }
 
@@ -835,30 +835,30 @@ static void gjs_context_set_property(GObject* object, unsigned prop_id,
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
     switch (prop_id) {
-    case PROP_SEARCH_PATH:
-        gjs->set_search_path(static_cast<char**>(g_value_dup_boxed(value)));
-        break;
-    case PROP_PROGRAM_NAME:
-        gjs->set_program_name(g_value_dup_string(value));
-        break;
-    case PROP_PROGRAM_PATH:
-        gjs->set_program_path(g_value_dup_string(value));
-        break;
-    case PROP_PROFILER_ENABLED:
-        gjs->set_should_profile(g_value_get_boolean(value));
-        break;
-    case PROP_PROFILER_SIGUSR2:
-        gjs->set_should_listen_sigusr2(g_value_get_boolean(value));
-        break;
-    case PROP_EXEC_AS_MODULE:
-        gjs->set_execute_as_module(g_value_get_boolean(value));
-        break;
-    case PROP_REPL_HISTORY_PATH:
-        gjs->set_repl_history_path(g_value_dup_string(value));
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-        break;
+        case PROP_SEARCH_PATH:
+            gjs->set_search_path(static_cast<char**>(g_value_dup_boxed(value)));
+            break;
+        case PROP_PROGRAM_NAME:
+            gjs->set_program_name(g_value_dup_string(value));
+            break;
+        case PROP_PROGRAM_PATH:
+            gjs->set_program_path(g_value_dup_string(value));
+            break;
+        case PROP_PROFILER_ENABLED:
+            gjs->set_should_profile(g_value_get_boolean(value));
+            break;
+        case PROP_PROFILER_SIGUSR2:
+            gjs->set_should_listen_sigusr2(g_value_get_boolean(value));
+            break;
+        case PROP_EXEC_AS_MODULE:
+            gjs->set_execute_as_module(g_value_get_boolean(value));
+            break;
+        case PROP_REPL_HISTORY_PATH:
+            gjs->set_repl_history_path(g_value_dup_string(value));
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+            break;
     }
 }
 

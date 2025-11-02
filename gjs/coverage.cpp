@@ -371,21 +371,21 @@ static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
     auto* priv = static_cast<GjsCoveragePrivate*>(
         gjs_coverage_get_instance_private(self));
     switch (prop_id) {
-    case PROP_PREFIXES:
-        g_assert(priv->prefixes == nullptr);
-        priv->prefixes = static_cast<char**>(g_value_dup_boxed(value));
-        break;
-    case PROP_CONTEXT:
-        priv->coverage_context = GJS_CONTEXT(g_value_dup_object(value));
-        break;
-    case PROP_CACHE:
-        break;
-    case PROP_OUTPUT_DIRECTORY:
-        priv->output_dir = G_FILE(g_value_dup_object(value));
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
-        break;
+        case PROP_PREFIXES:
+            g_assert(priv->prefixes == nullptr);
+            priv->prefixes = static_cast<char**>(g_value_dup_boxed(value));
+            break;
+        case PROP_CONTEXT:
+            priv->coverage_context = GJS_CONTEXT(g_value_dup_object(value));
+            break;
+        case PROP_CACHE:
+            break;
+        case PROP_OUTPUT_DIRECTORY:
+            priv->output_dir = G_FILE(g_value_dup_object(value));
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
+            break;
     }
 }
 

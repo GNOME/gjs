@@ -306,23 +306,23 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
 [[nodiscard]]
 static JSProtoKey proto_key_from_error_enum(int val) {
     switch (val) {
-    case GJS_JS_ERROR_EVAL_ERROR:
-        return JSProto_EvalError;
-    case GJS_JS_ERROR_INTERNAL_ERROR:
-        return JSProto_InternalError;
-    case GJS_JS_ERROR_RANGE_ERROR:
-        return JSProto_RangeError;
-    case GJS_JS_ERROR_REFERENCE_ERROR:
-        return JSProto_ReferenceError;
-    case GJS_JS_ERROR_SYNTAX_ERROR:
-        return JSProto_SyntaxError;
-    case GJS_JS_ERROR_TYPE_ERROR:
-        return JSProto_TypeError;
-    case GJS_JS_ERROR_URI_ERROR:
-        return JSProto_URIError;
-    case GJS_JS_ERROR_ERROR:
-    default:
-        return JSProto_Error;
+        case GJS_JS_ERROR_EVAL_ERROR:
+            return JSProto_EvalError;
+        case GJS_JS_ERROR_INTERNAL_ERROR:
+            return JSProto_InternalError;
+        case GJS_JS_ERROR_RANGE_ERROR:
+            return JSProto_RangeError;
+        case GJS_JS_ERROR_REFERENCE_ERROR:
+            return JSProto_ReferenceError;
+        case GJS_JS_ERROR_SYNTAX_ERROR:
+            return JSProto_SyntaxError;
+        case GJS_JS_ERROR_TYPE_ERROR:
+            return JSProto_TypeError;
+        case GJS_JS_ERROR_URI_ERROR:
+            return JSProto_URIError;
+        case GJS_JS_ERROR_ERROR:
+        default:
+            return JSProto_Error;
     }
 }
 

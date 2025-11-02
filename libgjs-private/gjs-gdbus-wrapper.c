@@ -210,11 +210,12 @@ static void gjs_dbus_implementation_set_property(GObject* object,
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
 
     switch (property_id) {
-    case PROP_G_INTERFACE_INFO:
-        self->priv->ifaceinfo = (GDBusInterfaceInfo*)g_value_dup_boxed(value);
-        break;
-    default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
+        case PROP_G_INTERFACE_INFO:
+            self->priv->ifaceinfo =
+                (GDBusInterfaceInfo*)g_value_dup_boxed(value);
+            break;
+        default:
+            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
 }
 

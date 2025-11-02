@@ -211,66 +211,66 @@ static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo ret_type,
                                                 GIArgument* return_value) {
     // Be consistent with gjs_value_to_gi_argument()
     switch (ret_type.tag()) {
-    case GI_TYPE_TAG_VOID:
-        g_assert_not_reached();
-    case GI_TYPE_TAG_INT8:
-        set_ffi_arg<int8_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT8:
-        set_ffi_arg<uint8_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT16:
-        set_ffi_arg<int16_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT16:
-        set_ffi_arg<uint16_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT32:
-        set_ffi_arg<int32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT32:
-        set_ffi_arg<uint32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_BOOLEAN:
-        set_ffi_arg<Gjs::Tag::GBoolean>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UNICHAR:
-        set_ffi_arg<char32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT64:
-        set_ffi_arg<int64_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INTERFACE:
-        if (ret_type.interface().is_enum_or_flags())
-            set_ffi_arg<Gjs::Tag::Enum>(result, return_value);
-        else
+        case GI_TYPE_TAG_VOID:
+            g_assert_not_reached();
+        case GI_TYPE_TAG_INT8:
+            set_ffi_arg<int8_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT8:
+            set_ffi_arg<uint8_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT16:
+            set_ffi_arg<int16_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT16:
+            set_ffi_arg<uint16_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT32:
+            set_ffi_arg<int32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT32:
+            set_ffi_arg<uint32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_BOOLEAN:
+            set_ffi_arg<Gjs::Tag::GBoolean>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UNICHAR:
+            set_ffi_arg<char32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT64:
+            set_ffi_arg<int64_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INTERFACE:
+            if (ret_type.interface().is_enum_or_flags())
+                set_ffi_arg<Gjs::Tag::Enum>(result, return_value);
+            else
+                set_ffi_arg<void*>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT64:
+            // Other primitive types need to squeeze into 64-bit ffi_arg too
+            set_ffi_arg<uint64_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            set_ffi_arg<float>(result, return_value);
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            set_ffi_arg<double>(result, return_value);
+            break;
+        case GI_TYPE_TAG_GTYPE:
+            set_ffi_arg<Gjs::Tag::GType>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+            set_ffi_arg<char*>(result, return_value);
+            break;
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+        default:
             set_ffi_arg<void*>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT64:
-        // Other primitive types need to squeeze into 64-bit ffi_arg too
-        set_ffi_arg<uint64_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_FLOAT:
-        set_ffi_arg<float>(result, return_value);
-        break;
-    case GI_TYPE_TAG_DOUBLE:
-        set_ffi_arg<double>(result, return_value);
-        break;
-    case GI_TYPE_TAG_GTYPE:
-        set_ffi_arg<Gjs::Tag::GType>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-        set_ffi_arg<char*>(result, return_value);
-        break;
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
-    default:
-        set_ffi_arg<void*>(result, return_value);
-        break;
+            break;
     }
 }
 
