@@ -188,9 +188,9 @@ void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
     if (!s_debug_log_enabled || !s_enabled_topics[topic])
         return;
 
-    va_start (args, format);
-    s = g_strdup_vprintf (format, args);
-    va_end (args);
+    va_start(args, format);
+    s = g_strdup_vprintf(format, args);
+    va_end(args);
 
     if (s_timer) {
         static double previous = 0.0;

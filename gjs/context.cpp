@@ -236,7 +236,7 @@ static void gjs_context_init(GjsContext* self) {
 }
 
 static void gjs_context_class_init(GjsContextClass* klass) {
-    GObjectClass *object_class = G_OBJECT_CLASS (klass);
+    GObjectClass* object_class = G_OBJECT_CLASS(klass);
     GParamSpec *pspec;
 
     gjs_log_init();
@@ -825,7 +825,7 @@ static void gjs_context_get_property(GObject* object, unsigned prop_id,
         g_value_set_string(value, gjs->repl_history_path());
         break;
     default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
     }
 }
@@ -857,7 +857,7 @@ static void gjs_context_set_property(GObject* object, unsigned prop_id,
         gjs->set_repl_history_path(g_value_dup_string(value));
         break;
     default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
         break;
     }
 }
@@ -1257,11 +1257,11 @@ void gjs_context_gc(GjsContext* self) {
 GList* gjs_context_get_all() {
   GList *result;
   GList *iter;
-  g_mutex_lock (&contexts_lock);
+  g_mutex_lock(&contexts_lock);
   result = g_list_copy(all_contexts);
   for (iter = result; iter; iter = iter->next)
     g_object_ref((GObject*)iter->data);
-  g_mutex_unlock (&contexts_lock);
+  g_mutex_unlock(&contexts_lock);
   return result;
 }
 

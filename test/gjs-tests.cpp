@@ -127,7 +127,7 @@ static void gjstest_test_func_gjs_context_construct_eval() {
 
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     if (!gjs_context_eval(gjs_context, "1+1", -1, "<input>", &estatus, &error))
-        g_error ("%s", error->message);
+        g_error("%s", error->message);
 }
 
 static void gjstest_test_func_gjs_context_eval_dynamic_import() {
@@ -1370,7 +1370,7 @@ int main(int argc, char** argv) {
 
 #undef ADD_JSAPI_UTIL_TEST
 
-    gjs_test_add_tests_for_coverage ();
+    gjs_test_add_tests_for_coverage();
 
     g_test_run();
 

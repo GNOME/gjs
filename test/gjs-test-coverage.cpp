@@ -188,7 +188,7 @@ static void assert_coverage_data_matches_value_for_key(
 static void assert_coverage_data_matches_values_for_key(
     const char* data, const char* key, size_t n, CoverageDataMatchFunc match,
     const void* user_data, size_t data_size) {
-    const char *line = line_starting_with (data, key);
+    const char* line = line_starting_with(data, key);
     // Keep matching. If we fail to match one of them then bail out
     char *data_iterator = (char *) user_data;
 
@@ -1015,9 +1015,8 @@ static void assert_coverage_data_for_source_file(
     ExpectedSourceFileCoverageData* expected, const size_t expected_size,
     const char* section_start) {
     for (size_t i = 0; i < expected_size; ++i) {
-        if (strncmp(&section_start[3],
-                    expected[i].source_file_path,
-                    strlen (expected[i].source_file_path)) == 0) {
+        if (strncmp(&section_start[3], expected[i].source_file_path,
+                    strlen(expected[i].source_file_path)) == 0) {
             assert_coverage_data_matches_values_for_key(section_start, "DA:",
                                                         expected[i].n_more_than_matchers,
                                                         line_hit_count_is_more_than,

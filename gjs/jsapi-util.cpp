@@ -624,7 +624,7 @@ static void _linux_get_self_process_size(long* rss_size)  // NOLINT(runtime/int)
     iter = contents;
     // See "man proc" for where this 23 comes from
     for (i = 0; i < 23; i++) {
-        iter = strchr (iter, ' ');
+        iter = strchr(iter, ' ');
         if (!iter)
             return;
         iter++;

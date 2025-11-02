@@ -1407,7 +1407,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
     } else if (info.is_vfunc()) {
         name = "vfunc_" + std::string(info.name());
     } else {
-        g_assert_not_reached ();
+        g_assert_not_reached();
     }
 
     if (!JS_DefineProperty(cx, in_object, name.c_str(), function,

@@ -373,7 +373,7 @@ static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
     switch (prop_id) {
     case PROP_PREFIXES:
         g_assert(priv->prefixes == nullptr);
-        priv->prefixes = (char **) g_value_dup_boxed (value);
+        priv->prefixes = (char**)g_value_dup_boxed(value);
         break;
     case PROP_CONTEXT:
         priv->coverage_context = GJS_CONTEXT(g_value_dup_object(value));

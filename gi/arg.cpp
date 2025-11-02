@@ -1016,7 +1016,7 @@ char* gjs_argument_display_name(const char* arg_name,
     case GJS_ARGUMENT_ARRAY_ELEMENT:
         return g_strdup("Array element");
     default:
-        g_assert_not_reached ();
+        g_assert_not_reached();
     }
 }
 

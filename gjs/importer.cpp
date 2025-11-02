@@ -775,11 +775,12 @@ static const std::vector<std::string>& gjs_get_search_path() {
         // ${datadir}/share/gjs-1.0
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
+        char* basedir =
+            g_win32_get_package_installation_directory_of_module(gjs_dll);
         Gjs::AutoChar gjs_data_dir{
             g_build_filename(basedir, "share", "gjs-1.0", nullptr)};
         gjs_search_path.push_back(gjs_data_dir.get());
-        g_free (basedir);
+        g_free(basedir);
 #else
         gjs_search_path.push_back(GJS_JS_DIR);
 #endif

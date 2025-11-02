@@ -103,7 +103,7 @@ static void gjs_dbus_implementation_method_call(
     const char* object_path, const char* interface_name,
     const char* method_name, GVariant* parameters,
     GDBusMethodInvocation* invocation, void* user_data) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(user_data);
     GError* error = NULL;
 
     if (!gjs_dbus_implementation_check_interface(self, connection, object_path,
@@ -130,7 +130,7 @@ static GVariant* gjs_dbus_implementation_property_get(
     GDBusConnection* connection, const char* sender G_GNUC_UNUSED,
     const char* object_path, const char* interface_name,
     const char* property_name, GError** error, void* user_data) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(user_data);
     GVariant *value;
 
     if (!gjs_dbus_implementation_check_interface(self, connection, object_path,
@@ -154,7 +154,7 @@ static gboolean gjs_dbus_implementation_property_set(
     const char* object_path, const char* interface_name,
     const char* property_name, GVariant* value, GError** error,
     void* user_data) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (user_data);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(user_data);
 
     if (!gjs_dbus_implementation_check_interface(self, connection, object_path,
                                                  interface_name, error) ||
@@ -192,9 +192,9 @@ static void gjs_dbus_implementation_dispose(GObject* object) {
 }
 
 static void gjs_dbus_implementation_finalize(GObject* object) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
 
-    g_dbus_interface_info_unref (self->priv->ifaceinfo);
+    g_dbus_interface_info_unref(self->priv->ifaceinfo);
     g_hash_table_destroy(self->priv->outstanding_properties);
 
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->finalize(object);
@@ -204,34 +204,34 @@ static void gjs_dbus_implementation_set_property(GObject* object,
                                                  unsigned property_id,
                                                  const GValue* value,
                                                  GParamSpec* pspec) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (object);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
 
     switch (property_id) {
     case PROP_G_INTERFACE_INFO:
-        self->priv->ifaceinfo = (GDBusInterfaceInfo*) g_value_dup_boxed (value);
+        self->priv->ifaceinfo = (GDBusInterfaceInfo*)g_value_dup_boxed(value);
         break;
     default:
-        G_OBJECT_WARN_INVALID_PROPERTY_ID (object, property_id, pspec);
+        G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
 }
 
 static GDBusInterfaceInfo* gjs_dbus_implementation_get_info(
     GDBusInterfaceSkeleton* skeleton) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
     return self->priv->ifaceinfo;
 }
 
 static GDBusInterfaceVTable* gjs_dbus_implementation_get_vtable(
     GDBusInterfaceSkeleton* skeleton) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
     return &(self->priv->vtable);
 }
 
 static GVariant* gjs_dbus_implementation_get_properties(
     GDBusInterfaceSkeleton* skeleton) {
-    GjsDBusImplementation *self = GJS_DBUS_IMPLEMENTATION (skeleton);
+    GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
     GDBusInterfaceInfo *info = self->priv->ifaceinfo;
     GDBusPropertyInfo **props;
@@ -372,7 +372,7 @@ void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
 }
 
 static gboolean idle_cb(void* data) {
-    GDBusInterfaceSkeleton *skeleton = G_DBUS_INTERFACE_SKELETON (data);
+    GDBusInterfaceSkeleton* skeleton = G_DBUS_INTERFACE_SKELETON(data);
 
     g_dbus_interface_skeleton_flush(skeleton);
     return G_SOURCE_REMOVE;
