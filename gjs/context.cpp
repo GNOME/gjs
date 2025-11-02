@@ -1258,14 +1258,12 @@ void gjs_context_gc(GjsContext* self) {
  * instances
  */
 GList* gjs_context_get_all() {
-  GList *result;
-  GList *iter;
-  g_mutex_lock(&contexts_lock);
-  result = g_list_copy(all_contexts);
-  for (iter = result; iter; iter = iter->next)
-      g_object_ref(G_OBJECT(iter->data));
-  g_mutex_unlock(&contexts_lock);
-  return result;
+    g_mutex_lock(&contexts_lock);
+    GList* result = g_list_copy(all_contexts);
+    for (GList* iter = result; iter; iter = iter->next)
+        g_object_ref(G_OBJECT(iter->data));
+    g_mutex_unlock(&contexts_lock);
+    return result;
 }
 
 /**

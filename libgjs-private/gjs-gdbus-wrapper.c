@@ -32,10 +32,10 @@ static unsigned signals[SIGNAL_LAST];
 
 struct _GjsDBusImplementationPrivate {
     GDBusInterfaceVTable  vtable;
-    GDBusInterfaceInfo   *ifaceinfo;
+    GDBusInterfaceInfo* ifaceinfo;
 
     // from char* to GVariant*
-    GHashTable           *outstanding_properties;
+    GHashTable* outstanding_properties;
     unsigned idle_id;
 };
 

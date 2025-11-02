@@ -386,7 +386,7 @@ unsigned gjs_list_store_insert_sorted(GListStore* store, GObject* item,
  */
 void gjs_list_store_sort(GListStore* store, GjsCompareDataFunc compare_func,
                          void* user_data) {
-  g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
+    g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
 }
 
 /**

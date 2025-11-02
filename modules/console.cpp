@@ -74,7 +74,7 @@ static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
 class AutoReportException {
     JSContext *m_cx;
 
-public:
+ public:
     explicit AutoReportException(JSContext* cx) : m_cx(cx) {}
 
     ~AutoReportException() {

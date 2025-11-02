@@ -28,7 +28,7 @@ struct ToggleQueue;
  * from any thread. For more information, see object.cpp, comments near
  * wrapped_gobj_toggle_notify(). */
 class ToggleQueue {
-public:
+ public:
     enum Direction {
         DOWN,
         UP

@@ -57,11 +57,11 @@
         return false;                                         \
     }
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(method, cfunc)                     \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    cfunc(cr);                                                             \
-    argv.rval().setUndefined();                                            \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)       \
+    cfunc(cr);                                         \
+    argv.rval().setUndefined();                        \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(method, cfunc) \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
@@ -71,13 +71,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     argv.rval().setInt32(ret);                          \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc)                    \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    cairo_bool_t ret;                                                      \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    ret = cfunc(cr);                                                       \
-    argv.rval().setBoolean(ret);                                           \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
+    cairo_bool_t ret;                                   \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
+    ret = cfunc(cr);                                    \
+    argv.rval().setBoolean(ret);                        \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(method, cfunc, n1, n2)            \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
@@ -143,13 +143,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     }                                                                      \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc)                    \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    double ret;                                                            \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    ret = cfunc(cr);                                                       \
-    argv.rval().setNumber(JS::CanonicalizeNaN(ret));                       \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
+    double ret;                                         \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
+    ret = cfunc(cr);                                    \
+    argv.rval().setNumber(JS::CanonicalizeNaN(ret));    \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(method, cfunc, fmt, t1, n1) \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                    \

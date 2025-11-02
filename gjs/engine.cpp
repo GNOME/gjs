@@ -127,7 +127,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 #else
 class GjsInit {
-public:
+ public:
     GjsInit() {
         const char* reason = JS_InitWithFailureDiagnostic();
         if (reason)
