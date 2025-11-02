@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
         gjs_coverage_enable();
 
     GjsContext* gjs_context =
-        gjs_context_new_with_search_path((char**)search_path);
+        gjs_context_new_with_search_path(const_cast<char**>(search_path));
     GjsCoverage* coverage = nullptr;
 
     if (coverage_prefix) {

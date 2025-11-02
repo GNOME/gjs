@@ -373,7 +373,7 @@ static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
     switch (prop_id) {
     case PROP_PREFIXES:
         g_assert(priv->prefixes == nullptr);
-        priv->prefixes = (char**)g_value_dup_boxed(value);
+        priv->prefixes = static_cast<char**>(g_value_dup_boxed(value));
         break;
     case PROP_CONTEXT:
         priv->coverage_context = GJS_CONTEXT(g_value_dup_object(value));
@@ -419,7 +419,7 @@ static void gjs_coverage_finalize(GObject* object) {
 }
 
 static void gjs_coverage_class_init(GjsCoverageClass* klass) {
-    GObjectClass *object_class = (GObjectClass *) klass;
+    GObjectClass* object_class = G_OBJECT_CLASS(klass);
 
     object_class->constructed = gjs_coverage_constructed;
     object_class->dispose = gjs_coverage_dispose;

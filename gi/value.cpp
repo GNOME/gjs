@@ -238,7 +238,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     if (G_UNLIKELY(!gjs->is_owner_thread()) || JS::RuntimeHeapIsCollecting()) {
-        GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
+        auto* hint = static_cast<GSignalInvocationHint*>(invocation_hint);
         std::ostringstream message;
 
         if (!gjs->is_owner_thread()) {
@@ -825,11 +825,11 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         int64_t value_int64;
 
         if (Gjs::js_value_to_c<int64_t>(cx, value, &value_int64)) {
-            GEnumValue *v;
             Gjs::AutoTypeClass<GEnumClass> enum_class{gtype};
 
             // See arg.c:_gjs_enum_to_int()
-            v = g_enum_get_value(enum_class, (int)value_int64);
+            GEnumValue* v =
+                g_enum_get_value(enum_class, static_cast<int>(value_int64));
             if (v == nullptr) {
                 gjs_throw(cx, "%d is not a valid value for enumeration %s",
                           value.toInt32(), g_type_name(gtype));
@@ -848,12 +848,12 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                 return false;
 
             // See arg.c:_gjs_enum_to_int()
-            g_value_set_flags(gvalue, (int)value_int64);
+            g_value_set_flags(gvalue, static_cast<int>(value_int64));
         } else {
             return throw_expect_type(cx, value, "flags", gtype);
         }
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-        void* gparam = nullptr;
+        GParamSpec* gparam = nullptr;
         if (value.isNull()) {
             // nothing to do
         } else if (value.isObject()) {
@@ -867,7 +867,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             return throw_expect_type(cx, value, "param type", gtype);
         }
 
-        g_value_set_param(gvalue, (GParamSpec*) gparam);
+        g_value_set_param(gvalue, gparam);
     } else if (gtype == G_TYPE_GTYPE) {
         GType type;
 
@@ -949,7 +949,7 @@ static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
         // Native enums don't have type info, assume they are signed to avoid
         // crashing when they are exposed to JS.
         if (!info) {
-            v_double = int64_t(v);
+            v_double = static_cast<int64_t>(v);
         } else {
             v_double = info->enum_from_int(v);
         }

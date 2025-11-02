@@ -348,7 +348,7 @@ bool gjs_string_to_ucs4(JSContext* cx, JS::HandleString str,
             return false;
         }
         if (len_p != nullptr)
-            *len_p = (size_t) length;
+            *len_p = static_cast<size_t>(length);
     }
 
     return true;

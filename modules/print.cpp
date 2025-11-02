@@ -201,7 +201,8 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
     int32_t message_id = args[0].toInt32();
     g_assert(
         message_id >= 0 &&
-        uint32_t(message_id) < GjsDeprecationMessageId::LastValue &&
+        static_cast<uint32_t>(message_id) <
+            GjsDeprecationMessageId::LastValue &&
         "warnDeprecatedOncePerCallsite argument 1 must be a message ID number");
 
     if (args.length() == 1) {

@@ -503,7 +503,7 @@ GjsContextPrivate::~GjsContextPrivate() {
 }
 
 static void gjs_context_finalize(GObject* object) {
-    if (gjs_context_get_current() == (GjsContext*)object)
+    if (gjs_context_get_current() == GJS_CONTEXT(object))
         gjs_context_make_current(nullptr);
 
     g_mutex_lock(&contexts_lock);
@@ -863,12 +863,12 @@ static void gjs_context_set_property(GObject* object, unsigned prop_id,
 }
 
 GjsContext* gjs_context_new() {
-    return (GjsContext*)g_object_new(GJS_TYPE_CONTEXT, nullptr);
+    return GJS_CONTEXT(g_object_new(GJS_TYPE_CONTEXT, nullptr));
 }
 
 GjsContext* gjs_context_new_with_search_path(char** search_path) {
-    return (GjsContext*)g_object_new(GJS_TYPE_CONTEXT, "search-path",
-                                     search_path, nullptr);
+    return GJS_CONTEXT(
+        g_object_new(GJS_TYPE_CONTEXT, "search-path", search_path, nullptr));
 }
 
 gboolean GjsContextPrivate::trigger_gc_if_needed(void* data) {
@@ -1260,7 +1260,7 @@ GList* gjs_context_get_all() {
   g_mutex_lock(&contexts_lock);
   result = g_list_copy(all_contexts);
   for (iter = result; iter; iter = iter->next)
-    g_object_ref((GObject*)iter->data);
+      g_object_ref(G_OBJECT(iter->data));
   g_mutex_unlock(&contexts_lock);
   return result;
 }

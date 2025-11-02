@@ -3724,9 +3724,8 @@ static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
 
     Gjs::AutoTypeClass implementor_class{implementor_gtype};
     if (auto iface_info = ancestor_info.as<GI::InfoTag::INTERFACE>()) {
-        GTypeInstance *implementor_iface_class;
-        implementor_iface_class = (GTypeInstance*) g_type_interface_peek(implementor_class,
-                                                        ancestor_gtype);
+        auto* implementor_iface_class = static_cast<GTypeInstance*>(
+            g_type_interface_peek(implementor_class, ancestor_gtype));
         if (implementor_iface_class == nullptr) {
             gjs_throw(cx, "Couldn't find GType of implementor of interface %s.",
                       g_type_name(ancestor_gtype));

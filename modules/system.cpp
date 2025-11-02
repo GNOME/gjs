@@ -218,11 +218,11 @@ static bool gjs_dump_memory_info(JSContext* cx, unsigned argc, JS::Value* vp) {
         !gjs_object_require_property(cx, zone_info, "gc.zone.gcBytes",
                                      atoms.gc_bytes(), &val))
         return false;
-    gc_counters[Gjs::GCCounters::GC_HEAP_BYTES] = int64_t(val);
+    gc_counters[Gjs::GCCounters::GC_HEAP_BYTES] = static_cast<int64_t>(val);
     if (!gjs_object_require_property(cx, zone_info, "gc.zone.mallocBytes",
                                      atoms.malloc_bytes(), &val))
         return false;
-    gc_counters[Gjs::GCCounters::MALLOC_HEAP_BYTES] = int64_t(val);
+    gc_counters[Gjs::GCCounters::MALLOC_HEAP_BYTES] = static_cast<int64_t>(val);
 
     auto* gjs = GjsContextPrivate::from_cx(cx);
     if (gjs->profiler() &&

@@ -192,7 +192,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
     g_snprintf(counter->name, sizeof counter->name, "%s", counter_name);
     g_snprintf(counter->description, sizeof counter->description, "%s",
                GJS_COUNTER_DESCRIPTIONS[ix]);
-    counter->id = uint32_t(counter_base + ix);
+    counter->id = static_cast<uint32_t>(counter_base + ix);
     counter->type = SYSPROF_CAPTURE_COUNTER_INT64;
     counter->value.v64 = 0;
 }
@@ -227,7 +227,7 @@ static bool gjs_profiler_define_counters(GjsProfiler* self) {
 
     for (size_t ix = 0; ix < Gjs::GCCounters::N_COUNTERS; ix++) {
         g_snprintf(gc_counters[ix].category, category_size, "GJS");
-        gc_counters[ix].id = uint32_t(self->gc_counter_base + ix);
+        gc_counters[ix].id = static_cast<uint32_t>(self->gc_counter_base + ix);
         gc_counters[ix].type = SYSPROF_CAPTURE_COUNTER_INT64;
         gc_counters[ix].value.v64 = 0;
     }

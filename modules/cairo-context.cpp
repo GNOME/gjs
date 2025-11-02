@@ -63,13 +63,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
     argv.rval().setUndefined();                                            \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(method, cfunc)                    \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    int ret;                                                               \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    ret = (int)cfunc(cr);                                                  \
-    argv.rval().setInt32(ret);                                             \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
+    int ret;                                            \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
+    ret = static_cast<int>(cfunc(cr));                  \
+    argv.rval().setInt32(ret);                          \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc)                    \
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \

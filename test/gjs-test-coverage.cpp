@@ -59,7 +59,7 @@ static void recursive_delete_dir(GFile* dir) {
 }
 
 static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
     const char* js_script = "var f = function () { return 1; }\n";
 
     char *tmp_output_dir_name = g_strdup("/tmp/gjs_coverage_tmp.XXXXXX");
@@ -87,7 +87,7 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
 
     gjs_coverage_enable();
     fixture->gjs_context =
-        gjs_context_new_with_search_path((char**)search_paths);
+        gjs_context_new_with_search_path(static_cast<char**>(search_paths));
     fixture->coverage = gjs_coverage_new(coverage_paths, fixture->gjs_context,
                                          fixture->lcov_output_dir);
 
@@ -97,7 +97,7 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
 }
 
 static void gjs_coverage_fixture_tear_down(void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     recursive_delete_dir(fixture->tmp_output_dir);
 
@@ -190,7 +190,7 @@ static void assert_coverage_data_matches_values_for_key(
     const void* user_data, size_t data_size) {
     const char* line = line_starting_with(data, key);
     // Keep matching. If we fail to match one of them then bail out
-    char *data_iterator = (char *) user_data;
+    const char* data_iterator = static_cast<const char*>(user_data);
 
     while (line && n > 0) {
         (*match)(line, data_iterator);
@@ -206,7 +206,7 @@ static void assert_coverage_data_matches_values_for_key(
 
 static void test_covered_file_is_duplicated_into_output_if_resource(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *mock_resource_filename = "resource:///org/gnome/gjs/mock/test/gjs-test-coverage/loadedJSFromResource.js";
     const char* coverage_scripts[] = {mock_resource_filename, nullptr};
@@ -254,7 +254,7 @@ static char* get_output_path_for_script_on_disk(GFile* script,
 
 static void test_covered_file_is_duplicated_into_output_if_path(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     eval_script(fixture->gjs_context, fixture->tmp_js_script);
 
@@ -270,7 +270,7 @@ static void test_covered_file_is_duplicated_into_output_if_path(
 }
 
 static void test_previous_contents_preserved(void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
     const char *existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
 
@@ -283,7 +283,7 @@ static void test_previous_contents_preserved(void* fixture_data, const void*) {
 }
 
 static void test_new_contents_written(void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
     const char *existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
 
@@ -298,7 +298,7 @@ static void test_new_contents_written(void* fixture_data, const void*) {
 
 static void test_expected_source_file_name_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
@@ -316,7 +316,7 @@ static void test_expected_source_file_name_written_to_coverage_data(
 
 static void test_expected_entry_not_written_for_nonexistent_file(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char* coverage_paths[] = {"doesnotexist", nullptr};
 
@@ -391,7 +391,7 @@ static void branch_at_line_should_be_taken(const char* line,
 
 static void test_single_branch_coverage_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_basic_branch =
             "let x = 0;\n"
@@ -427,7 +427,7 @@ static void test_single_branch_coverage_written_to_coverage_data(
 
 static void test_multiple_branch_coverage_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_case_statements_branch =
             "let y;\n"
@@ -469,7 +469,7 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
 
 static void test_branches_for_multiple_case_statements_fallthrough(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_case_statements_branch =
             "let y;\n"
@@ -535,7 +535,7 @@ static void any_line_matches_not_executed_branch(const char* data) {
 
 static void test_branch_not_hit_written_to_coverage_data(void* fixture_data,
                                                          const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_never_executed_branch =
             "let x = 0;\n"
@@ -572,7 +572,7 @@ static void has_function_name(const char* line, const void* user_data) {
 
 static void test_function_names_written_to_coverage_data(void* fixture_data,
                                                          const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_named_and_unnamed_functions =
             "function f(){}\n"
@@ -613,7 +613,7 @@ static void has_function_line(const char* line, const void* user_data) {
 
 static void test_function_lines_written_to_coverage_data(void* fixture_data,
                                                          const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_functions =
         "function f(){}\n"
@@ -686,7 +686,7 @@ _Pragma("GCC diagnostic pop")
  * case. */
 static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_executed_functions =
             "function f(){\n"
@@ -727,7 +727,7 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
 static void
 test_function_hit_counts_for_little_functions_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_executed_functions =
             "function f(){\n"
@@ -763,7 +763,7 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
 
 static void test_function_hit_counts_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_executed_functions =
             "function f(){}\n"
@@ -797,7 +797,7 @@ static void test_function_hit_counts_written_to_coverage_data(
 
 static void test_total_function_coverage_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_some_executed_functions =
             "function f(){}\n"
@@ -845,7 +845,7 @@ static void line_hit_count_is_more_than(const char* line,
 
 static void test_single_line_hit_written_to_coverage_data(void* fixture_data,
                                                           const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
@@ -860,7 +860,7 @@ static void test_single_line_hit_written_to_coverage_data(void* fixture_data,
 }
 
 static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     const char *script_with_multine_if_cond =
             "let a = 1;\n"
@@ -886,7 +886,7 @@ static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
 
 static void test_full_line_tally_written_to_coverage_data(void* fixture_data,
                                                           const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
@@ -901,7 +901,7 @@ static void test_full_line_tally_written_to_coverage_data(void* fixture_data,
 
 static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
                                                          const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     char *coverage_data_contents =
         write_statistics_and_get_coverage_data(fixture->coverage,
@@ -914,7 +914,7 @@ static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
 
 static void test_end_of_record_section_written_to_coverage_data(
     void* fixture_data, const void*) {
-    GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,

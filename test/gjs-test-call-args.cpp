@@ -294,7 +294,7 @@ static void setup(GjsUnitTestFixture* fx, const void* unused) {
 }
 
 static void run_code(GjsUnitTestFixture* fx, const void* code) {
-    const char *script = (const char *) code;
+    auto* script = static_cast<const char*>(code);
 
     JS::SourceText<mozilla::Utf8Unit> source;
     bool ok = source.init(fx->cx, script, strlen(script),
@@ -313,7 +313,7 @@ static void run_code(GjsUnitTestFixture* fx, const void* code) {
 
 static void run_code_expect_exception(GjsUnitTestFixture* fx,
                                       const void* code) {
-    const char *script = (const char *) code;
+    auto* script = static_cast<const char*>(code);
 
     JS::SourceText<mozilla::Utf8Unit> source;
     bool ok = source.init(fx->cx, script, strlen(script),
@@ -330,7 +330,7 @@ static void run_code_expect_exception(GjsUnitTestFixture* fx,
     g_assert_nonnull(message);
 
     // Cheap way to shove an expected exception message into the data argument
-    const char *expected_msg = strstr((const char *) code, "//");
+    const char* expected_msg = strstr(script, "//");
     if (expected_msg != nullptr) {
         expected_msg += 2;
         assert_match(message, expected_msg);

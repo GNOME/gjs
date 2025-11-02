@@ -20,7 +20,8 @@
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
-    fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
+    fx->cx = static_cast<JSContext*>(
+        gjs_context_get_native_context(fx->gjs_context));
 
     auto* gjs = static_cast<GjsContextPrivate*>(JS_GetContextPrivate(fx->cx));
     fx->realm = JS::EnterRealm(fx->cx, gjs->global());

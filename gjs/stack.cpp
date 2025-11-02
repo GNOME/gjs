@@ -22,7 +22,7 @@
 #include "gjs/context.h"
 
 void gjs_context_print_stack_stderr(GjsContext* self) {
-    JSContext* cx = (JSContext*)gjs_context_get_native_context(self);
+    auto* cx = static_cast<JSContext*>(gjs_context_get_native_context(self));
 
     g_printerr("== Stack trace for context %p ==\n", self);
     js::DumpBacktrace(cx, stderr);
