@@ -10,6 +10,7 @@ filters=(
     build/include_what_you_use
     readability/braces:modules/cairo-region.cpp
       # https://github.com/cpplint/cpplint/issues/406
+    runtime/int  # In many places required by GLib APIs
     whitespace/indent_namespace  # https://github.com/cpplint/cpplint/issues/372
 )
 filter_arg=$(printf ",-%s" "${filters[@]}")

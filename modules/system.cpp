@@ -167,7 +167,7 @@ static bool gjs_clear_date_caches(JSContext*, unsigned argc, JS::Value* vp) {
 static bool write_gc_info(const char16_t* buf, uint32_t len, void* data) {
     auto* fp = static_cast<FILE*>(data);
 
-    long bytes_written;  // NOLINT(runtime/int): the GLib API requires this type
+    long bytes_written;
     Gjs::AutoChar utf8{g_utf16_to_utf8(reinterpret_cast<const uint16_t*>(buf),
                                        len, /* items_read = */ nullptr,
                                        &bytes_written, /* error = */ nullptr)};
