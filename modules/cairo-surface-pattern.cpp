@@ -26,7 +26,6 @@ JSObject* CairoSurfacePattern::new_proto(JSContext* cx, JSProtoKey) {
 
 cairo_pattern_t* CairoSurfacePattern::constructor_impl(
     JSContext* cx, const JS::CallArgs& args) {
-    cairo_pattern_t *pattern;
     JS::RootedObject surface_wrapper{cx};
     if (!gjs_parse_call_args(cx, "SurfacePattern", args, "o", "surface",
                              &surface_wrapper))
@@ -36,7 +35,7 @@ cairo_pattern_t* CairoSurfacePattern::constructor_impl(
     if (!surface)
         return nullptr;
 
-    pattern = cairo_pattern_create_for_surface(surface);
+    cairo_pattern_t* pattern = cairo_pattern_create_for_surface(surface);
 
     if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return nullptr;

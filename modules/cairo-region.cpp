@@ -229,7 +229,7 @@ static bool region_to_gi_argument(JSContext* cx, JS::Value value,
     }
 
     JS::RootedObject obj{cx, &value.toObject()};
-    cairo_region_t *region;
+    cairo_region_t* region;
 
     if (!CairoRegion::for_js_typecheck(cx, obj, &region))
         return false;

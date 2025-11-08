@@ -89,7 +89,7 @@ struct _GjsProfiler {
     ProfilingStack stack;
 
     // The context being profiled
-    JSContext *cx;
+    JSContext* cx;
 
     // Buffers and writes our sampled stacks
     SysprofCaptureWriter* capture;
@@ -103,7 +103,7 @@ struct _GjsProfiler {
 #endif  // ENABLE_PROFILER
 
     // The filename to write to
-    char *filename;
+    char* filename;
 
     // An FD to capture to
     int fd;
@@ -131,7 +131,7 @@ struct _GjsProfiler {
     unsigned running : 1;
 };
 
-static GjsContext *profiling_context;
+static GjsContext* profiling_context;
 
 #ifdef ENABLE_PROFILER
 /**
@@ -284,7 +284,7 @@ GjsProfiler* _gjs_profiler_new(GjsContext* gjs_context) {
         return nullptr;
     }
 
-    GjsProfiler *self = g_new0(GjsProfiler, 1);
+    GjsProfiler* self = g_new0(GjsProfiler, 1);
 
 #ifdef ENABLE_PROFILER
     self->cx =
@@ -349,7 +349,7 @@ bool _gjs_profiler_is_running(GjsProfiler* self) {
 
 static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
                                  void*) {
-    GjsProfiler *self = gjs_context_get_profiler(profiling_context);
+    GjsProfiler* self = gjs_context_get_profiler(profiling_context);
 
     g_assert(info && "SIGPROF handler called with invalid signal info");
     g_assert(info->si_signo == SIGPROF &&
@@ -382,8 +382,8 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
 
     for (uint32_t ix = 0; ix < depth; ix++) {
         js::ProfilingStackFrame& entry = self->stack.frames[ix];
-        const char *label = entry.label();
-        const char *dynamic_string = entry.dynamicString();
+        const char* label = entry.label();
+        const char* dynamic_string = entry.dynamicString();
         uint32_t flipped = depth - 1 - ix;
         size_t label_length = strlen(label);
 
@@ -391,7 +391,7 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
          * the final string.
          */
         char final_string[512];
-        char *position = final_string;
+        char* position = final_string;
         size_t available_length = sizeof (final_string) - 1;
 
         if (label_length > 0) {

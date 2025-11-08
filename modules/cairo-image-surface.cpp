@@ -52,13 +52,12 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool createFromPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     Gjs::AutoChar filename;
-    cairo_surface_t *surface;
 
     if (!gjs_parse_call_args(cx, "createFromPNG", args, "F", "filename",
                              &filename))
         return false;
 
-    surface = cairo_image_surface_create_from_png(filename);
+    cairo_surface_t* surface = cairo_image_surface_create_from_png(filename);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;

@@ -122,19 +122,18 @@ static GPrivate gjs_private_locale_key =
 const char* gjs_set_thread_locale(GjsLocaleCategory category,
                                   const char* locale_name) {
     locale_t new_locale_id = UNSET_LOCALE_ID, old_locale_id = UNSET_LOCALE_ID;
-    GjsLocale *locales = NULL, *locale = NULL;
     int category_mask;
     char* prior_name = NULL;
     bool success = false;
     int errno_save;
 
-    locales = g_private_get(&gjs_private_locale_key);
+    GjsLocale* locales = g_private_get(&gjs_private_locale_key);
 
     if (locales == NULL) {
         locales = gjs_locales_new();
         g_private_set(&gjs_private_locale_key, locales);
     }
-    locale = &locales[category];
+    GjsLocale* locale = &locales[category];
 
     if (locale_name == NULL) {
         if (locale->name != NULL)

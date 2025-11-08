@@ -23,10 +23,10 @@ typedef struct _GjsCoverageFixture {
     GjsContext* gjs_context;
     GjsCoverage* coverage;
 
-    GFile *tmp_output_dir;
-    GFile *tmp_js_script;
-    GFile *lcov_output_dir;
-    GFile *lcov_output;
+    GFile* tmp_output_dir;
+    GFile* tmp_js_script;
+    GFile* lcov_output_dir;
+    GFile* lcov_output;
 } GjsCoverageFixture;
 
 static void replace_file(GFile* file, const char* contents) {
@@ -43,8 +43,8 @@ static void recursive_delete_dir(GFile* dir) {
         g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
                                   G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
     while (true) {
-        GFile *file;
-        GFileInfo *info;
+        GFile* file;
+        GFileInfo* info;
         if (!g_file_enumerator_iterate(files, &info, &file, nullptr, nullptr) ||
             !file || !info)
             break;
@@ -62,8 +62,8 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
     const char* js_script = "var f = function () { return 1; }\n";
 
-    char *tmp_output_dir_name = g_strdup("/tmp/gjs_coverage_tmp.XXXXXX");
-    tmp_output_dir_name = mkdtemp(tmp_output_dir_name);
+    Gjs::AutoChar tmp_output_dir_name{g_strdup("/tmp/gjs_coverage_tmp.XXXXXX")};
+    tmp_output_dir_name = mkdtemp(tmp_output_dir_name.release());
 
     if (!tmp_output_dir_name)
         g_error("Failed to create temporary directory for test files: %s\n",
@@ -80,7 +80,8 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
     g_file_make_directory_with_parents(fixture->lcov_output_dir, nullptr,
                                        nullptr);
 
-    char *tmp_js_script_filename = g_file_get_path(fixture->tmp_js_script);
+    Gjs::AutoChar tmp_js_script_filename{
+        g_file_get_path(fixture->tmp_js_script)};
 
     // Allocate a strv that we can pass over to gjs_coverage_new()
     char* coverage_paths[] = {tmp_js_script_filename, nullptr};
@@ -93,8 +94,6 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
                                          fixture->lcov_output_dir);
 
     replace_file(fixture->tmp_js_script, js_script);
-    g_free(tmp_output_dir_name);
-    g_free(tmp_js_script_filename);
 }
 
 static void gjs_coverage_fixture_tear_down(void* fixture_data, const void*) {
@@ -141,18 +140,15 @@ static char* write_statistics_and_get_coverage_data(GjsCoverage* coverage,
 }
 
 static char* get_script_identifier(GFile* script) {
-    char *filename = g_file_get_path(script);
+    char* filename = g_file_get_path(script);
     if (!filename)
         filename = g_file_get_uri(script);
     return filename;
 }
 
 static bool eval_script(GjsContext* gjs_context, GFile* script) {
-    char *filename = get_script_identifier(script);
-    bool retval =
-        gjs_context_eval_file(gjs_context, filename, nullptr, nullptr);
-    g_free(filename);
-    return retval;
+    Gjs::AutoChar filename{get_script_identifier(script)};
+    return gjs_context_eval_file(gjs_context, filename, nullptr, nullptr);
 }
 
 static char* eval_script_and_get_coverage_data(GjsContext* gjs_context,
@@ -166,7 +162,7 @@ static char* eval_script_and_get_coverage_data(GjsContext* gjs_context,
 static void assert_coverage_data_contains_value_for_key(const char* data,
                                                         const char* key,
                                                         const char* value) {
-    const char *sf_line = line_starting_with(data, key);
+    const char* sf_line = line_starting_with(data, key);
 
     g_assert_nonnull(sf_line);
 
@@ -174,13 +170,13 @@ static void assert_coverage_data_contains_value_for_key(const char* data,
     g_assert_cmpstr(value, ==, actual);
 }
 
-using CoverageDataMatchFunc = void (*)(const char *value,
-                                       const void *user_data);
+using CoverageDataMatchFunc = void (*)(const char* value,
+                                       const void* user_data);
 
 static void assert_coverage_data_matches_value_for_key(
     const char* data, const char* key, CoverageDataMatchFunc match,
     const void* user_data) {
-    const char *line = line_starting_with(data, key);
+    const char* line = line_starting_with(data, key);
 
     g_assert_nonnull(line);
     (*match)(line, user_data);
@@ -216,7 +212,7 @@ static void test_covered_file_is_duplicated_into_output_if_resource(
 
     g_object_unref(fixture->gjs_context);
     g_object_unref(fixture->coverage);
-    char *js_script_dirname = g_file_get_path(fixture->tmp_output_dir);
+    Gjs::AutoChar js_script_dirname{g_file_get_path(fixture->tmp_output_dir)};
     char* search_paths[] = {js_script_dirname, nullptr};
 
     fixture->gjs_context = gjs_context_new_with_search_path(search_paths);
@@ -235,24 +231,19 @@ static void test_covered_file_is_duplicated_into_output_if_resource(
 
     g_assert_true(g_file_query_exists(expected_temporary_js_script, nullptr));
     g_object_unref(expected_temporary_js_script);
-    g_free(js_script_dirname);
 }
 
 static GFile* get_output_file_for_script_on_disk(GFile* script,
                                                  GFile* output_dir) {
-    char *base = g_file_get_basename(script);
-    GFile *output = g_file_get_child(output_dir, base);
-
-    g_free(base);
-    return output;
+    Gjs::AutoChar base{g_file_get_basename(script)};
+    return g_file_get_child(output_dir, base);
 }
 
 static char* get_output_path_for_script_on_disk(GFile* script,
                                                 GFile* output_dir) {
-    GFile *output = get_output_file_for_script_on_disk(script, output_dir);
-    char *output_path = g_file_get_path(output);
-    g_object_unref(output);
-    return output_path;
+    Gjs::AutoUnref<GFile> output{
+        get_output_file_for_script_on_disk(script, output_dir)};
+    return g_file_get_path(output);
 }
 
 static void test_covered_file_is_duplicated_into_output_if_path(
@@ -263,18 +254,16 @@ static void test_covered_file_is_duplicated_into_output_if_path(
 
     gjs_coverage_write_statistics(fixture->coverage);
 
-    GFile *expected_temporary_js_script =
+    Gjs::AutoUnref<GFile> expected_temporary_js_script{
         get_output_file_for_script_on_disk(fixture->tmp_js_script,
-                                           fixture->lcov_output_dir);
+                                           fixture->lcov_output_dir)};
 
     g_assert_true(g_file_query_exists(expected_temporary_js_script, nullptr));
-
-    g_object_unref(expected_temporary_js_script);
 }
 
 static void test_previous_contents_preserved(void* fixture_data, const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
-    const char *existing_contents = "existing_contents\n";
+    const char* existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
@@ -287,7 +276,7 @@ static void test_previous_contents_preserved(void* fixture_data, const void*) {
 
 static void test_new_contents_written(void* fixture_data, const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
-    const char *existing_contents = "existing_contents\n";
+    const char* existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
@@ -326,16 +315,15 @@ static void test_expected_entry_not_written_for_nonexistent_file(
     fixture->coverage = gjs_coverage_new(coverage_paths, fixture->gjs_context,
                                          fixture->lcov_output_dir);
 
-    GFile *doesnotexist = g_file_new_for_path("doesnotexist");
+    Gjs::AutoUnref<GFile> doesnotexist{g_file_new_for_path("doesnotexist")};
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, doesnotexist,
         fixture->lcov_output);
 
-    const char *sf_line = line_starting_with(coverage_data_contents, "SF:");
+    const char* sf_line = line_starting_with(coverage_data_contents, "SF:");
     g_assert_null(sf_line);
 
     g_free(coverage_data_contents);
-    g_object_unref(doesnotexist);
 }
 
 typedef enum _BranchTaken {
@@ -514,7 +502,7 @@ static void test_branches_for_multiple_case_statements_fallthrough(
 }
 
 static void any_line_matches_not_executed_branch(const char* data) {
-    const char *line = line_starting_with(data, "BRDA:");
+    const char* line = line_starting_with(data, "BRDA:");
 
     while (line) {
         int line_no, branch_id, block_no;
@@ -621,7 +609,7 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
                                                          const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    const char *script_with_functions =
+    const char* script_with_functions =
         "function f(){}\n"
         "\n"
         "function g(){}\n";
@@ -829,7 +817,7 @@ static void line_hit_count_is_more_than(const char* line,
                                         const void* user_data) {
     auto* data = static_cast<const LineCountIsMoreThanData*>(user_data);
 
-    const char *coverage_line = &line[3];
+    const char* coverage_line = &line[3];
     char* comma_ptr = nullptr;
 
     unsigned lineno = strtol(coverage_line, &comma_ptr, 10);
@@ -906,13 +894,11 @@ static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
                                                          const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    char *coverage_data_contents =
-        write_statistics_and_get_coverage_data(fixture->coverage,
-                                               fixture->lcov_output);
+    Gjs::AutoChar coverage_data_contents{write_statistics_and_get_coverage_data(
+        fixture->coverage, fixture->lcov_output)};
 
     // No files were executed, so the coverage data is empty.
     g_assert_cmpstr(coverage_data_contents, ==, "\n");
-    g_free(coverage_data_contents);
 }
 
 static void test_end_of_record_section_written_to_coverage_data(
@@ -929,7 +915,7 @@ static void test_end_of_record_section_written_to_coverage_data(
 
 typedef struct _GjsCoverageMultipleSourcesFixture {
     GjsCoverageFixture base_fixture;
-    GFile *second_js_source_file;
+    GFile* second_js_source_file;
 } GjsCoverageMultpleSourcesFixture;
 
 static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
@@ -954,7 +940,8 @@ static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
 
     g_object_unref(fixture->base_fixture.gjs_context);
     g_object_unref(fixture->base_fixture.coverage);
-    char *output_path = g_file_get_path(fixture->base_fixture.tmp_output_dir);
+    Gjs::AutoChar output_path{
+        g_file_get_path(fixture->base_fixture.tmp_output_dir)};
     char* search_paths[] = {output_path, nullptr};
 
     fixture->base_fixture.gjs_context =
@@ -963,13 +950,13 @@ static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
         gjs_coverage_new(coverage_paths, fixture->base_fixture.gjs_context,
                          fixture->base_fixture.lcov_output_dir);
 
-    g_free(output_path);
-
-    char *base_name = g_file_get_basename(fixture->base_fixture.tmp_js_script);
-    char *base_name_without_extension = g_strndup(base_name,
-                                                  strlen(base_name) - 3);
+    Gjs::AutoChar base_name{
+        g_file_get_basename(fixture->base_fixture.tmp_js_script)};
+    Gjs::AutoChar base_name_without_extension{
+        g_strndup(base_name, strlen(base_name) - 3)};
     char* mock_script = g_strconcat("const FirstScript = imports.",
-                                    base_name_without_extension, ";\n",
+                                    base_name_without_extension.get(),
+                                    ";\n"
                                     "let a = FirstScript.f;\n"
                                     "\n",
                                     nullptr);
@@ -977,8 +964,6 @@ static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
     replace_file(fixture->second_js_source_file, mock_script);
 
     g_free(mock_script);
-    g_free(base_name_without_extension);
-    g_free(base_name);
 }
 
 static void
@@ -1013,7 +998,7 @@ static void test_multiple_source_file_records_written_to_coverage_data(
 
 typedef struct _ExpectedSourceFileCoverageData {
     const char* source_file_path;
-    LineCountIsMoreThanData *more_than;
+    LineCountIsMoreThanData* more_than;
     unsigned n_more_than_matchers;
     const char expected_lines_hit_character;
     const char expected_lines_found_character;

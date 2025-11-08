@@ -183,7 +183,7 @@ static void gjs_context_dump_heaps() {
     if (!fp)
         return;
 
-    for (GList *l = all_contexts; l; l = g_list_next(l)) {
+    for (GList* l = all_contexts; l; l = g_list_next(l)) {
         auto* gjs = static_cast<GjsContextPrivate*>(l->data);
         js::DumpHeap(gjs->context(), fp, js::CollectNurseryBeforeDump);
     }
@@ -212,7 +212,7 @@ static void setup_dump_heap() {
         dump_heap_initialized = true;
 
         // install signal handler only if environment variable is set
-        const char *heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
+        const char* heap_output = g_getenv("GJS_DEBUG_HEAP_OUTPUT");
         if (heap_output) {
 #ifdef G_OS_UNIX
             struct sigaction sa;
@@ -237,7 +237,6 @@ static void gjs_context_init(GjsContext* self) {
 
 static void gjs_context_class_init(GjsContextClass* klass) {
     GObjectClass* object_class = G_OBJECT_CLASS(klass);
-    GParamSpec *pspec;
 
     gjs_log_init();
 
@@ -248,7 +247,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
-    pspec = g_param_spec_boxed(
+    GParamSpec* pspec = g_param_spec_boxed(
         "search-path", "Search path",
         "Path where modules to import should reside", G_TYPE_STRV,
         (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
@@ -671,7 +670,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         },
         this);
 
-    const char *env_profiler = g_getenv("GJS_ENABLE_PROFILER");
+    const char* env_profiler = g_getenv("GJS_ENABLE_PROFILER");
     if (env_profiler || m_should_listen_sigusr2)
         m_should_profile = true;
 
@@ -1789,7 +1788,7 @@ void gjs_context_set_argv(GjsContext* self, ssize_t array_length,
     gjs->set_args(std::move(args));
 }
 
-static GjsContext *current_context;
+static GjsContext* current_context;
 
 GjsContext* gjs_context_get_current() { return current_context; }
 

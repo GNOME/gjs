@@ -183,21 +183,19 @@ static void write_to_stream(FILE* logfp, const char* prefix, const char* s) {
 
 void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
     va_list args;
-    char *s;
 
     if (!s_debug_log_enabled || !s_enabled_topics[topic])
         return;
 
     va_start(args, format);
-    s = g_strdup_vprintf(format, args);
+    Gjs::AutoChar s{g_strdup_vprintf(format, args)};
     va_end(args);
 
     if (s_timer) {
         static double previous = 0.0;
         double total = g_timer_elapsed(s_timer, nullptr) * 1000.0;
         double since = total - previous;
-        const char *ts_suffix;
-        char *s2;
+        const char* ts_suffix;
 
         if (since > 50.0) {
             ts_suffix = "!!  ";
@@ -209,21 +207,14 @@ void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
             ts_suffix = "    ";
         }
 
-        s2 = g_strdup_printf("%g %s%s",
-                             total, ts_suffix, s);
-        g_free(s);
-        s = s2;
+        s.reset(g_strdup_printf("%g %s%s", total, ts_suffix, s.get()));
 
         previous = total;
     }
 
     if (s_print_thread) {
-        char *s2 = g_strdup_printf("(thread %p) %s", g_thread_self(), s);
-        g_free(s);
-        s = s2;
+        s.reset(g_strdup_printf("(thread %p) %s", g_thread_self(), s.get()));
     }
 
     write_to_stream(s_log_file->fp(), topic_to_prefix(topic), s);
-
-    g_free(s);
 }

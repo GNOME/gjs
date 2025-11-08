@@ -2117,7 +2117,7 @@ bool ObjectPrototype::props_to_g_parameters(
 
 void ObjectInstance::wrapped_gobj_dispose_notify(
     void* data, GObject* where_the_object_was GJS_USED_VERBOSE_LIFECYCLE) {
-    auto *priv = static_cast<ObjectInstance *>(data);
+    auto* priv = static_cast<ObjectInstance*>(data);
     priv->gobj_dispose_notify();
     gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed",
                         where_the_object_was);
@@ -2632,7 +2632,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
         return false;
 
     Gjs::AutoTypeClass<GObjectClass> object_class{gtype()};
-    std::vector<const char *> names;
+    std::vector<const char*> names;
     AutoGValueVector values;
 
     if (args.length() > 0 && !args[0].isUndefined()) {
@@ -2677,7 +2677,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
     GObject* gobj = g_object_new_with_properties(gtype(), values.size(),
                                                  names.data(), values.data());
 
-    ObjectInstance *other_priv = ObjectInstance::for_gobject(gobj);
+    ObjectInstance* other_priv = ObjectInstance::for_gobject(gobj);
     if (other_priv && other_priv->m_wrapper != object.get()) {
         /* g_object_new_with_properties() returned an object that's already
          * tracked by a JS object.
@@ -2759,7 +2759,7 @@ bool ObjectInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
 }
 
 void ObjectInstance::trace_impl(JSTracer* tracer) {
-    for (GClosure *closure : m_closures)
+    for (GClosure* closure : m_closures)
         Gjs::Closure::for_gclosure(closure)->trace(tracer);
 }
 
@@ -2849,8 +2849,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
                          nullptr);
 
     JS::RootedObject in_object{cx};
-    const char *constructor_name;
-
+    const char* constructor_name;
     if (info) {
         in_object = gjs_lookup_namespace_object(cx, info.value());
         constructor_name = info->name();
@@ -3861,7 +3860,6 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     Maybe<GI::AutoFieldInfo> field_info = result->second;
     if (field_info) {
         void* method_ptr;
-        GjsCallbackTrampoline *trampoline;
 
         int offset = field_info->offset();
         method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
@@ -3870,9 +3868,9 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             gjs_throw(cx, "Tried to deal with a vfunc that wasn't callable");
             return false;
         }
-        trampoline = GjsCallbackTrampoline::create(cx, callable, vfunc.ref(),
-                                                   GI_SCOPE_TYPE_NOTIFIED, true,
-                                                   !is_static);
+        auto* trampoline = GjsCallbackTrampoline::create(
+            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true,
+            !is_static);
         if (!trampoline)
             return false;
 

@@ -46,8 +46,8 @@ int main(int argc, char** argv) {
     }
     g_clear_object(&repo);
 
-    const char *coverage_prefix = g_getenv("GJS_UNIT_COVERAGE_PREFIX");
-    const char *coverage_output_path = g_getenv("GJS_UNIT_COVERAGE_OUTPUT");
+    const char* coverage_prefix = g_getenv("GJS_UNIT_COVERAGE_PREFIX");
+    const char* coverage_output_path = g_getenv("GJS_UNIT_COVERAGE_OUTPUT");
     const char* search_path[] = {"resource:///org/gjs/jsunit", nullptr};
 
     if (coverage_prefix)
@@ -66,7 +66,7 @@ int main(int argc, char** argv) {
                      "GJS_UNIT_COVERAGE_PREFIX");
         }
 
-        GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
+        GFile* output = g_file_new_for_commandline_arg(coverage_output_path);
         coverage = gjs_coverage_new(coverage_prefixes, gjs_context, output);
         g_object_unref(output);
     }

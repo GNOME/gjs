@@ -1159,9 +1159,7 @@ static bool gjs_value_from_g_value_internal(
             repo, gtype, Gjs::gvalue_get<Gjs::Tag::Long>(gvalue)));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         GParamSpec* gparam = Gjs::gvalue_get<GParamSpec*>(gvalue);
-        JSObject *obj;
-
-        obj = gjs_param_from_g_param(cx, gparam);
+        JSObject* obj = gjs_param_from_g_param(cx, gparam);
         if (!obj)
             return false;
         value_p.setObject(*obj);

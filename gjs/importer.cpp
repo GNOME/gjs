@@ -642,8 +642,8 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
             nullptr, nullptr)};
 
         while (true) {
-            GFileInfo *info;
-            GFile *file;
+            GFileInfo* info;
+            GFile* file;
             if (!direnum || !g_file_enumerator_iterate(direnum, &info, &file,
                                                        nullptr, nullptr))
                 break;
@@ -747,19 +747,17 @@ static const std::vector<std::string>& gjs_get_search_path() {
 
     if (!search_path_initialized) {
         const char* const* system_data_dirs;
-        const char *envstr;
 
         // in order of priority
 
         // $GJS_PATH
-        envstr = g_getenv("GJS_PATH");
+        const char* envstr = g_getenv("GJS_PATH");
         if (envstr) {
-            char **dirs, **d;
-            dirs = g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0);
-            for (d = dirs; *d != nullptr; d++)
-                gjs_search_path.push_back(*d);
             // we assume the array and strings are allocated separately
-            g_free(dirs);
+            Gjs::AutoFree<char*> dirs{
+                g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0)};
+            for (char** d = dirs; *d != nullptr; d++)
+                gjs_search_path.push_back(*d);
         }
 
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/script/");

@@ -241,8 +241,6 @@
 GJS_JSAPI_RETURN_CONVENTION
 cairo_t* CairoContext::constructor_impl(JSContext* cx,
                                         const JS::CallArgs& args) {
-    cairo_t *cr;
-
     JS::RootedObject surface_wrapper{cx};
     if (!gjs_parse_call_args(cx, "Context", args, "o", "surface",
                              &surface_wrapper))
@@ -252,7 +250,7 @@ cairo_t* CairoContext::constructor_impl(JSContext* cx,
     if (!surface)
         return nullptr;
 
-    cr = cairo_create(surface);
+    cairo_t* cr = cairo_create(surface);
 
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return nullptr;
@@ -409,12 +407,10 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool copyPath_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj);
 
-    cairo_path_t *path;
-
     if (!gjs_parse_call_args(cx, "", argv, ""))
         return false;
 
-    path = cairo_copy_path(cr);
+    cairo_path_t* path = cairo_copy_path(cr);
     JSObject* retval = CairoPath::take_c_ptr(cx, path);
     if (!retval)
         return false;
@@ -427,12 +423,10 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool copyPathFlat_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj);
 
-    cairo_path_t *path;
-
     if (!gjs_parse_call_args(cx, "", argv, ""))
         return false;
 
-    path = cairo_copy_path_flat(cr);
+    cairo_path_t* path = cairo_copy_path_flat(cr);
     JSObject* retval = CairoPath::take_c_ptr(cx, path);
     if (!retval)
         return false;
@@ -634,19 +628,16 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool popGroup_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, rec, obj);
 
-    cairo_pattern_t *pattern;
-    JSObject *pattern_wrapper;
-
     if (argc > 0) {
         gjs_throw(cx, "Context.popGroup() takes no arguments");
         return false;
     }
 
-    pattern = cairo_pop_group(cr);
+    cairo_pattern_t* pattern = cairo_pop_group(cr);
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 
-    pattern_wrapper = gjs_cairo_pattern_from_pattern(cx, pattern);
+    JSObject* pattern_wrapper = gjs_cairo_pattern_from_pattern(cx, pattern);
     cairo_pattern_destroy(pattern);
     if (!pattern_wrapper) {
         gjs_throw(cx, "failed to create pattern");
@@ -661,14 +652,12 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool getSource_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, rec, obj);
 
-    cairo_pattern_t *pattern;
-
     if (argc > 0) {
         gjs_throw(cx, "Context.getSource() takes no arguments");
         return false;
     }
 
-    pattern = cairo_get_source(cr);
+    cairo_pattern_t* pattern = cairo_get_source(cr);
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 
@@ -688,14 +677,12 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool getTarget_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, rec, obj);
 
-    cairo_surface_t *surface;
-
     if (argc > 0) {
         gjs_throw(cx, "Context.getTarget() takes no arguments");
         return false;
     }
 
-    surface = cairo_get_target(cr);
+    cairo_surface_t* surface = cairo_get_target(cr);
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 
@@ -715,14 +702,12 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool getGroupTarget_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, rec, obj);
 
-    cairo_surface_t *surface;
-
     if (argc > 0) {
         gjs_throw(cx, "Context.getGroupTarget() takes no arguments");
         return false;
     }
 
-    surface = cairo_get_group_target(cr);
+    cairo_surface_t* surface = cairo_get_group_target(cr);
     if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
         return false;
 

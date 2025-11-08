@@ -57,7 +57,7 @@ static void monitor_object_finalization(GObject* object) {
 void gjs_test_tools_delayed_ref(GObject* object, int interval) {
     g_timeout_add(
         interval,
-        [](void *data) {
+        [](void* data) {
             g_object_ref(G_OBJECT(data));
             return G_SOURCE_REMOVE;
         },
@@ -67,7 +67,7 @@ void gjs_test_tools_delayed_ref(GObject* object, int interval) {
 void gjs_test_tools_delayed_unref(GObject* object, int interval) {
     g_timeout_add(
         interval,
-        [](void *data) {
+        [](void* data) {
             g_object_unref(G_OBJECT(data));
             return G_SOURCE_REMOVE;
         },
@@ -77,7 +77,7 @@ void gjs_test_tools_delayed_unref(GObject* object, int interval) {
 void gjs_test_tools_delayed_dispose(GObject* object, int interval) {
     g_timeout_add(
         interval,
-        [](void *data) {
+        [](void* data) {
             g_object_run_dispose(G_OBJECT(data));
             return G_SOURCE_REMOVE;
         },
