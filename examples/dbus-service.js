@@ -22,7 +22,6 @@ const ifaceXml = `
   </interface>
 </node>`;
 
-
 // An example of the service-side implementation of the above interface.
 class Service {
     constructor() {
@@ -73,7 +72,6 @@ class Service {
     }
 }
 
-
 // Once you've created an instance of your service, you will want to own a name
 // on the bus so clients can connect to it.
 let serviceObj = new Service();
@@ -117,7 +115,6 @@ let ownerId = Gio.bus_own_name(
     onNameAcquired,
     onNameLost
 );
-
 
 // Start an event loop
 let loop = GLib.MainLoop.new(null, false);

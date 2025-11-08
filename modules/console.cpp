@@ -115,7 +115,6 @@ public:
     }
 };
 
-
 // Adapted from https://stackoverflow.com/a/17035073/172999
 class AutoCatchCtrlC {
 #ifdef HAVE_SIGNAL_H

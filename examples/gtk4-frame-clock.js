@@ -53,7 +53,6 @@ function _onButtonClicked(widget) {
     });
 }
 
-
 // Initialize GTK
 Gtk.init();
 const loop = GLib.MainLoop.new(null, false);

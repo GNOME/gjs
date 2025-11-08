@@ -22,8 +22,6 @@ const ifaceXml = `
   </interface>
 </node>`;
 
-
-
 // Pass the XML string to make a reusable proxy class for an interface proxies.
 const TestProxy = Gio.DBusProxy.makeProxyWrapper(ifaceXml);
 
@@ -31,7 +29,6 @@ const TestProxy = Gio.DBusProxy.makeProxyWrapper(ifaceXml);
 let proxy = null;
 let proxySignalId = 0;
 let proxyPropId = 0;
-
 
 // Watching a name on DBus. Another option is to create a proxy with the
 // `Gio.DBusProxyFlags.DO_NOT_AUTO_START` flag and watch the `g-name-owner`
@@ -51,13 +48,11 @@ function onNameAppeared(connection, name, _owner) {
         return;
     }
 
-
     // Proxy wrapper signals use the special functions `connectSignal()` and
     // `disconnectSignal()` to avoid conflicting with regular GObject signals.
     proxySignalId = proxy.connectSignal('TestSignal', (proxy_, name_, args) => {
         print(`TestSignal: ${args[0]}, ${args[1]}`);
     });
-
 
     // To watch property changes, you can connect to the `g-properties-changed`
     // GObject signal with `connect()`
@@ -69,7 +64,6 @@ function onNameAppeared(connection, name, _owner) {
             print(`Property '${prop}' invalidated`);
     });
 
-
     // Reading and writing properties is straight-forward
     print(`ReadOnlyProperty: ${proxy.ReadOnlyProperty}`);
 
@@ -77,7 +71,6 @@ function onNameAppeared(connection, name, _owner) {
 
     proxy.ReadWriteProperty = !proxy.ReadWriteProperty;
     print(`ReadWriteProperty: ${proxy.ReadWriteProperty}`);
-
 
     // Both synchronous and asynchronous functions will be generated
     try {
@@ -129,7 +122,6 @@ loop.run();
 
 // Unwatching names works just like disconnecting signal handlers.
 Gio.bus_unown_name(busWatchId);
-
 
 /* Asynchronous Usage
  *
