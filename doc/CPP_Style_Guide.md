@@ -830,14 +830,13 @@ and we don't want it executed when assertions are disabled.
 Code like this should move the call into the assert itself.
 In the second case, the side effects of the call must happen whether the
 assert is enabled or not.
-In this case, the value should be cast to void to disable the warning.
+In this case, annotate the variable with the `GJS_USED_ASSERT` macro.
 To be specific, it is preferred to write the code like this:
 
 ```c++
 g_assert(v.size() > 42 && "Vector smaller than it should be");
 
-bool new_to_set = my_set.insert(value);
-(void)new_to_set;
+bool new_to_set GJS_USED_ASSERT = my_set.insert(value);
 g_assert(new_to_set && "The value shouldn't be in the set yet");
 ```
 

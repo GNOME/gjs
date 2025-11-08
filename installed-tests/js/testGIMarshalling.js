@@ -1407,8 +1407,11 @@ describe('Union', function () {
     it('marshals unregistered initialized union', function () {
         expect(new GIMarshallingTests.UnregisteredUnion({long_: 123}).long_).toBe(123);
         expect(new GIMarshallingTests.UnregisteredUnion({size: 321}).size).toBe(321);
-        expect(() => new GIMarshallingTests.UnregisteredUnion({str: '123'})).toThrow();
     });
+
+    xit('marshals unregistered initialized union with pointer', function () {
+        expect(() => new GIMarshallingTests.UnregisteredUnion({str: '123'}).str).toBe('123');
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/issues/109');
 });
 
 describe('Structured union', function () {
@@ -1503,7 +1506,7 @@ describe('Structured union', function () {
             const union = new GIMarshallingTests.StructuredUnion({[prop]: member});
             expect(union.type()).toBe(baseUnion.type());
             expect(union.type()).toBe(member.type ?? member.parent.type);
-            // expect(union._type).toBe(baseUnion._type);
+            expect(union._type).toBe(baseUnion._type);
         });
     });
 

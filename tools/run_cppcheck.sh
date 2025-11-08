@@ -20,8 +20,7 @@ fi
 # incorrectStringBooleanError: does not mix well with the assertion message
 # idiom.
 # nullPointerRedundantCheck, nullPointerArithmeticRedundantCheck: False positive
-# when using g_assert_nonnull(). Check again when
-# https://github.com/danmar/cppcheck/pull/5830 is available.
+# when using g_assert_nonnull(). See https://trac.cppcheck.net/ticket/8329
 cppcheck --project=compile_commands.json --check-level=exhaustive \
     --inline-suppr --error-exitcode=1 --enable=warning,performance,portability \
     --suppress=duplInheritedMember --suppress=incorrectStringBooleanError \

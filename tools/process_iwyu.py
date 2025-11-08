@@ -72,7 +72,7 @@ FALSE_POSITIVES = (
     # False positive when constructing JS::GCHashMap
     ('gi/object.h', '#include <utility>', 'for move'),
     ('gjs/jsapi-util-error.cpp', '#include <utility>', 'for forward, move'),
-    # False positibe when using JS::WeakCache::put
+    # False positive when using JS::WeakCache::put
     ('gi/fundamental.cpp', '#include <utility>', 'for forward'),
     ('gi/gtype.cpp', '#include <utility>', 'for forward'),
     # Same underlying problem, false positive due to inlined methods from
@@ -93,7 +93,7 @@ FALSE_POSITIVES = (
     ('test/gjs-test-utils.h', '#include <iterator>', 'for pair'),
     ('test/gjs-test-toggle-queue.cpp', '#include <iterator>', 'for pair'),
 
-    # https://github.com/include-what-you-use/include-what-you-use/issues/1831
+    # https://github.com/include-what-you-use/include-what-you-use/issues/1808
     ('gi/value.h', 'class ObjectBox;', ''),
 )
 
