@@ -34,10 +34,9 @@
 /**
  * GTypeObj:
  *
- * Wrapper object used to represent a GType in JavaScript.
- * In C, GTypes are just a pointer-sized integer, but in JS they have a 'name'
- * property and a toString() method.
- * The integer is stuffed into CWrapper's pointer slot.
+ * Wrapper object used to represent a GType in JavaScript. In C, GTypes are just
+ * a pointer-sized integer, but in JS they have a 'name' property and a
+ * toString() method. The integer is stuffed into CWrapper's pointer slot.
  */
 class GTypeObj : public CWrapper<GTypeObj, void> {
     friend CWrapperPointerOps<GTypeObj, void>;

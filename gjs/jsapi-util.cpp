@@ -60,8 +60,8 @@ throw_property_lookup_error(JSContext       *cx,
                             JS::HandleId     property_name,
                             const char      *reason)
 {
-    /* remember gjs_throw() is a no-op if JS_GetProperty()
-     * already set an exception
+    /* remember gjs_throw() is a no-op if JS_GetProperty() already set an
+     * exception
      */
     if (description)
         gjs_throw(cx, "No property '%s' in %s (or %s)",
@@ -71,14 +71,14 @@ throw_property_lookup_error(JSContext       *cx,
                   gjs_debug_id(property_name).c_str(), obj.get(), reason);
 }
 
-/* Returns whether the object had the property; if the object did
- * not have the property, always sets an exception. Treats
- * "the property's value is undefined" the same as "no such property,".
- * Guarantees that *value_p is set to something, if only JS::UndefinedValue(),
- * even if an exception is set and false is returned.
+/* Returns whether the object had the property; if the object did not have the
+ * property, always sets an exception. Treats "the property's value is
+ * undefined" the same as "no such property,". Guarantees that value_p is set to
+ * something, if only JS::UndefinedValue(), even if an exception is set and
+ * false is returned.
  *
- * SpiderMonkey will emit a warning if the property is not present, so don't
- * use this if you expect the property not to be present some of the time.
+ * SpiderMonkey will emit a warning if the property is not present, so don't use
+ * this if you expect the property not to be present some of the time.
  */
 bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
                                  const char* obj_description,
@@ -659,8 +659,8 @@ void gjs_gc_if_needed(JSContext* cx) {
     {
         long rss_size;  // NOLINT(runtime/int)
 
-        /* We rate limit GCs to at most one per 5 frames.
-           One frame is 16666 microseconds (1000000/60)*/
+        // We rate limit GCs to at most one per 5 frames. One frame is 16666
+        // microseconds (1000000/60)
         int64_t now = g_get_monotonic_time();
         if (now - last_gc_check_time < 5 * 16666)
             return;
@@ -669,15 +669,13 @@ void gjs_gc_if_needed(JSContext* cx) {
 
         _linux_get_self_process_size(&rss_size);
 
-        /* linux_rss_trigger is initialized to 0, so currently
-         * we always do a full GC early.
+        /* linux_rss_trigger is initialized to 0, so currently we always do a
+         * full GC early.
          *
-         * Here we see if the RSS has grown by 25% since
-         * our last look; if so, initiate a full GC.  In
-         * theory using RSS is bad if we get swapped out,
-         * since we may be overzealous in GC, but on the
-         * other hand, if swapping is going on, better
-         * to GC.
+         * Here we see if the RSS has grown by 25% since our last look; if so,
+         * initiate a full GC.  In theory using RSS is bad if we get swapped
+         * out, since we may be overzealous in GC, but on the other hand, if
+         * swapping is going on, better to GC.
          */
         if (rss_size < 0)
             return;  // doesn't make sense

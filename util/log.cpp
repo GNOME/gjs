@@ -111,8 +111,8 @@ void gjs_log_init() {
         std::string log_file;
         char* c;
 
-        /* Allow debug-%u.log for per-pid logfiles as otherwise log
-         * messages from multiple processes can overwrite each other.
+        /* Allow debug-%u.log for per-pid logfiles as otherwise log messages
+         * from multiple processes can overwrite each other.
          *
          * (printf below should be safe as we check '%u' is the only format
          * string)

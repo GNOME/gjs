@@ -195,8 +195,8 @@ class GjsScriptModule {
             return true;
 
         /* The property is present in the lexical environment. This should not
-         * be supported according to ES6. For compatibility with earlier GJS,
-         * we treat it as if it were a real property, but warn about it. */
+         * be supported according to ES6. For compatibility with earlier GJS, we
+         * treat it as if it were a real property, but warn about it. */
 
         _gjs_warn_deprecated_once_per_callsite(
             cx, GjsDeprecationMessageId::ModuleExportedLetOrConst,
@@ -237,8 +237,7 @@ class GjsScriptModule {
     };
 
  public:
-    /*
-     * Creates a JS object to pass to JS::SetScriptPrivate as a script's
+    /* Creates a JS object to pass to JS::SetScriptPrivate as a script's
      * private.
      */
     GJS_JSAPI_RETURN_CONVENTION

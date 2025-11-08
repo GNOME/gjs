@@ -407,8 +407,8 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
         Gjs::AutoChar encoded;
         size_t bytes_written;
 
-        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered
-         * while we are using the string's chars */
+        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered while we
+         * are using the string's chars */
         {
             JS::AutoCheckCannotGC nogc;
             size_t len;

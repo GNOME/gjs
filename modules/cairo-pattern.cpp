@@ -87,9 +87,8 @@ void CairoPattern::finalize_impl(JS::GCContext*, cairo_pattern_t* pattern) {
  * @cx: the context
  * @pattern: cairo_pattern to attach to the object
  *
- * Constructs a pattern wrapper given cairo pattern.
- * A reference to @pattern will be taken.
- *
+ * Constructs a pattern wrapper given cairo pattern. A reference to @pattern
+ * will be taken.
  */
 JSObject* gjs_cairo_pattern_from_pattern(JSContext* cx,
                                          cairo_pattern_t* pattern) {

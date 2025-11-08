@@ -44,9 +44,9 @@
 
 using mozilla::Nothing;
 
-/* gi/private.cpp - private "imports._gi" module with operations that we need
- * to use from JS in order to create GObject classes, but should not be exposed
- * to client code.
+/* gi/private.cpp - private "imports._gi" module with operations that we need to
+ * use from JS in order to create GObject classes, but should not be exposed to
+ * client code.
  */
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -220,8 +220,8 @@ static bool gjs_register_interface_impl(JSContext* cx, const char* name,
 
     Gjs::AutoPointer<GType> iface_types{g_new(GType, n_interfaces)};
 
-    /* We do interface addition in two passes so that any failure
-       is caught early, before registering the GType (which we can't undo) */
+    // We do interface addition in two passes so that any failure is caught
+    // early, before registering the GType (which we can't undo)
     if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types))
         return false;
 
@@ -340,8 +340,8 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
 
     Gjs::AutoPointer<GType> iface_types{g_new(GType, n_interfaces)};
 
-    /* We do interface addition in two passes so that any failure
-       is caught early, before registering the GType (which we can't undo) */
+    // We do interface addition in two passes so that any failure is caught
+    // early, before registering the GType (which we can't undo)
     if (!get_interface_gtypes(cx, interfaces, n_interfaces, iface_types))
         return false;
 

@@ -265,9 +265,8 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
 
     JS::RootedObject constructor{cx};
     if (value.isUndefined()) {
-        /* In case we're looking for a private type, and we don't find it,
-           we need to define it first.
-        */
+        // In case we're looking for a private type, and we don't find it, we
+        // need to define it first.
         if (!FundamentalPrototype::define_class(cx, in_object, info,
                                                 &constructor))
             return nullptr;
@@ -299,9 +298,8 @@ static JSObject* gjs_lookup_fundamental_prototype_from_gtype(JSContext* cx,
     Maybe<GI::AutoObjectInfo> info;
     GI::Repository repo;
 
-    /* A given gtype might not have any definition in the introspection
-     * data. If that's the case, try to look for a definition of any of the
-     * parent type. */
+    // A given gtype might not have any definition in the introspection data. If
+    // that's the case, try to look for a definition of any of the parent types.
     while (gtype != G_TYPE_INVALID &&
            !(info = repo.find_by_gtype<GI::InfoTag::OBJECT>(gtype)))
         gtype = g_type_parent(gtype);

@@ -9,6 +9,7 @@
  * SpiderMonkey source.
  *
  * To run it: gjs -d path/to/file.js
+ *
  * Execution will stop at debugger statements, and you'll get a prompt before
  * the first frame is executed.
  */

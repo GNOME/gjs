@@ -146,8 +146,8 @@ static bool gjs_printerr(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 // The pretty-print functionality is best written in JS, but needs to be used
 // from C++ code. This stores the prettyPrint() function in a slot on the global
-// object so that it can be used internally by the Console module.
-// This function is not available to user code.
+// object so that it can be used internally by the Console module. This function
+// is not available to user code.
 GJS_JSAPI_RETURN_CONVENTION
 static bool set_pretty_print_function(JSContext*, unsigned argc,
                                       JS::Value* vp) {

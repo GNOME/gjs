@@ -398,12 +398,12 @@ branch_at_line_should_be_taken(const char *line,
     nmatches = sscanf(line, "%i,%i,%i,%19s", &line_no, &block_no, &branch_id, hit_count);
     g_assert_cmpint(nmatches, ==, 4);
 
-    /* Determine the branch hit count. It will be either:
-     * > -1 if the line containing the branch was never executed, or
-     * > N times the branch was taken.
+    /* Determine the branch hit count. It will be either -1 if the line
+     * containing the branch was never executed, or N times the branch was
+     * taken.
      *
-     * The value of -1 is represented by a single "-" character, so
-     * we should detect this case and set the value based on that */
+     * The value of -1 is represented by a single "-" character, so we should
+     * detect this case and set the value based on that */
     if (strlen(hit_count) == 1 && *hit_count == '-')
         hit_count_num = -1;
     else
@@ -450,8 +450,8 @@ static void test_single_branch_coverage_written_to_coverage_data(
                                                 {2, 1, NOT_TAKEN}};
     const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* There are two possible branches here, the second should be taken and the
+     * first should not have been */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "BRDA:",
                                                 expected_branches_len,
                                                 branch_at_line_should_be_taken,
@@ -499,8 +499,8 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
     };
     const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* There are two possible branches here, the second should be taken and the
+     * first should not have been */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "BRDA:",
                                                 expected_branches_len,
                                                 branch_at_line_should_be_taken,
@@ -544,8 +544,8 @@ static void test_branches_for_multiple_case_statements_fallthrough(
     };
     const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* There are two possible branches here, the second should be taken and the
+     * first should not have been */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "BRDA:",
                                                 expected_branches_len,
                                                 branch_at_line_should_be_taken,
@@ -740,10 +740,10 @@ _Pragma("GCC diagnostic pop")
     g_free(detected_function);
 }
 
-/* For functions with whitespace between their definition and
- * first executable line, its possible that the JS engine might
- * enter their frame a little later in the script than where their
- * definition starts. We need to handle that case */
+/* For functions with whitespace between their definition and first executable
+ * line, its possible that the JS engine might enter their frame a little later
+ * in the script than where their definition starts. We need to handle that
+ * case. */
 static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
     void* fixture_data, const void*) {
     GjsCoverageFixture *fixture = (GjsCoverageFixture *) fixture_data;
@@ -773,8 +773,8 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
     };
     const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* There are two possible branches here, the second should be taken and the
+     * first should not have been */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FNDA:",
                                                 expected_hit_count_len,
                                                 hit_count_is_more_than_for_function,
@@ -784,8 +784,8 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
     g_free(coverage_data_contents);
 }
 
-/* For functions which start executing at a function declaration
- * we also need to make sure that we roll back to the real function, */
+/* For functions which start executing at a function declaration we also need to
+ * make sure that we roll back to the real function. */
 static void
 test_function_hit_counts_for_little_functions_written_to_coverage_data(
     void* fixture_data, const void*) {
@@ -814,8 +814,8 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
     };
     const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* There are two possible branches here, the second should be taken and the
+     * first should not have been */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FNDA:",
                                                 expected_hit_count_len,
                                                 hit_count_is_more_than_for_function,
@@ -850,8 +850,8 @@ static void test_function_hit_counts_written_to_coverage_data(
     };
     const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
-    /* There are two possible branches here, the second should be taken
-     * and the first should not have been */
+    /* There are two possible branches here, the second should be taken and the
+     * first should not have been */
     assert_coverage_data_matches_values_for_key(coverage_data_contents, "FNDA:",
                                                 expected_hit_count_len,
                                                 hit_count_is_more_than_for_function,
@@ -1017,7 +1017,8 @@ static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
                          "gjs_coverage_second_source_file.js");
 
     /* Because GjsCoverage searches the coverage paths at object-creation time,
-     * we need to destroy the previously constructed one and construct it again */
+     * we need to destroy the previously constructed one and construct it again
+     */
     char *first_js_script_path = g_file_get_path(fixture->base_fixture.tmp_js_script);
     char *second_js_script_path = g_file_get_path(fixture->second_js_source_file);
     char* coverage_paths[] = {first_js_script_path, second_js_script_path,

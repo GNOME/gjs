@@ -122,7 +122,7 @@ static bool _gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo info,
     return true;
 }
 
-/* Check if an argument of the given needs to be released if we created it
+/* Check if an argument of the given type needs to be released if we created it
  * from a JS value to pass it into a function and aren't transferring ownership.
  */
 [[nodiscard]]
@@ -160,8 +160,8 @@ static bool type_needs_release(const GI::TypeInfo& type_info, GITypeTag tag) {
     return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
 }
 
-/* Check if an argument of the given needs to be released if we obtained it
- * from out argument (or the return value), and we're transferring ownership
+/* Check if an argument of the given type needs to be released if we obtained it
+ * from an out argument (or the return value), and we're transferring ownership.
  */
 [[nodiscard]]
 static bool type_needs_out_release(const GI::TypeInfo& type_info,
@@ -229,8 +229,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release(element_type, element_tag)) {
             /* FIXME: to make this work, we'd have to keep a list of temporary
-             * GIArguments for the function call so we could free them after
-             * the surrounding container had been freed by the callee.
+             * GIArguments for the function call so we could free them after the
+             * surrounding container had been freed by the callee.
              */
             gjs_throw(cx, "Container transfer for in parameters not supported");
             return false;
@@ -251,8 +251,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
         }
 
         /* FIXME we don't know if the list elements can be null.
-         * gobject-introspection needs to tell us this.
-         * Always say they can't for now.
+         * gobject-introspection needs to tell us this. Always say they can't
+         * for now.
          */
         GIArgument elem_arg;
         if (!gjs_value_to_gi_argument(cx, elem, element_type,
@@ -281,9 +281,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool gjs_array_to_g_list(
 
 [[nodiscard]] static GHashTable* create_hash_table_for_key_type(
     GITypeTag key_type) {
-    /* Don't use key/value destructor functions here, because we can't
-     * construct correct ones in general if the value type is complex.
-     * Rely on the type-aware gi_argument_release functions. */
+    /* Don't use key/value destructor functions here, because we can't construct
+     * correct ones in general if the value type is complex. Rely on the
+     * type-aware gi_argument_release functions. */
     if (is_string_type(key_type))
         return g_hash_table_new(g_str_hash, g_str_equal);
     return g_hash_table_new(nullptr, nullptr);
@@ -466,8 +466,8 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
         if (type_needs_release(key_type, key_tag) ||
             type_needs_release(value_type, val_type)) {
             /* FIXME: to make this work, we'd have to keep a list of temporary
-             * GIArguments for the function call so we could free them after
-             * the surrounding container had been freed by the callee.
+             * GIArguments for the function call so we could free them after the
+             * surrounding container had been freed by the callee.
              */
             gjs_throw(cx, "Container transfer for in parameters not supported");
             return false;
@@ -1190,8 +1190,6 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
 
     std::vector<GIArgument> atom_intern_args{2};
 
-    /* Can only store char * in GIArgument. First argument to gdk_atom_intern
-     * is const char *, string isn't modified. */
     gjs_arg_set(&atom_intern_args[0], name);
     gjs_arg_set(&atom_intern_args[1], false);
 
@@ -3295,10 +3293,9 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 
             if (auto struct_info = interface_info.as<GI::InfoTag::STRUCT>();
                 struct_info && struct_info->is_gtype_struct()) {
-                /* XXX: here we make the implicit assumption that GTypeClass is the same
-                   as GTypeInterface. This is true for the GType field, which is what we
-                   use, but not for the rest of the structure!
-                */
+                // Here we make the implicit assumption that GTypeClass is the
+                // same as GTypeInterface. This is true for the GType field,
+                // which is what we use, but not for the rest of the structure!
                 GType gtype = G_TYPE_FROM_CLASS(gjs_arg_get<GTypeClass*>(arg));
 
                 if (g_type_is_a(gtype, G_TYPE_INTERFACE)) {
@@ -3316,7 +3313,8 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
             gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                               "gtype of INTERFACE is %s", g_type_name(gtype));
 
-            /* Test GValue and GError before Struct, or it will be handled as the latter */
+            // Test GValue and GError before Struct, or it will be handled as
+            // the latter
             if (g_type_is_a(gtype, G_TYPE_VALUE)) {
                 return gjs_value_from_g_value(cx, value_p,
                                               gjs_arg_get<const GValue*>(arg));
@@ -3626,9 +3624,8 @@ static inline bool gjs_gi_argument_release_array_internal(
     return true;
 }
 
-/* We need to handle GI_TRANSFER_NOTHING differently for out parameters
- * (free nothing) and for in parameters (free any temporaries we've
- * allocated
+/* We need to handle GI_TRANSFER_NOTHING differently for out parameters (free
+ * nothing) and for in parameters (free any temporaries we've allocated).
  */
 constexpr static bool is_transfer_in_nothing(GITransfer transfer,
                                              GjsArgumentFlags flags) {
@@ -4148,8 +4145,8 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
     /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
      * GI_TRANSFER_CONTAINER:
      * - non-containers: treated as GI_TRANSFER_EVERYTHING
-     * - containers: See FIXME in gjs_array_to_g_list(); currently
-     *   an error and we won't get here.
+     * - containers: See FIXME in gjs_array_to_g_list(); currently an error and
+     *   we won't get here.
      */
     if (transfer != GI_TRANSFER_NOTHING)
         return true;

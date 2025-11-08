@@ -290,12 +290,11 @@ void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
     g_critical("%s", message.str().c_str());
 }
 
-/* This is our main entry point for ffi_closure callbacks.
- * ffi_prep_closure is doing pure magic and replaces the original
- * function call with this one which gives us the ffi arguments,
- * a place to store the return value and our use data.
- * In other words, everything we need to call the JS function and
- * getting the return value back.
+/* This is our main entry point for ffi_closure callbacks. ffi_prep_closure() is
+ * doing pure magic and replaces the original function call with this one which
+ * gives us the ffi arguments, a place to store the return value and our use
+ * data. In other words, everything we need to call the JS function and get the
+ * return value back.
  */
 void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     GI::StackTypeInfo ret_type;
@@ -378,8 +377,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             }
         }
 
-        /* "this" is not included in the GI signature, but is in the C (and
-         * FFI) signature */
+        /* "this" is not included in the GI signature, but is in the C (and FFI)
+         * signature */
         c_args_offset = 1;
     }
 
@@ -568,9 +567,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         JS::RootedValue elem{cx};
         JS::RootedObject out_array{cx, rval.toObjectOrNull()};
         size_t elem_idx = 0;
-        /* more than one of a return value or an out argument.
-         * Should be an array of output values. */
-
+        /* More than one of a return value or an out argument. Should be an
+         * array of output values. */
         if (!ret_type_is_void) {
             GIArgument argument;
             GITransfer transfer = m_info.caller_owns();
@@ -1008,8 +1006,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     // This pointer needs to exist on the stack across the ffi_call() call
     GError** errorp = &state.local_error;
 
-    /* Did argument conversion fail?  In that case, skip invocation and jump to release
-     * processing. */
+    /* Did argument conversion fail? In that case, skip invocation and jump to
+     * release processing. */
     if (state.failed)
         return finish_invoke(cx, args, &state, r_value);
 
@@ -1291,8 +1289,8 @@ const JSPropertySpec Function::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "GIRepositoryFunction", JSPROP_READONLY),
     JS_PS_END};
 
-/* The original Function.prototype.toString complains when
-   given a GIRepository function as an argument */
+// The original Function.prototype.toString complains when given a GIRepository
+// function as an argument
 // clang-format off
 const JSFunctionSpec Function::proto_funcs[] = {
     JS_FN("toString", &Function::to_string, 0, 0),

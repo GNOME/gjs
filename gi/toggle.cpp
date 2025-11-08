@@ -170,13 +170,14 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
         return;
     }
 
-    /* Only keep an unowned reference on the object here, as if we're here, the
-     * JSObject wrapper has already a reference and we don't want to cause
-     * any weak notify in case it has lost one already in the main thread.
-     * So let's just save the pointer to keep track of the object till we
-     * don't handle this toggle.
-     * We rely on object's cancelling the queue in case an object gets
-     * finalized earlier than we've processed it.
+    /* Only keep an unowned reference on the object here, since if we're here,
+     * the JSObject wrapper already has a reference and we don't want to cause
+     * any weak notify in case it has lost one already in the main thread. So
+     * let's just save the pointer to keep track of the object till we don't
+     * handle this toggle.
+     *
+     * We rely on objects cancelling the queue in case an object gets finalized
+     * earlier than we've processed it.
      */
     q.emplace_back(obj, direction);
 

@@ -50,18 +50,17 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
     // Without a name, JS_NewObject() fails
     g_assert(clasp->name != nullptr);
 
-    /* gjs_init_class_dynamic only makes sense for instantiable classes,
-       use JS_InitClass for static classes like Math */
+    // gjs_init_class_dynamic only makes sense for instantiable classes, use
+    // JS_InitClass for static classes like Math
     g_assert(constructor_native != nullptr);
 
-    /* Class initialization consists of five parts:
-       - building a prototype
-       - defining prototype properties and functions
-       - building a constructor and defining it on the right object
-       - defining constructor properties and functions
-       - linking the constructor and the prototype, so that
-         JS_NewObjectForConstructor can find it
-    */
+    // Class initialization consists of five parts:
+    // - building a prototype
+    // - defining prototype properties and functions
+    // - building a constructor and defining it on the right object
+    // - defining constructor properties and functions
+    // - linking the constructor and the prototype, so that
+    //   JS_NewObjectForConstructor() can find it
 
     if (parent_proto) {
         prototype.set(JS_NewObjectWithGivenProto(cx, clasp, parent_proto));
@@ -96,8 +95,8 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
     if (!JS_LinkConstructorAndPrototype(cx, constructor, prototype))
         return false;
 
-    /* The constructor defined by JS_InitClass has no property attributes, but this
-       is a more useful default for gjs */
+    // The constructor defined by JS_InitClass() has no property attributes, but
+    // this is a more useful default for gjs
     return JS_DefineProperty(cx, in_object, class_name, constructor,
                              GJS_MODULE_PROP_FLAGS);
 }

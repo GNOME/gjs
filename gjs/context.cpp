@@ -404,8 +404,8 @@ gjs_context_dispose(GObject *object)
     gjs->free_profiler();
 
     /* Stop accepting entries in the toggle queue before running dispose
-     * notifications, which causes all GjsMaybeOwned instances to unroot.
-     * We don't want any objects to toggle down after that. */
+     * notifications, which causes all GjsMaybeOwned instances to unroot. We
+     * don't want any objects to toggle down after that. */
     gjs_debug(GJS_DEBUG_CONTEXT, "Shutting down toggle queue");
     gjs_object_clear_toggles();
     gjs_object_shutdown_toggle_queue();
@@ -455,9 +455,8 @@ void GjsContextPrivate::dispose() {
         m_fundamental_table->clear();
         m_gtype_table->clear();
 
-        /* Do a full GC here before tearing down, since once we do
-         * that we may not have the JS::GetReservedSlot(, 0) to access the
-         * context
+        /* Do a full GC here before tearing down, since once we do that we may
+         * not have the JS::GetReservedSlot(, 0) to access the context
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Final triggered GC");
         JS_GC(m_cx, Gjs::GCReason::GJS_CONTEXT_DISPOSE);
@@ -465,9 +464,9 @@ void GjsContextPrivate::dispose() {
         gjs_debug(GJS_DEBUG_CONTEXT, "Destroying JS context");
         m_destroying.store(true);
 
-        /* Now, release all native objects, to avoid recursion between
-         * the JS teardown and the C teardown.  The JSObject proxies
-         * still exist, but point to null.
+        /* Now, release all native objects, to avoid recursion between the JS
+         * teardown and the C teardown. The JSObject proxies still exist, but
+         * point to null.
          */
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing all native objects");
         ObjectInstance::prepare_shutdown();
@@ -1034,8 +1033,8 @@ void GjsContextPrivate::runJobs(JSContext* cx) {
  * Adapted from js::RunJobs() in SpiderMonkey's default job queue
  * implementation.
  *
- * Returns: false if one of the jobs threw an uncatchable exception;
- * otherwise true.
+ * Returns: false if one of the jobs threw an uncatchable exception; otherwise
+ * true.
  */
 bool GjsContextPrivate::run_jobs_fallible() {
     bool retval = true;
@@ -1057,9 +1056,9 @@ bool GjsContextPrivate::run_jobs_fallible() {
             retval = false;
     }
 
-    /* Execute jobs in a loop until we've reached the end of the queue.
-     * Since executing a job can trigger enqueueing of additional jobs,
-     * it's crucial to recheck the queue length during each iteration. */
+    /* Execute jobs in a loop until we've reached the end of the queue. Since
+     * executing a job can trigger enqueueing of additional jobs, it's crucial
+     * to recheck the queue length during each iteration. */
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         // A previous job might have set this flag. e.g., System.exit().
         if (m_should_exit || !m_dispatcher.is_running()) {
@@ -1070,10 +1069,9 @@ bool GjsContextPrivate::run_jobs_fallible() {
 
         job = m_job_queue[ix];
 
-        /* It's possible that job draining was interrupted prematurely,
-         * leaving the queue partly processed. In that case, slots for
-         * already-executed entries will contain nullptrs, which we should
-         * just skip. */
+        /* It's possible that job draining was interrupted prematurely, leaving
+         * the queue partly processed. In that case, slots for already-executed
+         * entries will contain nullptrs, which we should just skip. */
         if (!job)
             continue;
 
@@ -1083,9 +1081,9 @@ bool GjsContextPrivate::run_jobs_fallible() {
             gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
                       gjs_debug_object(job).c_str());
             if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
-                /* Uncatchable exception - return false so that
-                 * System.exit() works in the interactive shell and when
-                 * exiting the interpreter. */
+                /* Uncatchable exception - return false so that System.exit()
+                 * works in the interactive shell and when exiting the
+                 * interpreter. */
                 if (!JS_IsExceptionPending(m_cx)) {
                     /* System.exit() is an uncatchable exception, but does not
                      * indicate a bug. Log everything else. */
@@ -1268,7 +1266,8 @@ gjs_context_gc (GjsContext  *context)
  * This is useful for operating on the contexts from a process-global situation
  * such as a debugger.
  *
- * Return value: (element-type GjsContext) (transfer full): Known #GjsContext instances
+ * Return value: (element-type GjsContext) (transfer full): Known #GjsContext
+ * instances
  */
 GList* gjs_context_get_all() {
   GList *result;
@@ -1371,9 +1370,8 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
         return Err(error.release());  // Don't log anything
     }
 
-    // Once the main loop exits an exception could
-    // be pending even if the script returned
-    // true synchronously
+    // Once the main loop exits an exception could be pending even if the script
+    // returned true synchronously
     if (JS_IsExceptionPending(m_cx)) {
         Gjs::AutoError error;
         g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
@@ -1682,9 +1680,8 @@ bool gjs_context_eval_module_file(GjsContext* js_context, const char* filename,
  * @retval: location for the return value of @source
  *
  * Executes @source with a local scope so that nothing from the source code
- * leaks out into the global scope.
- * If @scope_object is given, then everything that @source placed in the global
- * namespace is defined on @scope_object.
+ * leaks out into the global scope. If @scope_object is given, then everything
+ * that @source placed in the global namespace is defined on @scope_object.
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
@@ -1750,9 +1747,9 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
  * @args: Arguments to pass to the callable
  * @rval: Location for the return value
  *
- * Use this instead of JS_CallFunctionValue(), because it schedules a GC if
- * one is needed. It's good practice to check if a GC should be run every time
- * we return from JS back into C++.
+ * Use this instead of JS_CallFunctionValue(), because it schedules a GC if one
+ * is needed. It's good practice to check if a GC should be run every time we
+ * return from JS back into C++.
  */
 bool GjsContextPrivate::call_function(JS::HandleObject this_obj,
                                       JS::HandleValue func_val,

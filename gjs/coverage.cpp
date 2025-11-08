@@ -88,8 +88,8 @@ static GErrorResult<> write_source_file_header(GOutputStream* stream,
 [[nodiscard]]
 static GErrorResult<> copy_source_file_to_coverage_output(
     GFile* source_file, GFile* destination_file) {
-    /* We need to recursively make the directory we
-     * want to copy to, as g_file_copy doesn't do that */
+    /* We need to recursively make the directory we want to copy to, as
+     * g_file_copy doesn't do that */
     Gjs::AutoError error;
     Gjs::AutoUnref<GFile> destination_dir{g_file_get_parent(destination_file)};
     if (!g_file_make_directory_with_parents(destination_dir, nullptr,
@@ -114,31 +114,27 @@ static GErrorResult<> copy_source_file_to_coverage_output(
         size_t offset = strlen(uri_header);
         g_free(uri_header);
 
-        /* g_uri_parse_scheme only parses the name
-         * of the scheme, we also need to strip the
-         * characters ':///' */
+        /* g_uri_parse_scheme() only parses the name of the scheme, we also need
+         * to strip the characters ':///' */
         return g_strdup(potential_uri + offset + 4);
     }
 
     return nullptr;
 }
 
-/* This function will return a string of pathname
- * components from the first directory indicating
- * where two directories diverge. For instance:
+/* This function will return a string of pathname components from the first
+ * directory indicating where two directories diverge. For instance:
  *
  * child: /a/b/c/d/e
  * parent: /a/b/d/
  *
  * Will return: c/d/e
  *
- * If the directories are not at all similar then
- * the full dirname of the child_path effectively
- * be returned.
+ * If the directories are not at all similar then the full dirname of the
+ * child_path effectively be returned.
  *
- * As a special case, child paths that are a URI
- * automatically return the full URI path with
- * the URI scheme and leading slash stripped out.
+ * As a special case, child paths that are a URI automatically return the full
+ * URI path with the URI scheme and leading slash stripped out.
  */
 [[nodiscard]] static char* find_diverging_child_components(GFile* child,
                                                            GFile* parent) {
@@ -152,8 +148,8 @@ static GErrorResult<> copy_source_file_to_coverage_output(
     }
 
     /* This is a special case of getting the URI below. The difference is that
-     * this gives you a regular path name; getting it through the URI would
-     * give a URI-encoded path (%20 for spaces, etc.) */
+     * this gives you a regular path name; getting it through the URI would give
+     * a URI-encoded path (%20 for spaces, etc.) */
     Gjs::AutoUnref<GFile> root{g_file_new_for_path("/")};
     char* child_path = g_file_get_relative_path(root, child);
     if (child_path)
@@ -229,8 +225,8 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
         }
 
         if (g_str_has_prefix(*iter, "TN:")) {
-            /* Don't write the test name if the next line shows we are
-             * ignoring the source file */
+            /* Don't write the test name if the next line shows we are ignoring
+             * the source file */
             test_name = *iter;
             continue;
         } else if (g_str_has_prefix(*iter, "SF:")) {
@@ -255,8 +251,8 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
             MOZ_TRY(copy_source_file_to_coverage_output(source_file,
                                                         destination_file));
 
-            /* Rewrite the source file path to be relative to the output
-             * dir so that genhtml will find it */
+            /* Rewrite the source file path to be relative to the output dir so
+             * that genhtml will find it */
             MOZ_TRY(write_source_file_header(ostream, destination_file));
             continue;
         }
@@ -272,9 +268,9 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(
  * @coverage: A #GjsCoverage
  * @output_directory: A directory to write coverage information to.
  *
- * Scripts which were provided as part of the #GjsCoverage:prefixes
- * construction property will be written out to @output_directory, in the same
- * directory structure relative to the source dir where the tests were run.
+ * Scripts which were provided as part of the #GjsCoverage:prefixes construction
+ * property will be written out to @output_directory, in the same directory
+ * structure relative to the source dir where the tests were run.
  *
  * This function takes all available statistics and writes them out to either
  * the file provided or to files of the pattern (filename).info in the same
@@ -400,8 +396,8 @@ gjs_coverage_dispose(GObject *object)
     GjsCoverage *coverage = GJS_COVERAGE(object);
     GjsCoveragePrivate *priv = (GjsCoveragePrivate *) gjs_coverage_get_instance_private(coverage);
 
-    /* Decomission objects inside of the JSContext before
-     * disposing of the context */
+    /* Decomission objects inside of the JSContext before disposing of the
+     * context */
     auto cx = static_cast<JSContext *>(gjs_context_get_native_context(priv->context));
     JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, coverage);
     priv->global = nullptr;

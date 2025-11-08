@@ -329,8 +329,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     bool m_gobj_finalized : 1;
 
     /* True if this object has visible JS state, and thus its lifecycle is
-     * managed using toggle references. False if this object just keeps a
-     * hard ref on the underlying GObject, and may be finalized at will. */
+     * managed using toggle references. False if this object just keeps a hard
+     * ref on the underlying GObject, and may be finalized at will. */
     bool m_uses_toggle_ref : 1;
 
     static bool s_weak_pointer_callback;

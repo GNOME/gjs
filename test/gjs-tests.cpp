@@ -113,8 +113,8 @@ T get_random_number() {
 static void gjstest_test_func_gjs_context_construct_destroy() {
     GjsContext *context;
 
-    /* Construct twice just to possibly a case where global state from
-     * the first leaks.
+    /* Construct twice just to possibly a case where global state from the first
+     * leaks.
      */
     context = gjs_context_new ();
     g_object_unref (context);

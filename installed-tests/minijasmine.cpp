@@ -104,7 +104,7 @@ main(int argc, char **argv)
     gjs_memory_report("after destroying context", true);
 
     /* For TAP, should actually be return 0; as a nonzero return code would
-     * indicate an error in the test harness. But that would be quite silly
-     * when running the tests outside of the TAP driver. */
+     * indicate an error in the test harness. But that would be quite silly when
+     * running the tests outside of the TAP driver. */
     return code;
 }

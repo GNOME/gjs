@@ -31,8 +31,8 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
     int64_t value_val = info.value();
 
     /* g-i converts enum members such as GDK_GRAVITY_SOUTH_WEST to
-     * Gdk.GravityType.south-west (where 'south-west' is value_name)
-     * Convert back to all SOUTH_WEST.
+     * Gdk.GravityType.south-west (where 'south-west' is value_name) Convert
+     * back to all SOUTH_WEST.
      */
     Gjs::AutoChar fixed_name{g_ascii_strup(value_name, -1)};
     for (size_t i = 0; fixed_name[i]; ++i) {
@@ -73,13 +73,13 @@ bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
 
 bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
                             const GI::EnumInfo info) {
-    /* An enumeration is simply an object containing integer attributes for
-     * each enum value. It does not have a special JSClass.
+    /* An enumeration is simply an object containing integer attributes for each
+     * enum value. It does not have a special JSClass.
      *
-     * We could make this more typesafe and also print enum values as strings
-     * if we created a class for each enum and made the enum values instances
-     * of that class. However, it would have a lot more overhead and just
-     * be more complicated in general. I think this is fine.
+     * We could make this more typesafe and also print enum values as strings if
+     * we created a class for each enum and made the enum values instances of
+     * that class. However, it would have a lot more overhead and just be more
+     * complicated in general. I think this is fine.
      */
 
     const char* enum_name = info.name();

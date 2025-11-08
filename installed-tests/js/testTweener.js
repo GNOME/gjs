@@ -136,7 +136,8 @@ describe('Tweener', function () {
         Tweener.addTween(object, {bar: 50, time: 0.1});
         Tweener.addTween(object, {baaz: 50, time: 0.1});
 
-        /* The Tween on property foo should still be run after removing the other two */
+        // The Tween on property foo should still be run after removing the
+        // other two
         Tweener.removeTweens(object, 'bar', 'baaz');
 
         jasmine.clock().tick(101);
@@ -164,9 +165,9 @@ describe('Tweener', function () {
             bar: 0,
         };
 
-        /* In this case both tweens should be executed, as they don't
-         * act on the object at the same time (the second one has a
-         * delay equal to the running time of the first one) */
+        /* In this case both tweens should be executed, as they don't act on the
+         * object at the same time (the second one has a delay equal to the
+         * running time of the first one) */
         Tweener.addTween(objectB, {bar: 100, time: 0.1});
         Tweener.addTween(objectB, {bar: 150, time: 0.1, delay: 0.1});
 

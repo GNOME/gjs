@@ -163,8 +163,8 @@ GJS_JSAPI_RETURN_CONVENTION
 JS::UniqueChars format_saved_frame(JSContext*, JS::HandleObject saved_frame,
                                    size_t indent = 0);
 
-/* Overloaded functions, must be outside G_DECLS. More types are intended to be
- * added as the opportunity arises. */
+/* Overloaded functions. More types are intended to be added as the opportunity
+ * arises. */
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_require_property(JSContext*, JS::HandleObject,

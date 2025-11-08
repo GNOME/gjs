@@ -70,9 +70,9 @@ struct AutoGValue : GValue {
     ~AutoGValue() { g_value_unset(this); }
 };
 
-/* This is based on what GMarshalling does, it is an unsupported API but
- * gjs can be considered a glib implementation for JS, so it is fine
- * to do this, but we need to be in sync with gmarshal.c in GLib.
+/* This is based on what GMarshalling does, it is an unsupported API but GJS can
+ * be considered a GLib implementation for JS, so it is fine to do this, but we
+ * need to be in sync with gmarshal.c in GLib.
  * https://gitlab.gnome.org/GNOME/glib/-/blob/main/gobject/gmarshal.c
  */
 

@@ -105,8 +105,8 @@ class GjsContextPrivate : public JS::JobQueue {
 
     GjsProfiler* m_profiler;
 
-    /* Environment preparer needed for debugger, taken from SpiderMonkey's
-     * JS shell */
+    /* Environment preparer needed for debugger, taken from SpiderMonkey's JS
+     * shell */
     struct EnvironmentPreparer final : protected js::ScriptEnvironmentPreparer {
         JSContext* m_cx;
 

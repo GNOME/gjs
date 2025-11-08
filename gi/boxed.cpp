@@ -529,7 +529,8 @@ bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
 
     FieldInstance* priv = FieldInstance::new_for_js_object(cx, obj);
 
-    /* A structure nested inside a parent object; doesn't have an independent allocation */
+    // A structure nested inside a parent object; doesn't have an independent
+    // allocation
     adopt_nested_ptr(priv, raw_ptr() + field_info.offset());
 
     /* We never actually read the reserved slot, but we put the parent object
@@ -643,9 +644,8 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
         return false;
     }
 
-    /* If we can't directly copy from the source object we need
-     * to construct a new temporary object.
-     */
+    /* If we can't directly copy from the source object we need to construct a
+     * new temporary object. */
     FieldBase* source_priv = nullptr;
     bool field_has_same_info = false;
 
@@ -941,10 +941,10 @@ bool BoxedPrototype<Base, Prototype, Instance>::init(JSContext* cx) {
     jsid zero_args_constructor_name = JS::PropertyKey::Void();
 
     if (gtype() != G_TYPE_NONE) {
-        /* If the structure is registered as a boxed, we can create a new instance by
-         * looking for a zero-args constructor and calling it; constructors don't
-         * really make sense for non-boxed types, since there is no memory management
-         * for the return value.
+        /* If the structure is registered as a boxed, we can create a new
+         * instance by looking for a zero-args constructor and calling it;
+         * constructors don't really make sense for non-boxed types, since there
+         * is no memory management for the return value.
          */
         for (GI::AutoFunctionInfo func_info : info().methods()) {
             if (func_info.is_constructor()) {

@@ -53,9 +53,9 @@ static bool to_string_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-/* Workaround to keep existing code compatible. This function is tacked onto
- * any Uint8Array instances created in situations where previously a ByteArray
- * would have been created. It logs a compatibility warning. */
+/* Workaround to keep existing code compatible. This function is tacked onto any
+ * Uint8Array instances created in situations where previously a ByteArray would
+ * have been created. It logs a compatibility warning. */
 GJS_JSAPI_RETURN_CONVENTION
 static bool instance_to_string_func(JSContext* cx, unsigned argc,
                                     JS::Value* vp) {

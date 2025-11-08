@@ -125,8 +125,8 @@ Gio.bus_unown_name(busWatchId);
 
 /* Asynchronous Usage
  *
- * Below is the alternative, asynchronous usage of proxy wrappers. If creating
- * a proxy asynchronously, you should not consider the proxy ready to use until
+ * Below is the alternative, asynchronous usage of proxy wrappers. If creating a
+ * proxy asynchronously, you should not consider the proxy ready to use until
  * the callback is invoked without error.
  */
 proxy = null;

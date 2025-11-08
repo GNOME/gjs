@@ -207,6 +207,7 @@ GJS_ALWAYS_INLINE static inline ParseArgsResult assign(JSContext* cx, char c,
      * an enum is implementation-defined, so it would not be clear what letter
      * to use in the format string. For the same reason, we can only support
      * enum types that are the same width as int.
+     *
      * Additionally, it would be nice to be able to check whether the resulting
      * value was in range for the enum, but that is not possible (yet?) */
     static_assert(sizeof(T) == sizeof(int),
@@ -316,32 +317,31 @@ GJS_JSAPI_RETURN_CONVENTION [[maybe_unused]] static bool gjs_parse_call_args(
  * @args: #JS::CallArgs from #JSNative function
  * @format: Printf-like format specifier containing the expected arguments
  * @params: for each character in @format, a pair of const char * which is the
- * name of the argument, and a location to store the value. The type of
- * location argument depends on the format character, as described below.
+ * name of the argument, and a location to store the value. The type of location
+ * argument depends on the format character, as described below.
  *
- * This function is inspired by Python's PyArg_ParseTuple for those
- * familiar with it.  It takes a format specifier which gives the
- * types of the expected arguments, and a list of argument names and
- * value location pairs.  The currently accepted format specifiers are:
+ * This function is inspired by Python's PyArg_ParseTuple for those familiar
+ * with it.  It takes a format specifier which gives the types of the expected
+ * arguments, and a list of argument names and value location pairs.  The
+ * currently accepted format specifiers are:
  *
- * b: A boolean (pass a bool *)
- * s: A string, converted into UTF-8 (pass a JS::UniqueChars*)
- * F: A string, converted into "filename encoding" (i.e. active locale) (pass
+ * - b: A boolean (pass a bool *)
+ * - s: A string, converted into UTF-8 (pass a JS::UniqueChars*)
+ * - F: A string, converted into "filename encoding" (i.e. active locale) (pass
  *   a Gjs::AutoChar *)
- * S: A string, no conversion (pass a JS::MutableHandleString)
- * i: A number, will be converted to a 32-bit int (pass an int32_t * or a
+ * - S: A string, no conversion (pass a JS::MutableHandleString)
+ * - i: A number, will be converted to a 32-bit int (pass an int32_t * or a
  *   pointer to an enum type)
- * u: A number, converted into a 32-bit unsigned int (pass a uint32_t *)
- * t: A 64-bit number, converted into a 64-bit int (pass an int64_t *)
- * f: A number, will be converted into a double (pass a double *)
- * o: A JavaScript object (pass a JS::MutableHandleObject)
+ * - u: A number, converted into a 32-bit unsigned int (pass a uint32_t *)
+ * - t: A 64-bit number, converted into a 64-bit int (pass an int64_t *)
+ * - f: A number, will be converted into a double (pass a double *)
+ * - o: A JavaScript object (pass a JS::MutableHandleObject)
  *
- * If the first character in the format string is a '!', then JS is allowed
- * to pass extra arguments that are ignored, to the function.
+ * If the first character in the format string is a '!', then JS is allowed to
+ * pass extra arguments that are ignored, to the function.
  *
- * The '|' character introduces optional arguments.  All format specifiers
- * after a '|' when not specified, do not cause any changes in the C
- * value location.
+ * The '|' character introduces optional arguments.  All format specifiers after
+ * a '|' when not specified, do not cause any changes in the C value location.
  *
  * A prefix character '?' in front of 's', 'F', 'S', or 'o' means that the next
  * value may be null. For 's' or 'F' a null pointer is returned, for 'S' or 'o'

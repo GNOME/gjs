@@ -260,9 +260,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
     if (js_data == nullptr)
         return false;
 
-    /* Unicode codepoints 0x00-0xFF are the same as Latin-1
-     * codepoints, so we can preserve the string length and simply
-     * copy the codepoints to an array of different-sized ints */
+    /* Unicode codepoints 0x00-0xFF are the same as Latin-1 codepoints, so we
+     * can preserve the string length and simply copy the codepoints to an array
+     * of different-sized ints */
 
     *data_p = g_new(T, *len_p);
 
@@ -287,8 +287,8 @@ bool gjs_string_get_char16_data(JSContext* cx, JS::HandleString str,
     if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, data_p, len_p);
 
-    /* From this point on, crash if a GC is triggered while we are using
-     * the string's chars */
+    /* From this point on, crash if a GC is triggered while we are using the
+     * string's chars */
     JS::AutoCheckCannotGC nogc;
 
     const char16_t* js_data =
@@ -333,8 +333,8 @@ gjs_string_to_ucs4(JSContext       *cx,
     if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, ucs4_string_p, len_p);
 
-    /* From this point on, crash if a GC is triggered while we are using
-     * the string's chars */
+    /* From this point on, crash if a GC is triggered while we are using the
+     * string's chars */
     JS::AutoCheckCannotGC nogc;
 
     const char16_t *utf16 =

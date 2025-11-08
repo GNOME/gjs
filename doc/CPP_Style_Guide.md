@@ -174,6 +174,8 @@ without reading the code itself.
 
 Either C++ style comments (`//`) or C style (`/* */`) comments are
 acceptable.
+C++ style comments are preferred if nothing needs to come after the
+comment on the same line.
 However, when documenting a method or function, use [gtk-doc style]
 comments which are based on C style (`/** */`).
 When C style comments take more than one line, put an asterisk (`*`) at

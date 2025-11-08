@@ -42,8 +42,8 @@
 #include "util/misc.h"  // for LogFile
 
 /* Note that this cannot be relied on to test whether two objects are the same!
- * SpiderMonkey can move objects around in memory during garbage collection,
- * and it can also deduplicate identical instances of objects in memory. */
+ * SpiderMonkey can move objects around in memory during garbage collection, and
+ * it can also deduplicate identical instances of objects in memory. */
 static bool gjs_address_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
     JS::RootedObject target_obj{cx};
@@ -105,9 +105,9 @@ static bool gjs_breakpoint(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 // This can reduce performance, so should be used for debugging only.
-// js::CollectNurseryBeforeDump promotes any live objects in the nursery to the
-// tenured heap. This is slow, but this way, we are certain to get an accurate
-// picture of the heap.
+// js::CollectNurseryBeforeDump() promotes any live objects in the nursery to
+// the tenured heap. This is slow, but this way, we are certain to get an
+// accurate picture of the heap.
 static bool gjs_dump_heap(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     Gjs::AutoChar filename;

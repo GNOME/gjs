@@ -89,8 +89,8 @@ class JSTracer;
 using mozilla::Err, mozilla::Maybe, mozilla::Nothing, mozilla::Ok,
     mozilla::Result, mozilla::Some;
 
-/* This is a trick to print out the sizes of the structs at compile time, in
- * an error message. */
+/* This is a trick to print out the sizes of the structs at compile time, in an
+ * error message. */
 // template <int s> struct Measure;
 // Measure<sizeof(ObjectInstance)> instance_size;
 // Measure<sizeof(ObjectPrototype)> prototype_size;
@@ -657,8 +657,8 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
 
     return gjs_value_from_gi_argument(cx, rval, type, GJS_ARGUMENT_FIELD,
                                       GI_TRANSFER_EVERYTHING, &arg);
-    /* transfer is irrelevant because g_field_info_get_field() doesn't
-     * handle boxed types */
+    /* transfer is irrelevant because g_field_info_get_field() doesn't handle
+     * boxed types */
 }
 
 /* Dynamic setter for GObject properties. Returns false on OOM/exception.
@@ -1009,8 +1009,9 @@ bool ObjectBase::field_setter(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* Ignore silently; note that this is different from what we do for
          * boxed types, for historical reasons */
 
-    /* We have to update args.rval(), because JS caches it as the property's "stored
-     * value" (https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/Stored_value)
+    /* We have to update args.rval(), because JS caches it as the property's
+     * "stored value"
+     * (https://web.archive.org/web/20210512234746/https://developer.mozilla.org/en-US/docs/Mozilla/Projects/SpiderMonkey/JSAPI_reference/Stored_value)
      * and so subsequent gets would get the stored value instead of accessing
      * the field */
     args.rval().setUndefined();
@@ -1055,13 +1056,13 @@ static Maybe<GI::AutoVFuncInfo> find_vfunc_on_parents(
     const GI::ObjectInfo info, const char* name, bool* out_defined_by_parent) {
     bool defined_by_parent = false;
 
-    /* ref the first info so that we don't destroy
-     * it when unrefing parents later */
+    /* ref the first info so that we don't destroy it when unrefing parents
+     * later */
     Maybe<GI::AutoObjectInfo> parent{Some(info)};
 
-    /* Since it isn't possible to override a vfunc on
-     * an interface without reimplementing it, we don't need
-     * to search the parent types when looking for a vfunc. */
+    /* Since it isn't possible to override a vfunc on an interface without
+     * reimplementing it, we don't need to search the parent types when looking
+     * for a vfunc. */
     Maybe<GI::AutoVFuncInfo> vfunc =
         parent->find_vfunc_using_interfaces(name).map(
             [](auto&& pair) { return std::move(pair.first); });
@@ -1865,18 +1866,17 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
                                ConsiderMethodsAndProperties);
 
     if (g_str_has_prefix(name, "vfunc_")) {
-        /* The only time we find a vfunc info is when we're the base
-         * class that defined the vfunc. If we let regular prototype
-         * chaining resolve this, we'd have the implementation for the base's
-         * vfunc on the base class, without any other "real" implementations
-         * in the way. If we want to expose a "real" vfunc implementation,
-         * we need to go down to the parent infos and look at their VFuncInfos.
+        /* The only time we find a vfunc info is when we're the base class that
+         * defined the vfunc. If we let regular prototype chaining resolve this,
+         * we'd have the implementation for the base's vfunc on the base class,
+         * without any other "real" implementations in the way. If we want to
+         * expose a "real" vfunc implementation, we need to go down to the
+         * parent infos and look at their VFuncInfos.
          *
          * This is good, but it's memory-hungry -- we would define every
-         * possible vfunc on every possible object, even if it's the same
-         * "real" vfunc underneath. Instead, only expose vfuncs that are
-         * different from their parent, and let prototype chaining do the
-         * rest.
+         * possible vfunc on every possible object, even if it's the same "real"
+         * vfunc underneath. Instead, only expose vfuncs that are different from
+         * their parent, and let prototype chaining do the rest.
          */
 
         const char* name_without_vfunc_ = &(name[6]);  // lifetime tied to name
@@ -1884,8 +1884,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
         Maybe<GI::AutoVFuncInfo> vfunc{find_vfunc_on_parents(
             m_info.ref(), name_without_vfunc_, &defined_by_parent)};
         if (vfunc) {
-            /* In the event that the vfunc is unchanged, let regular
-             * prototypal inheritance take over. */
+            /* In the event that the vfunc is unchanged, let regular prototypal
+             * inheritance take over. */
             if (defined_by_parent && is_vfunc_unchanged(vfunc.ref())) {
                 *resolved = false;
                 return true;
@@ -1898,8 +1898,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
             return true;
         }
 
-        /* If the vfunc wasn't found, fall through, back to normal
-         * method resolution. */
+        /* If the vfunc wasn't found, fall through, back to normal method
+         * resolution. */
     }
 
     if (Maybe<GI::AutoPropertyInfo> property_info =
@@ -1932,24 +1932,21 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
         return true;
     }
 
-    /* find_method does not look at methods on parent classes,
-     * we rely on javascript to walk up the __proto__ chain
-     * and find those and define them in the right prototype.
+    /* find_method does not look at methods on parent classes, we rely on
+     * javascript to walk up the __proto__ chain and find those and define them
+     * in the right prototype.
      *
-     * Note that if it isn't a method on the object, since JS
-     * lacks multiple inheritance, we're sticking the iface
-     * methods in the object prototype, which means there are many
-     * copies of the iface methods (one per object class node that
-     * introduces the iface)
+     * Note that if it isn't a method on the object, since JS lacks multiple
+     * inheritance, we're sticking the iface methods in the object prototype,
+     * which means there are many copies of the iface methods (one per object
+     * class node that introduces the iface)
      */
 
     auto result = m_info->find_method_using_interfaces(name);
 
-    /**
-     * Search through any interfaces implemented by the GType;
-     * See https://bugzilla.gnome.org/show_bug.cgi?id=632922
-     * for background on why we need to do this.
-     */
+    // Search through any interfaces implemented by the GType; see
+    // https://bugzilla.gnome.org/show_bug.cgi?id=632922 for background on why
+    // we need to do this.
     if (!result)
         return resolve_no_info(cx, obj, id, resolved, name,
                                ConsiderOnlyMethods);
@@ -2218,21 +2215,19 @@ void ObjectInstance::toggle_down() {
         GjsContextPrivate* gjs = GjsContextPrivate::from_current_context();
         switch_to_unrooted(gjs->context());
 
-        /* During a GC, the collector asks each object which other
-         * objects that it wants to hold on to so if there's an entire
-         * section of the heap graph that's not connected to anything
-         * else, and not reachable from the root set, then it can be
-         * trashed all at once.
+        /* During a GC, the collector asks each object which other objects that
+         * it wants to hold on to so if there's an entire section of the heap
+         * graph that's not connected to anything else, and not reachable from
+         * the root set, then it can be trashed all at once.
          *
-         * GObjects, however, don't work like that, there's only a
-         * reference count but no notion of who owns the reference so,
-         * a JS object that's wrapping a GObject is unconditionally held
-         * alive as long as the GObject has >1 references.
+         * GObjects, however, don't work like that, there's only a reference
+         * count but no notion of who owns the reference so, a JS object that's
+         * wrapping a GObject is unconditionally held alive as long as the
+         * GObject has >1 references.
          *
-         * Since we cannot know how many more wrapped GObjects are going
-         * be marked for garbage collection after the owner is destroyed,
-         * always queue a garbage collection when a toggle reference goes
-         * down.
+         * Since we cannot know how many more wrapped GObjects are going be
+         * marked for garbage collection after the owner is destroyed, always
+         * queue a garbage collection when a toggle reference goes down.
          */
         if (!gjs->destroying())
             gjs->schedule_gc();
@@ -2265,8 +2260,8 @@ void ObjectInstance::toggle_up() {
 
     debug_lifecycle("Toggle notify UP");
 
-    /* Change to strong ref so the wrappee keeps the wrapper alive
-     * in case the wrapper has data in it that the app cares about
+    /* Change to strong ref so the wrappee keeps the wrapper alive in case the
+     * wrapper has data in it that the app cares about
      */
     if (!wrapper_is_rooted()) {
         // FIXME: thread the context through somehow. Maybe by looking up the
@@ -2303,33 +2298,30 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
         return;
     }
 
-    /* We only want to touch javascript from one thread.
-     * If we're not in that thread, then we need to defer processing
-     * to it.
-     * In case we're toggling up (and thus rooting the JS object) we
-     * also need to take care if GC is running. The marking side
-     * of it is taken care by JS::Heap, which we use in GjsMaybeOwned,
-     * so we're safe. As for sweeping, it is too late: the JS object
-     * is dead, and attempting to keep it alive would soon crash
-     * the process. Plus, if we touch the JSAPI from another thread, libmozjs
-     * aborts in most cases when in debug mode.
-     * Thus, we drain the toggle queue when GC starts, in order to
-     * prevent this from happening.
-     * In practice, a toggle up during JS finalize can only happen
-     * for temporary refs/unrefs of objects that are garbage anyway,
-     * because JS code is never invoked while the finalizers run
-     * and C code needs to clean after itself before it returns
-     * from dispose()/finalize().
-     * On the other hand, toggling down is a lot simpler, because
-     * we're creating more garbage. So we just unroot the object, make it a
-     * weak pointer, and wait for the next GC cycle.
+    /* We only want to touch javascript from one thread. If we're not in that
+     * thread, then we need to defer processing to it.
      *
-     * Note that one would think that toggling up only happens
-     * in the main thread (because toggling up is the result of
-     * the JS object, previously visible only to JS code, becoming
-     * visible to the refcounted C world), but because of weird
-     * weak singletons like g_bus_get_sync() objects can see toggle-ups
-     * from different threads too.
+     * In case we're toggling up (and thus rooting the JS object) we also need
+     * to take care if GC is running. The marking side of it is taken care by
+     * JS::Heap, which we use in GjsMaybeOwned, so we're safe. As for sweeping,
+     * it is too late: the JS object is dead, and attempting to keep it alive
+     * would soon crash the process. Plus, if we touch the JSAPI from another
+     * thread, libmozjs aborts in most cases when in debug mode. Thus, we drain
+     * the toggle queue when GC starts, in order to prevent this from happening.
+     *
+     * In practice, a toggle up during JS finalize can only happen for temporary
+     * refs/unrefs of objects that are garbage anyway, because JS code is never
+     * invoked while the finalizers run and C code needs to clean after itself
+     * before it returns from dispose()/finalize(). On the other hand, toggling
+     * down is a lot simpler, because we're creating more garbage. So we just
+     * unroot the object, make it a weak pointer, and wait for the next GC
+     * cycle.
+     *
+     * Note that one would think that toggling up only happens in the main
+     * thread (because toggling up is the result of the JS object, previously
+     * visible only to JS code, becoming visible to the refcounted C world), but
+     * because of weird weak singletons like g_bus_get_sync() objects can see
+     * toggle-ups from different threads too.
      */
     is_main_thread = gjs->is_owner_thread();
 
@@ -2339,21 +2331,16 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
     bool anything_queued = toggle_up_queued || toggle_down_queued;
 
     if (is_last_ref) {
-        /* We've transitions from 2 -> 1 references,
-         * The JSObject is rooted and we need to unroot it so it
-         * can be garbage collected
-         */
+        // We've transitioned from 2 -> 1 references. The JSObject is rooted and
+        // we need to unroot it so it can be garbage collected
         if (is_main_thread && !anything_queued) {
             self->toggle_down();
         } else {
             toggle_queue->enqueue(self, ToggleQueue::DOWN, toggle_handler);
         }
     } else {
-        /* We've transitioned from 1 -> 2 references.
-         *
-         * The JSObject associated with the gobject is not rooted,
-         * but it needs to be. We'll root it.
-         */
+        // We've transitioned from 1 -> 2 references. The JSObject associated
+        // with the GObject is not rooted, but it needs to be. We'll root it.
         if (is_main_thread && !anything_queued &&
             !JS::RuntimeHeapIsCollecting()) {
             self->toggle_up();
@@ -2422,8 +2409,8 @@ void ObjectInstance::release_native_object() {
     m_ptr = nullptr;
 }
 
-/* At shutdown, we need to ensure we've cleared the context of any
- * pending toggle references.
+/* At shutdown, we need to ensure we've cleared the context of any pending
+ * toggle references.
  */
 void gjs_object_clear_toggles() {
     ToggleQueue::get_default()->handle_all_toggles(toggle_handler);
@@ -2440,10 +2427,13 @@ void gjs_object_shutdown_toggle_queue() {
  * JSObjects that are held by GObjects.
  */
 void ObjectInstance::prepare_shutdown() {
-    /* We iterate over all of the objects, breaking the JS <-> C
-     * association.  We avoid the potential recursion implied in:
-     *   toggle ref removal -> gobj dispose -> toggle ref notify
-     * by emptying the toggle queue earlier in the shutdown sequence. */
+    /* We iterate over all of the objects, breaking the JS <-> C association. We
+     * avoid the potential recursion implied in:
+     *
+     * toggle ref removal -> gobj dispose -> toggle ref notify
+     *
+     * by emptying the toggle queue earlier in the shutdown sequence.
+     */
     ObjectInstance::remove_wrapped_gobjects_if(
         std::mem_fn(&ObjectInstance::wrapper_is_rooted),
         std::mem_fn(&ObjectInstance::release_native_object));
@@ -2513,10 +2503,9 @@ bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
         if (toggle_down_queued)
             toggle_queue->cancel(this);
 
-        /* Ouch, the JS object is dead already. Disassociate the
-         * GObject and hope the GObject dies too. (Remove it from
-         * the weak pointer list first, since the disassociation
-         * may also cause it to be erased.)
+        /* Ouch, the JS object is dead already. Disassociate the GObject and
+         * hope the GObject dies too. (Remove it from the weak pointer list
+         * first, since the disassociation may also cause it to be erased.)
          */
         debug_lifecycle("Found GObject weak pointer whose JS wrapper is about "
                         "to be finalized");
@@ -2567,24 +2556,22 @@ void ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
 
     g_assert(!wrapper_is_rooted());
 
-    /* OK, here is where things get complicated. We want the
-     * wrapped gobj to keep the JSObject* wrapper alive, because
-     * people might set properties on the JSObject* that they care
-     * about. Therefore, whenever the refcount on the wrapped gobj
-     * is >1, i.e. whenever something other than the wrapper is
-     * referencing the wrapped gobj, the wrapped gobj has a strong
-     * ref (gc-roots the wrapper). When the refcount on the
-     * wrapped gobj is 1, then we change to a weak ref to allow
-     * the wrapper to be garbage collected (and thus unref the
-     * wrappee).
+    /* OK, here is where things get complicated. We want the wrapped gobj to
+     * keep the JSObject* wrapper alive, because people might set properties on
+     * the JSObject* that they care about. Therefore, whenever the refcount on
+     * the wrapped gobj is >1, i.e. whenever something other than the wrapper is
+     * referencing the wrapped gobj, the wrapped gobj has a strong ref (gc-roots
+     * the wrapper). When the refcount on the wrapped gobj is 1, then we change
+     * to a weak ref to allow the wrapper to be garbage collected (and thus
+     * unref the wrappee).
      */
     m_uses_toggle_ref = true;
     switch_to_rooted(cx);
     g_object_add_toggle_ref(m_ptr, wrapped_gobj_toggle_notify, this);
 
     /* We now have both a ref and a toggle ref, we only want the toggle ref.
-     * This may immediately remove the GC root we just added, since refcount
-     * may drop to 1. */
+     * This may immediately remove the GC root we just added, since refcount may
+     * drop to 1. */
     g_object_unref(m_ptr);
 }
 
@@ -2706,8 +2693,8 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
          * - This object is a singleton like IBus.IBus
          * - This object passed itself to JS before g_object_new_* returned
          *
-         * In these cases, return the existing JS wrapper object instead
-         * of creating a new one.
+         * In these cases, return the existing JS wrapper object instead of
+         * creating a new one.
          *
          * 'object' has a value that was originally created by
          * JS_NewObjectForConstructor in GJS_NATIVE_CONSTRUCTOR_PRELUDE, but
@@ -2729,8 +2716,8 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
 
     if (G_IS_INITIALLY_UNOWNED(gobj) &&
         !g_object_is_floating(gobj)) {
-        /* GtkWindow does not return a ref to caller of g_object_new.
-         * Need a flag in gobject-introspection to tell us this.
+        /* GtkWindow does not return a ref to caller of g_object_new. Need a
+         * flag in gobject-introspection to tell us this.
          */
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Newly-created object is initially unowned but we did not get the "
@@ -2806,8 +2793,8 @@ ObjectInstance::~ObjectInstance() {
 
     // Do not keep the queue locked here, as we may want to leave the other
     // threads to queue toggle events till we're owning the GObject so that
-    // eventually (once the toggle reference is finally removed) we can be
-    // sure that no other toggle event will target this (soon dead) wrapper.
+    // eventually (once the toggle reference is finally removed) we can be sure
+    // that no other toggle event will target this (soon dead) wrapper.
     bool had_toggle_up;
     bool had_toggle_down;
     std::tie(had_toggle_down, had_toggle_up) =
@@ -2839,9 +2826,9 @@ ObjectInstance::~ObjectInstance() {
     }
 
     if (wrapper_is_rooted()) {
-        /* This happens when the refcount on the object is still >1,
-         * for example with global objects GDK never frees like GdkDisplay,
-         * when we close down the JS runtime.
+        /* This happens when the refcount on the object is still >1, for example
+         * with global objects GDK never frees like GdkDisplay, when we close
+         * down the JS runtime.
          */
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Wrapper was finalized despite being kept alive, has refcount >1");
@@ -2892,9 +2879,8 @@ static JSObject* gjs_lookup_object_constructor_from_info(
 
     JS::RootedObject constructor{cx};
     if (value.isUndefined()) {
-        /* In case we're looking for a private type, and we don't find it,
-           we need to define it first.
-        */
+        // In case we're looking for a private type, and we don't find it, we
+        // need to define it first.
         JS::RootedObject ignored{cx};
         if (!ObjectPrototype::define_class(cx, in_object, Nothing{}, gtype,
                                            nullptr, 0, &constructor, &ignored))
@@ -3500,10 +3486,9 @@ void ObjectPrototype::set_interfaces(GType* interface_gtypes,
  * @constructor: Return location for the constructor object.
  * @prototype: Return location for the prototype object.
  *
- * Define a GObject class constructor and prototype, including all the
- * necessary methods and properties that are not introspected. Provides the
- * constructor and prototype objects as out parameters, for convenience
- * elsewhere.
+ * Define a GObject class constructor and prototype, including all the necessary
+ * methods and properties that are not introspected. Provides the constructor
+ * and prototype objects as out parameters, for convenience elsewhere.
  */
 bool ObjectPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
                                    Maybe<const GI::ObjectInfo> info,
@@ -3521,8 +3506,8 @@ bool ObjectPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
     JS::RootedObject parent_constructor{cx};
     if (!priv->get_parent_constructor(cx, &parent_constructor))
         return false;
-    // If this is a fundamental constructor (e.g. GObject.Object) the
-    // parent constructor may be null.
+    // If this is a fundamental constructor (e.g. GObject.Object) the parent
+    // constructor may be null.
     if (parent_constructor) {
         if (!JS_SetPrototype(cx, constructor, parent_constructor))
             return false;
@@ -3763,8 +3748,8 @@ static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
         GI::AutoTypeInfo type_info{field_info.type_info()};
         if (type_info.tag() != GI_TYPE_TAG_INTERFACE) {
             /* We have a field with the same name, but it's not a callback.
-             * There's no hope of being another field with a correct name,
-             * so just abort early. */
+             * There's no hope of being another field with a correct name, so
+             * just abort early. */
             return Some(std::make_pair(implementor_vtable_ret, Nothing{}));
         }
         return Some(std::make_pair(implementor_vtable_ret,
@@ -3801,8 +3786,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
         info = repo.find_by_gtype<GI::InfoTag::OBJECT>(info_gtype);
     }
 
-    /* If we don't have 'info', we don't have the base class (GObject).
-     * This is awful, so abort now. */
+    /* If we don't have 'info', we don't have the base class (GObject). This is
+     * awful, so abort now. */
     g_assert(info);
 
     Maybe<GI::AutoVFuncInfo> vfunc{info->vfunc(name.get())};
@@ -3815,9 +3800,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             vfunc = info->vfunc(name.get());
     }
 
-    // If the vfunc doesn't exist in the parent
-    // type chain, loop through the explicitly
-    // defined interfaces...
+    // If the vfunc doesn't exist in the parent type chain, loop through the
+    // explicitly defined interfaces...
     if (!vfunc) {
         for (GType interface_gtype : m_interface_gtypes) {
             Maybe<GI::AutoInterfaceInfo> interface{
@@ -3834,10 +3818,9 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     }
 
     // If the vfunc is still not found, it could exist on an interface
-    // implemented by a parent. This is an error, as hooking up the vfunc
-    // would create an implementation on the interface itself. In this
-    // case, print a more helpful error than...
-    // "Could not find definition of virtual function"
+    // implemented by a parent. This is an error, as hooking up the vfunc would
+    // create an implementation on the interface itself. In this case, print a
+    // more helpful error than "Could not find definition of virtual function"
     //
     // See https://gitlab.gnome.org/GNOME/gjs/-/issues/89
     if (!vfunc) {

@@ -299,9 +299,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     /**
      * GIWrapperBase::new_enumerate:
      *
-     * Include this in the Base::klass vtable if the class should support
-     * lazy enumeration (listing all of the lazy properties that can be defined
-     * in resolve().) If it is included, then there must be a corresponding
+     * Include this in the Base::klass vtable if the class should support lazy
+     * enumeration (listing all of the lazy properties that can be defined in
+     * resolve().) If it is included, then there must be a corresponding
      * Prototype::new_enumerate_impl() method.
      */
     GJS_JSAPI_RETURN_CONVENTION
@@ -313,8 +313,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         priv->debug_jsprop("Enumerate hook", "(all)", obj);
 
         if (!priv->is_prototype()) {
-            // Instances don't have any methods or properties.
-            // Spidermonkey will call new_enumerate on the prototype next.
+            // Instances don't have any methods or properties. Spidermonkey will
+            // call new_enumerate on the prototype next.
             return true;
         }
 
@@ -735,10 +735,10 @@ class GIWrapperPrototype : public Base {
         Gjs::AutoPointer<Prototype, void, g_atomic_rc_box_release>;
 
  protected:
-    // m_info may be null in the case of JS-defined types, or internal types
-    // not exposed through introspection, such as GLocalFile. Not all subclasses
-    // of GIWrapperPrototype support this. Object and Interface support it in
-    // any case.
+    // m_info may be null in the case of JS-defined types, or internal types not
+    // exposed through introspection, such as GLocalFile. Not all subclasses of
+    // GIWrapperPrototype support this. Object and Interface support it in any
+    // case.
     OwnedInfo m_info;
     GType m_gtype;
 
