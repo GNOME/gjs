@@ -898,7 +898,7 @@ bool struct_is_simple(const GI::UnownedInfo<TAG>& info) {
         return false;
 
     return std::all_of(
-        iter.begin(), iter.end(), [](GI::AutoFieldInfo field_info) {
+        iter.begin(), iter.end(), [](const GI::AutoFieldInfo& field_info) {
             return type_can_be_allocated_directly(field_info.type_info());
         });
 }
