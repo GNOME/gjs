@@ -3655,6 +3655,9 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
     GjsArgumentFlags flags = GjsArgumentFlags::NONE;
     if (arg.may_be_null())
         flags |= GjsArgumentFlags::MAY_BE_NULL;
+    if ((direction == GI_DIRECTION_OUT || direction == GI_DIRECTION_INOUT) &&
+        arg.is_optional())
+        flags |= GjsArgumentFlags::MAY_BE_NULL;
     if (arg.caller_allocates())
         flags |= GjsArgumentFlags::CALLER_ALLOCATES;
 
