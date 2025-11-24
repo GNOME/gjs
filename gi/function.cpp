@@ -552,7 +552,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             break;
         }
     } else {
-        bool is_array = rval.isObject();
+        bool is_array;
         if (!JS::IsArrayObject(cx, rval, &is_array))
             return false;
 
