@@ -618,7 +618,7 @@ static bool selectFontFace_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     cairo_font_weight_t weight;
 
     if (!gjs_parse_call_args(cx, "selectFontFace", argv, "sii", "family",
-                             &family, "slang", &slant, "weight", &weight))
+                             &family, "slant", &slant, "weight", &weight))
         return false;
 
     cairo_select_font_face(cr, family.get(), slant, weight);
