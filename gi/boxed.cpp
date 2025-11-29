@@ -34,6 +34,7 @@
 #include <jsapi.h>  // for IdVector
 #include <mozilla/HashTable.h>
 #include <mozilla/Result.h>
+#include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
@@ -717,20 +718,21 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
             GjsArgumentFlags::MAY_BE_NULL, field_info.name()))
         return false;
 
-    bool success = true;
+    auto cleanup = mozilla::MakeScopeExit([cx, &arg, &type_info]() {
+        JS::AutoSaveExceptionState saved_exc{cx};
+        if (!gjs_gi_argument_release(cx, GI_TRANSFER_NOTHING, type_info, &arg,
+                                     GjsArgumentFlags::ARG_IN))
+            gjs_log_exception(cx);
+        saved_exc.restore();
+    });
+
     if (field_info.write(m_ptr, &arg).isErr()) {
         gjs_throw(cx, "Writing field %s.%s is not supported",
                   format_name().c_str(), field_info.name());
-        success = false;
+        return false;
     }
 
-    JS::AutoSaveExceptionState saved_exc{cx};
-    if (!gjs_gi_argument_release(cx, GI_TRANSFER_NOTHING, type_info, &arg,
-                                 GjsArgumentFlags::ARG_IN))
-        gjs_log_exception(cx);
-    saved_exc.restore();
-
-    return success;
+    return true;
 }
 
 /**

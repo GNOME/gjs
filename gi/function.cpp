@@ -43,6 +43,7 @@
 #include <jspubtd.h>  // for JSProtoKey
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
+#include <mozilla/ScopeExit.h>
 
 #ifndef G_DISABLE_ASSERT
 #    include <js/CallAndConstruct.h>  // for IsCallable
@@ -340,26 +341,16 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
 
     unsigned n_args = m_info.n_args();
 
-    struct AutoCallbackData {
-        AutoCallbackData(GjsCallbackTrampoline* trampoline,
-                         GjsContextPrivate* gjs)
-            : trampoline(trampoline), gjs(gjs) {}
-        ~AutoCallbackData() {
-            if (trampoline->m_scope == GI_SCOPE_TYPE_ASYNC) {
-                // We don't release the trampoline here as we've an extra ref
-                // that has been set in gjs_marshal_callback_in()
-                gjs_debug_closure("Saving async closure for gc cleanup %p",
-                                  trampoline);
-                gjs->async_closure_enqueue_for_gc(trampoline);
-            }
-            gjs->schedule_gc_if_needed();
+    auto cleanup = mozilla::MakeScopeExit([this, gjs]() {
+        if (this->m_scope == GI_SCOPE_TYPE_ASYNC) {
+            // We don't release the trampoline here as we've an extra ref that
+            // has been set in gjs_marshal_callback_in()
+            gjs_debug_closure("Saving async closure for gc cleanup %p", this);
+            gjs->async_closure_enqueue_for_gc(this);
         }
+        gjs->schedule_gc_if_needed();
+    });
 
-        GjsCallbackTrampoline* trampoline;
-        GjsContextPrivate* gjs;
-    };
-
-    AutoCallbackData callback_data(this, gjs);
     JS::RootedObject this_object{cx};
     unsigned c_args_offset = 0;
     GObject* gobj = nullptr;

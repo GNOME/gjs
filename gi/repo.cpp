@@ -388,14 +388,13 @@ static bool is_import_error(JSContext* cx, JS::HandleValue thrown_value) {
     JS::RootedObject exc(cx, &thrown_value.toObject());
     JS::RootedValue exc_name(cx);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+    auto cleanup =
+        mozilla::MakeScopeExit([&saved_exc]() { saved_exc.restore(); });
     bool eq;
-    bool retval =
-        JS_GetPropertyById(cx, exc, atoms.name(), &exc_name) &&
-        JS_StringEqualsLiteral(cx, exc_name.toString(), "ImportError", &eq) &&
-        eq;
-
-    saved_exc.restore();
-    return retval;
+    return JS_GetPropertyById(cx, exc, atoms.name(), &exc_name) &&
+           JS_StringEqualsLiteral(cx, exc_name.toString(), "ImportError",
+                                  &eq) &&
+           eq;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
