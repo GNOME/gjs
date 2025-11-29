@@ -2629,7 +2629,6 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
                       name(), args.length()))
         return false;
 
-    Gjs::AutoTypeClass<GObjectClass> object_class{gtype()};
     std::vector<const char*> names;
     AutoGValueVector values;
 
@@ -2650,6 +2649,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
                       name());
             return false;
         }
+        Gjs::AutoTypeClass<GObjectClass> object_class{gtype()};
         if (!m_proto->props_to_g_parameters(cx, object_class, props, &names,
                                             &values))
             return false;

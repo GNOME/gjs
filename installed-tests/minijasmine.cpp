@@ -75,7 +75,6 @@ int main(int argc, char** argv) {
     bool success;
     uint8_t code;
     uint8_t u8_exitcode_ignored;
-    int exitcode_ignored;
     if (!gjs_context_eval_module_file(
             gjs_context, "resource:///org/gjs/jsunit/minijasmine.js",
             &u8_exitcode_ignored, &error))
@@ -86,6 +85,7 @@ int main(int argc, char** argv) {
         success = gjs_context_eval_module_file(gjs_context, argv[1],
                                                &u8_exitcode_ignored, &error);
     } else {
+        int exitcode_ignored;
         success = gjs_context_eval_file(gjs_context, argv[1], &exitcode_ignored,
                                         &error);
     }

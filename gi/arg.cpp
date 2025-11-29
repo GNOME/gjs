@@ -1134,8 +1134,6 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
                                                  contents, length_p);
     }
 
-    bool found_length;
-
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '%s' JS value %s to C array, transfer %d",
@@ -1165,6 +1163,7 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
         }
 
         const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        bool found_length;
         if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
             return false;
         if (found_length) {
