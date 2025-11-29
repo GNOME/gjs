@@ -31,6 +31,7 @@
 #include "gi/value.h"
 #include "gi/wrapperutils.h"
 #include "gjs/atoms.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"  // for WeakPtr methods
 #include "gjs/jsapi-util.h"
@@ -88,12 +89,8 @@ static Maybe<GI::AutoFunctionInfo> find_fundamental_constructor(
 bool FundamentalPrototype::resolve_interface(JSContext* cx,
                                              JS::HandleObject obj,
                                              bool* resolved, const char* name) {
-    bool ret;
-    GType *interfaces;
     unsigned n_interfaces;
-
-    ret = true;
-    interfaces = g_type_interfaces(gtype(), &n_interfaces);
+    Gjs::AutoFree<GType> interfaces{g_type_interfaces(gtype(), &n_interfaces)};
     GI::Repository repo;
     for (unsigned i = 0; i < n_interfaces; i++) {
         Maybe<GI::AutoInterfaceInfo> iface_info{
@@ -107,13 +104,12 @@ bool FundamentalPrototype::resolve_interface(JSContext* cx,
             if (gjs_define_function(cx, obj, gtype(), method_info.ref())) {
                 *resolved = true;
             } else {
-                ret = false;
+                return false;
             }
         }
     }
 
-    g_free(interfaces);
-    return ret;
+    return true;
 }
 
 // See GIWrapperBase::resolve().

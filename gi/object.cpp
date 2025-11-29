@@ -1980,7 +1980,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                          bool only_enumerable
                                          [[maybe_unused]]) {
     unsigned n_interfaces;
-    GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
+    Gjs::AutoFree<GType> interfaces{g_type_interfaces(gtype(), &n_interfaces)};
     GI::Repository repo;
 
     for (unsigned k = 0; k < n_interfaces; k++) {
@@ -2019,8 +2019,6 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             properties.infallibleAppend(id);
         }
     }
-
-    g_free(interfaces);
 
     if (info()) {
         GI::ObjectInfo::MethodsIterator meth_iter = info()->methods();
