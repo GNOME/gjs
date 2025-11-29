@@ -87,8 +87,6 @@ GJS_EXPORT
 void gjs_textdomain(const char* domain);
 GJS_EXPORT
 void gjs_bindtextdomain(const char* domain, const char* location);
-GJS_EXPORT
-GType gjs_locale_category_get_type(void) G_GNUC_CONST;
 
 /* For imports.overrides.GObject */
 GJS_EXPORT

@@ -20,30 +20,6 @@
 #include "libgjs-private/gjs-util.h"
 #include "util/console.h"
 
-GType gjs_locale_category_get_type(void) {
-    static size_t gjs_locale_category_get_type = 0;
-    if (g_once_init_enter(&gjs_locale_category_get_type)) {
-        static const GEnumValue v[] = {
-            {GJS_LOCALE_CATEGORY_ALL, "GJS_LOCALE_CATEGORY_ALL", "all"},
-            {GJS_LOCALE_CATEGORY_COLLATE, "GJS_LOCALE_CATEGORY_COLLATE",
-             "collate"},
-            {GJS_LOCALE_CATEGORY_CTYPE, "GJS_LOCALE_CATEGORY_CTYPE", "ctype"},
-            {GJS_LOCALE_CATEGORY_MESSAGES, "GJS_LOCALE_CATEGORY_MESSAGES",
-             "messages"},
-            {GJS_LOCALE_CATEGORY_MONETARY, "GJS_LOCALE_CATEGORY_MONETARY",
-             "monetary"},
-            {GJS_LOCALE_CATEGORY_NUMERIC, "GJS_LOCALE_CATEGORY_NUMERIC",
-             "numeric"},
-            {GJS_LOCALE_CATEGORY_TIME, "GJS_LOCALE_CATEGORY_TIME", "time"},
-            {0, NULL, NULL}};
-        GType g_define_type_id = g_enum_register_static(
-            g_intern_static_string("GjsLocaleCategory"), v);
-
-        g_once_init_leave(&gjs_locale_category_get_type, g_define_type_id);
-    }
-    return gjs_locale_category_get_type;
-}
-
 typedef struct {
     locale_t id;
     char* name;
