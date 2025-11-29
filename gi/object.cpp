@@ -2058,7 +2058,6 @@ bool ObjectPrototype::props_to_g_parameters(
     JSContext* cx, Gjs::AutoTypeClass<GObjectClass> const& object_class,
     JS::HandleObject props, std::vector<const char*>* names,
     AutoGValueVector* values) {
-    size_t ix, length;
     JS::RootedId prop_id{cx};
     JS::RootedValue value{cx};
     JS::Rooted<JS::IdVector> ids{cx, cx};
@@ -2070,7 +2069,7 @@ bool ObjectPrototype::props_to_g_parameters(
     }
 
     values->reserve(ids.length());
-    for (ix = 0, length = ids.length(); ix < length; ix++) {
+    for (size_t ix = 0, length = ids.length(); ix < length; ix++) {
         /* ids[ix] is reachable because props is rooted, but require_property
          * doesn't know that */
         prop_id = ids[ix];
@@ -2281,7 +2280,6 @@ static void toggle_handler(ObjectInstance* self,
 
 void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
                                                 gboolean is_last_ref) {
-    bool is_main_thread;
     bool toggle_up_queued, toggle_down_queued;
     auto* self = static_cast<ObjectInstance*>(instance);
 
@@ -2316,7 +2314,7 @@ void ObjectInstance::wrapped_gobj_toggle_notify(void* instance, GObject*,
      * because of weird weak singletons like g_bus_get_sync() objects can see
      * toggle-ups from different threads too.
      */
-    is_main_thread = gjs->is_owner_thread();
+    bool is_main_thread = gjs->is_owner_thread();
 
     auto toggle_queue = ToggleQueue::get_default();
     std::tie(toggle_down_queued, toggle_up_queued) =
@@ -3859,10 +3857,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     void* implementor_vtable = result->first;
     Maybe<GI::AutoFieldInfo> field_info = result->second;
     if (field_info) {
-        void* method_ptr;
-
         int offset = field_info->offset();
-        method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
+        void* method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
 
         if (!JS::IsCallable(callable)) {
             gjs_throw(cx, "Tried to deal with a vfunc that wasn't callable");

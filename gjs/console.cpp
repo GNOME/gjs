@@ -126,10 +126,8 @@ static void check_script_args_for_stray_gjs_args(int argc, char* const* argv) {
         {nullptr}};
 
     Gjs::AutoStrv argv_copy{g_new(char*, argc + 2)};
-    int ix;
-
     argv_copy[0] = g_strdup("dummy");  // Fake argv[0] for GOptionContext
-    for (ix = 0; ix < argc; ix++)
+    for (int ix = 0; ix < argc; ix++)
         argv_copy[ix + 1] = g_strdup(argv[ix]);
     argv_copy[argc + 1] = nullptr;
 
@@ -201,7 +199,7 @@ int define_argv_and_eval_script(GjsContext* gjs_context, int argc,
 
 int main(int argc, char** argv) {
     Gjs::AutoError error;
-    int gjs_argc = argc, script_argc, ix;
+    int gjs_argc = argc;
     bool interactive_mode = false;
 
     setlocale(LC_ALL, "");
@@ -219,7 +217,7 @@ int main(int argc, char** argv) {
 
     // Split options so we pass unknown ones through to the JS script
     int argc_copy = g_strv_length(argv_copy);
-    for (ix = 1; ix < argc; ix++) {
+    for (int ix = 1; ix < argc; ix++) {
         // Check if a file was given and split after it
         if (argc_copy >= 2 && strcmp(argv[ix], argv_copy[1]) == 0) {
             // Filename given; split after this argument
@@ -236,7 +234,7 @@ int main(int argc, char** argv) {
     }
     Gjs::AutoStrv gjs_argv_addr{strndupv(gjs_argc, argv)};
     char** gjs_argv = gjs_argv_addr;
-    script_argc = argc - gjs_argc;
+    int script_argc = argc - gjs_argc;
     char* const* script_argv = argv + gjs_argc;
 
     // Parse again, only the GJS options this time

@@ -73,9 +73,8 @@
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc) \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
-    cairo_bool_t ret;                                   \
     _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
-    ret = cfunc(cr);                                    \
+    cairo_bool_t ret = cfunc(cr);                       \
     argv.rval().setBoolean(ret);                        \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
@@ -145,9 +144,8 @@
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc) \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
-    double ret;                                         \
     _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
-    ret = cfunc(cr);                                    \
+    double ret = cfunc(cr);                             \
     argv.rval().setNumber(JS::CanonicalizeNaN(ret));    \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
@@ -174,10 +172,9 @@
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                              \
     t1 arg1;                                                                  \
     t2 arg2;                                                                  \
-    cairo_bool_t ret;                                                         \
     if (!gjs_parse_call_args(cx, #method, argv, fmt, #n1, &arg1, #n2, &arg2)) \
         return false;                                                         \
-    ret = cfunc(cr, arg1, arg2);                                              \
+    cairo_bool_t ret = cfunc(cr, arg1, arg2);                                 \
     argv.rval().setBoolean(ret);                                              \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 

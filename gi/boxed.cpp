@@ -242,8 +242,6 @@ BoxedPrototype<Base, Prototype, Instance>::lookup_field(JSContext* cx,
 template <class Base, class Prototype, class Instance>
 bool BoxedInstance<Base, Prototype, Instance>::init_from_props(
     JSContext* cx, JS::Value props_value) {
-    size_t ix, length;
-
     if (!props_value.isObject()) {
         gjs_throw(cx, "argument should be a hash with fields to set");
         return false;
@@ -257,7 +255,7 @@ bool BoxedInstance<Base, Prototype, Instance>::init_from_props(
     }
 
     JS::RootedValue value{cx};
-    for (ix = 0, length = ids.length(); ix < length; ix++) {
+    for (size_t ix = 0, length = ids.length(); ix < length; ix++) {
         if (!ids[ix].isString()) {
             gjs_throw(cx, "Fields hash contained a non-string field");
             return false;

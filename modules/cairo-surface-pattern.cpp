@@ -71,7 +71,6 @@ static bool setExtend_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool getExtend_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    cairo_extend_t extend;
 
     if (argc > 0) {
         gjs_throw(cx, "SurfacePattern.getExtend() requires no arguments");
@@ -82,7 +81,7 @@ static bool getExtend_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!pattern)
         return false;
 
-    extend = cairo_pattern_get_extend(pattern);
+    cairo_extend_t extend = cairo_pattern_get_extend(pattern);
 
     if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
@@ -116,7 +115,6 @@ static bool setFilter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool getFilter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    cairo_filter_t filter;
 
     if (argc > 0) {
         gjs_throw(cx, "SurfacePattern.getFilter() requires no arguments");
@@ -127,7 +125,7 @@ static bool getFilter_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!pattern)
         return false;
 
-    filter = cairo_pattern_get_filter(pattern);
+    cairo_filter_t filter = cairo_pattern_get_filter(pattern);
 
     if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;

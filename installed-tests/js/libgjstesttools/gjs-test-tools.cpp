@@ -335,21 +335,18 @@ static void throw_errno_prefix(GError** error, const char* prefix) {
  * Returns: file descriptor, or -1 on error
  */
 int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
-    int pipefd[2], result;
-    size_t count;
-    const void* buf;
-    ssize_t bytes_written;
-
     g_return_val_if_fail(bytes, -1);
     g_return_val_if_fail(error == nullptr || *error == nullptr, -1);
 
 #ifdef G_OS_UNIX
+    int pipefd[2];
     if (!g_unix_open_pipe(pipefd, FD_CLOEXEC, error))
         return -1;
 
-    buf = g_bytes_get_data(bytes, &count);
+    size_t count;
+    const void* buf = g_bytes_get_data(bytes, &count);
 
-    bytes_written = write(pipefd[1], buf, count);
+    ssize_t bytes_written = write(pipefd[1], buf, count);
     if (bytes_written < 0) {
         throw_errno_prefix(error, "write");
         return -1;
@@ -359,7 +356,7 @@ int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
         g_warning("%s: %zu bytes sent, only %zd bytes written", __func__, count,
                   bytes_written);
 
-    result = close(pipefd[1]);
+    int result = close(pipefd[1]);
     if (result == -1) {
         throw_errno_prefix(error, "close");
         return -1;

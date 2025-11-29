@@ -146,12 +146,11 @@ static JSObject* make_rectangle(JSContext* cx, cairo_rectangle_int_t* rect) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool num_rectangles_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     PRELUDE;
-    int n_rects;
 
     if (!gjs_parse_call_args(cx, "num_rectangles", argv, ""))
         return false;
 
-    n_rects = cairo_region_num_rectangles(this_region);
+    int n_rects = cairo_region_num_rectangles(this_region);
     argv.rval().setInt32(n_rects);
     RETURN_STATUS;
 }

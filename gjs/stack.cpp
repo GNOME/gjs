@@ -38,7 +38,6 @@ void gjs_dumpstack() {
 }
 
 std::string gjs_dumpstack_string() {
-    std::string out;
     std::ostringstream all_traces;
 
     Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
@@ -59,7 +58,7 @@ std::string gjs_dumpstack_string() {
                    << " ==\n"
                    << trace.get() << "\n";
     }
-    out = all_traces.str();
+    std::string out = all_traces.str();
     out.resize(MAX(out.size() - 2, 0));
 
     return out;

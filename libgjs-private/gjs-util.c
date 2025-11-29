@@ -88,9 +88,7 @@ static size_t get_number_of_locale_categories(void) {
 
 static void gjs_locales_free(GjsLocale** locales) {
     size_t number_of_categories = get_number_of_locale_categories();
-    size_t i;
-
-    for (i = 0; i < number_of_categories; i++) {
+    for (size_t i = 0; i < number_of_categories; i++) {
         GjsLocale* locale = locales[i];
         gjs_clear_locale_id(&locale->id);
         g_clear_pointer(&locale->name, g_free);
@@ -102,11 +100,7 @@ static void gjs_locales_free(GjsLocale** locales) {
 
 static GjsLocale* gjs_locales_new(void) {
     size_t number_of_categories = get_number_of_locale_categories();
-    GjsLocale* locales;
-
-    locales = g_new0(GjsLocale, number_of_categories);
-
-    return locales;
+    return g_new0(GjsLocale, number_of_categories);
 }
 
 static GPrivate gjs_private_locale_key =
@@ -122,10 +116,8 @@ static GPrivate gjs_private_locale_key =
 const char* gjs_set_thread_locale(GjsLocaleCategory category,
                                   const char* locale_name) {
     locale_t new_locale_id = UNSET_LOCALE_ID, old_locale_id = UNSET_LOCALE_ID;
-    int category_mask;
     char* prior_name = NULL;
     bool success = false;
-    int errno_save;
 
     GjsLocale* locales = g_private_get(&gjs_private_locale_key);
 
@@ -150,7 +142,7 @@ const char* gjs_set_thread_locale(GjsLocaleCategory category,
     if (old_locale_id == UNSET_LOCALE_ID)
         goto out;
 
-    category_mask = gjs_locale_category_get_mask(category);
+    int category_mask = gjs_locale_category_get_mask(category);
 
     if (category_mask == 0)
         goto out;
@@ -173,7 +165,7 @@ const char* gjs_set_thread_locale(GjsLocaleCategory category,
     success = true;
 out:
     g_clear_pointer(&prior_name, g_free);
-    errno_save = errno;
+    int errno_save = errno;
     gjs_clear_locale_id(&old_locale_id);
     gjs_clear_locale_id(&new_locale_id);
     errno = errno_save;
@@ -274,7 +266,6 @@ static GParamSpec* gjs_gtk_container_class_find_child_property(
 void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
                                           const char* property,
                                           const GValue* value) {
-    GParamSpec* pspec = NULL;
     GIFunctionInfo* child_set_property_fun = NULL;
     GValue value_arg = G_VALUE_INIT;
     GIArgument ret;
@@ -285,8 +276,8 @@ void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
     GIObjectInfo* container_info =
         GI_OBJECT_INFO(gi_repository_find_by_name(repo, "Gtk", "Container"));
 
-    pspec = gjs_gtk_container_class_find_child_property(container_info,
-                                                        container, property);
+    GParamSpec* pspec = gjs_gtk_container_class_find_child_property(
+        container_info, container, property);
     if (pspec == NULL) {
         g_warning("%s does not have a property called %s",
                   g_type_name(G_OBJECT_TYPE(container)), property);
@@ -462,8 +453,7 @@ static GLogWriterOutput gjs_log_writer_func_wrapper(GLogLevelFlags log_level,
     GVariantDict dict;
     g_variant_dict_init(&dict, NULL);
 
-    size_t f;
-    for (f = 0; f < n_fields; f++) {
+    for (size_t f = 0; f < n_fields; f++) {
         const GLogField* field = &fields[f];
 
         GVariant* value;

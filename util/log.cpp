@@ -109,7 +109,6 @@ void gjs_log_init() {
         s_debug_log_enabled = true;
     } else if (debug_output) {
         std::string log_file;
-        char* c;
 
         /* Allow debug-%u.log for per-pid logfiles as otherwise log messages
          * from multiple processes can overwrite each other.
@@ -117,7 +116,7 @@ void gjs_log_init() {
          * (printf below should be safe as we check '%u' is the only format
          * string)
          */
-        c = strchr(const_cast<char*>(debug_output), '%');
+        char* c = strchr(const_cast<char*>(debug_output), '%');
         if (c && c[1] == 'u' && !strchr(c + 1, '%')) {
             Gjs::AutoChar file_name;
 #if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)

@@ -452,8 +452,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
                                  const GI::TypeInfo type_info,
                                  GITransfer transfer, GHashTable** hash_p) {
-    size_t id_ix, id_len;
-
     g_assert(props && "Property bag cannot be null");
 
     GI::AutoTypeInfo key_type{type_info.key_type()};
@@ -488,7 +486,7 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
 
     JS::RootedValue key_js{cx}, val_js{cx};
     JS::RootedId cur_id{cx};
-    for (id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
+    for (size_t id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
         cur_id = ids[id_ix];
         void* key_ptr;
         GIArgument val_arg = { 0 };

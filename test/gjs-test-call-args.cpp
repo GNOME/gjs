@@ -57,8 +57,7 @@ typedef enum _test_signed_enum {
 
 #define JSNATIVE_TEST_FUNC_BEGIN(name)                              \
     static bool name(JSContext* cx, unsigned argc, JS::Value* vp) { \
-        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);           \
-        bool retval;
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
 #define JSNATIVE_TEST_FUNC_END           \
         if (retval)                      \
@@ -67,18 +66,18 @@ typedef enum _test_signed_enum {
     }
 
 JSNATIVE_TEST_FUNC_BEGIN(no_args)
-    retval = gjs_parse_call_args(cx, "noArgs", args, "");
+    bool retval = gjs_parse_call_args(cx, "noArgs", args, "");
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(no_args_ignore_trailing)
-    retval = gjs_parse_call_args(cx, "noArgsIgnoreTrailing", args, "!");
+    bool retval = gjs_parse_call_args(cx, "noArgsIgnoreTrailing", args, "!");
 JSNATIVE_TEST_FUNC_END
 
-#define JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(type, fmt)                      \
-    JSNATIVE_TEST_FUNC_BEGIN(type##_arg_no_assert)                        \
-        type val;                                                         \
-        retval = gjs_parse_call_args(cx, #type "ArgNoAssert", args, fmt,  \
-                                     "val", &val);                        \
+#define JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(type, fmt)                          \
+    JSNATIVE_TEST_FUNC_BEGIN(type##_arg_no_assert)                            \
+        type val;                                                             \
+        bool retval = gjs_parse_call_args(cx, #type "ArgNoAssert", args, fmt, \
+                                          "val", &val);                       \
     JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(bool, "b");
@@ -88,21 +87,20 @@ JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(int, "i");
 
 JSNATIVE_TEST_FUNC_BEGIN(object_arg_no_assert)
     JS::RootedObject val(cx);
-    retval = gjs_parse_call_args(cx, "objectArgNoAssert", args, "o",
-                                 "val", &val);
+    bool retval =
+        gjs_parse_call_args(cx, "objectArgNoAssert", args, "o", "val", &val);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(optional_int_args_no_assert)
     int val1, val2;
-    retval = gjs_parse_call_args(cx, "optionalIntArgsNoAssert", args, "i|i",
-                                 "val1", &val1,
-                                 "val2", &val2);
+    bool retval = gjs_parse_call_args(cx, "optionalIntArgsNoAssert", args,
+                                      "i|i", "val1", &val1, "val2", &val2);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(args_ignore_trailing)
     int val;
-    retval = gjs_parse_call_args(cx, "argsIgnoreTrailing", args, "!i",
-                                 "val", &val);
+    bool retval =
+        gjs_parse_call_args(cx, "argsIgnoreTrailing", args, "!i", "val", &val);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
@@ -115,7 +113,7 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_type)
     int64_t int64val;
     double dblval;
     JS::RootedObject objval(cx);
-    retval = gjs_parse_call_args(
+    bool retval = gjs_parse_call_args(
         cx, "oneOfEachType", args, "bsFSiutfo", "bool", &boolval, "str",
         &strval, "file", &fileval, "jsstr", &jsstrval, "int", &intval, "uint",
         &uintval, "int64", &int64val, "dbl", &dblval, "obj", &objval);
@@ -135,10 +133,9 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(optional_args_all)
     bool val1, val2, val3;
-    retval = gjs_parse_call_args(cx, "optionalArgsAll", args, "b|bb",
-                                 "val1", &val1,
-                                 "val2", &val2,
-                                 "val3", &val3);
+    bool retval =
+        gjs_parse_call_args(cx, "optionalArgsAll", args, "b|bb", "val1", &val1,
+                            "val2", &val2, "val3", &val3);
     g_assert_cmpint(val1, ==, true);
     g_assert_cmpint(val2, ==, true);
     g_assert_cmpint(val3, ==, true);
@@ -146,10 +143,9 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(optional_args_only_required)
     bool val1 = false, val2 = false, val3 = false;
-    retval = gjs_parse_call_args(cx, "optionalArgsOnlyRequired", args, "b|bb",
-                                 "val1", &val1,
-                                 "val2", &val2,
-                                 "val3", &val3);
+    bool retval =
+        gjs_parse_call_args(cx, "optionalArgsOnlyRequired", args, "b|bb",
+                            "val1", &val1, "val2", &val2, "val3", &val3);
     g_assert_cmpint(val1, ==, true);
     g_assert_cmpint(val2, ==, false);
     g_assert_cmpint(val3, ==, false);
@@ -157,22 +153,21 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(only_optional_args)
     int val1, val2;
-    retval = gjs_parse_call_args(cx, "onlyOptionalArgs", args, "|ii",
-                                 "val1", &val1,
-                                 "val2", &val2);
+    bool retval = gjs_parse_call_args(cx, "onlyOptionalArgs", args, "|ii",
+                                      "val1", &val1, "val2", &val2);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(unsigned_enum_arg)
     test_enum_t val;
-    retval = gjs_parse_call_args(cx, "unsignedEnumArg", args, "i",
-                                 "enum_param", &val);
+    bool retval = gjs_parse_call_args(cx, "unsignedEnumArg", args, "i",
+                                      "enum_param", &val);
     g_assert_cmpint(val, ==, ONE);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(signed_enum_arg)
     test_signed_enum_t val;
-    retval = gjs_parse_call_args(cx, "signedEnumArg", args, "i",
-                                 "enum_param", &val);
+    bool retval =
+        gjs_parse_call_args(cx, "signedEnumArg", args, "i", "enum_param", &val);
     g_assert_cmpint(val, ==, MINUS_ONE);
 JSNATIVE_TEST_FUNC_END
 
@@ -181,9 +176,9 @@ JSNATIVE_TEST_FUNC_BEGIN(one_of_each_nullable_type)
     Gjs::AutoChar fileval;
     JS::RootedString jsstrval(cx);
     JS::RootedObject objval(cx);
-    retval = gjs_parse_call_args(cx, "oneOfEachNullableType", args, "?s?F?S?o",
-                                 "strval", &strval, "fileval", &fileval,
-                                 "jsstrval", &jsstrval, "objval", &objval);
+    bool retval = gjs_parse_call_args(
+        cx, "oneOfEachNullableType", args, "?s?F?S?o", "strval", &strval,
+        "fileval", &fileval, "jsstrval", &jsstrval, "objval", &objval);
     g_assert_null(strval);
     g_assert_null(fileval);
     g_assert_false(jsstrval);
@@ -195,19 +190,18 @@ JSNATIVE_TEST_FUNC_BEGIN(unwind_free_test)
     unsigned uval;
     JS::RootedString jsstrval(cx);
     JS::RootedObject objval(cx);
-    retval = gjs_parse_call_args(cx, "unwindFreeTest", args, "oSiu", "objval",
-                                 &objval, "jsstrval", &jsstrval, "intval",
-                                 &intval, "error", &uval);
+    bool retval = gjs_parse_call_args(cx, "unwindFreeTest", args, "oSiu",
+                                      "objval", &objval, "jsstrval", &jsstrval,
+                                      "intval", &intval, "error", &uval);
     g_assert_false(objval);
     g_assert_false(jsstrval);
 JSNATIVE_TEST_FUNC_END
 
-#define JSNATIVE_BAD_NULLABLE_TEST_FUNC(type, fmt)                 \
-    JSNATIVE_TEST_FUNC_BEGIN(type##_invalid_nullable)              \
-        type val;                                                  \
-        retval = gjs_parse_call_args(cx, #type "InvalidNullable",  \
-                                     args, "?" fmt,                \
-                                     "val", &val);                 \
+#define JSNATIVE_BAD_NULLABLE_TEST_FUNC(type, fmt)                           \
+    JSNATIVE_TEST_FUNC_BEGIN(type##_invalid_nullable)                        \
+        type val;                                                            \
+        bool retval = gjs_parse_call_args(cx, #type "InvalidNullable", args, \
+                                          "?" fmt, "val", &val);             \
     JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_BAD_NULLABLE_TEST_FUNC(bool, "b");
@@ -218,11 +212,11 @@ JSNATIVE_BAD_NULLABLE_TEST_FUNC(double, "f");
 
 #undef JSNATIVE_BAD_NULLABLE_TEST_FUNC
 
-#define JSNATIVE_BAD_TYPE_TEST_FUNC(type, ch)                            \
-    JSNATIVE_TEST_FUNC_BEGIN(type##_invalid_type)                        \
-        type val;                                                        \
-        retval = gjs_parse_call_args(cx, #type "InvalidType", args, ch,  \
-                                     "val", &val);                       \
+#define JSNATIVE_BAD_TYPE_TEST_FUNC(type, ch)                                \
+    JSNATIVE_TEST_FUNC_BEGIN(type##_invalid_type)                            \
+        type val;                                                            \
+        bool retval = gjs_parse_call_args(cx, #type "InvalidType", args, ch, \
+                                          "val", &val);                      \
     JSNATIVE_TEST_FUNC_END
 
 using Gjs::AutoChar;
@@ -237,20 +231,20 @@ JSNATIVE_BAD_TYPE_TEST_FUNC(AutoChar, "i");
 
 JSNATIVE_TEST_FUNC_BEGIN(UniqueChars_invalid_type)
     JS::UniqueChars value;
-    retval = gjs_parse_call_args(cx, "UniqueCharsInvalidType", args, "i",
-                                 "value", &value);
+    bool retval = gjs_parse_call_args(cx, "UniqueCharsInvalidType", args, "i",
+                                      "value", &value);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(JSString_invalid_type)
     JS::RootedString val(cx);
-    retval =
+    bool retval =
         gjs_parse_call_args(cx, "JSStringInvalidType", args, "i", "val", &val);
 JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(object_invalid_type)
     JS::RootedObject val(cx);
-    retval = gjs_parse_call_args(cx, "objectInvalidType", args, "i",
-                                 "val", &val);
+    bool retval =
+        gjs_parse_call_args(cx, "objectInvalidType", args, "i", "val", &val);
 JSNATIVE_TEST_FUNC_END
 
 static JSFunctionSpec native_test_funcs[] = {

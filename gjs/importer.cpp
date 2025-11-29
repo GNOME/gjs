@@ -432,13 +432,13 @@ static bool import_file_on_module(JSContext* cx, JS::HandleObject obj,
 GJS_JSAPI_RETURN_CONVENTION
 static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
     JS::RootedObject search_path{cx};
-    bool exists, is_array;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
     if (!gjs_object_require_property(cx, obj, "importer", atoms.search_path(),
                                      &search_path))
         return false;
 
+    bool is_array;
     if (!JS::IsArrayObject(cx, search_path, &is_array))
         return false;
     if (!is_array) {
@@ -539,7 +539,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
 
         // Third, if it's not a directory, try importing a file
         file = g_file_get_child(directory, filename.get());
-        exists = g_file_query_exists(file, nullptr);
+        bool exists = g_file_query_exists(file, nullptr);
 
         if (!exists) {
             Gjs::AutoChar full_path{g_file_get_parse_name(file)};
@@ -746,8 +746,6 @@ static const std::vector<std::string>& gjs_get_search_path() {
     // not thread safe
 
     if (!search_path_initialized) {
-        const char* const* system_data_dirs;
-
         // in order of priority
 
         // $GJS_PATH
@@ -764,7 +762,7 @@ static const std::vector<std::string>& gjs_get_search_path() {
         gjs_search_path.push_back("resource:///org/gnome/gjs/modules/core/");
 
         // $XDG_DATA_DIRS /gjs-1.0
-        system_data_dirs = g_get_system_data_dirs();
+        const char* const* system_data_dirs = g_get_system_data_dirs();
         for (size_t i = 0; system_data_dirs[i] != nullptr; ++i) {
             Gjs::AutoChar s{
                 g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr)};
