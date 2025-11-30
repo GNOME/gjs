@@ -27,9 +27,7 @@ struct GjsRootingFixture : GjsUnitTestFixture {
     GjsMaybeOwned* obj;  // only used in callback test cases
 };
 
-static JSObject *
-test_obj_new(GjsRootingFixture *fx)
-{
+static JSObject* test_obj_new(GjsRootingFixture* fx) {
     return JS::NewObjectWithStashedPointer(fx->cx, fx,
                                            [](GjsRootingFixture* data) {
                                                g_assert_false(data->finalized);
@@ -56,9 +54,7 @@ static void teardown(GjsRootingFixture* fx, const void* unused) {
     gjs_unit_test_fixture_teardown(fx, unused);
 }
 
-static void
-wait_for_gc(GjsRootingFixture *fx)
-{
+static void wait_for_gc(GjsRootingFixture* fx) {
     int count = g_atomic_int_get(&gc_counter);
 
     JS_GC(fx->cx);
@@ -187,7 +183,7 @@ static void test_maybe_owned_switch_to_unrooted_allows_collection(
 }
 
 static void context_destroyed(JSContext*, void* data) {
-    auto fx = static_cast<GjsRootingFixture *>(data);
+    auto* fx = static_cast<GjsRootingFixture*>(data);
     g_assert_false(fx->notify_called);
     g_assert_false(fx->finalized);
     fx->notify_called = true;
@@ -247,8 +243,9 @@ void gjs_test_add_tests_for_rooting() {
 #define ADD_CONTEXT_DESTROY_TEST(path, f) \
     g_test_add("/rooting/" path, GjsRootingFixture, nullptr, setup, f, nullptr);
 
-    ADD_CONTEXT_DESTROY_TEST("maybe-owned/notify-callback-called-on-context-destroy",
-                             test_maybe_owned_notify_callback_called_on_context_destroy);
+    ADD_CONTEXT_DESTROY_TEST(
+        "maybe-owned/notify-callback-called-on-context-destroy",
+        test_maybe_owned_notify_callback_called_on_context_destroy);
     ADD_CONTEXT_DESTROY_TEST("maybe-owned/object-destroyed-after-notify",
                              test_maybe_owned_object_destroyed_after_notify);
 

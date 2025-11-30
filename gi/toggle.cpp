@@ -70,18 +70,14 @@ void ToggleQueue::handle_all_toggles(Handler handler) {
         ;
 }
 
-gboolean
-ToggleQueue::idle_handle_toggle(void *data)
-{
+gboolean ToggleQueue::idle_handle_toggle(void* data) {
     auto self = Locked(static_cast<ToggleQueue*>(data));
     self->handle_all_toggles(self->m_toggle_handler);
 
     return G_SOURCE_REMOVE;
 }
 
-void
-ToggleQueue::idle_destroy_notify(void *data)
-{
+void ToggleQueue::idle_destroy_notify(void* data) {
     auto self = Locked(static_cast<ToggleQueue*>(data));
     self->m_idle_id = 0;
     self->m_toggle_handler = nullptr;
@@ -126,7 +122,7 @@ bool ToggleQueue::handle_toggle(Handler handler) {
     if (q.empty())
         return false;
 
-    auto const& item = q.front();
+    const Item& item = q.front();
     if (item.direction == UP)
         debug("handle UP", item.object);
     else
@@ -151,7 +147,7 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
                           ToggleQueue::Handler handler) {
     g_assert(owns_lock() && "Unsafe access to queue");
 
-    if (G_UNLIKELY (m_shutdown)) {
+    if (G_UNLIKELY(m_shutdown)) {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Enqueuing GObject %p to toggle %s after "
                   "shutdown, probably from another thread (%p).",
@@ -170,13 +166,14 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
         return;
     }
 
-    /* Only keep an unowned reference on the object here, as if we're here, the
-     * JSObject wrapper has already a reference and we don't want to cause
-     * any weak notify in case it has lost one already in the main thread.
-     * So let's just save the pointer to keep track of the object till we
-     * don't handle this toggle.
-     * We rely on object's cancelling the queue in case an object gets
-     * finalized earlier than we've processed it.
+    /* Only keep an unowned reference on the object here, since if we're here,
+     * the JSObject wrapper already has a reference and we don't want to cause
+     * any weak notify in case it has lost one already in the main thread. So
+     * let's just save the pointer to keep track of the object till we don't
+     * handle this toggle.
+     *
+     * We rely on objects cancelling the queue in case an object gets finalized
+     * earlier than we've processed it.
      */
     q.emplace_back(obj, direction);
 

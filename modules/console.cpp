@@ -74,8 +74,8 @@ static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
 class AutoReportException {
     JSContext *m_cx;
 
-public:
-    explicit AutoReportException(JSContext *cx) : m_cx(cx) {}
+ public:
+    explicit AutoReportException(JSContext* cx) : m_cx(cx) {}
 
     ~AutoReportException() {
         if (!JS_IsExceptionPending(m_cx))
@@ -114,7 +114,6 @@ public:
         JS_ClearPendingException(m_cx);
     }
 };
-
 
 // Adapted from https://stackoverflow.com/a/17035073/172999
 class AutoCatchCtrlC {
@@ -238,10 +237,9 @@ std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
  * exception. (This is because the exception should be auto-printed around the
  * invocation of this function.)
  */
-[[nodiscard]] static bool gjs_console_eval_and_print(JSContext* cx,
-                                                     JS::HandleObject global,
-                                                     const std::string& bytes,
-                                                     int lineno) {
+[[nodiscard]]
+static bool gjs_console_eval_and_print(JSContext* cx, JS::HandleObject global,
+                                       const std::string& bytes, int lineno) {
     JS::SourceText<mozilla::Utf8Unit> source;
     if (!source.init(cx, bytes.c_str(), bytes.size(),
                      JS::SourceOwnership::Borrowed))
@@ -281,7 +279,7 @@ std::string print_string_value(JSContext* cx, JS::HandleValue v_string) {
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     volatile bool eof, exit_warning;  // accessed after setjmp()
     JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
     volatile int lineno;     // accessed after setjmp()
@@ -367,7 +365,7 @@ static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     g_fprintf(stdout, "\n");
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 

@@ -56,32 +56,33 @@ class Closure : public GClosure {
  public:
     using Ptr = Gjs::AutoPointer<Closure, Closure, unref, ref>;
 
-    [[nodiscard]] constexpr static Closure* for_gclosure(GClosure* gclosure) {
+    [[nodiscard]]
+    constexpr static Closure* for_gclosure(GClosure* gclosure) {
         // We need to do this in order to ensure this is a constant expression
         return static_cast<Closure*>(static_cast<void*>(gclosure));
     }
 
-    [[nodiscard]] static Closure* create(JSContext* cx, JSObject* callable,
-                                         const char* description, bool root) {
+    [[nodiscard]]
+    static Closure* create(JSContext* cx, JSObject* callable,
+                           const char* description, bool root) {
         auto* self = new Closure(cx, callable, root, description);
         self->add_finalize_notifier<Closure>();
         return self;
     }
 
-    [[nodiscard]] static Closure* create_marshaled(JSContext* cx,
-                                                   JSObject* callable,
-                                                   const char* description,
-                                                   bool root = true) {
+    [[nodiscard]]
+    static Closure* create_marshaled(JSContext* cx, JSObject* callable,
+                                     const char* description,
+                                     bool root = true) {
         auto* self = new Closure(cx, callable, root, description);
         self->add_finalize_notifier<Closure>();
         g_closure_set_marshal(self, marshal_cb);
         return self;
     }
 
-    [[nodiscard]] static Closure* create_for_signal(JSContext* cx,
-                                                    JSObject* callable,
-                                                    const char* description,
-                                                    int signal_id) {
+    [[nodiscard]]
+    static Closure* create_for_signal(JSContext* cx, JSObject* callable,
+                                      const char* description, int signal_id) {
         auto* self = new Closure(cx, callable, /* root = */ false, description);
         self->add_finalize_notifier<Closure>();
         g_closure_set_meta_marshal(self, gjs_int_to_pointer(signal_id),
@@ -93,9 +94,9 @@ class Closure : public GClosure {
     JSObject* callable() const { return m_callable.get(); }
     [[nodiscard]] constexpr JSContext* cx() const { return m_cx; }
     [[nodiscard]] constexpr bool is_valid() const { return !!m_cx; }
-    GJS_JSAPI_RETURN_CONVENTION bool invoke(JS::HandleObject,
-                                            const JS::HandleValueArray&,
-                                            JS::MutableHandleValue);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool invoke(JS::HandleObject, const JS::HandleValueArray&,
+                JS::MutableHandleValue);
 
     void trace(JSTracer* tracer) {
         if (m_callable)

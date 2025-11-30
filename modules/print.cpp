@@ -33,7 +33,7 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     if (argc != 1) {
         gjs_throw(cx, "Must pass a single argument to log()");
@@ -43,7 +43,7 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     /* JS::ToString might throw, in which case we will only log that the value
      * could not be converted to string */
     JS::AutoSaveExceptionState exc_state(cx);
-    JS::RootedString jstr(cx, JS::ToString(cx, argv[0]));
+    JS::RootedString jstr{cx, JS::ToString(cx, args[0])};
     exc_state.restore();
 
     if (!jstr) {
@@ -57,15 +57,15 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     g_message("JS LOG: %s", s.get());
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_log_error(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    if ((argc != 1 && argc != 2) || !argv[0].isObject()) {
+    if ((argc != 1 && argc != 2) || !args[0].isObject()) {
         gjs_throw(
             cx,
             "Must pass an exception and optionally a message to logError()");
@@ -78,26 +78,26 @@ static bool gjs_log_error(JSContext* cx, unsigned argc, JS::Value* vp) {
         /* JS::ToString might throw, in which case we will only log that the
          * value could not be converted to string */
         JS::AutoSaveExceptionState exc_state(cx);
-        jstr = JS::ToString(cx, argv[1]);
+        jstr = JS::ToString(cx, args[1]);
         exc_state.restore();
     }
 
-    gjs_log_exception_full(cx, argv[0], jstr, G_LOG_LEVEL_WARNING);
+    gjs_log_exception_full(cx, args[0], jstr, G_LOG_LEVEL_WARNING);
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
+static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& args,
                                  std::string* buffer) {
     g_assert(buffer && "forgot out parameter");
     buffer->clear();
-    for (unsigned n = 0; n < argv.length(); ++n) {
+    for (unsigned n = 0; n < args.length(); ++n) {
         /* JS::ToString might throw, in which case we will only log that the
          * value could not be converted to string */
         JS::AutoSaveExceptionState exc_state(cx);
-        JS::RootedString jstr(cx, JS::ToString(cx, argv[n]));
+        JS::RootedString jstr{cx, JS::ToString(cx, args[n])};
         exc_state.restore();
 
         if (jstr) {
@@ -106,7 +106,7 @@ static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
                 return false;
 
             *buffer += s.get();
-            if (n < (argv.length() - 1))
+            if (n < (args.length() - 1))
                 *buffer += ' ';
         } else {
             *buffer = "<invalid string>";
@@ -118,36 +118,36 @@ static bool gjs_print_parse_args(JSContext* cx, const JS::CallArgs& argv,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_print(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     std::string buffer;
-    if (!gjs_print_parse_args(cx, argv, &buffer))
+    if (!gjs_print_parse_args(cx, args, &buffer))
         return false;
 
     g_print("%s\n", buffer.c_str());
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_printerr(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     std::string buffer;
-    if (!gjs_print_parse_args(cx, argv, &buffer))
+    if (!gjs_print_parse_args(cx, args, &buffer))
         return false;
 
     g_printerr("%s\n", buffer.c_str());
 
-    argv.rval().setUndefined();
+    args.rval().setUndefined();
     return true;
 }
 
 // The pretty-print functionality is best written in JS, but needs to be used
 // from C++ code. This stores the prettyPrint() function in a slot on the global
-// object so that it can be used internally by the Console module.
-// This function is not available to user code.
+// object so that it can be used internally by the Console module. This function
+// is not available to user code.
 GJS_JSAPI_RETURN_CONVENTION
 static bool set_pretty_print_function(JSContext*, unsigned argc,
                                       JS::Value* vp) {
@@ -201,7 +201,8 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
     int32_t message_id = args[0].toInt32();
     g_assert(
         message_id >= 0 &&
-        uint32_t(message_id) < GjsDeprecationMessageId::LastValue &&
+        static_cast<uint32_t>(message_id) <
+            GjsDeprecationMessageId::LastValue &&
         "warnDeprecatedOncePerCallsite argument 1 must be a message ID number");
 
     if (args.length() == 1) {
@@ -227,24 +228,24 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
     return true;
 }
 
-// clang-format off
 static constexpr JSFunctionSpec funcs[] = {
     JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FN("setPrettyPrintFunction", set_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FN("getPrettyPrintFunction", get_pretty_print_function, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("setPrettyPrintFunction", set_pretty_print_function, 1,
+          GJS_MODULE_PROP_FLAGS),
+    JS_FN("getPrettyPrintFunction", get_pretty_print_function, 1,
+          GJS_MODULE_PROP_FLAGS),
     JS_FN("warnDeprecatedOncePerCallsite", warn_deprecated_once_per_callsite, 1,
-        GJS_MODULE_PROP_FLAGS),
+          GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 static constexpr JSPropertySpec props[] = {
-    JSPropertySpec::int32Value("PLATFORM_SPECIFIC_TYPELIB",
-        GJS_MODULE_PROP_FLAGS,
+    JSPropertySpec::int32Value(
+        "PLATFORM_SPECIFIC_TYPELIB", GJS_MODULE_PROP_FLAGS,
         GjsDeprecationMessageId::PlatformSpecificTypelib),
     JS_PS_END};
-// clang-format on
 
 bool gjs_define_print_stuff(JSContext* cx, JS::MutableHandleObject module) {
     module.set(JS_NewPlainObject(cx));

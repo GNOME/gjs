@@ -105,8 +105,8 @@ class GjsContextPrivate : public JS::JobQueue {
 
     GjsProfiler* m_profiler;
 
-    /* Environment preparer needed for debugger, taken from SpiderMonkey's
-     * JS shell */
+    /* Environment preparer needed for debugger, taken from SpiderMonkey's JS
+     * shell */
     struct EnvironmentPreparer final : protected js::ScriptEnvironmentPreparer {
         JSContext* m_cx;
 
@@ -171,27 +171,31 @@ class GjsContextPrivate : public JS::JobQueue {
 
  public:
     // Retrieving a GjsContextPrivate from JSContext or GjsContext
-    [[nodiscard]] static GjsContextPrivate* from_cx(JSContext* cx) {
+    [[nodiscard]]
+    static GjsContextPrivate* from_cx(JSContext* cx) {
         return static_cast<GjsContextPrivate*>(JS_GetContextPrivate(cx));
     }
-    [[nodiscard]] static GjsContextPrivate* from_object(
-        GObject* public_context);
-    [[nodiscard]] static GjsContextPrivate* from_object(
-        GjsContext* public_context);
-    [[nodiscard]] static GjsContextPrivate* from_current_context();
+    [[nodiscard]]
+    static GjsContextPrivate* from_object(GObject* public_context);
+    [[nodiscard]]
+    static GjsContextPrivate* from_object(GjsContext* public_context);
+    [[nodiscard]]
+    static GjsContextPrivate* from_current_context();
 
     GjsContextPrivate(JSContext*, GjsContext* public_context);
     ~GjsContextPrivate();
 
     // Accessors
-    [[nodiscard]] GjsContext* public_context() const {
+    [[nodiscard]]
+    GjsContext* public_context() const {
         return m_public_context;
     }
     [[nodiscard]] bool set_main_loop_hook(JSObject* callable);
     [[nodiscard]] bool has_main_loop_hook() { return !!m_main_loop_hook; }
     [[nodiscard]] JSContext* context() const { return m_cx; }
     [[nodiscard]] JSObject* global() const { return m_global.get(); }
-    [[nodiscard]] JSObject* internal_global() const {
+    [[nodiscard]]
+    JSObject* internal_global() const {
         return m_internal_global.get();
     }
     void main_loop_hold() { m_main_loop.hold(); }
@@ -202,7 +206,8 @@ class GjsContextPrivate : public JS::JobQueue {
     [[nodiscard]] const char* program_name() const { return m_program_name; }
     void set_program_name(char* value) { m_program_name = value; }
     GJS_USE const char* program_path() const { return m_program_path; }
-    GJS_USE const char* repl_history_path() const {
+    GJS_USE
+    const char* repl_history_path() const {
         return m_repl_history_path;
     }
     void set_program_path(char* value) { m_program_path = value; }
@@ -215,22 +220,28 @@ class GjsContextPrivate : public JS::JobQueue {
     void set_repl_history_path(char* value) { m_repl_history_path = value; }
     void set_args(std::vector<std::string>&& args);
     GJS_JSAPI_RETURN_CONVENTION JSObject* build_args_array();
-    [[nodiscard]] bool is_owner_thread() const {
+    [[nodiscard]]
+    bool is_owner_thread() const {
         return m_owner_thread == std::this_thread::get_id();
     }
-    [[nodiscard]] JS::WeakCache<FundamentalTable>& fundamental_table() {
+    [[nodiscard]]
+    JS::WeakCache<FundamentalTable>& fundamental_table() {
         return *m_fundamental_table;
     }
-    [[nodiscard]] JS::WeakCache<GTypeTable>& gtype_table() {
+    [[nodiscard]]
+    JS::WeakCache<GTypeTable>& gtype_table() {
         return *m_gtype_table;
     }
-    [[nodiscard]] ObjectInitList& object_init_list() {
+    [[nodiscard]]
+    ObjectInitList& object_init_list() {
         return m_object_init_list;
     }
-    [[nodiscard]] static const GjsAtoms& atoms(JSContext* cx) {
+    [[nodiscard]]
+    static const GjsAtoms& atoms(JSContext* cx) {
         return *(from_cx(cx)->m_atoms);
     }
-    [[nodiscard]] static JSObject* global(JSContext* cx) {
+    [[nodiscard]]
+    static JSObject* global(JSContext* cx) {
         return from_cx(cx)->global();
     }
 
@@ -270,7 +281,8 @@ class GjsContextPrivate : public JS::JobQueue {
                            JS::HandleObject incumbent_global) override;
     void runJobs(JSContext*) override;
     [[nodiscard]] bool empty() const override { return m_job_queue.empty(); }
-    [[nodiscard]] bool isDrainingStopped() const override {
+    [[nodiscard]]
+    bool isDrainingStopped() const override {
         return !m_draining_job_queue;
     }
     js::UniquePtr<JS::JobQueue::SavedJobQueue> saveJobQueue(
@@ -280,8 +292,8 @@ class GjsContextPrivate : public JS::JobQueue {
     void register_unhandled_promise_rejection(uint64_t id,
                                               JS::UniqueChars&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
-    GJS_JSAPI_RETURN_CONVENTION bool queue_finalization_registry_cleanup(
-        JSFunction* cleanup_task);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool queue_finalization_registry_cleanup(JSFunction* cleanup_task);
     GJS_JSAPI_RETURN_CONVENTION bool run_finalization_registry_cleanup();
 
     void register_notifier(DestroyNotify, void* data);

@@ -65,11 +65,7 @@ static JSObject* gjs_define_importer(JSContext*, JS::HandleObject, const char*,
                                      const std::vector<std::string>&, bool);
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-importer_to_string(JSContext *cx,
-                   unsigned   argc,
-                   JS::Value *vp)
-{
+static bool importer_to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, importer);
 
     Gjs::AutoChar output;
@@ -107,8 +103,8 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
      * function may be called from inside one. */
     unsigned attrs = JSPROP_READONLY | JSPROP_PERMANENT | JSPROP_RESOLVING;
 
-    /* We define both __moduleName__ and __parentModule__ to null
-     * on the root importer
+    /* We define both __moduleName__ and __parentModule__ to null on the root
+     * importer
      */
     bool parent_is_module =
         parent && JS_InstanceOf(cx, parent, &gjs_importer_class, nullptr);
@@ -148,7 +144,8 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                 gjs_string_to_utf8(cx, parent_module_path);
             if (!parent_path)
                 return false;
-            module_path_buf = g_strdup_printf("%s.%s", parent_path.get(), module_name);
+            module_path_buf =
+                g_strdup_printf("%s.%s", parent_path.get(), module_name);
         }
         if (!gjs_string_from_utf8(cx, module_path_buf, &module_path))
             return false;
@@ -189,16 +186,12 @@ static bool import_directory(JSContext* cx, JS::HandleObject obj,
     return !!gjs_define_importer(cx, obj, name, full_paths, false);
 }
 
-/* Make the property we set in gjs_module_import() permanent;
- * we do this after the import successfully completes.
+/* Make the property we set in gjs_module_import() permanent; we do this after
+ * the import successfully completes.
  */
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-seal_import(JSContext       *cx,
-            JS::HandleObject obj,
-            JS::HandleId     id,
-            const char      *name)
-{
+static bool seal_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
+                        const char* name) {
     JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_descr(cx);
 
     if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &maybe_descr) ||
@@ -223,23 +216,22 @@ seal_import(JSContext       *cx,
     return true;
 }
 
-/* An import failed. Delete the property pointing to the import
- * from the parent namespace. In complicated situations this might
- * not be sufficient to get us fully back to a sane state. If:
+/* An import failed. Delete the property pointing to the import from the parent
+ * namespace. In complicated situations this might not be sufficient to get us
+ * fully back to a sane state. If:
  *
  *  - We import module A
  *  - module A imports module B
- *  - module B imports module A, storing a reference to the current
- *    module A module object
+ *  - module B imports module A, storing a reference to the current module A
+ *    module object
  *  - module A subsequently throws an exception
  *
- * Then module B is left imported, but the imported module B has
- * a reference to the failed module A module object. To handle this
- * we could could try to track the entire "import operation" and
- * roll back *all* modifications made to the namespace objects.
- * It's not clear that the complexity would be worth the small gain
- * in robustness. (You can still come up with ways of defeating
- * the attempt to clean up.)
+ * Then module B is left imported, but the imported module B has a reference to
+ * the failed module A module object. To handle this we could could try to track
+ * the entire "import operation" and roll back *all* modifications made to the
+ * namespace objects. It's not clear that the complexity would be worth the
+ * small gain in robustness. (You can still come up with ways of defeating the
+ * attempt to clean up.)
  */
 static void cancel_import(JSContext* cx, JS::HandleObject obj,
                           const char* name) {
@@ -376,8 +368,8 @@ static bool load_module_elements(JSContext* cx, JS::HandleObject in_object,
     return true;
 }
 
-/* If error, returns false. If not found, returns true but does not touch
- * the value at *result. If found, returns true and sets *result = true.
+/* If error, returns false. If not found, returns true but does not touch the
+ * value at *result. If found, returns true and sets *result = true.
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool import_symbol_from_init_js(JSContext* cx, JS::HandleObject importer,
@@ -492,8 +484,8 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
     for (uint32_t i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
         if (!JS_GetElement(cx, search_path, i, &elem)) {
-            /* this means there was an exception, while elem.isUndefined()
-             * means no element found
+            /* this means there was an exception, while elem.isUndefined() means
+             * no element found
              */
             return false;
         }
@@ -537,11 +529,10 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
             directories.push_back(full_path.get());
         }
 
-        /* If we just added to directories, we know we don't need to
-         * check for a file.  If we added to directories on an earlier
-         * iteration, we want to ignore any files later in the
-         * path. So, always skip the rest of the loop block if we have
-         * directories.
+        /* If we just added to directories, we know we don't need to check for a
+         * file.  If we added to directories on an earlier iteration, we want to
+         * ignore any files later in the path. So, always skip the rest of the
+         * loop block if we have directories.
          */
         if (!directories.empty())
             continue;
@@ -564,9 +555,9 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
             return true;
         }
 
-        /* Don't keep searching path if we fail to load the file for
-         * reasons other than it doesn't exist... i.e. broken files
-         * block searching for nonbroken ones
+        /* Don't keep searching path if we fail to load the file for reasons
+         * other than it doesn't exist... i.e. broken files block searching for
+         * nonbroken ones
          */
         return false;
     }
@@ -580,8 +571,8 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
         return true;
     }
 
-    /* If no exception occurred, the problem is just that we got to the
-     * end of the path. Be sure an exception is set. */
+    /* If no exception occurred, the problem is just that we got to the end of
+     * the path. Be sure an exception is set. */
     g_assert(!JS_IsExceptionPending(cx));
     gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
                      "No JS module '%s' found in search path", name.get());
@@ -618,8 +609,8 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
     for (uint32_t i = 0; i < search_path_len; ++i) {
         elem.setUndefined();
         if (!JS_GetElement(cx, search_path, i, &elem)) {
-            /* this means there was an exception, while elem.isUndefined()
-             * means no element found
+            /* this means there was an exception, while elem.isUndefined() means
+             * no element found
              */
             return false;
         }
@@ -747,7 +738,8 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
     JS_FN("toString", importer_to_string, 0, 0),
     JS_FS_END};
 
-[[nodiscard]] static const std::vector<std::string>& gjs_get_search_path() {
+[[nodiscard]]
+static const std::vector<std::string>& gjs_get_search_path() {
     static std::vector<std::string> gjs_search_path;
     static bool search_path_initialized = false;
 
@@ -784,11 +776,12 @@ JSFunctionSpec gjs_importer_proto_funcs[] = {
         // ${datadir}/share/gjs-1.0
 #ifdef G_OS_WIN32
         extern HMODULE gjs_dll;
-        char *basedir = g_win32_get_package_installation_directory_of_module (gjs_dll);
+        char* basedir =
+            g_win32_get_package_installation_directory_of_module(gjs_dll);
         Gjs::AutoChar gjs_data_dir{
             g_build_filename(basedir, "share", "gjs-1.0", nullptr)};
         gjs_search_path.push_back(gjs_data_dir.get());
-        g_free (basedir);
+        g_free(basedir);
 #else
         gjs_search_path.push_back(GJS_JS_DIR);
 #endif

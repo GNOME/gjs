@@ -79,13 +79,15 @@ class GjsScriptModule {
 
     // Private data accessors
 
-    [[nodiscard]] static inline GjsScriptModule* priv(JSObject* module) {
+    [[nodiscard]]
+    static inline GjsScriptModule* priv(JSObject* module) {
         return JS::GetMaybePtrFromReservedSlot<GjsScriptModule>(
             module, GjsScriptModule::POINTER);
     }
 
     // Creates a JS module object. Use instead of the class's constructor
-    [[nodiscard]] static JSObject* create(JSContext* cx, const char* name) {
+    [[nodiscard]]
+    static JSObject* create(JSContext* cx, const char* name) {
         JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
         JS::SetReservedSlot(module, GjsScriptModule::POINTER,
                             JS::PrivateValue(new GjsScriptModule(name)));
@@ -94,12 +96,8 @@ class GjsScriptModule {
 
     // Defines the empty module as a property on the importer
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    define_import(JSContext       *cx,
-                  JS::HandleObject module,
-                  JS::HandleObject importer,
-                  JS::HandleId     name) const
-    {
+    bool define_import(JSContext* cx, JS::HandleObject module,
+                       JS::HandleObject importer, JS::HandleId name) const {
         if (!JS_DefinePropertyById(cx, importer, name, module,
                                    GJS_MODULE_PROP_FLAGS & ~JSPROP_PERMANENT)) {
             gjs_debug(GJS_DEBUG_IMPORTER, "Failed to define '%s' in importer",
@@ -152,11 +150,7 @@ class GjsScriptModule {
 
     // Loads JS code from a file and imports it
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    import_file(JSContext       *cx,
-                JS::HandleObject module,
-                GFile           *file)
-    {
+    bool import_file(JSContext* cx, JS::HandleObject module, GFile* file) {
         Gjs::AutoError error;
         Gjs::AutoChar script;
         size_t script_len = 0;
@@ -174,12 +168,8 @@ class GjsScriptModule {
     // JSClass operations
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool
-    resolve_impl(JSContext       *cx,
-                 JS::HandleObject module,
-                 JS::HandleId     id,
-                 bool            *resolved)
-    {
+    bool resolve_impl(JSContext* cx, JS::HandleObject module, JS::HandleId id,
+                      bool* resolved) {
         JS::RootedObject lexical(cx, JS_ExtensibleLexicalEnvironment(module));
         if (!lexical) {
             *resolved = false;
@@ -195,8 +185,8 @@ class GjsScriptModule {
             return true;
 
         /* The property is present in the lexical environment. This should not
-         * be supported according to ES6. For compatibility with earlier GJS,
-         * we treat it as if it were a real property, but warn about it. */
+         * be supported according to ES6. For compatibility with earlier GJS, we
+         * treat it as if it were a real property, but warn about it. */
 
         _gjs_warn_deprecated_once_per_callsite(
             cx, GjsDeprecationMessageId::ModuleExportedLetOrConst,
@@ -207,12 +197,8 @@ class GjsScriptModule {
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static bool
-    resolve(JSContext       *cx,
-            JS::HandleObject module,
-            JS::HandleId     id,
-            bool            *resolved)
-    {
+    static bool resolve(JSContext* cx, JS::HandleObject module, JS::HandleId id,
+                        bool* resolved) {
         return priv(module)->resolve_impl(cx, module, id, resolved);
     }
 
@@ -237,8 +223,7 @@ class GjsScriptModule {
     };
 
  public:
-    /*
-     * Creates a JS object to pass to JS::SetScriptPrivate as a script's
+    /* Creates a JS object to pass to JS::SetScriptPrivate as a script's
      * private.
      */
     GJS_JSAPI_RETURN_CONVENTION
@@ -256,13 +241,8 @@ class GjsScriptModule {
 
     // Carries out the import operation
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject *
-    import(JSContext       *cx,
-           JS::HandleObject importer,
-           JS::HandleId     id,
-           const char      *name,
-           GFile           *file)
-    {
+    static JSObject* import(JSContext* cx, JS::HandleObject importer,
+                            JS::HandleId id, const char* name, GFile* file) {
         JS::RootedObject module(cx, GjsScriptModule::create(cx, name));
         if (!module ||
             !priv(module)->define_import(cx, module, importer, id) ||
@@ -304,13 +284,8 @@ JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri) {
  *
  * Returns: the JS module object, or nullptr on failure.
  */
-JSObject *
-gjs_module_import(JSContext       *cx,
-                  JS::HandleObject importer,
-                  JS::HandleId     id,
-                  const char      *name,
-                  GFile           *file)
-{
+JSObject* gjs_module_import(JSContext* cx, JS::HandleObject importer,
+                            JS::HandleId id, const char* name, GFile* file) {
     return GjsScriptModule::import(cx, importer, id, name, file);
 }
 

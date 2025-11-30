@@ -15,7 +15,7 @@
 #include <glib-object.h>
 #include <girepository/girepository.h>
 #include <glib.h>
-#include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, textdomain */
+#include <glib/gi18n.h> /* for bindtextdomain, bind_textdomain_codeset, ... */
 
 #include "libgjs-private/gjs-util.h"
 #include "util/console.h"
@@ -209,36 +209,21 @@ out:
     return locale->prior_name;
 }
 
-void
-gjs_textdomain(const char *domain)
-{
-    textdomain(domain);
-}
+void gjs_textdomain(const char* domain) { textdomain(domain); }
 
-void
-gjs_bindtextdomain(const char *domain,
-                   const char *location)
-{
+void gjs_bindtextdomain(const char* domain, const char* location) {
     bindtextdomain(domain, location);
     /* Always use UTF-8; we assume it internally here */
     bind_textdomain_codeset(domain, "UTF-8");
 }
 
-GParamFlags
-gjs_param_spec_get_flags(GParamSpec *pspec)
-{
-    return pspec->flags;
-}
+GParamFlags gjs_param_spec_get_flags(GParamSpec* pspec) { return pspec->flags; }
 
-GType
-gjs_param_spec_get_value_type(GParamSpec *pspec)
-{
+GType gjs_param_spec_get_value_type(GParamSpec* pspec) {
     return pspec->value_type;
 }
 
-GType
-gjs_param_spec_get_owner_type(GParamSpec *pspec)
-{
+GType gjs_param_spec_get_owner_type(GParamSpec* pspec) {
     return pspec->owner_type;
 }
 
@@ -384,10 +369,11 @@ out:
  *
  * Returns: the position at which @item was inserted
  */
-unsigned int gjs_list_store_insert_sorted(GListStore *store, GObject *item,
-                                          GjsCompareDataFunc compare_func,
-                                          void *user_data) {
-  return g_list_store_insert_sorted(store, item, (GCompareDataFunc)compare_func, user_data);
+unsigned gjs_list_store_insert_sorted(GListStore* store, GObject* item,
+                                      GjsCompareDataFunc compare_func,
+                                      void* user_data) {
+    return g_list_store_insert_sorted(
+        store, item, (GCompareDataFunc)compare_func, user_data);
 }
 
 /**
@@ -398,9 +384,9 @@ unsigned int gjs_list_store_insert_sorted(GListStore *store, GObject *item,
  *
  * Sort the items in @store according to @compare_func.
  */
-void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
-                         void *user_data) {
-  g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
+void gjs_list_store_sort(GListStore* store, GjsCompareDataFunc compare_func,
+                         void* user_data) {
+    g_list_store_sort(store, (GCompareDataFunc)compare_func, user_data);
 }
 
 /**

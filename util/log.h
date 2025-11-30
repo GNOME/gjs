@@ -7,9 +7,9 @@
 #include <config.h>
 
 /* The idea of this is to be able to have one big log file for the entire
- * environment, and grep out what you care about. So each module or app
- * should have its own entry in the enum. Be sure to add new enum entries
- * to the switch in log.c
+ * environment, and grep out what you care about. So each module or app should
+ * have its own entry in the enum. Be sure to add new enum entries to the switch
+ * in log.cpp
  */
 typedef enum {
     GJS_DEBUG_GI_USAGE,
@@ -35,18 +35,16 @@ typedef enum {
     GJS_DEBUG_LAST,
 } GjsDebugTopic;
 
-/* These defines are because we have some pretty expensive and
- * extremely verbose debug output in certain areas, that's useful
- * sometimes, but just too much to compile in by default. The areas
- * tend to be broader and less focused than the ones represented by
- * GjsDebugTopic.
+/* These defines are because we have some pretty expensive and extremely verbose
+ * debug output in certain areas, that's useful sometimes, but just too much to
+ * compile in by default. The areas tend to be broader and less focused than the
+ * ones represented by GjsDebugTopic.
  *
- * Don't use these special "disabled by default" log macros to print
- * anything that's an abnormal or error situation.
+ * Don't use these special "disabled by default" log macros to print anything
+ * that's an abnormal or error situation.
  *
- * Don't use them for one-time events, either. They are for routine
- * stuff that happens over and over and would deluge the logs, so
- * should be off by default.
+ * Don't use them for one-time events, either. They are for routine stuff that
+ * happens over and over and would deluge the logs, so should be off by default.
  */
 
 // Whether to be verbose about JavaScript property access and resolution
@@ -59,8 +57,8 @@ typedef enum {
 #define GJS_VERBOSE_ENABLE_MARSHAL 0
 #endif
 
-/* Whether to be verbose about constructing, destroying, and gc-rooting
- * various kinds of JavaScript thingy
+/* Whether to be verbose about constructing, destroying, and gc-rooting various
+ * kinds of JavaScript thingy
  */
 #ifndef GJS_VERBOSE_ENABLE_LIFECYCLE
 #define GJS_VERBOSE_ENABLE_LIFECYCLE 0
@@ -150,5 +148,5 @@ typedef enum {
 void gjs_log_init();
 void gjs_log_cleanup();
 
-[[gnu::format(printf, 2, 3)]] void gjs_debug(GjsDebugTopic, const char* format,
-                                             ...);
+[[gnu::format(printf, 2, 3)]]
+void gjs_debug(GjsDebugTopic, const char* format, ...);

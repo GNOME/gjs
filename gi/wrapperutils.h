@@ -95,14 +95,15 @@ struct is_maybe<mozilla::Maybe<T>> : std::true_type {};
  * methods for GI::ObjectInfo, and interface methods for GI::InterfaceInfo.
  */
 template <GI::InfoTag TAG>
-GJS_JSAPI_RETURN_CONVENTION bool gjs_define_static_methods(
-    JSContext*, JS::HandleObject constructor, GType,
-    const GI::UnownedInfo<TAG>);
+GJS_JSAPI_RETURN_CONVENTION
+bool gjs_define_static_methods(JSContext*, JS::HandleObject constructor, GType,
+                               const GI::UnownedInfo<TAG>);
 
 template <GI::InfoTag TAG>
-GJS_JSAPI_RETURN_CONVENTION inline bool gjs_define_static_methods(
-    JSContext* cx, JS::HandleObject constructor, GType gtype,
-    const GI::OwnedInfo<TAG>& info) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_define_static_methods(JSContext* cx,
+                                      JS::HandleObject constructor, GType gtype,
+                                      const GI::OwnedInfo<TAG>& info) {
     return gjs_define_static_methods(cx, constructor, gtype,
                                      GI::UnownedInfo<TAG>{info});
 }
@@ -178,19 +179,23 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      * don't want to assert, then either check beforehand with is_prototype(),
      * or use get_prototype().
      */
-    [[nodiscard]] Prototype* to_prototype() {
+    [[nodiscard]]
+    Prototype* to_prototype() {
         g_assert(is_prototype());
         return reinterpret_cast<Prototype*>(this);
     }
-    [[nodiscard]] const Prototype* to_prototype() const {
+    [[nodiscard]]
+    const Prototype* to_prototype() const {
         g_assert(is_prototype());
         return reinterpret_cast<const Prototype*>(this);
     }
-    [[nodiscard]] Instance* to_instance() {
+    [[nodiscard]]
+    Instance* to_instance() {
         g_assert(!is_prototype());
         return reinterpret_cast<Instance*>(this);
     }
-    [[nodiscard]] const Instance* to_instance() const {
+    [[nodiscard]]
+    const Instance* to_instance() const {
         g_assert(!is_prototype());
         return reinterpret_cast<const Instance*>(this);
     }
@@ -203,10 +208,12 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      * Instance, it returns you the Prototype belonging to the corresponding JS
      * prototype.
      */
-    [[nodiscard]] [[gnu::const]] Prototype* get_prototype() {
+    [[nodiscard]] [[gnu::const]]
+    Prototype* get_prototype() {
         return is_prototype() ? to_prototype() : m_proto;
     }
-    [[nodiscard]] const Prototype* get_prototype() const {
+    [[nodiscard]]
+    const Prototype* get_prototype() const {
         return is_prototype() ? to_prototype() : m_proto;
     }
 
@@ -220,7 +227,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     // The next three methods are operations derived from the GIFooInfo.
 
     [[nodiscard]] const char* type_name() const { return g_type_name(gtype()); }
-    [[nodiscard]] const char* ns() const {
+    [[nodiscard]]
+    const char* ns() const {
         if constexpr (Prototype::may_not_have_info) {
             const auto i = info();
             return i ? i->ns() : "";
@@ -228,7 +236,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return info().ns();
         }
     }
-    [[nodiscard]] const char* name() const {
+    [[nodiscard]]
+    const char* name() const {
         if constexpr (Prototype::may_not_have_info) {
             const auto i = info();
             return i ? i->name() : type_name();
@@ -237,7 +246,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         }
     }
 
-    [[nodiscard]] std::string format_name() const {
+    [[nodiscard]]
+    std::string format_name() const {
         std::string retval = ns();
         if (!retval.empty())
             retval += '.';
@@ -247,7 +257,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
  private:
     // Accessor for Instance member. Used only in debug methods and toString().
-    [[nodiscard]] const void* ptr_addr() const {
+    [[nodiscard]]
+    const void* ptr_addr() const {
         return is_prototype() ? nullptr : to_instance()->ptr();
     }
 
@@ -299,9 +310,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     /**
      * GIWrapperBase::new_enumerate:
      *
-     * Include this in the Base::klass vtable if the class should support
-     * lazy enumeration (listing all of the lazy properties that can be defined
-     * in resolve().) If it is included, then there must be a corresponding
+     * Include this in the Base::klass vtable if the class should support lazy
+     * enumeration (listing all of the lazy properties that can be defined in
+     * resolve().) If it is included, then there must be a corresponding
      * Prototype::new_enumerate_impl() method.
      */
     GJS_JSAPI_RETURN_CONVENTION
@@ -313,8 +324,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         priv->debug_jsprop("Enumerate hook", "(all)", obj);
 
         if (!priv->is_prototype()) {
-            // Instances don't have any methods or properties.
-            // Spidermonkey will call new_enumerate on the prototype next.
+            // Instances don't have any methods or properties. Spidermonkey will
+            // call new_enumerate on the prototype next.
             return true;
         }
 
@@ -336,7 +347,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      * Base::proto_methods. You should add any identifiers in the override that
      * you have added to the prototype object.
      */
-    [[nodiscard]] static bool id_is_never_lazy(jsid id, const GjsAtoms& atoms) {
+    [[nodiscard]]
+    static bool id_is_never_lazy(jsid id, const GjsAtoms& atoms) {
         // toString() is always defined somewhere on the prototype chain, so it
         // is never a lazy property.
         return id == atoms.to_string();
@@ -346,8 +358,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     /**
      * GIWrapperBase::resolve_prototype:
      */
-    [[nodiscard]] static Prototype* resolve_prototype(JSContext* cx,
-                                                      JS::HandleObject proto) {
+    [[nodiscard]]
+    static Prototype* resolve_prototype(JSContext* cx, JS::HandleObject proto) {
         if (JS::GetClass(proto) == &Base::klass)
             return Prototype::for_js(cx, proto);
 
@@ -588,8 +600,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      * method.)
      */
     template <typename T = void>
-    GJS_JSAPI_RETURN_CONVENTION static T* to_c_ptr(JSContext* cx,
-                                                   JS::HandleObject obj) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static T* to_c_ptr(JSContext* cx, JS::HandleObject obj) {
         Base* priv;
         if (!Base::for_js_typecheck(cx, obj, &priv) ||
             !priv->check_is_instance(cx, "get a C pointer"))
@@ -735,10 +747,10 @@ class GIWrapperPrototype : public Base {
         Gjs::AutoPointer<Prototype, void, g_atomic_rc_box_release>;
 
  protected:
-    // m_info may be null in the case of JS-defined types, or internal types
-    // not exposed through introspection, such as GLocalFile. Not all subclasses
-    // of GIWrapperPrototype support this. Object and Interface support it in
-    // any case.
+    // m_info may be null in the case of JS-defined types, or internal types not
+    // exposed through introspection, such as GLocalFile. Not all subclasses of
+    // GIWrapperPrototype support this. Object and Interface support it in any
+    // case.
     OwnedInfo m_info;
     GType m_gtype;
 
@@ -1025,8 +1037,8 @@ class GIWrapperPrototype : public Base {
      * Like Base::for_js(), but asserts that the returned private struct is a
      * Prototype and not an Instance.
      */
-    [[nodiscard]] static Prototype* for_js(JSContext* cx,
-                                           JS::HandleObject wrapper) {
+    [[nodiscard]]
+    static Prototype* for_js(JSContext* cx, JS::HandleObject wrapper) {
         return Base::for_js(cx, wrapper)->to_prototype();
     }
 
@@ -1036,8 +1048,9 @@ class GIWrapperPrototype : public Base {
      * Gets the Prototype private data from to @wrapper.prototype. Cannot return
      * null, and asserts so.
      */
-    [[nodiscard]] static Prototype* for_js_prototype(JSContext* cx,
-                                                     JS::HandleObject wrapper) {
+    [[nodiscard]]
+    static Prototype* for_js_prototype(JSContext* cx,
+                                       JS::HandleObject wrapper) {
         JS::RootedObject proto(cx);
         JS_GetPrototype(cx, wrapper, &proto);
         Base* retval = Base::for_js(cx, proto);
@@ -1116,8 +1129,8 @@ class GIWrapperInstance : public Base {
      * Creates a GIWrapperInstance and associates it with @obj as its private
      * data. This is called by the JS constructor.
      */
-    [[nodiscard]] static Instance* new_for_js_object(JSContext* cx,
-                                                     JS::HandleObject obj) {
+    [[nodiscard]]
+    static Instance* new_for_js_object(JSContext* cx, JS::HandleObject obj) {
         Prototype* prototype = Prototype::for_js_prototype(cx, obj);
         auto* priv = new Instance(prototype, obj);
 
@@ -1129,8 +1142,9 @@ class GIWrapperInstance : public Base {
         return priv;
     }
 
-    [[nodiscard]] static Instance* new_for_js_object(Prototype* prototype,
-                                                     JS::HandleObject obj) {
+    [[nodiscard]]
+    static Instance* new_for_js_object(Prototype* prototype,
+                                       JS::HandleObject obj) {
         auto* priv = new Instance(prototype, obj);
 
         Instance::init_private(obj, priv);
@@ -1146,8 +1160,8 @@ class GIWrapperInstance : public Base {
      * Like Base::for_js(), but asserts that the returned private struct is an
      * Instance and not a Prototype.
      */
-    [[nodiscard]] static Instance* for_js(JSContext* cx,
-                                          JS::HandleObject wrapper) {
+    [[nodiscard]]
+    static Instance* for_js(JSContext* cx, JS::HandleObject wrapper) {
         return Base::for_js(cx, wrapper)->to_instance();
     }
 
@@ -1159,7 +1173,8 @@ class GIWrapperInstance : public Base {
      *
      * Like ptr(), but returns a byte pointer for use in byte arithmetic.
      */
-    [[nodiscard]] uint8_t* raw_ptr() const {
+    [[nodiscard]]
+    uint8_t* raw_ptr() const {
         return reinterpret_cast<uint8_t*>(ptr());
     }
 

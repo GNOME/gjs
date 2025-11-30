@@ -111,8 +111,8 @@ void gjs_log_init() {
         std::string log_file;
         char* c;
 
-        /* Allow debug-%u.log for per-pid logfiles as otherwise log
-         * messages from multiple processes can overwrite each other.
+        /* Allow debug-%u.log for per-pid logfiles as otherwise log messages
+         * from multiple processes can overwrite each other.
          *
          * (printf below should be safe as we check '%u' is the only format
          * string)
@@ -147,7 +147,7 @@ void gjs_log_init() {
         s_log_file = std::make_unique<LogFile>(nullptr, stderr);
 
     if (s_debug_log_enabled) {
-        auto* topics = g_getenv("GJS_DEBUG_TOPICS");
+        const char* topics = g_getenv("GJS_DEBUG_TOPICS");
         s_enabled_topics.fill(topics == nullptr);
         if (topics) {
             Gjs::AutoStrv prefixes{g_strsplit(topics, ";", -1)};
@@ -171,11 +171,7 @@ void gjs_log_cleanup() {
 
 #define PREFIX_LENGTH 12
 
-static void
-write_to_stream(FILE       *logfp,
-                const char *prefix,
-                const char *s)
-{
+static void write_to_stream(FILE* logfp, const char* prefix, const char* s) {
     // seek to end to avoid truncating in case we're using shared logfile
     (void)fseek(logfp, 0, SEEK_END);
 
@@ -185,20 +181,16 @@ write_to_stream(FILE       *logfp,
     fflush(logfp);
 }
 
-void
-gjs_debug(GjsDebugTopic topic,
-          const char   *format,
-          ...)
-{
+void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
     va_list args;
     char *s;
 
     if (!s_debug_log_enabled || !s_enabled_topics[topic])
         return;
 
-    va_start (args, format);
-    s = g_strdup_vprintf (format, args);
-    va_end (args);
+    va_start(args, format);
+    s = g_strdup_vprintf(format, args);
+    va_end(args);
 
     if (s_timer) {
         static double previous = 0.0;

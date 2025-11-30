@@ -55,13 +55,9 @@ typedef enum _test_signed_enum {
     MINUS_ONE
 } test_signed_enum_t;
 
-#define JSNATIVE_TEST_FUNC_BEGIN(name)                      \
-    static bool                                             \
-    name(JSContext *cx,                                     \
-         unsigned   argc,                                   \
-         JS::Value *vp)                                     \
-    {                                                       \
-        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);   \
+#define JSNATIVE_TEST_FUNC_BEGIN(name)                              \
+    static bool name(JSContext* cx, unsigned argc, JS::Value* vp) { \
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);           \
         bool retval;
 
 #define JSNATIVE_TEST_FUNC_END           \
@@ -298,7 +294,7 @@ static void setup(GjsUnitTestFixture* fx, const void* unused) {
 }
 
 static void run_code(GjsUnitTestFixture* fx, const void* code) {
-    const char *script = (const char *) code;
+    auto* script = static_cast<const char*>(code);
 
     JS::SourceText<mozilla::Utf8Unit> source;
     bool ok = source.init(fx->cx, script, strlen(script),
@@ -317,7 +313,7 @@ static void run_code(GjsUnitTestFixture* fx, const void* code) {
 
 static void run_code_expect_exception(GjsUnitTestFixture* fx,
                                       const void* code) {
-    const char *script = (const char *) code;
+    auto* script = static_cast<const char*>(code);
 
     JS::SourceText<mozilla::Utf8Unit> source;
     bool ok = source.init(fx->cx, script, strlen(script),
@@ -334,7 +330,7 @@ static void run_code_expect_exception(GjsUnitTestFixture* fx,
     g_assert_nonnull(message);
 
     // Cheap way to shove an expected exception message into the data argument
-    const char *expected_msg = strstr((const char *) code, "//");
+    const char* expected_msg = strstr(script, "//");
     if (expected_msg != nullptr) {
         expected_msg += 2;
         assert_match(message, expected_msg);
@@ -358,9 +354,10 @@ void gjs_test_add_tests_for_parse_call_args() {
     ADD_CALL_ARGS_TEST_XFAIL("too-many-args-fails",
                              "intArgNoAssert(1, 2)"
                              "//*Expected 1 arguments, got 2");
-    ADD_CALL_ARGS_TEST_XFAIL("too-many-args-fails-when-more-than-optional",
-                             "optionalIntArgsNoAssert(1, 2, 3)"
-                             "//*Expected minimum 1 arguments (and 1 optional), got 3");
+    ADD_CALL_ARGS_TEST_XFAIL(
+        "too-many-args-fails-when-more-than-optional",
+        "optionalIntArgsNoAssert(1, 2, 3)"
+        "//*Expected minimum 1 arguments (and 1 optional), got 3");
     ADD_CALL_ARGS_TEST_XFAIL("too-few-args-fails",
                              "intArgNoAssert()//*At least 1 argument required, "
                              "but only 0 passed");
@@ -428,9 +425,10 @@ void gjs_test_add_tests_for_parse_call_args() {
         "invalid-jsstring-type",
         "JSStringInvalidType(1)"
         "//*Wrong type for i, got JS::MutableHandleString");
-    ADD_CALL_ARGS_TEST_XFAIL("invalid-object-type",
-                             "objectInvalidType(1)"
-                             "//*Wrong type for i, got JS::MutableHandleObject");
+    ADD_CALL_ARGS_TEST_XFAIL(
+        "invalid-object-type",
+        "objectInvalidType(1)"
+        "//*Wrong type for i, got JS::MutableHandleObject");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-boolean",
                              "boolArgNoAssert({})//*Not a boolean");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-object",

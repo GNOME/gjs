@@ -34,16 +34,16 @@
 /**
  * GTypeObj:
  *
- * Wrapper object used to represent a GType in JavaScript.
- * In C, GTypes are just a pointer-sized integer, but in JS they have a 'name'
- * property and a toString() method.
- * The integer is stuffed into CWrapper's pointer slot.
+ * Wrapper object used to represent a GType in JavaScript. In C, GTypes are just
+ * a pointer-sized integer, but in JS they have a 'name' property and a
+ * toString() method. The integer is stuffed into CWrapper's pointer slot.
  */
 class GTypeObj : public CWrapper<GTypeObj, void> {
     friend CWrapperPointerOps<GTypeObj, void>;
     friend CWrapper<GTypeObj, void>;
 
-    static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_gtype;
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_gtype;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GTYPE;
 
     // JSClass operations
@@ -78,12 +78,12 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
         return gjs_string_from_utf8(cx, strval, rec.rval());
     }
 
-    // clang-format off
     static constexpr JSPropertySpec proto_props[] = {
         JS_PSG("name", &GTypeObj::get_name, JSPROP_PERMANENT),
         JS_STRING_SYM_PS(toStringTag, "GIRepositoryGType", JSPROP_READONLY),
         JS_PS_END};
 
+    // clang-format off
     static constexpr JSFunctionSpec proto_funcs[] = {
         JS_FN("toString", &GTypeObj::to_string, 0, 0),
         JS_FS_END};

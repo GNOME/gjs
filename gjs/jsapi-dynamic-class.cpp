@@ -50,18 +50,17 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
     // Without a name, JS_NewObject() fails
     g_assert(clasp->name != nullptr);
 
-    /* gjs_init_class_dynamic only makes sense for instantiable classes,
-       use JS_InitClass for static classes like Math */
+    // gjs_init_class_dynamic only makes sense for instantiable classes, use
+    // JS_InitClass for static classes like Math
     g_assert(constructor_native != nullptr);
 
-    /* Class initialization consists of five parts:
-       - building a prototype
-       - defining prototype properties and functions
-       - building a constructor and defining it on the right object
-       - defining constructor properties and functions
-       - linking the constructor and the prototype, so that
-         JS_NewObjectForConstructor can find it
-    */
+    // Class initialization consists of five parts:
+    // - building a prototype
+    // - defining prototype properties and functions
+    // - building a constructor and defining it on the right object
+    // - defining constructor properties and functions
+    // - linking the constructor and the prototype, so that
+    //   JS_NewObjectForConstructor() can find it
 
     if (parent_proto) {
         prototype.set(JS_NewObjectWithGivenProto(cx, clasp, parent_proto));
@@ -96,13 +95,14 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
     if (!JS_LinkConstructorAndPrototype(cx, constructor, prototype))
         return false;
 
-    /* The constructor defined by JS_InitClass has no property attributes, but this
-       is a more useful default for gjs */
+    // The constructor defined by JS_InitClass() has no property attributes, but
+    // this is a more useful default for gjs
     return JS_DefineProperty(cx, in_object, class_name, constructor,
                              GJS_MODULE_PROP_FLAGS);
 }
 
-[[nodiscard]] static const char* format_dynamic_class_name(const char* name) {
+[[nodiscard]]
+static const char* format_dynamic_class_name(const char* name) {
     if (g_str_has_prefix(name, "_private_"))
         return name + strlen("_private_");
     else
@@ -145,14 +145,12 @@ JSObject* gjs_construct_object_dynamic(JSContext* cx, JS::HandleObject proto,
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-define_native_accessor_wrapper(JSContext      *cx,
-                               JSNative        call,
-                               unsigned        nargs,
-                               const char     *func_name,
-                               JS::HandleValue private_slot)
-{
-    JSFunction *func = js::NewFunctionWithReserved(cx, call, nargs, 0, func_name);
+static JSObject* define_native_accessor_wrapper(JSContext* cx, JSNative call,
+                                                unsigned nargs,
+                                                const char* func_name,
+                                                JS::HandleValue private_slot) {
+    JSFunction* func =
+        js::NewFunctionWithReserved(cx, call, nargs, 0, func_name);
     if (!func)
         return nullptr;
 
@@ -225,9 +223,7 @@ bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
  *
  * Returns: the JS::Value that was passed to gjs_define_property_dynamic().
  */
-JS::Value
-gjs_dynamic_property_private_slot(JSObject *accessor_obj)
-{
+JS::Value gjs_dynamic_property_private_slot(JSObject* accessor_obj) {
     return js::GetFunctionNativeReserved(accessor_obj,
                                          DYNAMIC_PROPERTY_PRIVATE_SLOT);
 }

@@ -39,8 +39,8 @@ using Wrapper =
     std::conditional_t<is_class<EnumType>(), WrapperImpl<EnumType>, void>;
 #else
 template <class EnumType>
-using Wrapper =
-    std::conditional_t<is_class<EnumType>(), std::underlying_type_t<EnumType>, void>;
+using Wrapper = std::conditional_t<is_class<EnumType>(),
+                                   std::underlying_type_t<EnumType>, void>;
 #endif
 }  // namespace GjsEnum
 

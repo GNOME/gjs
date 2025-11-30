@@ -18,6 +18,10 @@ IndentPPDirectives: AfterHash
 IndentWidth: 4
 MacroBlockBegin: "^JSNATIVE_TEST_FUNC_BEGIN$"
 MacroBlockEnd: "^JSNATIVE_TEST_FUNC_END$"
+Macros:
+- GJS_ALWAYS_INLINE=[[always_inline]]  # COMPAT: switch in C++20
+- GJS_JSAPI_RETURN_CONVENTION=[[nodiscard]]
+- GJS_USE=[[nodiscard]]
 PointerAlignment: Left  # Google style allows both, but clang-format doesn't
 SpacesBeforeTrailingComments: 2
 ---

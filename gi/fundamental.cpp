@@ -185,10 +185,10 @@ bool FundamentalInstance::invoke_constructor(JSContext* cx,
 // See GIWrapperBase::constructor().
 bool FundamentalInstance::constructor_impl(JSContext* cx,
                                            JS::HandleObject object,
-                                           const JS::CallArgs& argv) {
+                                           const JS::CallArgs& args) {
     GIArgument ret_value;
 
-    if (!invoke_constructor(cx, object, argv, &ret_value) ||
+    if (!invoke_constructor(cx, object, args, &ret_value) ||
         !associate_js_instance(cx, object, gjs_arg_get<void*>(&ret_value)))
         return false;
 
@@ -226,7 +226,6 @@ FundamentalPrototype::~FundamentalPrototype() {
     GJS_DEC_COUNTER(fundamental_prototype);
 }
 
-// clang-format off
 const struct JSClassOps FundamentalBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
@@ -237,15 +236,13 @@ const struct JSClassOps FundamentalBase::class_ops = {
     &FundamentalBase::finalize,
     nullptr,  // call
     nullptr,  // construct
-    &FundamentalBase::trace
-};
+    &FundamentalBase::trace};
 
 const struct JSClass FundamentalBase::klass = {
     "GFundamental_Object",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-    &FundamentalBase::class_ops
+    &FundamentalBase::class_ops,
 };
-// clang-format on
 
 // FIXME: assume info is non-null on main? Is it possible to have hidden
 // fundamental types?
@@ -268,9 +265,8 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
 
     JS::RootedObject constructor{cx};
     if (value.isUndefined()) {
-        /* In case we're looking for a private type, and we don't find it,
-           we need to define it first.
-        */
+        // In case we're looking for a private type, and we don't find it, we
+        // need to define it first.
         if (!FundamentalPrototype::define_class(cx, in_object, info,
                                                 &constructor))
             return nullptr;
@@ -302,9 +298,8 @@ static JSObject* gjs_lookup_fundamental_prototype_from_gtype(JSContext* cx,
     Maybe<GI::AutoObjectInfo> info;
     GI::Repository repo;
 
-    /* A given gtype might not have any definition in the introspection
-     * data. If that's the case, try to look for a definition of any of the
-     * parent type. */
+    // A given gtype might not have any definition in the introspection data. If
+    // that's the case, try to look for a definition of any of the parent types.
     while (gtype != G_TYPE_INVALID &&
            !(info = repo.find_by_gtype<GI::InfoTag::OBJECT>(gtype)))
         gtype = g_type_parent(gtype);

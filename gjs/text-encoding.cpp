@@ -113,7 +113,8 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
     // some dialectal characters are in the supplemental plane
     // Adding a padding of 12 prevents a few dialectal characters
     // from requiring a reallocation.
-    size_t buffer_size = std::max(bytes_len * 2 + 12, static_cast<size_t>(256u));
+    size_t buffer_size =
+        std::max(bytes_len * 2 + 12, static_cast<size_t>(256u));
 
     // Cast data to correct input types
     const char* input = reinterpret_cast<const char*>(bytes);
@@ -229,7 +230,8 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
     return JS_NewUCStringCopyN(cx, unicode_bytes, bytes_written / 2);
 }
 
-[[nodiscard]] static bool is_utf8_label(const char* encoding) {
+[[nodiscard]]
+static bool is_utf8_label(const char* encoding) {
     // We could be smarter about utf8 synonyms here.
     // For now, we handle any casing and trailing/leading
     // whitespace.
@@ -248,7 +250,8 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
 
 // Finds the length of a given data array, stopping at the first 0 byte.
 template <class T>
-[[nodiscard]] static size_t zero_terminated_length(const T* data, size_t len) {
+[[nodiscard]]
+static size_t zero_terminated_length(const T* data, size_t len) {
     if (!data || len == 0)
         return 0;
 
@@ -407,8 +410,8 @@ JSObject* gjs_encode_to_uint8array(JSContext* cx, JS::HandleString str,
         Gjs::AutoChar encoded;
         size_t bytes_written;
 
-        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered
-         * while we are using the string's chars */
+        /* Scope for AutoCheckCannotGC, will crash if a GC is triggered while we
+         * are using the string's chars */
         {
             JS::AutoCheckCannotGC nogc;
             size_t len;

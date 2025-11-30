@@ -47,7 +47,6 @@ const ExampleWindow = GObject.registerClass({
     }
 });
 
-
 // Create a window that stops the program when it is closed
 const win = new ExampleWindow();
 win.connect('destroy', () => Gtk.main_quit());

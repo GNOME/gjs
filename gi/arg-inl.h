@@ -47,13 +47,15 @@
 // gjs_arg_steal<T>(GIArgument*) - sets the appropriate zero value in the
 //   appropriate union member for type T and returns the replaced value.
 
-template <auto GIArgument::*member>
-[[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+template <auto GIArgument::* member>
+[[nodiscard]]
+constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
     return (arg->*member);
 }
 
 template <typename TAG>
-[[nodiscard]] constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+[[nodiscard]]
+constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
     if constexpr (std::is_same_v<TAG, Gjs::Tag::GBoolean>)
         return gjs_arg_member<&GIArgument::v_boolean>(arg);
 
@@ -175,8 +177,8 @@ constexpr inline void gjs_arg_set(GIArgument* arg, void* v) {
 }
 
 template <typename TAG>
-[[nodiscard]] constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_get(
-    GIArgument* arg) {
+[[nodiscard]]
+constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_get(GIArgument* arg) {
     if constexpr (std::is_same_v<TAG, bool> ||
                   std::is_same_v<TAG, Gjs::Tag::GBoolean>)
         return Gjs::Tag::RealT<TAG>(!!gjs_arg_member<TAG>(arg));
@@ -185,7 +187,8 @@ template <typename TAG>
 }
 
 template <typename TAG>
-[[nodiscard]] constexpr inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
+[[nodiscard]]
+constexpr inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
     return gjs_int_to_pointer(gjs_arg_get<TAG>(arg));
 }
 
@@ -197,8 +200,8 @@ constexpr inline void gjs_arg_unset(GIArgument* arg) {
 }
 
 template <typename TAG>
-[[nodiscard]] constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_steal(
-    GIArgument* arg) {
+[[nodiscard]]
+constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_steal(GIArgument* arg) {
     auto val = gjs_arg_get<TAG>(arg);
     gjs_arg_unset(arg);
     return val;
@@ -207,12 +210,12 @@ template <typename TAG>
 // Implementation to store rounded (u)int64_t numbers into double
 
 template <typename BigTag>
-[[nodiscard]] inline constexpr std::enable_if_t<
+[[nodiscard]]
+inline constexpr std::enable_if_t<
     std::is_integral_v<Gjs::Tag::RealT<BigTag>> &&
         (std::numeric_limits<Gjs::Tag::RealT<BigTag>>::max() >
          std::numeric_limits<int32_t>::max()),
-    double>
-gjs_arg_get_maybe_rounded(GIArgument* arg) {
+    double> gjs_arg_get_maybe_rounded(GIArgument* arg) {
     using BigT = Gjs::Tag::RealT<BigTag>;
     BigT val = gjs_arg_get<BigTag>(arg);
 
@@ -228,8 +231,9 @@ gjs_arg_get_maybe_rounded(GIArgument* arg) {
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
-    JSContext* cx, JS::HandleValue value, GIArgument* arg, bool* out_of_range) {
+GJS_JSAPI_RETURN_CONVENTION
+inline bool gjs_arg_set_from_js_value(JSContext* cx, JS::HandleValue value,
+                                      GIArgument* arg, bool* out_of_range) {
     if constexpr (Gjs::type_has_js_getter<TAG>())
         return Gjs::js_value_to_c<TAG>(cx, value, &gjs_arg_member<TAG>(arg));
 
@@ -251,8 +255,9 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
 
 // A helper function to retrieve array lengths from a GIArgument (letting the
 // compiler generate good instructions in case of big endian machines)
-[[nodiscard]] constexpr size_t gjs_gi_argument_get_array_length(
-    GITypeTag tag, GIArgument* arg) {
+[[nodiscard]]
+constexpr size_t gjs_gi_argument_get_array_length(GITypeTag tag,
+                                                  GIArgument* arg) {
     switch (tag) {
         case GI_TYPE_TAG_INT8:
             return gjs_arg_get<int8_t>(arg);
@@ -277,7 +282,8 @@ GJS_JSAPI_RETURN_CONVENTION inline bool gjs_arg_set_from_js_value(
 
 namespace Gjs {
 
-[[nodiscard]] static inline bool basic_type_needs_release(GITypeTag tag) {
+[[nodiscard]]
+static inline bool basic_type_needs_release(GITypeTag tag) {
     g_assert(GI_TYPE_TAG_IS_BASIC(tag));
     return tag == GI_TYPE_TAG_FILENAME || tag == GI_TYPE_TAG_UTF8;
 }

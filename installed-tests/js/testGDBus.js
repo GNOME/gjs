@@ -214,9 +214,9 @@ class Test {
         // Empty!
     }
 
-    /* The following two functions have identical return values
-     * in JS, but the bus message will be different.
-     * multipleOutValues is "sss", while oneArrayOut is "as"
+    /* The following two functions have identical return values in JS, but the
+     * bus message will be different. multipleOutValues() is "sss", while
+     * oneArrayOut() is "as"
      */
     multipleOutValues() {
         return ['Hello', 'World', '!'];
@@ -226,8 +226,8 @@ class Test {
         return ['Hello', 'World', '!'];
     }
 
-    /* Same thing again. In this case multipleArrayOut is "asas",
-     * while arrayOfArrayOut is "aas".
+    /* Same thing again. In this case multipleArrayOut() is "asas", while
+     * arrayOfArrayOut() is "aas".
      */
     multipleArrayOut() {
         return [['Hello', 'World'], ['World', 'Hello']];

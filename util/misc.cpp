@@ -8,9 +8,7 @@
 
 #include "util/misc.h"
 
-bool
-gjs_environment_variable_is_set(const char *env_variable_name)
-{
+bool gjs_environment_variable_is_set(const char* env_variable_name) {
     const char *s;
 
     s = g_getenv(env_variable_name);

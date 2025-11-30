@@ -35,35 +35,45 @@ static gboolean debugging = false;
 static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
-static gboolean parse_profile_arg(const char *, const char *, void *, GError **);
+static gboolean parse_profile_arg(const char*, const char*, void*, GError**);
 
 using GjsAutoGOptionContext =
     Gjs::AutoPointer<GOptionContext, GOptionContext, g_option_context_free>;
 
-// clang-format off
 static GOptionEntry entries[] = {
-    { "version", 0, 0, G_OPTION_ARG_NONE, &print_version, "Print GJS version and exit" },
-    { "jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
-        "Print version of the JS engine and exit" },
-    { "command", 'c', 0, G_OPTION_ARG_STRING, command.out(), "Program passed in as a string", "COMMAND" },
-    { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, coverage_prefixes.out(),
-      "Add the prefix PREFIX to the list of files to generate coverage info for", "PREFIX" },
-    { "coverage-output", 0, 0, G_OPTION_ARG_STRING, coverage_output_path.out(),
-      "Write coverage output to a directory DIR. This option is mandatory when using --coverage-prefix", "DIR", },
-    { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(),
-        "Add DIR to the list of paths to search for JS files", "DIR" },
-    { "module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
-        "Execute the file as a module" },
-    { "profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
-        G_OPTION_ARG_CALLBACK, reinterpret_cast<void *>(&parse_profile_arg),
-        "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
-        "FILE" },
-    { "debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode" },
-    { nullptr }
-};
-// clang-format on
+    {"version", 0, 0, G_OPTION_ARG_NONE, &print_version,
+     "Print GJS version and exit"},
+    {"jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
+     "Print version of the JS engine and exit"},
+    {"command", 'c', 0, G_OPTION_ARG_STRING, command.out(),
+     "Program passed in as a string", "COMMAND"},
+    {"coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY,
+     coverage_prefixes.out(),
+     "Add the prefix PREFIX to the list of files to generate coverage info for",
+     "PREFIX"},
+    {
+        "coverage-output",
+        0,
+        0,
+        G_OPTION_ARG_STRING,
+        coverage_output_path.out(),
+        "Write coverage output to a directory DIR. This option is mandatory "
+        "when using --coverage-prefix",
+        "DIR",
+    },
+    {"include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(),
+     "Add DIR to the list of paths to search for JS files", "DIR"},
+    {"module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
+     "Execute the file as a module"},
+    {"profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
+     G_OPTION_ARG_CALLBACK, reinterpret_cast<void*>(&parse_profile_arg),
+     "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
+     "FILE"},
+    {"debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode"},
+    {nullptr}};
 
-[[nodiscard]] static Gjs::AutoStrv strndupv(int n, char* const* strv) {
+[[nodiscard]]
+static Gjs::AutoStrv strndupv(int n, char* const* strv) {
     Gjs::AutoPointer<GStrvBuilder, GStrvBuilder, g_strv_builder_unref> builder{
         g_strv_builder_new()};
 
@@ -73,7 +83,8 @@ static GOptionEntry entries[] = {
     return g_strv_builder_end(builder);
 }
 
-[[nodiscard]] static Gjs::AutoStrv strcatv(char** strv1, char** strv2) {
+[[nodiscard]]
+static Gjs::AutoStrv strcatv(char** strv1, char** strv2) {
     if (strv1 == nullptr && strv2 == nullptr)
         return nullptr;
     if (strv1 == nullptr)
@@ -97,10 +108,7 @@ static gboolean parse_profile_arg(const char* option_name [[maybe_unused]],
     return true;
 }
 
-static void
-check_script_args_for_stray_gjs_args(int           argc,
-                                     char * const *argv)
-{
+static void check_script_args_for_stray_gjs_args(int argc, char* const* argv) {
     Gjs::AutoError error;
     Gjs::AutoStrv new_coverage_prefixes;
     Gjs::AutoChar new_coverage_output_path;
@@ -108,14 +116,14 @@ check_script_args_for_stray_gjs_args(int           argc,
     // Don't add new entries here. This is only for arguments that were
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
-    // clang-format off
     GOptionEntry script_check_entries[] = {
-        { "coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY, new_coverage_prefixes.out() },
-        { "coverage-output", 0, 0, G_OPTION_ARG_STRING, new_coverage_output_path.out() },
-        { "include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, new_include_paths.out() },
-        { nullptr }
-    };
-    // clang-format on
+        {"coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY,
+         new_coverage_prefixes.out()},
+        {"coverage-output", 0, 0, G_OPTION_ARG_STRING,
+         new_coverage_output_path.out()},
+        {"include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY,
+         new_include_paths.out()},
+        {nullptr}};
 
     Gjs::AutoStrv argv_copy{g_new(char*, argc + 2)};
     int ix;
@@ -159,10 +167,10 @@ check_script_args_for_stray_gjs_args(int           argc,
     }
 }
 
-int define_argv_and_eval_script(GjsContext* js_context, int argc,
+int define_argv_and_eval_script(GjsContext* gjs_context, int argc,
                                 char* const* argv, const char* script,
                                 size_t len, const char* filename) {
-    gjs_context_set_argv(js_context, argc, const_cast<const char**>(argv));
+    gjs_context_set_argv(gjs_context, argc, const_cast<const char**>(argv));
 
     Gjs::AutoError error;
     // evaluate the script
@@ -170,20 +178,20 @@ int define_argv_and_eval_script(GjsContext* js_context, int argc,
     if (exec_as_module) {
         Gjs::AutoUnref<GFile> output{g_file_new_for_commandline_arg(filename)};
         Gjs::AutoChar uri{g_file_get_uri(output)};
-        if (!gjs_context_register_module(js_context, uri, uri, &error)) {
+        if (!gjs_context_register_module(gjs_context, uri, uri, &error)) {
             g_critical("%s", error->message);
             code = 1;
         }
 
         uint8_t code_u8 = 0;
         if (!code &&
-            !gjs_context_eval_module(js_context, uri, &code_u8, &error)) {
+            !gjs_context_eval_module(gjs_context, uri, &code_u8, &error)) {
             code = code_u8;
 
             if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
                 g_critical("%s", error->message);
         }
-    } else if (!gjs_context_eval(js_context, script, len, filename, &code,
+    } else if (!gjs_context_eval(gjs_context, script, len, filename, &code,
                                  &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
             g_critical("%s", error->message);
@@ -279,7 +287,8 @@ int main(int argc, char** argv) {
             return EXIT_FAILURE;
         }
 
-        script = g_strdup("const Console = imports.console; Console.interact();");
+        script =
+            g_strdup("const Console = imports.console; Console.interact();");
         len = strlen(script);
         filename = "<stdin>";
         program_name = gjs_argv[0];
@@ -332,17 +341,17 @@ int main(int argc, char** argv) {
     Gjs::AutoChar repl_history_path = nullptr;
 #endif
 
-    Gjs::AutoUnref<GjsContext> js_context{GJS_CONTEXT(g_object_new(
-        GJS_TYPE_CONTEXT,
-        // clang-format off
-        "search-path", include_path.get(),
-        "program-name", program_name,
-        "program-path", program_path.get(),
-        "profiler-enabled", enable_profiler,
-        "exec-as-module", exec_as_module,
-        "repl-history-path", repl_history_path.get(),
-        // clang-format on
-        nullptr))};
+    Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(
+        g_object_new(GJS_TYPE_CONTEXT,
+                     // clang-format off
+                     "search-path", include_path.get(),
+                     "program-name", program_name,
+                     "program-path", program_path.get(),
+                     "profiler-enabled", enable_profiler,
+                     "exec-as-module", exec_as_module,
+                     "repl-history-path", repl_history_path.get(),
+                     // clang-format on
+                     nullptr))};
 
     env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != nullptr) {
@@ -353,18 +362,20 @@ int main(int argc, char** argv) {
     Gjs::AutoUnref<GjsCoverage> coverage;
     if (coverage_prefixes) {
         if (!coverage_output_path)
-            g_error("--coverage-output is required when taking coverage statistics");
+            g_error(
+                "--coverage-output is required when taking coverage "
+                "statistics");
 
         Gjs::AutoUnref<GFile> output{
             g_file_new_for_commandline_arg(coverage_output_path)};
-        coverage = gjs_coverage_new(coverage_prefixes, js_context, output);
+        coverage = gjs_coverage_new(coverage_prefixes, gjs_context, output);
     }
 
     if (enable_profiler && profile_output_path) {
-        GjsProfiler *profiler = gjs_context_get_profiler(js_context);
+        GjsProfiler* profiler = gjs_context_get_profiler(gjs_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
     } else if (enable_profiler && tracefd > -1) {
-        GjsProfiler* profiler = gjs_context_get_profiler(js_context);
+        GjsProfiler* profiler = gjs_context_get_profiler(gjs_context);
         gjs_profiler_set_fd(profiler, tracefd);
         tracefd = -1;
     }
@@ -377,10 +388,10 @@ int main(int argc, char** argv) {
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */
     if (debugging)
-        gjs_context_setup_debugger_console(js_context);
+        gjs_context_setup_debugger_console(gjs_context);
 
-    int code = define_argv_and_eval_script(js_context, script_argc, script_argv,
-                                           script, len, filename);
+    int code = define_argv_and_eval_script(gjs_context, script_argc,
+                                           script_argv, script, len, filename);
 
     // Probably doesn't make sense to write statistics on failure
     if (coverage && code == 0)

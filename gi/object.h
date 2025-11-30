@@ -112,9 +112,8 @@ class ObjectBase
     // Overrides GIWrapperBase::typecheck(). We only override the overload that
     // throws, so that we can throw our own more informative error.
     template <typename T>
-    GJS_JSAPI_RETURN_CONVENTION static bool typecheck(JSContext* cx,
-                                                      JS::HandleObject obj,
-                                                      T expected) {
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool typecheck(JSContext* cx, JS::HandleObject obj, T expected) {
         if (GIWrapperBase::typecheck(cx, obj, expected))
             return true;
 
@@ -140,27 +139,27 @@ class ObjectBase
 
  public:
     template <typename TAG = void>
-    GJS_JSAPI_RETURN_CONVENTION static bool prop_getter(JSContext*, unsigned,
-                                                        JS::Value*);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_getter(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter_write_only(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter_func(JSContext*, unsigned, JS::Value*);
     template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
-    GJS_JSAPI_RETURN_CONVENTION static bool prop_getter_simple_type_func(
-        JSContext*, unsigned, JS::Value*);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_getter_simple_type_func(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_getter(JSContext*, unsigned, JS::Value*);
     template <typename TAG = void>
-    GJS_JSAPI_RETURN_CONVENTION static bool prop_setter(JSContext*, unsigned,
-                                                        JS::Value*);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_setter(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_read_only(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_setter_func(JSContext*, unsigned, JS::Value*);
     template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
-    GJS_JSAPI_RETURN_CONVENTION static bool prop_setter_simple_type_func(
-        JSContext*, unsigned, JS::Value*);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool prop_setter_simple_type_func(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool field_setter(JSContext*, unsigned, JS::Value*);
 
@@ -177,8 +176,8 @@ class ObjectBase
     GJS_JSAPI_RETURN_CONVENTION
     static bool signal_find(JSContext*, unsigned, JS::Value*);
     template <SignalMatchFunc(*MATCH_FUNC)>
-    GJS_JSAPI_RETURN_CONVENTION static bool signals_action(JSContext*, unsigned,
-                                                           JS::Value*);
+    GJS_JSAPI_RETURN_CONVENTION
+    static bool signals_action(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
     static bool to_string(JSContext*, unsigned, JS::Value*);
     GJS_JSAPI_RETURN_CONVENTION
@@ -233,8 +232,7 @@ class ObjectPrototype
     ~ObjectPrototype();
 
  public:
-    [[nodiscard]]
-    static ObjectPrototype* for_gtype(GType);
+    [[nodiscard]] static ObjectPrototype* for_gtype(GType);
 
     // Helper methods
  private:
@@ -243,8 +241,7 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool get_parent_constructor(JSContext*,
                                 JS::MutableHandleObject constructor) const;
-    [[nodiscard]]
-    bool is_vfunc_unchanged(const GI::VFuncInfo) const;
+    [[nodiscard]] bool is_vfunc_unchanged(const GI::VFuncInfo) const;
     static void vfunc_invalidated_notify(void* data, GClosure*);
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -329,8 +326,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     bool m_gobj_finalized : 1;
 
     /* True if this object has visible JS state, and thus its lifecycle is
-     * managed using toggle references. False if this object just keeps a
-     * hard ref on the underlying GObject, and may be finalized at will. */
+     * managed using toggle references. False if this object just keeps a hard
+     * ref on the underlying GObject, and may be finalized at will. */
     bool m_uses_toggle_ref : 1;
 
     static bool s_weak_pointer_callback;
@@ -347,8 +344,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     // Extra method to get an existing ObjectInstance from qdata
 
  public:
-    [[nodiscard]]
-    static ObjectInstance* for_gobject(GObject*);
+    [[nodiscard]] static ObjectInstance* for_gobject(GObject*);
 
     // Accessors
 
@@ -364,7 +360,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     void discard_wrapper() { m_wrapper.reset(); }
     void switch_to_rooted(JSContext* cx) { m_wrapper.switch_to_rooted(cx); }
     void switch_to_unrooted(JSContext* cx) { m_wrapper.switch_to_unrooted(cx); }
-    [[nodiscard]] bool update_after_gc(JSTracer* trc) {
+    [[nodiscard]]
+    bool update_after_gc(JSTracer* trc) {
         return m_wrapper.update_after_gc(trc);
     }
     [[nodiscard]] bool wrapper_is_rooted() const { return m_wrapper.rooted(); }
@@ -433,7 +430,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     static std::unordered_set<ObjectInstance*> s_wrapped_gobject_list;
     void link();
     void unlink();
-    [[nodiscard]] static size_t num_wrapped_gobjects() {
+    [[nodiscard]]
+    static size_t num_wrapped_gobjects() {
         return s_wrapped_gobject_list.size();
     }
     using Action = std::function<void(ObjectInstance*)>;
@@ -456,26 +454,28 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
  private:
     template <typename TAG>
-    GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
-        JSContext*, GParamSpec*, JS::MutableHandleValue rval);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool prop_getter_impl(JSContext*, GParamSpec*, JS::MutableHandleValue rval);
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_getter_impl(JSContext*, ObjectPropertyInfoCaller*,
                           JS::CallArgs const&);
     template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
-    GJS_JSAPI_RETURN_CONVENTION bool prop_getter_impl(
-        JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool prop_getter_impl(JSContext*, ObjectPropertyPspecCaller*,
+                          JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_getter_impl(JSContext*, GI::AutoFieldInfo const&,
                            JS::MutableHandleValue rval);
     template <typename TAG>
-    GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(JSContext*, GParamSpec*,
-                                                      JS::HandleValue);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool prop_setter_impl(JSContext*, GParamSpec*, JS::HandleValue);
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_setter_impl(JSContext*, ObjectPropertyInfoCaller*,
                           JS::CallArgs const&);
     template <typename TAG, GITransfer TRANSFER = GI_TRANSFER_NOTHING>
-    GJS_JSAPI_RETURN_CONVENTION bool prop_setter_impl(
-        JSContext*, ObjectPropertyPspecCaller*, JS::CallArgs const&);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool prop_setter_impl(JSContext*, ObjectPropertyPspecCaller*,
+                          JS::CallArgs const&);
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_not_impl(JSContext*, GI::AutoFieldInfo const&);
 
@@ -495,15 +495,16 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     bool signal_find_impl(JSContext*, const JS::CallArgs&);
     template <SignalMatchFunc(*MATCH_FUNC)>
-    GJS_JSAPI_RETURN_CONVENTION bool signals_action_impl(JSContext*,
-                                                         const JS::CallArgs&);
+    GJS_JSAPI_RETURN_CONVENTION
+    bool signals_action_impl(JSContext*, const JS::CallArgs&);
     GJS_JSAPI_RETURN_CONVENTION
     bool init_impl(JSContext*, const JS::CallArgs&, JS::HandleObject);
     [[nodiscard]] const char* to_string_kind() const;
 
     // Overrides GIWrapperInstance::typecheck_impl()
     template <typename T>
-    GJS_JSAPI_RETURN_CONVENTION bool typecheck_impl(T expected) const {
+    GJS_JSAPI_RETURN_CONVENTION
+    bool typecheck_impl(T expected) const {
         g_assert(m_gobj_disposed || !m_ptr ||
                  g_type_is_a(gtype(), G_OBJECT_TYPE(m_ptr.as<GObject*>())));
         return GIWrapperInstance::typecheck_impl(expected);

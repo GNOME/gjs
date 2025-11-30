@@ -1,9 +1,6 @@
 /* -*- mode: C++; c-basic-offset: 4; indent-tabs-mode: nil; -*- */
-/*
- * SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
- *
- * Copyright (c) 2020 Marco Trevisan <marco.trevisan@canonical.com>
- */
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2020 Marco Trevisan <marco.trevisan@canonical.com>
 
 #include <config.h>
 
@@ -208,7 +205,7 @@ static void test_gjs_autopointer_cast_free_func_type() {
 
 static void test_gjs_autopointer_assign_operator() {
     GjsAutoTestObject autoptr;
-    auto* ptr = gjs_test_object_new();
+    GjsTestObject* ptr = gjs_test_object_new();
 
     autoptr = ptr;
 
@@ -217,8 +214,8 @@ static void test_gjs_autopointer_assign_operator() {
 }
 
 static void test_gjs_autopointer_assign_operator_other_ptr() {
-    auto* ptr1 = gjs_test_object_new();
-    auto* ptr2 = gjs_test_object_new();
+    GjsTestObject* ptr1 = gjs_test_object_new();
+    GjsTestObject* ptr2 = gjs_test_object_new();
     g_object_add_weak_pointer(G_OBJECT(ptr1), reinterpret_cast<void**>(&ptr1));
 
     GjsAutoTestObject autoptr(ptr1);
@@ -257,8 +254,8 @@ static void test_gjs_autopointer_assign_operator_object(Fixture* fx,
 }
 
 static void test_gjs_autopointer_assign_operator_other_object() {
-    auto* ptr1 = gjs_test_object_new();
-    auto* ptr2 = gjs_test_object_new();
+    GjsTestObject* ptr1 = gjs_test_object_new();
+    GjsTestObject* ptr2 = gjs_test_object_new();
     g_object_add_weak_pointer(G_OBJECT(ptr1), reinterpret_cast<void**>(&ptr1));
     g_object_add_weak_pointer(G_OBJECT(ptr2), reinterpret_cast<void**>(&ptr2));
 
@@ -391,7 +388,7 @@ static void test_gjs_autopointer_release(Fixture* fx, const void*) {
 
     g_assert_nonnull(autoptr);
 
-    auto* released = autoptr.release();
+    GjsTestObject* released = autoptr.release();
     g_assert_true(released == fx->ptr);
     g_assert_null(autoptr);
 
@@ -430,8 +427,8 @@ static void test_gjs_autopointer_reset_self_ptr(Fixture* fx, const void*) {
 }
 
 static void test_gjs_autopointer_reset_other_ptr() {
-    auto* ptr1 = gjs_test_object_new();
-    auto* ptr2 = gjs_test_object_new();
+    GjsTestObject* ptr1 = gjs_test_object_new();
+    GjsTestObject* ptr2 = gjs_test_object_new();
     g_object_add_weak_pointer(G_OBJECT(ptr1), reinterpret_cast<void**>(&ptr1));
     g_object_add_weak_pointer(G_OBJECT(ptr2), reinterpret_cast<void**>(&ptr2));
 

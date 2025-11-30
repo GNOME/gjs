@@ -128,10 +128,11 @@ static bool report_invalid_null(JSContext* cx, const char* arg_name) {
 
 // Overload operator| so that Visual Studio won't complain
 // when converting unsigned char to GjsArgumentFlags
-GjsArgumentFlags operator|(
-    GjsArgumentFlags const& v1, GjsArgumentFlags const& v2) {
-    return static_cast<GjsArgumentFlags>(std::underlying_type<GjsArgumentFlags>::type(v1) |
-                                         std::underlying_type<GjsArgumentFlags>::type(v2));
+GjsArgumentFlags operator|(GjsArgumentFlags const& v1,
+                           GjsArgumentFlags const& v2) {
+    return static_cast<GjsArgumentFlags>(
+        std::underlying_type<GjsArgumentFlags>::type(v1) |
+        std::underlying_type<GjsArgumentFlags>::type(v2));
 }
 
 namespace Gjs {
@@ -804,7 +805,8 @@ struct BasicTypeContainer : Marshaller, Container {
         if constexpr (std::is_same_v<Marshaller, BasicTypeContainerReturn> ||
                       std::is_same_v<Marshaller, BasicTypeContainerOut> ||
                       std::is_same_v<Marshaller, BasicTypeContainerInOut>) {
-            bool success = Container::out(cx, Marshaller::element_tag(), arg, value);
+            bool success =
+                Container::out(cx, Marshaller::element_tag(), arg, value);
 
             GITransfer transfer = Marshaller::m_transfer;
             GITypeTag element_tag = Marshaller::element_tag();
@@ -1948,10 +1950,9 @@ bool BooleanIn::in(JSContext*, GjsFunctionCallState*, GIArgument* arg,
 }
 
 template <typename TAG>
-GJS_JSAPI_RETURN_CONVENTION bool NumericIn<TAG>::in(JSContext* cx,
-                                                    GjsFunctionCallState*,
-                                                    GIArgument* arg,
-                                                    JS::HandleValue value) {
+GJS_JSAPI_RETURN_CONVENTION
+bool NumericIn<TAG>::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+                        JS::HandleValue value) {
     bool out_of_range = false;
 
     if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
@@ -2007,9 +2008,9 @@ bool Nullable::handle_nullable(JSContext* cx, GIArgument* arg,
 }
 
 template <GITypeTag TAG>
-GJS_JSAPI_RETURN_CONVENTION bool StringInTransferNone<TAG>::in(
-    JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
-    JS::HandleValue value) {
+GJS_JSAPI_RETURN_CONVENTION
+bool StringInTransferNone<TAG>::in(JSContext* cx, GjsFunctionCallState* state,
+                                   GIArgument* arg, JS::HandleValue value) {
     if (value.isNull())
         return NullableIn::in(cx, state, arg, value);
 
@@ -2458,9 +2459,10 @@ bool CallbackIn::release(JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
 }
 
 template <GITypeTag TAG>
-GJS_JSAPI_RETURN_CONVENTION bool StringInTransferNone<TAG>::release(
-    JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
-    GIArgument* out_arg [[maybe_unused]]) {
+GJS_JSAPI_RETURN_CONVENTION
+bool StringInTransferNone<TAG>::release(JSContext*, GjsFunctionCallState*,
+                                        GIArgument* in_arg,
+                                        GIArgument* out_arg [[maybe_unused]]) {
     g_free(gjs_arg_get<void*>(in_arg));
     return true;
 }

@@ -79,7 +79,8 @@ class Function : public CWrapper<Function> {
     friend CWrapperPointerOps<Function>;
     friend CWrapper<Function>;
 
-    static constexpr auto PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_function;
+    static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
+        GjsGlobalSlot::PROTOTYPE_function;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GFUNCTION;
 
     GI::AutoCallableInfo m_info;
@@ -210,72 +211,72 @@ static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo ret_type,
                                                 GIArgument* return_value) {
     // Be consistent with gjs_value_to_gi_argument()
     switch (ret_type.tag()) {
-    case GI_TYPE_TAG_VOID:
-        g_assert_not_reached();
-    case GI_TYPE_TAG_INT8:
-        set_ffi_arg<int8_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT8:
-        set_ffi_arg<uint8_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT16:
-        set_ffi_arg<int16_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT16:
-        set_ffi_arg<uint16_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT32:
-        set_ffi_arg<int32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT32:
-        set_ffi_arg<uint32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_BOOLEAN:
-        set_ffi_arg<Gjs::Tag::GBoolean>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UNICHAR:
-        set_ffi_arg<char32_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INT64:
-        set_ffi_arg<int64_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_INTERFACE:
-        if (ret_type.interface().is_enum_or_flags())
-            set_ffi_arg<Gjs::Tag::Enum>(result, return_value);
-        else
+        case GI_TYPE_TAG_VOID:
+            g_assert_not_reached();
+        case GI_TYPE_TAG_INT8:
+            set_ffi_arg<int8_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT8:
+            set_ffi_arg<uint8_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT16:
+            set_ffi_arg<int16_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT16:
+            set_ffi_arg<uint16_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT32:
+            set_ffi_arg<int32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT32:
+            set_ffi_arg<uint32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_BOOLEAN:
+            set_ffi_arg<Gjs::Tag::GBoolean>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UNICHAR:
+            set_ffi_arg<char32_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INT64:
+            set_ffi_arg<int64_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_INTERFACE:
+            if (ret_type.interface().is_enum_or_flags())
+                set_ffi_arg<Gjs::Tag::Enum>(result, return_value);
+            else
+                set_ffi_arg<void*>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UINT64:
+            // Other primitive types need to squeeze into 64-bit ffi_arg too
+            set_ffi_arg<uint64_t>(result, return_value);
+            break;
+        case GI_TYPE_TAG_FLOAT:
+            set_ffi_arg<float>(result, return_value);
+            break;
+        case GI_TYPE_TAG_DOUBLE:
+            set_ffi_arg<double>(result, return_value);
+            break;
+        case GI_TYPE_TAG_GTYPE:
+            set_ffi_arg<Gjs::Tag::GType>(result, return_value);
+            break;
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+            set_ffi_arg<char*>(result, return_value);
+            break;
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_ERROR:
+        default:
             set_ffi_arg<void*>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UINT64:
-        // Other primitive types need to squeeze into 64-bit ffi_arg too
-        set_ffi_arg<uint64_t>(result, return_value);
-        break;
-    case GI_TYPE_TAG_FLOAT:
-        set_ffi_arg<float>(result, return_value);
-        break;
-    case GI_TYPE_TAG_DOUBLE:
-        set_ffi_arg<double>(result, return_value);
-        break;
-    case GI_TYPE_TAG_GTYPE:
-        set_ffi_arg<Gjs::Tag::GType>(result, return_value);
-        break;
-    case GI_TYPE_TAG_UTF8:
-    case GI_TYPE_TAG_FILENAME:
-        set_ffi_arg<char*>(result, return_value);
-        break;
-    case GI_TYPE_TAG_ARRAY:
-    case GI_TYPE_TAG_GLIST:
-    case GI_TYPE_TAG_GSLIST:
-    case GI_TYPE_TAG_GHASH:
-    case GI_TYPE_TAG_ERROR:
-    default:
-        set_ffi_arg<void*>(result, return_value);
-        break;
+            break;
     }
 }
 
 void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
                                                            const char* reason,
-                                                           bool        dump_stack) {
+                                                           bool dump_stack) {
     std::ostringstream message;
 
     message << "Attempting to run a JS callback " << when << ". "
@@ -290,12 +291,11 @@ void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
     g_critical("%s", message.str().c_str());
 }
 
-/* This is our main entry point for ffi_closure callbacks.
- * ffi_prep_closure is doing pure magic and replaces the original
- * function call with this one which gives us the ffi arguments,
- * a place to store the return value and our use data.
- * In other words, everything we need to call the JS function and
- * getting the return value back.
+/* This is our main entry point for ffi_closure callbacks. ffi_prep_closure() is
+ * doing pure magic and replaces the original function call with this one which
+ * gives us the ffi arguments, a place to store the return value and our use
+ * data. In other words, everything we need to call the JS function and get the
+ * return value back.
  */
 void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     GI::StackTypeInfo ret_type;
@@ -378,8 +378,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
             }
         }
 
-        /* "this" is not included in the GI signature, but is in the C (and
-         * FFI) signature */
+        /* "this" is not included in the GI signature, but is in the C (and FFI)
+         * signature */
         c_args_offset = 1;
     }
 
@@ -568,9 +568,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         JS::RootedValue elem{cx};
         JS::RootedObject out_array{cx, rval.toObjectOrNull()};
         size_t elem_idx = 0;
-        /* more than one of a return value or an out argument.
-         * Should be an array of output values. */
-
+        /* More than one of a return value or an out argument. Should be an
+         * array of output values. */
         if (!ret_type_is_void) {
             GIArgument argument;
             GITransfer transfer = m_info.caller_owns();
@@ -1008,8 +1007,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     // This pointer needs to exist on the stack across the ffi_call() call
     GError** errorp = &state.local_error;
 
-    /* Did argument conversion fail?  In that case, skip invocation and jump to release
-     * processing. */
+    /* Did argument conversion fail? In that case, skip invocation and jump to
+     * release processing. */
     if (state.failed)
         return finish_invoke(cx, args, &state, r_value);
 
@@ -1194,19 +1193,19 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
     }
 }
 
-bool Function::call(JSContext* cx, unsigned js_argc, JS::Value* vp) {
-    JS::CallArgs js_argv = JS::CallArgsFromVp(js_argc, vp);
-    JS::RootedObject callee{cx, &js_argv.callee()};
+bool Function::call(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    JS::RootedObject callee{cx, &args.callee()};
 
     Function* priv;
-    if (!Function::for_js_typecheck(cx, callee, &priv, &js_argv))
+    if (!Function::for_js_typecheck(cx, callee, &priv, &args))
         return false;
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p",
                       callee.get(), priv);
 
     g_assert(priv);
-    return priv->invoke(cx, js_argv);
+    return priv->invoke(cx, args);
 }
 
 Function::~Function() {
@@ -1291,8 +1290,8 @@ const JSPropertySpec Function::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "GIRepositoryFunction", JSPROP_READONLY),
     JS_PS_END};
 
-/* The original Function.prototype.toString complains when
-   given a GIRepository function as an argument */
+// The original Function.prototype.toString complains when given a GIRepository
+// function as an argument
 // clang-format off
 const JSFunctionSpec Function::proto_funcs[] = {
     JS_FN("toString", &Function::to_string, 0, 0),
@@ -1408,7 +1407,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
     } else if (info.is_vfunc()) {
         name = "vfunc_" + std::string(info.name());
     } else {
-        g_assert_not_reached ();
+        g_assert_not_reached();
     }
 
     if (!JS_DefineProperty(cx, in_object, name.c_str(), function,

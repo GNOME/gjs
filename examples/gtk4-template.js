@@ -8,7 +8,6 @@ import Gtk from 'gi://Gtk?version=4.0';
 
 Gtk.init();
 
-
 /* In this example the template contents are loaded from the file as a string.
  *
  * The `Template` property of the class definition will accept:
@@ -49,7 +48,6 @@ const ExampleWindow = GObject.registerClass({
         button.label = 'Button was clicked!';
     }
 });
-
 
 // Create a window that stops the program when it is closed
 const loop = GLib.MainLoop.new(null, false);

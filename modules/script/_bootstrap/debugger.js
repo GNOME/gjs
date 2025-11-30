@@ -9,6 +9,7 @@
  * SpiderMonkey source.
  *
  * To run it: gjs -d path/to/file.js
+ *
  * Execution will stop at debugger statements, and you'll get a prompt before
  * the first frame is executed.
  */
@@ -817,7 +818,6 @@ PARAMETERS
 
 // Build the table of commands.
 var commands = {};
-// clang-format off
 var commandArray = [
     backtraceCommand, 'bt', 'where',
     breakpointCommand, 'b', 'break',
@@ -842,7 +842,6 @@ var commandArray = [
     upCommand,
     listCommand, 'li', 'l',
 ];
-// clang-format on
 var currentCmd = null;
 for (var i = 0; i < commandArray.length; i++) {
     let cmd = commandArray[i];

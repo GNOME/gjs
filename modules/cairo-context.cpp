@@ -57,27 +57,27 @@
         return false;                                         \
     }
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(method, cfunc)                     \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    cfunc(cr);                                                             \
-    argv.rval().setUndefined();                                            \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)       \
+    cfunc(cr);                                         \
+    argv.rval().setUndefined();                        \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(method, cfunc)                    \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    int ret;                                                               \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    ret = (int)cfunc(cr);                                                  \
-    argv.rval().setInt32(ret);                                             \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
+    int ret;                                            \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
+    ret = static_cast<int>(cfunc(cr));                  \
+    argv.rval().setInt32(ret);                          \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc)                    \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    cairo_bool_t ret;                                                      \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    ret = cfunc(cr);                                                       \
-    argv.rval().setBoolean(ret);                                           \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
+    cairo_bool_t ret;                                   \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
+    ret = cfunc(cr);                                    \
+    argv.rval().setBoolean(ret);                        \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(method, cfunc, n1, n2)            \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
@@ -143,13 +143,13 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
     }                                                                      \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
-#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc)                    \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                               \
-    double ret;                                                            \
-   _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)                                \
-    ret = cfunc(cr);                                                       \
-    argv.rval().setNumber(JS::CanonicalizeNaN(ret));                       \
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
+#define _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(method, cfunc) \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)        \
+    double ret;                                         \
+    _GJS_CAIRO_CONTEXT_CHECK_NO_ARGS(method)            \
+    ret = cfunc(cr);                                    \
+    argv.rval().setNumber(JS::CanonicalizeNaN(ret));    \
+    _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 #define _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(method, cfunc, fmt, t1, n1) \
     _GJS_CAIRO_CONTEXT_DEFINE_FUNC_BEGIN(method)                    \
@@ -240,11 +240,11 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
 GJS_JSAPI_RETURN_CONVENTION
 cairo_t* CairoContext::constructor_impl(JSContext* cx,
-                                        const JS::CallArgs& argv) {
+                                        const JS::CallArgs& args) {
     cairo_t *cr;
 
     JS::RootedObject surface_wrapper{cx};
-    if (!gjs_parse_call_args(cx, "Context", argv, "o", "surface",
+    if (!gjs_parse_call_args(cx, "Context", args, "o", "surface",
                              &surface_wrapper))
         return nullptr;
 
@@ -290,8 +290,10 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(clipPreserve, cairo_clip_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(clipExtents, cairo_clip_extents)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(closePath, cairo_close_path)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(copyPage, cairo_copy_page)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(deviceToUser, cairo_device_to_user, "x", "y")
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(deviceToUserDistance, cairo_device_to_user_distance, "x", "y")
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(deviceToUser, cairo_device_to_user, "x",
+                                     "y")
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(deviceToUserDistance,
+                                     cairo_device_to_user_distance, "x", "y")
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fill, cairo_fill)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(fillPreserve, cairo_fill_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(fillExtents, cairo_fill_extents)
@@ -307,51 +309,73 @@ _GJS_CAIRO_CONTEXT_DEFINE_FUNC0I(getOperator, cairo_get_operator)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0F(getTolerance, cairo_get_tolerance)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0B(hasCurrentPoint, cairo_has_current_point)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(identityMatrix, cairo_identity_matrix)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2B(inFill, cairo_in_fill, "ff", double, x, double, y)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2B(inStroke, cairo_in_stroke, "ff", double, x, double, y)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(lineTo, cairo_line_to, "ff", double, x, double, y)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(moveTo, cairo_move_to, "ff", double, x, double, y)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2B(inFill, cairo_in_fill, "ff", double, x, double,
+                                 y)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2B(inStroke, cairo_in_stroke, "ff", double, x,
+                                 double, y)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(lineTo, cairo_line_to, "ff", double, x, double,
+                                y)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(moveTo, cairo_move_to, "ff", double, x, double,
+                                y)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(newPath, cairo_new_path)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(newSubPath, cairo_new_sub_path)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(paint, cairo_paint)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(paintWithAlpha, cairo_paint_with_alpha, "f", double, alpha)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(paintWithAlpha, cairo_paint_with_alpha, "f",
+                                double, alpha)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(pathExtents, cairo_path_extents)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(pushGroup, cairo_push_group)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(pushGroupWithContent, cairo_push_group_with_content, "i",
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(pushGroupWithContent,
+                                cairo_push_group_with_content, "i",
                                 cairo_content_t, content)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(popGroupToSource, cairo_pop_group_to_source)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC4(rectangle, cairo_rectangle, "ffff",
-                                double, x, double, y, double, width, double, height)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC4(rectangle, cairo_rectangle, "ffff", double, x,
+                                double, y, double, width, double, height)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC6(relCurveTo, cairo_rel_curve_to, "ffffff",
-                                double, dx1, double, dy1, double, dx2, double, dy2,
-                                double, dx3, double, dy3)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(relLineTo, cairo_rel_line_to, "ff", double, dx, double, dy)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(relMoveTo, cairo_rel_move_to, "ff", double, dx, double, dy)
+                                double, dx1, double, dy1, double, dx2, double,
+                                dy2, double, dx3, double, dy3)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(relLineTo, cairo_rel_line_to, "ff", double, dx,
+                                double, dy)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(relMoveTo, cairo_rel_move_to, "ff", double, dx,
+                                double, dy)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(resetClip, cairo_reset_clip)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(restore, cairo_restore)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC1(rotate, cairo_rotate, "f", double, angle)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(save, cairo_save)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(scale, cairo_scale, "ff", double, sx, double, sy)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setAntialias, cairo_set_antialias, "i", cairo_antialias_t, antialias)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFillRule, cairo_set_fill_rule, "i", cairo_fill_rule_t, fill_rule)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFontSize, cairo_set_font_size, "f", double, size)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineCap, cairo_set_line_cap, "i", cairo_line_cap_t, line_cap)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineJoin, cairo_set_line_join, "i", cairo_line_join_t, line_join)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineWidth, cairo_set_line_width, "f", double, width)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setMiterLimit, cairo_set_miter_limit, "f", double, limit)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setOperator, cairo_set_operator, "i", cairo_operator_t, op)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setTolerance, cairo_set_tolerance, "f", double, tolerance)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(scale, cairo_scale, "ff", double, sx, double,
+                                sy)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setAntialias, cairo_set_antialias, "i",
+                                cairo_antialias_t, antialias)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFillRule, cairo_set_fill_rule, "i",
+                                cairo_fill_rule_t, fill_rule)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setFontSize, cairo_set_font_size, "f", double,
+                                size)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineCap, cairo_set_line_cap, "i",
+                                cairo_line_cap_t, line_cap)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineJoin, cairo_set_line_join, "i",
+                                cairo_line_join_t, line_join)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setLineWidth, cairo_set_line_width, "f", double,
+                                width)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setMiterLimit, cairo_set_miter_limit, "f",
+                                double, limit)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setOperator, cairo_set_operator, "i",
+                                cairo_operator_t, op)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC1(setTolerance, cairo_set_tolerance, "f", double,
+                                tolerance)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC3(setSourceRGB, cairo_set_source_rgb, "fff",
                                 double, red, double, green, double, blue)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC4(setSourceRGBA, cairo_set_source_rgba, "ffff",
-                                double, red, double, green, double, blue, double, alpha)
+                                double, red, double, green, double, blue,
+                                double, alpha)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(showPage, cairo_show_page)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(stroke, cairo_stroke)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0(strokePreserve, cairo_stroke_preserve)
 _GJS_CAIRO_CONTEXT_DEFINE_FUNC0AFFFF(strokeExtents, cairo_stroke_extents)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx, double, ty)
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x", "y")
-_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance, cairo_user_to_device_distance, "x", "y")
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2(translate, cairo_translate, "ff", double, tx,
+                                double, ty)
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDevice, cairo_user_to_device, "x",
+                                     "y")
+_GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance,
+                                     cairo_user_to_device_distance, "x", "y")
 
 bool CairoContext::dispose(JSContext* cx, unsigned argc, JS::Value* vp) {
     _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, rec, obj);

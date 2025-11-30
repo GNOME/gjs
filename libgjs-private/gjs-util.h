@@ -30,17 +30,17 @@ G_BEGIN_DECLS
  * Returns: negative value if @a < @b; zero if @a = @b; positive
  *          value if @a > @b
  */
-typedef int (*GjsCompareDataFunc)(const GObject *a, const GObject *b,
-                                  void *user_data);
+typedef int (*GjsCompareDataFunc)(const GObject* a, const GObject* b,
+                                  void* user_data);
 
 GJS_EXPORT
-unsigned gjs_list_store_insert_sorted(GListStore *store, GObject *item,
+unsigned gjs_list_store_insert_sorted(GListStore* store, GObject* item,
                                       GjsCompareDataFunc compare_func,
-                                      void *user_data);
+                                      void* user_data);
 
 GJS_EXPORT
-void gjs_list_store_sort(GListStore *store, GjsCompareDataFunc compare_func,
-                         void *user_data);
+void gjs_list_store_sort(GListStore* store, GjsCompareDataFunc compare_func,
+                         void* user_data);
 
 GJS_EXPORT
 GObject* gjs_gtk_custom_sorter_new(GjsCompareDataFunc sort_func,
@@ -70,35 +70,33 @@ GJS_EXPORT
 void gjs_log_set_writer_default(void);
 
 /* For imports.gettext */
-typedef enum
-{
-  GJS_LOCALE_CATEGORY_ALL = LC_ALL,
-  GJS_LOCALE_CATEGORY_COLLATE = LC_COLLATE,
-  GJS_LOCALE_CATEGORY_CTYPE = LC_CTYPE,
-  GJS_LOCALE_CATEGORY_MESSAGES = LC_MESSAGES,
-  GJS_LOCALE_CATEGORY_MONETARY = LC_MONETARY,
-  GJS_LOCALE_CATEGORY_NUMERIC = LC_NUMERIC,
-  GJS_LOCALE_CATEGORY_TIME = LC_TIME
+typedef enum {
+    GJS_LOCALE_CATEGORY_ALL = LC_ALL,
+    GJS_LOCALE_CATEGORY_COLLATE = LC_COLLATE,
+    GJS_LOCALE_CATEGORY_CTYPE = LC_CTYPE,
+    GJS_LOCALE_CATEGORY_MESSAGES = LC_MESSAGES,
+    GJS_LOCALE_CATEGORY_MONETARY = LC_MONETARY,
+    GJS_LOCALE_CATEGORY_NUMERIC = LC_NUMERIC,
+    GJS_LOCALE_CATEGORY_TIME = LC_TIME
 } GjsLocaleCategory;
 
 GJS_EXPORT
 const char* gjs_set_thread_locale(GjsLocaleCategory category,
                                   const char* locale);
 GJS_EXPORT
-void        gjs_textdomain               (const char *domain);
+void gjs_textdomain(const char* domain);
 GJS_EXPORT
-void        gjs_bindtextdomain           (const char *domain,
-                                          const char *location);
+void gjs_bindtextdomain(const char* domain, const char* location);
 GJS_EXPORT
-GType       gjs_locale_category_get_type (void) G_GNUC_CONST;
+GType gjs_locale_category_get_type(void) G_GNUC_CONST;
 
 /* For imports.overrides.GObject */
 GJS_EXPORT
-GParamFlags gjs_param_spec_get_flags (GParamSpec *pspec);
+GParamFlags gjs_param_spec_get_flags(GParamSpec* pspec);
 GJS_EXPORT
-GType       gjs_param_spec_get_value_type (GParamSpec *pspec);
+GType gjs_param_spec_get_value_type(GParamSpec* pspec);
 GJS_EXPORT
-GType       gjs_param_spec_get_owner_type (GParamSpec *pspec);
+GType gjs_param_spec_get_owner_type(GParamSpec* pspec);
 
 /**
  * GjsBindingTransformFunc:

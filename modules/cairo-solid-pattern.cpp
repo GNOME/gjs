@@ -31,11 +31,11 @@ const JSPropertySpec CairoSolidPattern::proto_props[] = {
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool createRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     double red, green, blue;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(cx, "createRGB", argv, "fff", "red", &red, "green",
+    if (!gjs_parse_call_args(cx, "createRGB", args, "fff", "red", &red, "green",
                              &green, "blue", &blue))
         return false;
 
@@ -48,18 +48,18 @@ static bool createRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     cairo_pattern_destroy(pattern);
 
-    argv.rval().setObjectOrNull(pattern_wrapper);
+    args.rval().setObjectOrNull(pattern_wrapper);
 
     return true;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool createRGBA_func(JSContext* cx, unsigned argc, JS::Value* vp) {
-    JS::CallArgs argv = JS::CallArgsFromVp (argc, vp);
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     double red, green, blue, alpha;
     cairo_pattern_t *pattern;
 
-    if (!gjs_parse_call_args(cx, "createRGBA", argv, "ffff", "red", &red,
+    if (!gjs_parse_call_args(cx, "createRGBA", args, "ffff", "red", &red,
                              "green", &green, "blue", &blue, "alpha", &alpha))
         return false;
 
@@ -72,7 +72,7 @@ static bool createRGBA_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     cairo_pattern_destroy(pattern);
 
-    argv.rval().setObjectOrNull(pattern_wrapper);
+    args.rval().setObjectOrNull(pattern_wrapper);
 
     return true;
 }

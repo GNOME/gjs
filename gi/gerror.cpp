@@ -72,15 +72,15 @@ GQuark ErrorBase::domain() const { return get_prototype()->domain(); }
 
 // See GIWrapperBase::constructor().
 bool ErrorInstance::constructor_impl(JSContext* cx, JS::HandleObject object,
-                                     const JS::CallArgs& argv) {
-    if (argv.length() != 1 || !argv[0].isObject()) {
+                                     const JS::CallArgs& args) {
+    if (args.length() != 1 || !args[0].isObject()) {
         gjs_throw(cx,
                   "Invalid parameters passed to GError constructor, expected "
                   "one object");
         return false;
     }
 
-    JS::RootedObject params_obj{cx, &argv[0].toObject()};
+    JS::RootedObject params_obj{cx, &args[0].toObject()};
     JS::UniqueChars message;
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     if (!gjs_object_require_property(cx, params_obj, "GError constructor",
@@ -153,8 +153,8 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!for_js_typecheck(cx, self, &priv, &rec))
         return false;
 
-    /* We follow the same pattern as standard JS errors, at the expense of
-       hiding some useful information */
+    // We follow the same pattern as standard JS errors, at the expense of
+    // hiding some useful information
 
     if (priv->is_prototype()) {
         descr = g_strdup(priv->format_name().c_str());
@@ -190,7 +190,6 @@ bool ErrorBase::value_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-// clang-format off
 const struct JSClassOps ErrorBase::class_ops = {
     nullptr,  // addProperty
     nullptr,  // deleteProperty
@@ -205,23 +204,19 @@ const struct JSClass ErrorBase::klass = {
     "GLib_Error",
     JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE |
         JSCLASS_IS_DOMJSCLASS,  // needed for Error.isError()
-    &ErrorBase::class_ops
-};
+    &ErrorBase::class_ops};
 
-/* We need to shadow all fields of GError, to prevent calling the getter from GBoxed
-   (which would trash memory accessing the instance private data) */
+// We need to shadow all fields of GError, to prevent calling the getter from
+// GBoxed (which would trash memory accessing the instance private data)
 JSPropertySpec ErrorBase::proto_properties[] = {
     JS_PSG("domain", &ErrorBase::get_domain, GJS_MODULE_PROP_FLAGS),
     JS_PSG("code", &ErrorBase::get_code, GJS_MODULE_PROP_FLAGS),
     JS_PSG("message", &ErrorBase::get_message, GJS_MODULE_PROP_FLAGS),
-    JS_PS_END
-};
+    JS_PS_END};
 
 JSFunctionSpec ErrorBase::static_methods[] = {
     JS_FN("valueOf", &ErrorBase::value_of, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
-// clang-format on
+    JS_FS_END};
 
 // Overrides GIWrapperPrototype::get_parent_proto().
 bool ErrorPrototype::get_parent_proto(JSContext* cx,
@@ -274,9 +269,8 @@ static Maybe<const GI::EnumInfo> find_error_domain_info(
     return repo.find_by_error_domain(domain);
 }
 
-/* define properties that JS Error() expose, such as
-   fileName, lineNumber and stack
-*/
+// define properties that JS Error exposes, such as fileName, lineNumber and
+// stack
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
     JS::RootedObject frame(cx);
@@ -309,33 +303,31 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
                                  JSPROP_ENUMERATE);
 }
 
-[[nodiscard]] static JSProtoKey proto_key_from_error_enum(int val) {
+[[nodiscard]]
+static JSProtoKey proto_key_from_error_enum(int val) {
     switch (val) {
-    case GJS_JS_ERROR_EVAL_ERROR:
-        return JSProto_EvalError;
-    case GJS_JS_ERROR_INTERNAL_ERROR:
-        return JSProto_InternalError;
-    case GJS_JS_ERROR_RANGE_ERROR:
-        return JSProto_RangeError;
-    case GJS_JS_ERROR_REFERENCE_ERROR:
-        return JSProto_ReferenceError;
-    case GJS_JS_ERROR_SYNTAX_ERROR:
-        return JSProto_SyntaxError;
-    case GJS_JS_ERROR_TYPE_ERROR:
-        return JSProto_TypeError;
-    case GJS_JS_ERROR_URI_ERROR:
-        return JSProto_URIError;
-    case GJS_JS_ERROR_ERROR:
-    default:
-        return JSProto_Error;
+        case GJS_JS_ERROR_EVAL_ERROR:
+            return JSProto_EvalError;
+        case GJS_JS_ERROR_INTERNAL_ERROR:
+            return JSProto_InternalError;
+        case GJS_JS_ERROR_RANGE_ERROR:
+            return JSProto_RangeError;
+        case GJS_JS_ERROR_REFERENCE_ERROR:
+            return JSProto_ReferenceError;
+        case GJS_JS_ERROR_SYNTAX_ERROR:
+            return JSProto_SyntaxError;
+        case GJS_JS_ERROR_TYPE_ERROR:
+            return JSProto_TypeError;
+        case GJS_JS_ERROR_URI_ERROR:
+            return JSProto_URIError;
+        case GJS_JS_ERROR_ERROR:
+        default:
+            return JSProto_Error;
     }
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static JSObject *
-gjs_error_from_js_gerror(JSContext *cx,
-                         GError    *gerror)
-{
+static JSObject* gjs_error_from_js_gerror(JSContext* cx, GError* gerror) {
     JS::RootedValueArray<1> error_args(cx);
     if (!gjs_string_from_utf8(cx, gerror->message, error_args[0]))
         return nullptr;
@@ -365,8 +357,8 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* cx, GError* gerror) {
     Maybe<GI::AutoEnumInfo> info = find_error_domain_info(repo, gerror->domain);
 
     if (!info) {
-        /* We don't have error domain metadata */
-        /* Marshal the error as a plain GError */
+        // We don't have error domain metadata. Marshal the error as a plain
+        // GError
         GI::AutoStructInfo glib_boxed{
             repo.find_by_name<GI::InfoTag::STRUCT>("GLib", "Error").value()};
         return StructInstance::new_for_c_struct(cx, glib_boxed, gerror);
@@ -386,9 +378,8 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* cx, GError* gerror) {
 }
 
 GError* ErrorBase::to_c_ptr(JSContext* cx, JS::HandleObject obj) {
-    /* If this is a plain GBoxed (i.e. a GError without metadata),
-       delegate marshalling.
-    */
+    // If this is a plain GBoxed (i.e. a GError without metadata), delegate
+    // marshalling.
     if (StructBase::typecheck(cx, obj, G_TYPE_ERROR, GjsTypecheckNoThrow{}))
         return StructBase::to_c_ptr<GError>(cx, obj);
 
@@ -448,8 +439,8 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
         return g_error_copy(inner);
     }
 
-    /* Try to make something useful from the error
-       name and message (in case this is a JS error) */
+    // Try to make something useful from the error name and message (in case
+    // this is a JS error)
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedValue v_name(cx);
     if (!JS_GetPropertyById(cx, obj, atoms.name(), &v_name))
@@ -525,9 +516,9 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
 /**
  * gjs_throw_gerror:
  *
- * Converts a GError into a JavaScript exception.
- * Differently from gjs_throw(), it will overwrite an existing exception, as it
- * is used to report errors from C functions.
+ * Converts a GError into a JavaScript exception. Differently from gjs_throw(),
+ * it will overwrite an existing exception, as it is used to report errors from
+ * C functions.
  *
  * Returns: false, for convenience in returning from the calling function.
  */

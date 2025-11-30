@@ -174,6 +174,8 @@ without reading the code itself.
 
 Either C++ style comments (`//`) or C style (`/* */`) comments are
 acceptable.
+C++ style comments are preferred if nothing needs to come after the
+comment on the same line.
 However, when documenting a method or function, use [gtk-doc style]
 comments which are based on C style (`/** */`).
 When C style comments take more than one line, put an asterisk (`*`) at
@@ -1018,3 +1020,16 @@ Instead, use `g_utf8_to_utf16()` and friends (unfortunately not
 typesafe) or `mozilla::ConvertUtf8toUtf16()` and friends (when that
 becomes possible; it is currently not possible due to a linker bug.)
 
+#### Function annotations
+
+Annotations go on a separate line, _unless_ the entire function can
+fit on one line, including the annotation and the body:
+
+```c++
+[[nodiscard]]
+std::unique_ptr<Foo> get_complicated_thing() {
+    return compute_complicated(m_int);
+}
+
+[[nodiscard]] int get_int() { return m_int; }
+```

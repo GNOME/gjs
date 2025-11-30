@@ -112,8 +112,8 @@ JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
  *
  * Returns: false if an exception is pending, otherwise true.
  */
-bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str, JS::UniqueChars* output,
-                          size_t* output_len) {
+bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str,
+                          JS::UniqueChars* output, size_t* output_len) {
     JSLinearString* linear = JS_EnsureLinearString(cx, str);
     if (!linear)
         return false;
@@ -194,12 +194,8 @@ bool gjs_string_from_utf8(JSContext* cx, const char* utf8_string,
     return true;
 }
 
-bool
-gjs_string_from_utf8_n(JSContext             *cx,
-                       const char            *utf8_chars,
-                       size_t                 len,
-                       JS::MutableHandleValue out)
-{
+bool gjs_string_from_utf8_n(JSContext* cx, const char* utf8_chars, size_t len,
+                            JS::MutableHandleValue out) {
     JS::UTF8Chars chars(utf8_chars, len);
     JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
     if (str)
@@ -248,9 +244,9 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
  * type, by what the compiler believes is the most efficient method possible */
 template <typename T>
-GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
-                                                    JSString* str, T** data_p,
-                                                    size_t* len_p) {
+GJS_JSAPI_RETURN_CONVENTION
+static bool from_latin1(JSContext* cx, JSString* str, T** data_p,
+                        size_t* len_p) {
     /* No garbage collection should be triggered while we are using the string's
      * chars. Crash if that happens. */
     JS::AutoCheckCannotGC nogc;
@@ -260,9 +256,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool from_latin1(JSContext* cx,
     if (js_data == nullptr)
         return false;
 
-    /* Unicode codepoints 0x00-0xFF are the same as Latin-1
-     * codepoints, so we can preserve the string length and simply
-     * copy the codepoints to an array of different-sized ints */
+    /* Unicode codepoints 0x00-0xFF are the same as Latin-1 codepoints, so we
+     * can preserve the string length and simply copy the codepoints to an array
+     * of different-sized ints */
 
     *data_p = g_new(T, *len_p);
 
@@ -287,8 +283,8 @@ bool gjs_string_get_char16_data(JSContext* cx, JS::HandleString str,
     if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, data_p, len_p);
 
-    /* From this point on, crash if a GC is triggered while we are using
-     * the string's chars */
+    /* From this point on, crash if a GC is triggered while we are using the
+     * string's chars */
     JS::AutoCheckCannotGC nogc;
 
     const char16_t* js_data =
@@ -318,12 +314,8 @@ bool gjs_string_get_char16_data(JSContext* cx, JS::HandleString str,
  *
  * Returns: true on success, false otherwise in which case a JS error is thrown
  */
-bool
-gjs_string_to_ucs4(JSContext       *cx,
-                   JS::HandleString str,
-                   gunichar       **ucs4_string_p,
-                   size_t          *len_p)
-{
+bool gjs_string_to_ucs4(JSContext* cx, JS::HandleString str,
+                        gunichar** ucs4_string_p, size_t* len_p) {
     if (ucs4_string_p == nullptr)
         return true;
 
@@ -333,8 +325,8 @@ gjs_string_to_ucs4(JSContext       *cx,
     if (JS::StringHasLatin1Chars(str))
         return from_latin1(cx, str, ucs4_string_p, len_p);
 
-    /* From this point on, crash if a GC is triggered while we are using
-     * the string's chars */
+    /* From this point on, crash if a GC is triggered while we are using the
+     * string's chars */
     JS::AutoCheckCannotGC nogc;
 
     const char16_t *utf16 =
@@ -356,7 +348,7 @@ gjs_string_to_ucs4(JSContext       *cx,
             return false;
         }
         if (len_p != nullptr)
-            *len_p = (size_t) length;
+            *len_p = static_cast<size_t>(length);
     }
 
     return true;
@@ -371,12 +363,8 @@ gjs_string_to_ucs4(JSContext       *cx,
  *
  * Returns: true on success, false otherwise in which case a JS error is thrown
  */
-bool
-gjs_string_from_ucs4(JSContext             *cx,
-                     const gunichar        *ucs4_string,
-                     ssize_t                n_chars,
-                     JS::MutableHandleValue value_p)
-{
+bool gjs_string_from_ucs4(JSContext* cx, const gunichar* ucs4_string,
+                          ssize_t n_chars, JS::MutableHandleValue value_p) {
     // a null array pointer takes precedence over whatever `n_chars` says
     if (!ucs4_string) {
         value_p.setString(JS_GetEmptyString(cx));
@@ -455,10 +443,7 @@ bool gjs_unichar_from_string(JSContext* cx, JS::Value value, gunichar* result) {
     return false;
 }
 
-jsid
-gjs_intern_string_to_id(JSContext  *cx,
-                        const char *string)
-{
+jsid gjs_intern_string_to_id(JSContext* cx, const char* string) {
     JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
     if (!str)
         return JS::PropertyKey::Void();
@@ -482,8 +467,8 @@ enum Quotes {
     NoQuotes,
 };
 
-[[nodiscard]] static std::string gjs_debug_linear_string(JSLinearString* str,
-                                                         Quotes quotes) {
+[[nodiscard]]
+static std::string gjs_debug_linear_string(JSLinearString* str, Quotes quotes) {
     size_t len = JS::GetLinearStringLength(str);
 
     std::ostringstream out;
@@ -518,9 +503,7 @@ enum Quotes {
     return out.str();
 }
 
-std::string
-gjs_debug_string(JSString *str)
-{
+std::string gjs_debug_string(JSString* str) {
     if (!str)
         return "<null string>";
     if (!JS_StringIsLinear(str)) {
@@ -533,9 +516,7 @@ gjs_debug_string(JSString *str)
                                    DoubleQuotes);
 }
 
-std::string
-gjs_debug_symbol(JS::Symbol * const sym)
-{
+std::string gjs_debug_symbol(JS::Symbol* const sym) {
     if (!sym)
         return "<null symbol>";
 
@@ -570,9 +551,7 @@ gjs_debug_symbol(JS::Symbol * const sym)
     return out.str();
 }
 
-std::string
-gjs_debug_object(JSObject * const obj)
-{
+std::string gjs_debug_object(JSObject* const obj) {
     if (!obj)
         return "<null object>";
 
@@ -621,9 +600,7 @@ std::string gjs_debug_callable(JSObject* callable) {
     return {"callable object " + gjs_debug_object(callable)};
 }
 
-std::string
-gjs_debug_value(JS::Value v)
-{
+std::string gjs_debug_value(JS::Value v) {
     if (v.isNull())
         return "null";
     if (v.isUndefined())
@@ -653,9 +630,7 @@ gjs_debug_value(JS::Value v)
     return "unexpected value";
 }
 
-std::string
-gjs_debug_id(jsid id)
-{
+std::string gjs_debug_id(jsid id) {
     if (id.isString())
         return gjs_debug_linear_string(id.toLinearString(), NoQuotes);
     return gjs_debug_value(js::IdToValue(id));

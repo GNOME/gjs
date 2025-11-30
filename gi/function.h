@@ -153,7 +153,8 @@ class GjsFunctionCallState {
         return first_arg_offset() + processed_c_args;
     }
 
-    [[nodiscard]] Gjs::AutoChar display_name() {
+    [[nodiscard]]
+    Gjs::AutoChar display_name() {
         mozilla::Maybe<const GI::BaseInfo> container = info.container();
         if (container) {
             return g_strdup_printf("%s.%s.%s", container->ns(),

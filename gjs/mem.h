@@ -20,8 +20,7 @@
 G_BEGIN_DECLS
 
 GJS_EXPORT
-void gjs_memory_report(const char *where,
-                       bool        die_if_leaks);
+void gjs_memory_report(const char* where, bool die_if_leaks);
 
 G_END_DECLS
 

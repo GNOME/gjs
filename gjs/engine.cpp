@@ -54,7 +54,7 @@ static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
 static void on_promise_unhandled_rejection(
     JSContext* cx, bool mutedErrors [[maybe_unused]], JS::HandleObject promise,
     JS::PromiseRejectionHandlingState state, void* data) {
-    auto gjs = static_cast<GjsContextPrivate*>(data);
+    auto* gjs = static_cast<GjsContextPrivate*>(data);
     uint64_t id = JS::GetPromiseID(promise);
 
     if (state == JS::PromiseRejectionHandlingState::Handled) {
@@ -127,7 +127,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
 
 #else
 class GjsInit {
-public:
+ public:
     GjsInit() {
         const char* reason = JS_InitWithFailureDiagnostic();
         if (reason)
@@ -255,7 +255,8 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS_SetGlobalJitCompilerOption(
         cx, JSJitCompilerOption::JSJITCOMPILER_BASELINE_ENABLE, value);
     JS_SetGlobalJitCompilerOption(
-        cx, JSJitCompilerOption::JSJITCOMPILER_BASELINE_INTERPRETER_ENABLE, value);
+        cx, JSJitCompilerOption::JSJITCOMPILER_BASELINE_INTERPRETER_ENABLE,
+        value);
 
     return cx;
 }

@@ -93,11 +93,11 @@ JSObject* gjs_define_string_array(JSContext*, JS::HandleObject,
                                   const std::vector<std::string>&,
                                   unsigned attrs);
 
-[[gnu::format(printf, 2, 3)]] void gjs_throw(JSContext*, const char* format,
-                                             ...);
-[[gnu::format(printf, 4, 5)]] void gjs_throw_custom(JSContext*, JSExnType,
-                                                    const char* error_name,
-                                                    const char* format, ...);
+[[gnu::format(printf, 2, 3)]]
+void gjs_throw(JSContext*, const char* format, ...);
+[[gnu::format(printf, 4, 5)]]
+void gjs_throw_custom(JSContext*, JSExnType, const char* error_name,
+                      const char* format, ...);
 void gjs_throw_literal(JSContext*, const char* string);
 bool gjs_throw_gerror_message(JSContext*, Gjs::AutoError const&);
 
@@ -163,8 +163,8 @@ GJS_JSAPI_RETURN_CONVENTION
 JS::UniqueChars format_saved_frame(JSContext*, JS::HandleObject saved_frame,
                                    size_t indent = 0);
 
-/* Overloaded functions, must be outside G_DECLS. More types are intended to be
- * added as the opportunity arises. */
+/* Overloaded functions. More types are intended to be added as the opportunity
+ * arises. */
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_require_property(JSContext*, JS::HandleObject,
@@ -243,7 +243,8 @@ static constexpr size_t N_REASONS = 0 FOREACH_GC_REASON(COUNT_GC_REASON);
 };
 
 template <typename T>
-[[nodiscard]] bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
+[[nodiscard]]
+bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
     static_assert(sizeof(T) == 8, "64-bit types only");
     g_assert(bi && "bigint cannot be null");
     g_assert(clamped && "forgot out parameter");

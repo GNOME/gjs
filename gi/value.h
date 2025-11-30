@@ -70,9 +70,9 @@ struct AutoGValue : GValue {
     ~AutoGValue() { g_value_unset(this); }
 };
 
-/* This is based on what GMarshalling does, it is an unsupported API but
- * gjs can be considered a glib implementation for JS, so it is fine
- * to do this, but we need to be in sync with gmarshal.c in GLib.
+/* This is based on what GMarshalling does, it is an unsupported API but GJS can
+ * be considered a GLib implementation for JS, so it is fine to do this, but we
+ * need to be in sync with gmarshal.c in GLib.
  * https://gitlab.gnome.org/GNOME/glib/-/blob/main/gobject/gmarshal.c
  */
 
@@ -90,7 +90,7 @@ inline constexpr Tag::RealT<TAG> gvalue_get(const GValue* gvalue) {
         return gvalue->data[0].v_uint;
     else if constexpr (std::is_same_v<TAG, int>)
         return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<TAG, unsigned int>)
+    else if constexpr (std::is_same_v<TAG, unsigned>)
         return gvalue->data[0].v_uint;
     else if constexpr (std::is_same_v<TAG, Tag::Long>)
         return gvalue->data[0].v_long;
@@ -131,7 +131,7 @@ void gvalue_set(GValue* gvalue, Tag::RealT<TAG> value) {
         gvalue->data[0].v_uint = value;
     else if constexpr (std::is_same_v<TAG, int>)
         gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<TAG, unsigned int>)
+    else if constexpr (std::is_same_v<TAG, unsigned>)
         gvalue->data[0].v_uint = value;
     else if constexpr (std::is_same_v<TAG, Tag::Long>)
         gvalue->data[0].v_long = value;
@@ -224,8 +224,8 @@ void gvalue_take(GValue* gvalue, Tag::RealT<TAG> value) {
 
 template <typename TAG>
 std::string gvalue_to_string(GValue* gvalue) {
-    auto str =
-        std::string("GValue of type ") + G_VALUE_TYPE_NAME(gvalue) + ": ";
+    std::string str{std::string{"GValue of type "}  // NOLINT(whitespace/braces)
+                    + G_VALUE_TYPE_NAME(gvalue) + ": "};
 
     if constexpr (std::is_same_v<TAG, char*>) {
         str += std::string("\"") + Gjs::gvalue_get<TAG>(gvalue) + '"';

@@ -27,9 +27,9 @@ namespace JS {
 class CallArgs;
 }
 
-/* To conserve memory, we have two different kinds of private data for GError
- * JS wrappers: ErrorInstance, and ErrorPrototype. Both inherit from ErrorBase
- * for their common functionality. For more information, see the notes in
+/* To conserve memory, we have two different kinds of private data for GError JS
+ * wrappers: ErrorInstance, and ErrorPrototype. Both inherit from ErrorBase for
+ * their common functionality. For more information, see the notes in
  * wrapperutils.h.
  *
  * ErrorPrototype, unlike the other GIWrapperPrototype subclasses, represents a

@@ -119,14 +119,12 @@ static bool get_source_map_registry(JSContext* cx, unsigned argc,
     return true;
 }
 
-// clang-format off
 static JSFunctionSpec debugger_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FN("getSourceMapRegistry", get_source_map_registry, 0, GJS_MODULE_PROP_FLAGS),
-    JS_FS_END
-};
-// clang-format on
+    JS_FN("getSourceMapRegistry", get_source_map_registry, 0,
+          GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
 
 void gjs_context_setup_debugger_console(GjsContext* self) {
     auto* gjs = GjsContextPrivate::from_object(self);

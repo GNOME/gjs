@@ -26,7 +26,8 @@ class MainLoop {
         gjs_debug(GJS_DEBUG_MAINLOOP, "Main loop instance %p: %s", this, msg);
     }
 
-    [[nodiscard]] bool can_block() {
+    [[nodiscard]]
+    bool can_block() {
         // Don't block if exiting
         if (m_exiting)
             return false;

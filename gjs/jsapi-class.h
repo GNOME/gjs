@@ -52,8 +52,8 @@ inline bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
                                        private_slot, flags);
 }
 
-[[nodiscard]] JS::Value gjs_dynamic_property_private_slot(
-    JSObject* accessor_obj);
+[[nodiscard]]
+JS::Value gjs_dynamic_property_private_slot(JSObject* accessor_obj);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_in_prototype_chain(JSContext*, JS::HandleObject proto,

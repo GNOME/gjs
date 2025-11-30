@@ -14,22 +14,22 @@
 
 #include <gjs/gjs.h>
 
-[[noreturn]] static void bail_out(GjsContext* gjs_context, const char* msg) {
+[[noreturn]]
+static void bail_out(GjsContext* gjs_context, const char* msg) {
     g_object_unref(gjs_context);
     g_print("Bail out! %s\n", msg);
     exit(1);
 }
 
-[[noreturn]] static void bail_out(GjsContext* gjs_context, GError* error) {
+[[noreturn]]
+static void bail_out(GjsContext* gjs_context, GError* error) {
     g_print("Bail out! %s\n", error->message);
     g_object_unref(gjs_context);
     g_error_free(error);
     exit(1);
 }
 
-int
-main(int argc, char **argv)
-{
+int main(int argc, char** argv) {
     if (argc < 2)
         g_error("Need a test file");
 
@@ -53,18 +53,21 @@ main(int argc, char **argv)
     if (coverage_prefix)
         gjs_coverage_enable();
 
-    GjsContext *cx = gjs_context_new_with_search_path((char **)search_path);
+    GjsContext* gjs_context =
+        gjs_context_new_with_search_path(const_cast<char**>(search_path));
     GjsCoverage* coverage = nullptr;
 
     if (coverage_prefix) {
         const char* coverage_prefixes[2] = {coverage_prefix, nullptr};
 
         if (!coverage_output_path) {
-            bail_out(cx, "GJS_UNIT_COVERAGE_OUTPUT is required when using GJS_UNIT_COVERAGE_PREFIX");
+            bail_out(gjs_context,
+                     "GJS_UNIT_COVERAGE_OUTPUT is required when using "
+                     "GJS_UNIT_COVERAGE_PREFIX");
         }
 
         GFile *output = g_file_new_for_commandline_arg(coverage_output_path);
-        coverage = gjs_coverage_new(coverage_prefixes, cx, output);
+        coverage = gjs_coverage_new(coverage_prefixes, gjs_context, output);
         g_object_unref(output);
     }
 
@@ -74,25 +77,26 @@ main(int argc, char **argv)
     uint8_t u8_exitcode_ignored;
     int exitcode_ignored;
     if (!gjs_context_eval_module_file(
-            cx, "resource:///org/gjs/jsunit/minijasmine.js",
+            gjs_context, "resource:///org/gjs/jsunit/minijasmine.js",
             &u8_exitcode_ignored, &error))
-        bail_out(cx, error);
+        bail_out(gjs_context, error);
 
     bool eval_as_module = argc >= 3 && strcmp(argv[2], "-m") == 0;
     if (eval_as_module) {
-        success = gjs_context_eval_module_file(cx, argv[1],
+        success = gjs_context_eval_module_file(gjs_context, argv[1],
                                                &u8_exitcode_ignored, &error);
     } else {
-        success = gjs_context_eval_file(cx, argv[1], &exitcode_ignored, &error);
+        success = gjs_context_eval_file(gjs_context, argv[1], &exitcode_ignored,
+                                        &error);
     }
     if (!success)
-        bail_out(cx, error);
+        bail_out(gjs_context, error);
 
     success = gjs_context_eval_module_file(
-        cx, "resource:///org/gjs/jsunit/minijasmine-executor.js", &code,
-        &error);
+        gjs_context, "resource:///org/gjs/jsunit/minijasmine-executor.js",
+        &code, &error);
     if (!success)
-        bail_out(cx, error);
+        bail_out(gjs_context, error);
 
     if (coverage) {
         gjs_coverage_write_statistics(coverage);
@@ -100,11 +104,11 @@ main(int argc, char **argv)
     }
 
     gjs_memory_report("before destroying context", false);
-    g_object_unref(cx);
+    g_object_unref(gjs_context);
     gjs_memory_report("after destroying context", true);
 
     /* For TAP, should actually be return 0; as a nonzero return code would
-     * indicate an error in the test harness. But that would be quite silly
-     * when running the tests outside of the TAP driver. */
+     * indicate an error in the test harness. But that would be quite silly when
+     * running the tests outside of the TAP driver. */
     return code;
 }

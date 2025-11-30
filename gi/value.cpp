@@ -238,7 +238,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     if (G_UNLIKELY(!gjs->is_owner_thread()) || JS::RuntimeHeapIsCollecting()) {
-        GSignalInvocationHint *hint = (GSignalInvocationHint*) invocation_hint;
+        auto* hint = static_cast<GSignalInvocationHint*>(invocation_hint);
         std::ostringstream message;
 
         if (!gjs->is_owner_thread()) {
@@ -284,8 +284,9 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         }
 
         if (signal_query.n_params + 1 != n_param_values) {
-            gjs_debug(GJS_DEBUG_GCLOSURE,
-                      "Signal handler being called with wrong number of parameters");
+            gjs_debug(
+                GJS_DEBUG_GCLOSURE,
+                "Signal handler being called with wrong number of parameters");
             return;
         }
     }
@@ -348,7 +349,8 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         no_copy = false;
 
         if (i >= 1 && signal_query.signal_id) {
-            no_copy = (signal_query.param_types[i - 1] & G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
+            no_copy = (signal_query.param_types[i - 1] &
+                       G_SIGNAL_TYPE_STATIC_SCOPE) != 0;
         }
 
         if (arg_details.array_len_index_for != -1) {
@@ -699,8 +701,8 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         void* gboxed = nullptr;
         // special case GValue
         if (gtype == G_TYPE_VALUE) {
-            /* explicitly handle values that are already GValues
-               to avoid infinite recursion */
+            // explicitly handle values that are already GValues to avoid
+            // infinite recursion
             if (value.isObject()) {
                 JS::RootedObject obj{cx, &value.toObject()};
                 GType guessed_gtype;
@@ -758,8 +760,8 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                 Maybe<GI::AutoRegisteredTypeInfo> registered{
                     repo.find_by_gtype(gtype)};
 
-                /* We don't necessarily have the typelib loaded when
-                   we first see the structure... */
+                // We don't necessarily have the typelib loaded when we first
+                // see the structure...
                 if (registered) {
                     if (auto struct_info =
                             registered->as<GI::InfoTag::STRUCT>();
@@ -776,13 +778,10 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                     }
                 }
 
-                /* First try a union, if that fails,
-                   assume a boxed struct. Distinguishing
-                   which one is expected would require checking
-                   the associated GIBaseInfo, which is not necessary
-                   possible, if e.g. we see the GType without
-                   loading the typelib.
-                */
+                // First try a union. If that fails, assume a boxed struct.
+                // Distinguishing which one is expected would require checking
+                // the associated GIBaseInfo, which is not necessarily possible,
+                // if e.g. we see the GType without loading the typelib.
                 if (!gboxed) {
                     if (UnionBase::typecheck(cx, obj, gtype,
                                              GjsTypecheckNoThrow{})) {
@@ -828,11 +827,11 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         int64_t value_int64;
 
         if (Gjs::js_value_to_c<int64_t>(cx, value, &value_int64)) {
-            GEnumValue *v;
             Gjs::AutoTypeClass<GEnumClass> enum_class{gtype};
 
             // See arg.c:_gjs_enum_to_int()
-            v = g_enum_get_value(enum_class, (int)value_int64);
+            GEnumValue* v =
+                g_enum_get_value(enum_class, static_cast<int>(value_int64));
             if (v == nullptr) {
                 gjs_throw(cx, "%d is not a valid value for enumeration %s",
                           value.toInt32(), g_type_name(gtype));
@@ -851,12 +850,12 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                 return false;
 
             // See arg.c:_gjs_enum_to_int()
-            g_value_set_flags(gvalue, (int)value_int64);
+            g_value_set_flags(gvalue, static_cast<int>(value_int64));
         } else {
             return throw_expect_type(cx, value, "flags", gtype);
         }
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
-        void* gparam = nullptr;
+        GParamSpec* gparam = nullptr;
         if (value.isNull()) {
             // nothing to do
         } else if (value.isObject()) {
@@ -870,7 +869,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             return throw_expect_type(cx, value, "param type", gtype);
         }
 
-        g_value_set_param(gvalue, (GParamSpec*) gparam);
+        g_value_set_param(gvalue, gparam);
     } else if (gtype == G_TYPE_GTYPE) {
         GType type;
 
@@ -890,9 +889,8 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         }
     } else if (value.isNumber() &&
                g_value_type_transformable(G_TYPE_INT, gtype)) {
-        /* Only do this crazy gvalue transform stuff after we've
-         * exhausted everything else. Adding this for
-         * e.g. ClutterUnit.
+        /* Only do this crazy gvalue transform stuff after we've exhausted
+         * everything else. Adding this for e.g. ClutterUnit.
          */
         int32_t i;
         if (Gjs::js_value_to_c<int32_t>(cx, value, &i)) {
@@ -913,9 +911,10 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         if (!FundamentalBase::to_gvalue(cx, fundamental_object, gvalue))
             return false;
     } else {
-        gjs_debug(GJS_DEBUG_GCLOSURE, "JS::Value is number %d gtype fundamental %d transformable to int %d from int %d",
-                  value.isNumber(),
-                  G_TYPE_IS_FUNDAMENTAL(gtype),
+        gjs_debug(GJS_DEBUG_GCLOSURE,
+                  "JS::Value is number %d gtype fundamental %d transformable "
+                  "to int %d from int %d",
+                  value.isNumber(), G_TYPE_IS_FUNDAMENTAL(gtype),
                   g_value_type_transformable(gtype, G_TYPE_INT),
                   g_value_type_transformable(G_TYPE_INT, gtype));
 
@@ -950,11 +949,10 @@ static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
         Maybe<GI::AutoEnumInfo> info{
             repo.find_by_gtype<GI::InfoTag::ENUM>(gtype)};
 
-        // Native enums don't have type info, assume
-        // they are signed to avoid crashing when
-        // they are exposed to JS.
+        // Native enums don't have type info, assume they are signed to avoid
+        // crashing when they are exposed to JS.
         if (!info) {
-            v_double = int64_t(v);
+            v_double = static_cast<int64_t>(v);
         } else {
             v_double = info->enum_from_int(v);
         }
@@ -1000,7 +998,7 @@ static bool gjs_value_from_g_value_internal(
             return Gjs::c_value_to_js(cx, Gjs::gvalue_get<int>(gvalue),
                                       value_p);
         case G_TYPE_UINT:
-            return Gjs::c_value_to_js(cx, Gjs::gvalue_get<unsigned int>(gvalue),
+            return Gjs::c_value_to_js(cx, Gjs::gvalue_get<unsigned>(gvalue),
                                       value_p);
         case G_TYPE_LONG:
             return Gjs::c_value_to_js<Gjs::Tag::Long>(
@@ -1041,7 +1039,8 @@ static bool gjs_value_from_g_value_internal(
     } else if (gtype == G_TYPE_ARRAY || gtype == G_TYPE_BYTE_ARRAY ||
                gtype == G_TYPE_PTR_ARRAY) {
         if (gtype == G_TYPE_BYTE_ARRAY) {
-            auto* byte_array = static_cast<GByteArray*>(g_value_get_boxed(gvalue));
+            auto* byte_array =
+                static_cast<GByteArray*>(g_value_get_boxed(gvalue));
             JSObject* array = gjs_byte_array_from_byte_array(cx, byte_array);
             if (!array) {
                 gjs_throw(cx, "Couldn't convert GByteArray to a Uint8Array");
@@ -1118,8 +1117,8 @@ static bool gjs_value_from_g_value_internal(
                                           Gjs::gvalue_get<GValue*>(gvalue));
         }
 
-        /* The only way to differentiate unions and structs is from
-         * their g-i info as both GBoxed */
+        /* The only way to differentiate unions and structs is from their g-i
+         * info as both are GBoxed */
         GI::Repository repo;
         Maybe<GI::AutoRegisteredTypeInfo> info{repo.find_by_gtype(gtype)};
         if (!info) {
@@ -1211,8 +1210,8 @@ static bool gjs_value_from_g_value_internal(
         return Gjs::c_value_to_js(cx, Gjs::gvalue_get<int>(&int_value),
                                   value_p);
     } else if (G_TYPE_IS_INSTANTIATABLE(gtype)) {
-        /* The gtype is none of the above, it should be a custom
-           fundamental type. */
+        // The gtype is none of the above, it should be a custom fundamental
+        // type.
         JS::RootedObject obj{cx};
         if (!FundamentalInstance::object_for_gvalue(cx, gvalue, gtype, &obj))
             return false;

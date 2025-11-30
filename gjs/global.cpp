@@ -117,14 +117,14 @@ class GjsBaseGlobal {
     GJS_JSAPI_RETURN_CONVENTION
     static bool load_native_module(JSContext* m_cx, unsigned argc,
                                    JS::Value* vp) {
-        JS::CallArgs argv = JS::CallArgsFromVp(argc, vp);
+        JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
         // This function should never be directly exposed to user code, so we
         // can be strict.
         g_assert(argc == 1);
-        g_assert(argv[0].isString());
+        g_assert(args[0].isString());
 
-        JS::RootedString str(m_cx, argv[0].toString());
+        JS::RootedString str{m_cx, args[0].toString()};
         JS::UniqueChars id(JS_EncodeStringToUTF8(m_cx, str));
 
         if (!id)
@@ -138,7 +138,7 @@ class GjsBaseGlobal {
             return false;
         }
 
-        argv.rval().setObject(*native_obj);
+        args.rval().setObject(*native_obj);
         return true;
     }
 };
@@ -420,7 +420,7 @@ bool gjs_global_is_type(JSContext* cx, GjsGlobalType type) {
 }
 
 GjsGlobalType gjs_global_get_type(JSContext* cx) {
-    auto global = JS::CurrentGlobalOrNull(cx);
+    JSObject* global = JS::CurrentGlobalOrNull(cx);
 
     g_assert(global &&
              "gjs_global_get_type called before a realm was entered.");

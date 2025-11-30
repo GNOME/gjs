@@ -28,11 +28,11 @@ G_DECLARE_FINAL_TYPE(GjsCoverage, gjs_coverage, GJS, COVERAGE, GObject);
 GJS_EXPORT void gjs_coverage_enable(void);
 
 GJS_EXPORT
-void gjs_coverage_write_statistics(GjsCoverage *self);
+void gjs_coverage_write_statistics(GjsCoverage* self);
 
-GJS_EXPORT GJS_USE GjsCoverage* gjs_coverage_new(
-    const char* const* coverage_prefixes, GjsContext* coverage_context,
-    GFile* output_dir);
+GJS_EXPORT GJS_USE
+GjsCoverage* gjs_coverage_new(const char* const* coverage_prefixes,
+                              GjsContext* coverage_context, GFile* output_dir);
 
 G_END_DECLS
 

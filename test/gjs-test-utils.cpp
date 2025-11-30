@@ -20,15 +20,14 @@
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
-    fx->cx = (JSContext *) gjs_context_get_native_context(fx->gjs_context);
+    fx->cx = static_cast<JSContext*>(
+        gjs_context_get_native_context(fx->gjs_context));
 
     auto* gjs = static_cast<GjsContextPrivate*>(JS_GetContextPrivate(fx->cx));
     fx->realm = JS::EnterRealm(fx->cx, gjs->global());
 }
 
-void
-gjs_unit_test_destroy_context(GjsUnitTestFixture *fx)
-{
+void gjs_unit_test_destroy_context(GjsUnitTestFixture* fx) {
     Gjs::AutoChar message = gjs_test_get_exception_message(fx->cx);
     if (message)
         g_printerr("**\n%s\n", message.get());

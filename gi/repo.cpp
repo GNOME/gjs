@@ -56,7 +56,7 @@
 using mozilla::Maybe;
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool lookup_override_function(JSContext *, JS::HandleId,
+static bool lookup_override_function(JSContext*, JS::HandleId,
                                      JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -135,9 +135,8 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
         return false;
     }
 
-    /* Defines a property on "obj" (the javascript repo object)
-     * with the given namespace name, pointing to that namespace
-     * in the repo.
+    /* Defines a property on "obj" (the javascript repo object) with the given
+     * namespace name, pointing to that namespace in the repo.
      */
     JS::RootedObject gi_namespace{cx, gjs_create_ns(cx, ns_name.get())};
 
@@ -254,10 +253,7 @@ static JSObject* repo_new(JSContext* cx) {
     return repo;
 }
 
-bool
-gjs_define_repo(JSContext              *cx,
-                JS::MutableHandleObject repo)
-{
+bool gjs_define_repo(JSContext* cx, JS::MutableHandleObject repo) {
     repo.set(repo_new(cx));
     return true;
 }
@@ -381,10 +377,10 @@ JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo info) {
     return gjs_lookup_namespace_object_by_name(cx, ns_name);
 }
 
-/* Check if an exception's 'name' property is equal to ImportError. Ignores
- * all errors that might arise. */
-[[nodiscard]] static bool is_import_error(JSContext* cx,
-                                          JS::HandleValue thrown_value) {
+/* Check if an exception's 'name' property is equal to ImportError. Ignores all
+ * errors that might arise. */
+[[nodiscard]]
+static bool is_import_error(JSContext* cx, JS::HandleValue thrown_value) {
     if (!thrown_value.isObject())
         return false;
 
@@ -403,11 +399,8 @@ JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo info) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool
-lookup_override_function(JSContext             *cx,
-                         JS::HandleId           ns_name,
-                         JS::MutableHandleValue function)
-{
+static bool lookup_override_function(JSContext* cx, JS::HandleId ns_name,
+                                     JS::MutableHandleValue function) {
     JS::AutoSaveExceptionState saved_exc(cx);
 
     JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
@@ -428,8 +421,8 @@ lookup_override_function(JSContext             *cx,
         JS::RootedValue exc(cx);
         JS_GetPendingException(cx, &exc);
 
-        /* If the exception was an ImportError (i.e., module not found) then
-         * we simply didn't have an override, don't throw an exception */
+        /* If the exception was an ImportError (i.e., module not found) then we
+         * simply didn't have an override, don't throw an exception */
         if (is_import_error(cx, exc)) {
             saved_exc.restore();
             return true;
@@ -482,9 +475,7 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
     return lookup_namespace(cx, global, ns_name);
 }
 
-char*
-gjs_hyphen_from_camel(const char *camel_name)
-{
+char* gjs_hyphen_from_camel(const char* camel_name) {
     GString *s;
     const char *p;
 
