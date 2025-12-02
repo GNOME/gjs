@@ -1481,8 +1481,8 @@ inline static bool gjs_arg_set_from_js_value(JSContext* cx,
             Gjs::AutoChar display_name{
                 gjs_argument_display_name(arg_name, arg_type)};
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
-                      display_name.get(), Gjs::static_type_name<TAG>());
+                      gjs_debug_value(value).c_str(), display_name.get(),
+                      Gjs::static_type_name<TAG>());
         }
 
         return false;
