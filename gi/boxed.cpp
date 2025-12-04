@@ -713,9 +713,9 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
     }
 
     GIArgument arg;
-    if (!gjs_value_to_gi_argument(cx, value, type_info, field_info.name(),
-                                  GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING,
-                                  GjsArgumentFlags::MAY_BE_NULL, &arg))
+    if (!gjs_value_to_gi_argument(
+            cx, value, type_info, GJS_ARGUMENT_FIELD, GI_TRANSFER_NOTHING, &arg,
+            GjsArgumentFlags::MAY_BE_NULL, field_info.name()))
         return false;
 
     bool success = true;
@@ -726,8 +726,8 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
     }
 
     JS::AutoSaveExceptionState saved_exc{cx};
-    if (!gjs_gi_argument_release(cx, GI_TRANSFER_NOTHING, type_info,
-                                 GjsArgumentFlags::ARG_IN, &arg))
+    if (!gjs_gi_argument_release(cx, GI_TRANSFER_NOTHING, type_info, &arg,
+                                 GjsArgumentFlags::ARG_IN))
         gjs_log_exception(cx);
     saved_exc.restore();
 
@@ -818,8 +818,8 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
 
         if (!gjs_define_property_dynamic(cx, proto, property_name.c_str(), id,
                                          "boxed_field", &Base::field_getter,
-                                         &Base::field_setter, private_id,
-                                         GJS_MODULE_PROP_FLAGS))
+                                         private_id, &Base::field_setter,
+                                         private_id, GJS_MODULE_PROP_FLAGS))
             return false;
     }
 

@@ -490,8 +490,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
                 if (!gjs_value_from_explicit_array(
                         cx, jsargs[n_jsargs++], type_info,
-                        arg_info.ownership_transfer(), args[i + c_args_offset],
-                        length))
+                        args[i + c_args_offset], length,
+                        arg_info.ownership_transfer()))
                     return false;
                 break;
             }
@@ -529,9 +529,9 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
         GITransfer transfer = m_info.caller_owns();
         // non-void return value, no out args. Should be a single return value.
-        if (!gjs_value_to_gi_argument(cx, rval, ret_type, "callback",
-                                      GJS_ARGUMENT_RETURN_VALUE, transfer,
-                                      GjsArgumentFlags::MAY_BE_NULL, &argument))
+        if (!gjs_value_to_gi_argument(
+                cx, rval, ret_type, GJS_ARGUMENT_RETURN_VALUE, transfer,
+                &argument, GjsArgumentFlags::MAY_BE_NULL, "callback"))
             return false;
 
         set_return_ffi_arg_from_gi_argument(ret_type, result, &argument);
@@ -578,8 +578,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 return false;
 
             if (!gjs_value_to_gi_argument(
-                    cx, elem, ret_type, "callback", GJS_ARGUMENT_RETURN_VALUE,
-                    transfer, GjsArgumentFlags::MAY_BE_NULL, &argument))
+                    cx, elem, ret_type, GJS_ARGUMENT_RETURN_VALUE, transfer,
+                    &argument, GjsArgumentFlags::MAY_BE_NULL, "callback"))
                 return false;
 
             if ((ret_tag == GI_TYPE_TAG_FILENAME ||

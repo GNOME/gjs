@@ -509,8 +509,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
         return prop_getter_impl<void>(cx, pspec, args[0]);
     }
 
-    return gjs_gi_argument_release(cx, transfer, type_info,
-                                   GjsArgumentFlags::ARG_OUT, &ret);
+    return gjs_gi_argument_release(cx, transfer, type_info, &ret,
+                                   GjsArgumentFlags::ARG_OUT);
 }
 
 class ObjectPropertyPspecCaller {
@@ -884,9 +884,9 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     JS::RootedValue value{cx, args[0]};
     GIArgument arg;
 
-    if (!gjs_value_to_gi_argument(cx, value, type_info, property_info.name(),
-                                  GJS_ARGUMENT_ARGUMENT, transfer,
-                                  GjsArgumentFlags::ARG_IN, &arg)) {
+    if (!gjs_value_to_gi_argument(cx, value, type_info, GJS_ARGUMENT_ARGUMENT,
+                                  transfer, &arg, GjsArgumentFlags::ARG_IN,
+                                  property_info.name())) {
         // Unlikely to happen, but we fallback to gvalue mode, just in case
         JS_ClearPendingException(cx);
         Gjs::AutoTypeClass<GObjectClass> klass{gtype()};
@@ -1928,7 +1928,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
         JS::RootedValue private_value{cx, JS::ObjectValue(*rooted_field)};
         if (!gjs_define_property_dynamic(
                 cx, obj, name, id, "gobject_field", &ObjectBase::field_getter,
-                &ObjectBase::field_setter, private_value, flags))
+                private_value, &ObjectBase::field_setter, private_value, flags))
             return false;
 
         *resolved = true;
