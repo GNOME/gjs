@@ -48,7 +48,7 @@ static bool createRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     cairo_pattern_destroy(pattern);
 
-    args.rval().setObjectOrNull(pattern_wrapper);
+    args.rval().setObject(*pattern_wrapper);
 
     return true;
 }
@@ -72,7 +72,7 @@ static bool createRGBA_func(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     cairo_pattern_destroy(pattern);
 
-    args.rval().setObjectOrNull(pattern_wrapper);
+    args.rval().setObject(*pattern_wrapper);
 
     return true;
 }

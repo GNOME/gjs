@@ -167,8 +167,10 @@ static bool get_rectangle_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     cairo_region_get_rectangle(this_region, i, &rect);
     JSObject* rect_obj = make_rectangle(cx, &rect);
+    if (!rect_obj)
+        return false;
 
-    argv.rval().setObjectOrNull(rect_obj);
+    argv.rval().setObject(*rect_obj);
     RETURN_STATUS;
 }
 
