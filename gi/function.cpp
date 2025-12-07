@@ -552,7 +552,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             break;
         }
     } else {
-        bool is_array = rval.isObject();
+        bool is_array;
         if (!JS::IsArrayObject(cx, rval, &is_array))
             return false;
 
@@ -1396,6 +1396,7 @@ JSObject* Function::create(JSContext* cx, GType gtype,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
                               GType gtype, const GI::CallableInfo info) {
+    using std::string_literals::operator""s;
     std::string name;
 
     JS::RootedObject function{cx, Gjs::Function::create(cx, gtype, info)};
@@ -1405,7 +1406,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
     if (info.is_function()) {
         name = info.name();
     } else if (info.is_vfunc()) {
-        name = "vfunc_" + std::string(info.name());
+        name = "vfunc_"s + info.name();
     } else {
         g_assert_not_reached();
     }

@@ -19,7 +19,7 @@
 #include "gjs/profiler.h"
 
 #define GJS_PROFILER_DYNAMIC_STRING(cx, str) \
-    js::GetContextProfilingStackIfEnabled(cx) ? str : ""
+    js::GetContextProfilingStackIfEnabled(cx) ? (str) : ""
 
 class AutoProfilerLabel {
  public:

@@ -68,7 +68,7 @@ class GjsScriptModule {
     // Reserved slots
     static const size_t POINTER = 0;
 
-    GjsScriptModule(const char* name) : m_name(g_strdup(name)) {
+    explicit GjsScriptModule(const char* name) : m_name(g_strdup(name)) {
         GJS_INC_COUNTER(module);
     }
 

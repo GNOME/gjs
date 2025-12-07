@@ -899,11 +899,11 @@ static void gjstest_test_func_util_misc_strv_concat_null() {
 }
 
 static void gjstest_test_func_util_misc_strv_concat_pointers() {
-    char* strv0[2] = {(char*)"foo", nullptr};
-    char* strv1[1] = {nullptr};
-    char** strv2 = nullptr;
-    char* strv3[2] = {(char*)"bar", nullptr};
-    char **stuff[4];
+    const char* strv0[2] = {"foo", nullptr};
+    const char* strv1[1] = {nullptr};
+    const char** strv2 = nullptr;
+    const char* strv3[2] = {"bar", nullptr};
+    const char** stuff[4];
     char **ret;
 
     stuff[0] = strv0;

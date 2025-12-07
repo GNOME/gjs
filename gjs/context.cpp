@@ -196,7 +196,7 @@ static gboolean dump_heap_idle(void*) {
 
     gjs_context_dump_heaps();
 
-    return false;
+    return G_SOURCE_REMOVE;
 }
 
 static void dump_heap_signal_handler(int signum [[maybe_unused]]) {

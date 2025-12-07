@@ -179,11 +179,7 @@ bool Closure::invoke(JS::HandleObject this_obj,
     }
 
     JS::RootedValue v_callable{m_cx, JS::ObjectValue(*m_callable.get())};
-    bool ok = JS::Call(m_cx, this_obj, v_callable, args, retval);
-    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
-
-    if (!ok) {
-        // Exception thrown...
+    if (!JS::Call(m_cx, this_obj, v_callable, args, retval)) {
         gjs_debug_closure(
             "Closure invocation failed (exception should have been thrown) "
             "closure %p callable %p",
@@ -198,6 +194,7 @@ bool Closure::invoke(JS::HandleObject this_obj,
             m_cx);
     }
 
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     gjs->schedule_gc_if_needed();
     return true;
 }

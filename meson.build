@@ -471,12 +471,16 @@ libgjs_sources = [
     'modules/cairo.cpp',
 ]
 
+enum_files = gnome.mkenums_simple('gjs-enums', decorator: 'GJS_EXPORT',
+    header_prefix: '#include "gjs/macros.h"',
+    sources: 'libgjs-private/gjs-util.h')
+
 # GjsPrivate introspection sources
 libgjs_private_sources = [
     'libgjs-private/gjs-gdbus-wrapper.c', 'libgjs-private/gjs-gdbus-wrapper.h',
     'libgjs-private/gjs-match-info.c', 'libgjs-private/gjs-match-info.h',
     'libgjs-private/gjs-util.c', 'libgjs-private/gjs-util.h',
-]
+] + enum_files
 
 libgjs_jsapi_sources = [
     'gjs/jsapi-class.h',

@@ -120,15 +120,7 @@ G_DEFINE_QUARK(gjs::custom-property, ObjectBase::custom_property)
 G_DEFINE_QUARK(gjs::instance-strings, ObjectBase::instance_strings)
 // clang-format on
 G_DEFINE_QUARK(gjs::disposed, ObjectBase::disposed)
-
-[[nodiscard]]
-static GQuark gjs_object_priv_quark() {
-    static GQuark val = 0;
-    if (G_UNLIKELY (!val))
-        val = g_quark_from_static_string ("gjs::private");
-
-    return val;
-}
+[[nodiscard]] static G_DEFINE_QUARK(gjs::private, gjs_object_priv);
 
 bool ObjectBase::is_custom_js_class() {
     return !!g_type_get_qdata(gtype(), ObjectBase::custom_type_quark());
@@ -1988,7 +1980,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
                                          bool only_enumerable
                                          [[maybe_unused]]) {
     unsigned n_interfaces;
-    GType* interfaces = g_type_interfaces(gtype(), &n_interfaces);
+    Gjs::AutoFree<GType> interfaces{g_type_interfaces(gtype(), &n_interfaces)};
     GI::Repository repo;
 
     for (unsigned k = 0; k < n_interfaces; k++) {
@@ -2027,8 +2019,6 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
             properties.infallibleAppend(id);
         }
     }
-
-    g_free(interfaces);
 
     if (info()) {
         GI::ObjectInfo::MethodsIterator meth_iter = info()->methods();

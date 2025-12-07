@@ -33,11 +33,11 @@ bool gjs_environment_variable_is_set(const char* env_variable_name) {
  *
  * Returns: (transfer full): a newly allocated 0-terminated array of strings.
  */
-char** gjs_g_strv_concat(char*** strv_array, int len) {
+char** gjs_g_strv_concat(const char** strv_array[], int len) {
     GPtrArray* array = g_ptr_array_sized_new(16);
 
     for (int i = 0; i < len; i++) {
-        char** strv = strv_array[i];
+        const char** strv = strv_array[i];
         if (!strv)
             continue;
 

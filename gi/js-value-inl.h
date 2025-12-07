@@ -55,9 +55,7 @@ constexpr bool type_has_js_getter() {
 
 // Avoid implicit conversions
 template <typename TAG, typename UnpackT>
-GJS_JSAPI_RETURN_CONVENTION inline bool js_value_to_c(JSContext*,
-                                                      JS::HandleValue,
-                                                      UnpackT*) = delete;
+bool js_value_to_c(JSContext*, JS::HandleValue, UnpackT*) = delete;
 
 template <>
 GJS_JSAPI_RETURN_CONVENTION

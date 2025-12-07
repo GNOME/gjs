@@ -936,53 +936,54 @@ BoxedPrototype<Base, Prototype, Instance>::BoxedPrototype(const BoxedInfo info,
 // Overrides GIWrapperPrototype::init().
 template <class Base, class Prototype, class Instance>
 bool BoxedPrototype<Base, Prototype, Instance>::init(JSContext* cx) {
+    if (gtype() == G_TYPE_NONE)
+        return true;
+
     int i = 0;
     int first_constructor = -1;
     jsid first_constructor_name = JS::PropertyKey::Void();
     jsid zero_args_constructor_name = JS::PropertyKey::Void();
 
-    if (gtype() != G_TYPE_NONE) {
-        /* If the structure is registered as a boxed, we can create a new
-         * instance by looking for a zero-args constructor and calling it;
-         * constructors don't really make sense for non-boxed types, since there
-         * is no memory management for the return value.
-         */
-        for (GI::AutoFunctionInfo func_info : info().methods()) {
-            if (func_info.is_constructor()) {
-                if (first_constructor < 0) {
-                    first_constructor = i;
-                    first_constructor_name =
-                        gjs_intern_string_to_id(cx, func_info.name());
-                    if (first_constructor_name.isVoid())
-                        return false;
-                }
-
-                if (m_zero_args_constructor < 0 && func_info.n_args() == 0) {
-                    m_zero_args_constructor = i;
-                    zero_args_constructor_name =
-                        gjs_intern_string_to_id(cx, func_info.name());
-                    if (zero_args_constructor_name.isVoid())
-                        return false;
-                }
-
-                if (m_default_constructor < 0 &&
-                    strcmp(func_info.name(), "new") == 0) {
-                    m_default_constructor = i;
-                    const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-                    m_default_constructor_name = atoms.new_();
-                }
+    /* If the structure is registered as a boxed, we can create a new instance
+     * by looking for a zero-args constructor and calling it; constructors don't
+     * really make sense for non-boxed types, since there is no memory
+     * management for the return value.
+     */
+    for (GI::AutoFunctionInfo func_info : info().methods()) {
+        if (func_info.is_constructor()) {
+            if (first_constructor < 0) {
+                first_constructor = i;
+                first_constructor_name =
+                    gjs_intern_string_to_id(cx, func_info.name());
+                if (first_constructor_name.isVoid())
+                    return false;
             }
-            i++;
-        }
 
-        if (m_default_constructor < 0) {
-            m_default_constructor = m_zero_args_constructor;
-            m_default_constructor_name = zero_args_constructor_name;
+            if (m_zero_args_constructor < 0 && func_info.n_args() == 0) {
+                m_zero_args_constructor = i;
+                zero_args_constructor_name =
+                    gjs_intern_string_to_id(cx, func_info.name());
+                if (zero_args_constructor_name.isVoid())
+                    return false;
+            }
+
+            if (m_default_constructor < 0 &&
+                strcmp(func_info.name(), "new") == 0) {
+                m_default_constructor = i;
+                const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+                m_default_constructor_name = atoms.new_();
+            }
         }
-        if (m_default_constructor < 0) {
-            m_default_constructor = first_constructor;
-            m_default_constructor_name = first_constructor_name;
-        }
+        i++;
+    }
+
+    if (m_default_constructor < 0) {
+        m_default_constructor = m_zero_args_constructor;
+        m_default_constructor_name = zero_args_constructor_name;
+    }
+    if (m_default_constructor < 0) {
+        m_default_constructor = first_constructor;
+        m_default_constructor_name = first_constructor_name;
     }
 
     return true;

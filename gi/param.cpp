@@ -257,8 +257,6 @@ GParamSpec* gjs_g_param_from_param(JSContext* cx, JS::HandleObject obj) {
 
 bool gjs_typecheck_param(JSContext* cx, JS::HandleObject object,
                          GType expected_type, bool throw_error) {
-    bool result;
-
     if (!gjs_typecheck_instance(cx, object, &gjs_param_class, throw_error))
         return false;
 
@@ -274,17 +272,18 @@ bool gjs_typecheck_param(JSContext* cx, JS::HandleObject object,
         return false;
     }
 
-    if (expected_type != G_TYPE_NONE)
-        result = g_type_is_a(G_TYPE_FROM_INSTANCE(param), expected_type);
-    else
-        result = true;
+    if (expected_type == G_TYPE_NONE)
+        return true;
 
-    if (!result && throw_error) {
-        gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                         "Object is of type %s - cannot convert to %s",
-                         g_type_name(G_TYPE_FROM_INSTANCE(param)),
-                         g_type_name(expected_type));
+    if (!g_type_is_a(G_TYPE_FROM_INSTANCE(param), expected_type)) {
+        if (throw_error) {
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                             "Object is of type %s - cannot convert to %s",
+                             g_type_name(G_TYPE_FROM_INSTANCE(param)),
+                             g_type_name(expected_type));
+        }
+        return false;
     }
 
-    return result;
+    return true;
 }
