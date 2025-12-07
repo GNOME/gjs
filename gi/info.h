@@ -1425,6 +1425,11 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
         return detail::Pointer::nullable<InfoTag::VFUNC>(
             gi_interface_info_find_vfunc(ptr(), name));
     }
+
+    operator const RegisteredTypeInfo() const {
+        return detail::Pointer::to_unowned<InfoTag::REGISTERED_TYPE>(
+            GI_REGISTERED_TYPE_INFO(ptr()));
+    }
 };
 
 template <class Wrapper>

@@ -112,7 +112,7 @@ static const uintptr_t DISPOSED_OBJECT = std::numeric_limits<uintptr_t>::max();
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_object_prototype_from_info(
-    JSContext*, Maybe<const GI::BaseInfo>, GType);
+    JSContext*, Maybe<const GI::RegisteredTypeInfo>, GType);
 
 // clang-format off
 G_DEFINE_QUARK(gjs::custom-type, ObjectBase::custom_type)
@@ -2842,7 +2842,7 @@ ObjectPrototype::~ObjectPrototype() {
 }
 
 static JSObject* gjs_lookup_object_constructor_from_info(
-    JSContext* cx, Maybe<const GI::BaseInfo> info, GType gtype) {
+    JSContext* cx, Maybe<const GI::RegisteredTypeInfo> info, GType gtype) {
     g_return_val_if_fail(!info || info->is_object() || info->is_interface(),
                          nullptr);
 
@@ -2889,7 +2889,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_object_prototype_from_info(
-    JSContext* cx, Maybe<const GI::BaseInfo> info, GType gtype) {
+    JSContext* cx, Maybe<const GI::RegisteredTypeInfo> info, GType gtype) {
     g_return_val_if_fail(!info || info->is_object() || info->is_interface(),
                          nullptr);
 
@@ -2911,9 +2911,8 @@ static JSObject* gjs_lookup_object_prototype_from_info(
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_object_prototype(JSContext* cx, GType gtype) {
     GI::Repository repo;
-    Maybe<const GI::ObjectInfo> info = repo.find_by_gtype(gtype).andThen(
-        std::mem_fn(&GI::AutoRegisteredTypeInfo::as<GI::InfoTag::OBJECT>));
-    return gjs_lookup_object_prototype_from_info(cx, info, gtype);
+    return gjs_lookup_object_prototype_from_info(cx, repo.find_by_gtype(gtype),
+                                                 gtype);
 }
 
 bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
@@ -3898,11 +3897,8 @@ void ObjectPrototype::vfunc_invalidated_notify(void* data, GClosure* closure) {
 bool gjs_lookup_object_constructor(JSContext* cx, GType gtype,
                                    JS::MutableHandleValue value_p) {
     GI::Repository repo;
-    Maybe<const GI::ObjectInfo> object_info = repo.find_by_gtype(gtype).andThen(
-        std::mem_fn(&GI::AutoRegisteredTypeInfo::as<GI::InfoTag::OBJECT>));
-
-    JSObject* constructor =
-        gjs_lookup_object_constructor_from_info(cx, object_info, gtype);
+    JSObject* constructor = gjs_lookup_object_constructor_from_info(
+        cx, repo.find_by_gtype(gtype), gtype);
 
     if (G_UNLIKELY(constructor == nullptr))
         return false;
