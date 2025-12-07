@@ -7,8 +7,15 @@
 #include <config.h>
 
 #include <errno.h>
+#include <stdint.h>
 #include <stdio.h>  // for FILE, stdout
 #include <string.h>  // for memcpy
+
+#include <charconv>
+#include <string>
+
+#include <mozilla/Result.h>
+#include <mozilla/ResultVariant.h>  // IWYU pragma: keep
 
 #ifdef G_DISABLE_ASSERT
 #    define GJS_USED_ASSERT [[maybe_unused]]
@@ -57,3 +64,22 @@ class LogFile {
     bool has_error() { return !!m_errmsg; }
     const char* errmsg() { return m_errmsg; }
 };
+
+namespace Gjs {
+
+class StatmParseError {
+    std::string m_message;
+
+ public:
+    // NOLINTNEXTLINE(runtime/explicit) - explicit ctor won't work with Err()
+    StatmParseError(const char* message) : m_message(message) {}
+    StatmParseError(const char* message, std::from_chars_result result);
+
+    explicit operator std::string() const { return m_message; }
+};
+
+using StatmParseResult = mozilla::Result<uint64_t, StatmParseError>;
+
+StatmParseResult parse_statm_file_rss(const char* file_contents);
+
+}  // namespace Gjs
