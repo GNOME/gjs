@@ -18,14 +18,13 @@
 
 using mozilla::Maybe;
 
-/* Default spidermonkey toString is worthless.  Replace it
- * with something that gives us both the introspection name
- * and a memory address.
+/* Default SpiderMonkey toString is worthless. Replace it with something that
+ * gives us both the introspection name and a memory address.
  */
 bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                 const char* objtype,
-                                Maybe<const GI::BaseInfo> info, GType gtype,
-                                const void* native_address,
+                                const Maybe<const GI::BaseInfo>& info,
+                                GType gtype, const void* native_address,
                                 JS::MutableHandleValue rval) {
     std::ostringstream out;
     out << '[' << objtype;
