@@ -72,6 +72,7 @@ void ToggleQueue::handle_all_toggles(Handler handler) {
 
 gboolean ToggleQueue::idle_handle_toggle(void* data) {
     auto self = Locked(static_cast<ToggleQueue*>(data));
+    g_assert(self->m_toggle_handler && "must have been enqueued with handler");
     self->handle_all_toggles(self->m_toggle_handler);
 
     return G_SOURCE_REMOVE;
