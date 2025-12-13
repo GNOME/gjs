@@ -20,6 +20,25 @@
 
 #include "gjs/context.h"
 
+#define g_assert_ok(result)                                                  \
+    G_STMT_START {                                                           \
+        if G_UNLIKELY (result.isErr()) {                                     \
+            std::string message{"'" #result "' should be OK but got " +      \
+                                std::string{result.unwrapErr()}};            \
+            g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
+                                message.c_str());                            \
+        }                                                                    \
+    }                                                                        \
+    G_STMT_END
+
+#define g_assert_err(result)                                                 \
+    G_STMT_START {                                                           \
+        if G_UNLIKELY (result.isOk())                                        \
+            g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
+                                "'" #result "' should be Err but got OK");   \
+    }                                                                        \
+    G_STMT_END
+
 struct GjsUnitTestFixture {
     GjsContext *gjs_context;
     JSContext *cx;
@@ -43,6 +62,7 @@ void gjs_test_add_tests_for_jsapi_utils();
 namespace Gjs {
 namespace Test {
 
+void add_tests_for_misc_utils();
 void add_tests_for_toggle_queue();
 
 template <typename T1, typename T2>
