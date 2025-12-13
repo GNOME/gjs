@@ -117,9 +117,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             JS_ShutDown();
             break;
 
-        default:
-            // do nothing
-            ;
+        default: {
+        }
     }
 
     return TRUE;

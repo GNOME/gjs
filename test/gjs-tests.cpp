@@ -603,17 +603,17 @@ static void gjstest_test_func_gjs_context_run_in_realm() {
     g_assert_true(data.has_run);
 }
 
-#define JS_CLASS "\
-const GObject = imports.gi.GObject; \
-const FooBar = GObject.registerClass(class FooBar extends GObject.Object {}); \
-"
-
 static void gjstest_test_func_gjs_gobject_js_defined_type() {
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     AutoError error;
     int status;
+    static const char js_class[] = R"js(
+        const GObject = imports.gi.GObject;
+        const FooBar = GObject.registerClass(
+            class FooBar extends GObject.Object {});
+    )js";
     bool ok =
-        gjs_context_eval(gjs_context, JS_CLASS, -1, "<input>", &status, &error);
+        gjs_context_eval(gjs_context, js_class, -1, "<input>", &status, &error);
     g_assert_no_error(error);
     g_assert_true(ok);
 
@@ -634,14 +634,15 @@ static void gjstest_test_func_gjs_gobject_without_introspection() {
     // Ensure class
     g_type_class_ref(GJSTEST_TYPE_NO_INTROSPECTION_OBJECT);
 
-#define TESTJS                                                         \
-    "const {GObject} = imports.gi;"                                    \
-    "var obj = GObject.Object.newv("                                   \
-    "    GObject.type_from_name('GjsTestNoIntrospectionObject'), []);" \
-    "obj.a_int = 1234;"
+    static const char testjs[] = R"js(
+        const {GObject} = imports.gi;
+        var obj = GObject.Object.newv(
+            GObject.type_from_name('GjsTestNoIntrospectionObject'), []);
+        obj.a_int = 1234;
+    )js";
 
     bool ok =
-        gjs_context_eval(gjs_context, TESTJS, -1, "<input>", &status, &error);
+        gjs_context_eval(gjs_context, testjs, -1, "<input>", &status, &error);
     g_assert_true(ok);
     g_assert_no_error(error);
 
@@ -930,17 +931,13 @@ static void gjstest_test_profiler_start_stop() {
     gjs_profiler_set_filename(profiler, "dont-conflict-with-other-test.syscap");
     gjs_profiler_start(profiler);
 
+    static const char testjs[] = "[1,5,7,1,2,3,67,8].sort()";
     for (size_t ix = 0; ix < 100; ix++) {
         AutoError error;
         int estatus;
-
-#define TESTJS "[1,5,7,1,2,3,67,8].sort()"
-
-        if (!gjs_context_eval(gjs_context, TESTJS, -1, "<input>", &estatus,
+        if (!gjs_context_eval(gjs_context, testjs, -1, "<input>", &estatus,
                               &error))
             g_printerr("ERROR: %s", error->message);
-
-#undef TESTJS
     }
 
     gjs_profiler_stop(profiler);

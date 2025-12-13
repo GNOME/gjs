@@ -222,9 +222,8 @@ struct MarshallingInfo<const char*> {
 
 template <>
 struct MarshallingInfo<Tag::Long> {
-    static constexpr bool is_32 =
-        type_fits<long, int32_t>();  // NOLINT(runtime/int)
-    using real_type = long;  // NOLINT(runtime/int)
+    static constexpr bool is_32 = type_fits<long, int32_t>();
+    using real_type = long;
     using containing_tag = std::conditional_t<is_32, int32_t, int64_t>;
     using jsvalue_pack_type =
         std::conditional_t<is_32, int32_t, TypeWrapper<int64_t>>;
@@ -233,9 +232,8 @@ struct MarshallingInfo<Tag::Long> {
 
 template <>
 struct MarshallingInfo<Tag::UnsignedLong> {
-    static constexpr bool is_32 =
-        type_fits<unsigned long, uint32_t>();  // NOLINT(runtime/int)
-    using real_type = unsigned long;  // NOLINT(runtime/int)
+    static constexpr bool is_32 = type_fits<unsigned long, uint32_t>();
+    using real_type = unsigned long;
     using containing_tag = std::conditional_t<is_32, uint32_t, uint64_t>;
     using jsvalue_pack_type =
         std::conditional_t<is_32, double, TypeWrapper<uint64_t>>;

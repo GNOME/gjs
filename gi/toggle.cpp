@@ -66,8 +66,8 @@ ToggleQueue::find_operation_locked(const ObjectInstance* obj,
 
 void ToggleQueue::handle_all_toggles(Handler handler) {
     g_assert(owns_lock() && "Unsafe access to queue");
-    while (handle_toggle(handler))
-        ;
+    while (handle_toggle(handler)) {
+    }
 }
 
 gboolean ToggleQueue::idle_handle_toggle(void* data) {

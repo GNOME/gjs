@@ -3041,7 +3041,7 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
         return false;
     }
 
-    unsigned long id = g_signal_connect_closure_by_id(  // NOLINT(runtime/int)
+    unsigned long id = g_signal_connect_closure_by_id(
         m_ptr, signal_id, signal_detail, closure, after);
 
     args.rval().setDouble(id);

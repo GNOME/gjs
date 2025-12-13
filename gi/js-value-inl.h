@@ -66,8 +66,8 @@ inline bool js_value_to_c<signed char>(JSContext* cx, JS::HandleValue value,
 
 template <>
 GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c<signed short>  // NOLINT(runtime/int)
-    (JSContext* cx, JS::HandleValue value, int32_t* out) {
+inline bool js_value_to_c<signed short>(JSContext* cx, JS::HandleValue value,
+                                        int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
@@ -94,15 +94,15 @@ inline bool js_value_to_c<unsigned char>(JSContext* cx, JS::HandleValue value,
 
 template <>
 GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c<unsigned short>  // NOLINT(runtime/int)
-    (JSContext* cx, JS::HandleValue value, int32_t* out) {
+inline bool js_value_to_c<unsigned short>(JSContext* cx, JS::HandleValue value,
+                                          int32_t* out) {
     return JS::ToInt32(cx, value, out);
 }
 
 template <>
 GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c<unsigned short>  // NOLINT(runtime/int)
-    (JSContext* cx, JS::HandleValue value, uint32_t* out) {
+inline bool js_value_to_c<unsigned short>(JSContext* cx, JS::HandleValue value,
+                                          uint32_t* out) {
     return JS::ToUint32(cx, value, out);
 }
 
@@ -343,17 +343,15 @@ inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value,
 
     // Handle the cases resulting from TypeWrapper<long> and
     // TypeWrapper<int64_t> not being convertible on macOS
-    if constexpr (!std::is_same_v<int64_t, long> &&    // NOLINT(runtime/int)
-                  std::is_same_v<WantedType, long> &&  // NOLINT(runtime/int)
+    if constexpr (!std::is_same_v<int64_t, long> &&
+                  std::is_same_v<WantedType, long> &&
                   std::is_same_v<U, int64_t>) {
         return js_value_to_c_checked<int64_t, int64_t>(cx, value, out,
                                                        out_of_range);
     }
 
-    if constexpr (!std::is_same_v<uint64_t,
-                                  unsigned long> &&  // NOLINT(runtime/int)
-                  std::is_same_v<WantedType,
-                                 unsigned long> &&  // NOLINT(runtime/int)
+    if constexpr (!std::is_same_v<uint64_t, unsigned long> &&
+                  std::is_same_v<WantedType, unsigned long> &&
                   std::is_same_v<U, uint64_t>) {
         return js_value_to_c_checked<uint64_t, uint64_t>(cx, value, out,
                                                          out_of_range);
