@@ -160,7 +160,7 @@ static char* write_statistics_and_get_coverage_data(GjsCoverage* coverage,
 
     g_file_load_contents(lcov_output, /* cancellable = */ nullptr,
                          &coverage_data_contents, /* length out = */ nullptr,
-                         /* etag = */ nullptr, /* error = */ nullptr);
+                         /* etag_out = */ nullptr, /* error = */ nullptr);
 
     return coverage_data_contents;
 }
