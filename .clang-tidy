@@ -4,11 +4,13 @@
 Checks:
   - -*
   - bugprone-argument-comment
+  - bugprone-assert-side-effect
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 CheckOptions:
+  bugprone-assert-side-effect.AssertMacros: assert,g_assert
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
