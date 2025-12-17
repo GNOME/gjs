@@ -60,7 +60,7 @@ constexpr void dec() {
 }  // namespace Counters
 }  // namespace Gjs::Memory
 
-#define COUNT(name, ix) +1
+#define COUNT(name, ix) +1  // NOLINT(bugprone-macro-parentheses)
 static constexpr size_t GJS_N_COUNTERS = 0 GJS_FOR_EACH_COUNTER(COUNT);
 #undef COUNT
 

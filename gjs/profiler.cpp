@@ -488,15 +488,15 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
     SysprofCaptureCounterValue values[GJS_N_COUNTERS];
     size_t new_counts = 0;
 
-#    define FETCH_COUNTERS(name, ix)                       \
-        {                                                  \
-            uint64_t count = GJS_GET_COUNTER(name);        \
-            if (count != self->last_counter_values[ix]) {  \
-                ids[new_counts] = self->counter_base + ix; \
-                values[new_counts].v64 = count;            \
-                new_counts++;                              \
-            }                                              \
-            self->last_counter_values[ix] = count;         \
+#    define FETCH_COUNTERS(name, ix)                         \
+        {                                                    \
+            uint64_t count = GJS_GET_COUNTER(name);          \
+            if (count != self->last_counter_values[ix]) {    \
+                ids[new_counts] = self->counter_base + (ix); \
+                values[new_counts].v64 = count;              \
+                new_counts++;                                \
+            }                                                \
+            self->last_counter_values[ix] = count;           \
         }
     GJS_FOR_EACH_COUNTER(FETCH_COUNTERS);
 #    undef FETCH_COUNTERS

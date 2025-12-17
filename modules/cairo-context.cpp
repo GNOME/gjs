@@ -37,7 +37,7 @@
 #define _GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj) \
     GJS_GET_THIS(cx, argc, vp, argv, obj);                              \
     cairo_t* cr;                                                        \
-    if (!CairoContext::for_js_typecheck(cx, obj, &cr, &argv))           \
+    if (!CairoContext::for_js_typecheck(cx, obj, &cr, &(argv)))         \
         return false;                                                   \
     if (!cr)                                                            \
         return true;
