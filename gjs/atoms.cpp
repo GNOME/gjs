@@ -44,6 +44,7 @@ bool GjsAtoms::init_atoms(JSContext* cx) {
     FOR_EACH_ATOM(INITIALIZE_ATOM)
     FOR_EACH_SYMBOL_ATOM(INITIALIZE_ATOM)
     return true;
+#undef INITIALIZE_ATOM
 }
 
 void GjsAtoms::trace(JSTracer* trc) {
