@@ -551,6 +551,11 @@ function _init() {
         else if (originalValue instanceof Function &&
             originalValue.name.startsWith(`g_${platformNameLower}_`))
             genericProp = `${platformNameLower}_${prop}`;
+        else if (originalValue instanceof Object &&
+                 (!gtypeName || gtypeName === 'void') &&
+                 (!originalValue.name || originalValue.name.startsWith(
+                    `Gio${platformName}_`)))
+            genericProp = `${platformName}${prop}`;
 
         if (Object.hasOwn(Gio, genericProp)) {
             console.debug(`Gio already contains property ${genericProp}`);

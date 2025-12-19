@@ -590,7 +590,9 @@ describe('GioUnix compatibility fallback', function () {
             'UnixFDMessage': {
                 newName: 'FDMessage',
             },
-            'FDMessagePrivate': {},
+            'UnixFDMessagePrivate': {
+                newName: 'FDMessagePrivate',
+            },
             'FileDescriptorBased': {
                 newName: 'FileDescriptorBased',
             },
@@ -599,7 +601,6 @@ describe('GioUnix compatibility fallback', function () {
             },
             'UnixInputStreamPrivate': {
                 newName: 'InputStreamPrivate',
-                skip: true,
             },
             'UnixMountEntry': {
                 newName: 'MountEntry',
@@ -615,7 +616,6 @@ describe('GioUnix compatibility fallback', function () {
             },
             'UnixOutputStreamPrivate': {
                 newName: 'OutputStreamPrivate',
-                skip: true,
             },
             'unix_is_mount_path_system_internal': {
                 newName: 'is_mount_path_system_internal',
@@ -717,9 +717,6 @@ describe('GioUnix compatibility fallback', function () {
 
         Object.entries(symbols).forEach(([name, testData]) => {
             it(`Gio.${name}`, function () {
-                if (testData.skip)
-                    pending('No replacement available to test against');
-
                 const newName = testData.newName ?? name;
 
                 // We need to use a named function so that the warning system can
