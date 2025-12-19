@@ -396,8 +396,18 @@ iwyu:
     - if: $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
       when: never
     - if: $CI_COMMIT_BRANCH
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
       when: on_success
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
       when: on_success
 
 codespell:
