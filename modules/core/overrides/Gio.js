@@ -4,7 +4,7 @@
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Signals = imports.signals;
-const {warnDeprecatedOncePerCallsite, PLATFORM_SPECIFIC_TYPELIB} = imports._print;
+const {_createWrappersForPlatformSpecificNamespace} = imports._common;
 var Gio;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
@@ -521,58 +521,10 @@ const _methodInvocations = new WeakMap();
 
 function _init() {
     Gio = this;
-    let GioPlatform = {};
-    let platformName = '';
 
     Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
 
-    // Redefine Gio functions with platform-specific implementations to be
-    // backward compatible with gi-repository 1.0, however when possible we
-    // notify a deprecation warning, to ensure that the surrounding code is
-    // updated.
-    try {
-        GioPlatform = imports.gi.GioUnix;
-        platformName = 'Unix';
-    } catch {
-        try {
-            GioPlatform = imports.gi.GioWin32;
-            platformName = 'Win32';
-        } catch {}
-    }
-
-    const platformNameLower = platformName.toLowerCase();
-    Object.entries(Object.getOwnPropertyDescriptors(GioPlatform)).forEach(([prop, desc]) => {
-        let genericProp = prop;
-
-        const originalValue = GioPlatform[prop];
-        const gtypeName = originalValue.$gtype?.name;
-        if (gtypeName?.startsWith(`G${platformName}`))
-            genericProp = `${platformName}${prop}`;
-        else if (originalValue instanceof Function &&
-            originalValue.name.startsWith(`g_${platformNameLower}_`))
-            genericProp = `${platformNameLower}_${prop}`;
-        else if (originalValue instanceof Object &&
-                 (!gtypeName || gtypeName === 'void') &&
-                 (!originalValue.name || originalValue.name.startsWith(
-                    `Gio${platformName}_`)))
-            genericProp = `${platformName}${prop}`;
-
-        if (Object.hasOwn(Gio, genericProp)) {
-            console.debug(`Gio already contains property ${genericProp}`);
-            Gio[genericProp] = originalValue;
-            return;
-        }
-
-        Object.defineProperty(Gio, genericProp, {
-            enumerable: true,
-            configurable: false,
-            get() {
-                warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
-                    `Gio.${genericProp}`, `${GioPlatform.__name__}.${prop}`);
-                return desc.get?.() ?? desc.value;
-            },
-        });
-    });
+    _createWrappersForPlatformSpecificNamespace(Gio);
 
     Gio.DBus = {
         // Namespace some functions

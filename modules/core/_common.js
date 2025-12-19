@@ -4,10 +4,12 @@
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
 /* exported _checkAccessors, _createBuilderConnectFunc, _createClosure,
-_registerType */
+_registerType, _createWrappersForPlatformSpecificNamespace */
 
 // This is a helper module in which to put code that is common between the
 // legacy GObject.Class system and the new GObject.registerClass system.
+
+const {warnDeprecatedOncePerCallsite, PLATFORM_SPECIFIC_TYPELIB} = imports._print;
 
 var _registerType = Symbol('GObject register type hook');
 
@@ -121,4 +123,60 @@ function _createBuilderConnectFunc(klass) {
         else
             obj.connect(signalName, closure);
     };
+}
+
+function _createWrappersForPlatformSpecificNamespace(namespace) {
+    // Redefine namespace properties with platform-specific implementations to
+    // be backward compatible with gi-repository 1.0, however when possible we
+    // notify a deprecation warning, to ensure that the surrounding code is
+    // updated.
+
+    let platformNamespace;
+    let platformName;
+    const namespaceName = namespace.__name__;
+    try {
+        platformName = 'Unix';
+        platformNamespace = imports.gi[`${namespaceName}${platformName}`];
+    } catch {
+        try {
+            platformName = 'Win32';
+            platformNamespace = imports.gi[`${namespaceName}${platformName}`];
+        } catch {
+            return;
+        }
+    }
+
+    const platformNameLower = platformName.toLowerCase();
+    Object.entries(Object.getOwnPropertyDescriptors(platformNamespace)).forEach(([prop, desc]) => {
+        let genericProp = prop;
+
+        const originalValue = platformNamespace[prop];
+        const gtypeName = originalValue.$gtype?.name;
+        if (gtypeName?.startsWith(`G${platformName}`))
+            genericProp = `${platformName}${prop}`;
+        else if (originalValue instanceof Function &&
+            originalValue.name.startsWith(`g_${platformNameLower}_`))
+            genericProp = `${platformNameLower}_${prop}`;
+        else if (originalValue instanceof Object &&
+                 (!gtypeName || gtypeName === 'void') &&
+                 (!originalValue.name || originalValue.name.startsWith(
+                     `${namespaceName}${platformName}_`)))
+            genericProp = `${platformName}${prop}`;
+
+        if (Object.hasOwn(namespace, genericProp)) {
+            console.log(`${namespaceName} already contains property ${genericProp}`);
+            namespace[genericProp] = originalValue;
+            return;
+        }
+
+        Object.defineProperty(namespace, genericProp, {
+            enumerable: true,
+            configurable: false,
+            get() {
+                warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
+                    `${namespaceName}.${genericProp}`, `${platformNamespace.__name__}.${prop}`);
+                return desc.get?.() ?? desc.value;
+            },
+        });
+    });
 }
