@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2023 Philip Chimento <philip.chimento@gmail.com>
 
 const {setMainLoopHook} = imports._promiseNative;
+const {_createWrappersForPlatformSpecificNamespace} = imports._common;
 
 let GLib;
 
@@ -387,6 +388,13 @@ function _init() {
             });
         }
     };
+
+    if (GLib.MAJOR_VERSION > 2 ||
+        (GLib.MAJOR_VERSION === 2 &&
+         (GLib.MINOR_VERSION > 87 ||
+            (GLib.MINOR_VERSION === 87 &&
+             GLib.MICRO_VERSION >= 3))))
+        _createWrappersForPlatformSpecificNamespace(GLib);
 
     this.VariantDict.prototype.lookup = function (key, variantType = null, deep = false) {
         if (typeof variantType === 'string')
