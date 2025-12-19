@@ -641,8 +641,9 @@ void gjs_gc_if_needed(JSContext* cx) {
         JS::NonIncrementalGC(cx, JS::GCOptions::Shrink,
                              Gjs::GCReason::LINUX_RSS_TRIGGER);
     } else if (rss < (0.75 * linux_rss_trigger)) {
-        // If we've shrunk back to 75%, lower the trigger
-        linux_rss_trigger = rss * 0.75;
+        // If we've shrunk back to 75%, lower the trigger to 25% above the
+        // current value
+        linux_rss_trigger = rss * 1.25;
     }
 #else  // !__linux__
     (void)cx;
