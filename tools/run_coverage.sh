@@ -37,9 +37,13 @@ genhtml --prefix "$BUILDDIR/$lcov_js_prefix" --prefix "$BUILDDIR" --prefix "$SOU
     "${GENHTML_ARGS[@]}" "${lcov_outputs[@]}"
 
 for lcov_output in "${lcov_outputs[@]}"; do
-    cobertura_xml=$(basename "$lcov_output" .lcov).cobertura.xml
+    cobertura_base=$(basename "$lcov_output" .lcov).cobertura
+    cobertura_xml=${cobertura_base}.xml
     lcov_cobertura "$lcov_output" --output "$BUILDDIR/$cobertura_xml"
     sed -i "s,$(basename "$BUILDDIR")/$lcov_js_prefix/,,g" "$BUILDDIR/$cobertura_xml"
+    cobertura_xml_stripped="${cobertura_base}.stripped.xml"
+    xmllint --nonet --noblanks --output "$BUILDDIR/$cobertura_xml_stripped" "$BUILDDIR/$cobertura_xml"
+    mv "$BUILDDIR/$cobertura_xml_stripped" "$BUILDDIR/$cobertura_xml"
 
     # Check the file is small enough for gitlab
     # See: https://gitlab.com/gitlab-org/gitlab/-/issues/328772
