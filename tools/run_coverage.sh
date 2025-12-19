@@ -30,7 +30,8 @@ lcov_outputs=(
     "$PWD"/_coverage/gjs.lcov
 )
 
-genhtml --prefix "$BUILDDIR/lcov/org/gnome/gjs" --prefix "$BUILDDIR" --prefix "$SOURCEDIR" \
+lcov_js_prefix=lcov/org/gnome/gjs
+genhtml --prefix "$BUILDDIR/$lcov_js_prefix" --prefix "$BUILDDIR" --prefix "$SOURCEDIR" \
     --output-directory _coverage/html \
     --title "gjs-$VERSION Code Coverage" \
     "${GENHTML_ARGS[@]}" "${lcov_outputs[@]}"
@@ -38,6 +39,7 @@ genhtml --prefix "$BUILDDIR/lcov/org/gnome/gjs" --prefix "$BUILDDIR" --prefix "$
 for lcov_output in "${lcov_outputs[@]}"; do
     cobertura_xml=$(basename "$lcov_output" .lcov).cobertura.xml
     lcov_cobertura "$lcov_output" --output "$BUILDDIR/$cobertura_xml"
+    sed -i "s,$(basename "$BUILDDIR")/$lcov_js_prefix/,,g" "$BUILDDIR/$cobertura_xml"
 
     # Check the file is small enough for gitlab
     # See: https://gitlab.com/gitlab-org/gitlab/-/issues/328772
