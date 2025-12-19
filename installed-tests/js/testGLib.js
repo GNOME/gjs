@@ -569,4 +569,18 @@ describe('GLibUnix compatibility fallback', function () {
             });
         });
     });
+
+    it('provides signal_add_full wrapper for signal_add', function () {
+        if (!PLATFORM_DEPENDENT_NS_SPLIT)
+            pending('Platform-dependent namespace has not been split on this GLib version');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GLibUnix.signal_add_full has been renamed. ' +
+            'Please update your code to use GLibUnix.signal_add instead*');
+        const oldValue = GLibUnix.signal_add_full;
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGLib.js', 0,
+            'GLibUnix signal_add_full rename');
+
+        expect(oldValue).toBe(GLibUnix.signal_add);
+    });
 });
