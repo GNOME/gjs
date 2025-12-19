@@ -38,12 +38,12 @@ cairo_surface_t* CairoSVGSurface::constructor_impl(JSContext* cx,
                                                    const JS::CallArgs& args) {
     Gjs::AutoChar filename;
     double width, height;
-    cairo_surface_t *surface;
     if (!gjs_parse_call_args(cx, "SVGSurface", args, "Fff", "filename",
                              &filename, "width", &width, "height", &height))
         return nullptr;
 
-    surface = cairo_svg_surface_create(filename, width, height);
+    cairo_surface_t* surface =
+        cairo_svg_surface_create(filename, width, height);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return nullptr;

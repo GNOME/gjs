@@ -49,7 +49,7 @@ typedef struct {
     GjsContext* coverage_context;
     JS::Heap<JSObject*> global;
 
-    GFile *output_dir;
+    GFile* output_dir;
 } GjsCoveragePrivate;
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
@@ -69,7 +69,7 @@ static GParamSpec* properties[PROP_N];
 
 [[nodiscard]]
 static char* get_file_identifier(GFile* source_file) {
-    char *path = g_file_get_path(source_file);
+    char* path = g_file_get_path(source_file);
     if (!path)
         path = g_file_get_uri(source_file);
     return path;
@@ -110,7 +110,7 @@ static GErrorResult<> copy_source_file_to_coverage_output(
 // scheme stripped or nullptr if the path was not a valid URI
 [[nodiscard]]
 static char* strip_uri_scheme(const char* potential_uri) {
-    char *uri_header = g_uri_parse_scheme(potential_uri);
+    char* uri_header = g_uri_parse_scheme(potential_uri);
 
     if (uri_header) {
         size_t offset = strlen(uri_header);
@@ -142,7 +142,7 @@ static char* strip_uri_scheme(const char* potential_uri) {
 static char* find_diverging_child_components(GFile* child, GFile* parent) {
     Gjs::AutoUnref<GFile> ancestor{parent, Gjs::TakeOwnership{}};
     while (ancestor) {
-        char *relpath = g_file_get_relative_path(ancestor, child);
+        char* relpath = g_file_get_relative_path(ancestor, child);
         if (relpath)
             return relpath;
 
@@ -169,7 +169,7 @@ static bool filename_has_coverage_prefixes(GjsCoverage* self,
     Gjs::AutoChar workdir{g_get_current_dir()};
     Gjs::AutoChar abs_filename{g_canonicalize_filename(filename, workdir)};
 
-    for (const char * const *prefix = priv->prefixes; *prefix; prefix++) {
+    for (const char* const* prefix = priv->prefixes; *prefix; prefix++) {
         Gjs::AutoChar abs_prefix{g_canonicalize_filename(*prefix, workdir)};
         if (g_str_has_prefix(abs_filename, abs_prefix))
             return true;
@@ -208,7 +208,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         error.reset();
     }
 
-    GFile *output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
+    GFile* output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
 
     size_t lcov_length;
     JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
@@ -222,7 +222,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
     const char* test_name = nullptr;
     bool ignoring_file = false;
 
-    for (const char * const *iter = lcov_lines.get(); *iter; iter++) {
+    for (const char* const* iter = lcov_lines.get(); *iter; iter++) {
         if (ignoring_file) {
             if (strcmp(*iter, "end_of_record") == 0)
                 ignoring_file = false;
@@ -235,7 +235,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
             test_name = *iter;
             continue;
         } else if (g_str_has_prefix(*iter, "SF:")) {
-            const char *filename = *iter + 3;
+            const char* filename = *iter + 3;
             if (!filename_has_coverage_prefixes(self, filename)) {
                 ignoring_file = true;
                 continue;

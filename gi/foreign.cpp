@@ -89,9 +89,7 @@ bool gjs_struct_foreign_convert_to_gi_argument(
     JSContext* cx, JS::Value value, const GI::StructInfo info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
     GjsArgumentFlags flags, GIArgument* arg) {
-    GjsForeignInfo *foreign;
-
-    foreign = gjs_struct_foreign_lookup(cx, info);
+    GjsForeignInfo* foreign = gjs_struct_foreign_lookup(cx, info);
     if (!foreign)
         return false;
 

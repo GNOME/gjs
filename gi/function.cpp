@@ -445,7 +445,6 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     for (unsigned i = 0, n_jsargs = 0; i < n_args; i++) {
         GI::StackArgInfo arg_info;
         GI::StackTypeInfo type_info;
-        GjsParamType param_type;
 
         m_info.load_arg(i, &arg_info);
         arg_info.load_type(&type_info);
@@ -465,7 +464,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
         if (arg_info.ownership_transfer() != GI_TRANSFER_NOTHING)
             in_args_to_cleanup = m_scope != GI_SCOPE_TYPE_FOREVER;
 
-        param_type = m_param_types[i];
+        GjsParamType param_type = m_param_types[i];
 
         switch (param_type) {
             case PARAM_SKIPPED:
@@ -1242,12 +1241,9 @@ bool Function::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
-    int i, n_jsargs;
-
     int n_args = m_info.n_args();
-    n_jsargs = 0;
     std::string arg_names;
-    for (i = 0; i < n_args; i++) {
+    for (int i = 0, n_jsargs = 0; i < n_args; i++) {
         Argument* gjs_arg = m_arguments.argument(i);
         if (!gjs_arg || gjs_arg->skip_in())
             continue;

@@ -225,7 +225,6 @@ static bool gjs_value_from_array_and_length_values(
 void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                            const GValue* param_values, void* invocation_hint,
                            void* marshal_data) {
-    unsigned i;
     GSignalQuery signal_query = { 0, };
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
@@ -311,7 +310,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         get_signal_info_if_available(repo, &signal_query)};
     if (signal_info) {
         // Start at argument 1, skip the instance parameter
-        for (i = 1; i < n_param_values; ++i) {
+        for (unsigned i = 1; i < n_param_values; ++i) {
             ArgumentDetails& arg_details = args_details[i];
             arg_details.info.emplace();
             signal_info->load_arg(i - 1, &arg_details.arg_info());
@@ -336,16 +335,15 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         g_error("Unable to reserve space");
     JS::RootedValue argv_to_append{m_cx};
     bool is_introspected_signal = !!signal_info;
-    for (i = 0; i < n_param_values; ++i) {
+    for (unsigned i = 0; i < n_param_values; ++i) {
         const GValue* gval = &param_values[i];
         ArgumentDetails& arg_details = args_details[i];
-        bool no_copy;
         bool res;
 
         if (arg_details.skip)
             continue;
 
-        no_copy = false;
+        bool no_copy = false;
 
         if (i >= 1 && signal_query.signal_id) {
             no_copy = (signal_query.param_types[i - 1] &
@@ -398,7 +396,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     }
 
     if (needs_cleanup) {
-        for (i = 0; i < n_param_values; ++i) {
+        for (unsigned i = 0; i < n_param_values; ++i) {
             ArgumentDetails& arg_details = args_details[i];
             if (!arg_details.info)
                 continue;
@@ -504,10 +502,8 @@ static bool throw_expect_type(JSContext* cx, JS::HandleValue value,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                                           GValue* gvalue, bool no_copy) {
-    GType gtype;
     bool out_of_range = false;
-
-    gtype = G_VALUE_TYPE(gvalue);
+    GType gtype = G_VALUE_TYPE(gvalue);
 
     if (value.isObject()) {
         JS::RootedObject obj{cx, &value.toObject()};
@@ -966,9 +962,7 @@ static bool gjs_value_from_g_value_internal(
     bool no_copy, bool is_introspected_signal,
     Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>>
         introspection_info) {
-    GType gtype;
-
-    gtype = G_VALUE_TYPE(gvalue);
+    GType gtype = G_VALUE_TYPE(gvalue);
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
                       "Converting gtype %s to JS::Value",
@@ -1159,9 +1153,7 @@ static bool gjs_value_from_g_value_internal(
             repo, gtype, Gjs::gvalue_get<Gjs::Tag::Long>(gvalue)));
     } else if (g_type_is_a(gtype, G_TYPE_PARAM)) {
         GParamSpec* gparam = Gjs::gvalue_get<GParamSpec*>(gvalue);
-        JSObject *obj;
-
-        obj = gjs_param_from_g_param(cx, gparam);
+        JSObject* obj = gjs_param_from_g_param(cx, gparam);
         if (!obj)
             return false;
         value_p.setObject(*obj);

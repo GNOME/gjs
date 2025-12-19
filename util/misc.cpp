@@ -18,9 +18,7 @@
 using mozilla::Err;
 
 bool gjs_environment_variable_is_set(const char* env_variable_name) {
-    const char *s;
-
-    s = g_getenv(env_variable_name);
+    const char* s = g_getenv(env_variable_name);
     if (!s)
         return false;
 

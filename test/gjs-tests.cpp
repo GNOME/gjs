@@ -782,7 +782,7 @@ static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
 
 static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
                                                const void*) {
-    char16_t *chars;
+    char16_t* chars;
     size_t len;
 
     JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
@@ -804,7 +804,7 @@ static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
 
 static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
                                            const void*) {
-    gunichar *chars;
+    gunichar* chars;
     size_t len;
 
     JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
@@ -905,22 +905,19 @@ static void gjstest_test_func_util_misc_strv_concat_pointers() {
     const char** strv2 = nullptr;
     const char* strv3[2] = {"bar", nullptr};
     const char** stuff[4];
-    char **ret;
 
     stuff[0] = strv0;
     stuff[1] = strv1;
     stuff[2] = strv2;
     stuff[3] = strv3;
 
-    ret = gjs_g_strv_concat(stuff, 4);
+    AutoStrv ret = gjs_g_strv_concat(stuff, 4);
     g_assert_nonnull(ret);
     g_assert_cmpstr(ret[0], ==, strv0[0]);  // same string
     g_assert_true(ret[0] != strv0[0]);      // different pointer
     g_assert_cmpstr(ret[1], ==, strv3[0]);
     g_assert_true(ret[1] != strv3[0]);
     g_assert_null(ret[2]);
-
-    g_strfreev(ret);
 }
 
 static void gjstest_test_profiler_start_stop() {

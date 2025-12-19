@@ -34,7 +34,7 @@ typedef struct _GjsDBusImplementationPrivate GjsDBusImplementationPrivate;
 struct _GjsDBusImplementation {
     GDBusInterfaceSkeleton parent;
 
-    GjsDBusImplementationPrivate *priv;
+    GjsDBusImplementationPrivate* priv;
 };
 typedef struct _GjsDBusImplementation GjsDBusImplementation;
 

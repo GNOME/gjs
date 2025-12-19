@@ -465,7 +465,7 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
         return nullptr;
 
     Gjs::AutoTypeClass<GEnumClass> klass{GJS_TYPE_JS_ERROR};
-    const GEnumValue *value = g_enum_get_value_by_name(klass, name.get());
+    const GEnumValue* value = g_enum_get_value_by_name(klass, name.get());
     int code;
     if (value)
         code = value->value;

@@ -52,13 +52,12 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool createFromPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     Gjs::AutoChar filename;
-    cairo_surface_t *surface;
 
     if (!gjs_parse_call_args(cx, "createFromPNG", args, "F", "filename",
                              &filename))
         return false;
 
-    surface = cairo_image_surface_create_from_png(filename);
+    cairo_surface_t* surface = cairo_image_surface_create_from_png(filename);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
@@ -76,7 +75,6 @@ static bool createFromPNG_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool getFormat_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    cairo_format_t format;
 
     if (argc > 1) {
         gjs_throw(cx, "ImageSurface.getFormat() takes no arguments");
@@ -87,7 +85,7 @@ static bool getFormat_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!surface)
         return false;
 
-    format = cairo_image_surface_get_format(surface);
+    cairo_format_t format = cairo_image_surface_get_format(surface);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
@@ -99,7 +97,6 @@ static bool getFormat_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool getWidth_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    int width;
 
     if (argc > 1) {
         gjs_throw(cx, "ImageSurface.getWidth() takes no arguments");
@@ -110,7 +107,7 @@ static bool getWidth_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!surface)
         return false;
 
-    width = cairo_image_surface_get_width(surface);
+    int width = cairo_image_surface_get_width(surface);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
@@ -122,7 +119,6 @@ static bool getWidth_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool getHeight_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    int height;
 
     if (argc > 1) {
         gjs_throw(cx, "ImageSurface.getHeight() takes no arguments");
@@ -133,7 +129,7 @@ static bool getHeight_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!surface)
         return false;
 
-    height = cairo_image_surface_get_height(surface);
+    int height = cairo_image_surface_get_height(surface);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
@@ -145,7 +141,6 @@ static bool getHeight_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool getStride_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    int stride;
 
     if (argc > 1) {
         gjs_throw(cx, "ImageSurface.getStride() takes no arguments");
@@ -156,7 +151,7 @@ static bool getStride_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!surface)
         return false;
 
-    stride = cairo_image_surface_get_stride(surface);
+    int stride = cairo_image_surface_get_stride(surface);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;

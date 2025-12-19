@@ -139,7 +139,7 @@ static void test_maybe_owned_heap_rooted_keeps_alive_across_gc(
 
 static void test_maybe_owned_switching_mode_keeps_same_value(
     GjsRootingFixture* fx, const void*) {
-    JSObject *test_obj = test_obj_new(fx);
+    JSObject* test_obj = test_obj_new(fx);
     auto* obj = new GjsMaybeOwned();
 
     *obj = test_obj;

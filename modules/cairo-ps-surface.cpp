@@ -38,12 +38,11 @@ cairo_surface_t* CairoPSSurface::constructor_impl(JSContext* cx,
                                                   const JS::CallArgs& args) {
     Gjs::AutoChar filename;
     double width, height;
-    cairo_surface_t *surface;
     if (!gjs_parse_call_args(cx, "PSSurface", args, "Fff", "filename",
                              &filename, "width", &width, "height", &height))
         return nullptr;
 
-    surface = cairo_ps_surface_create(filename, width, height);
+    cairo_surface_t* surface = cairo_ps_surface_create(filename, width, height);
 
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return nullptr;

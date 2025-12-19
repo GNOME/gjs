@@ -234,7 +234,7 @@ static bool parse_call_args_helper(JSContext* cx, const char* function_name,
                                    const char*& fmt_optional, unsigned param_ix,
                                    const char* param_name, T param_ref) {
     bool nullable = false;
-    const char *fchar = fmt_required;
+    const char* fchar = fmt_required;
 
     g_return_val_if_fail(param_name, false);
 
@@ -356,7 +356,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
                                 const JS::CallArgs& args, const char* format,
                                 Args... params) {
-    const char *fmt_iter, *fmt_required, *fmt_optional;
     unsigned n_required = 0, n_total = 0;
     bool optional_args = false, ignore_trailing_args = false;
 
@@ -365,7 +364,7 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
         format++;
     }
 
-    for (fmt_iter = format; *fmt_iter; fmt_iter++) {
+    for (const char* fmt_iter = format; *fmt_iter; fmt_iter++) {
         switch (*fmt_iter) {
             case '|':
                 n_required = n_total;
@@ -401,8 +400,8 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
     }
 
     Gjs::AutoStrv parts{g_strsplit(format, "|", 2)};
-    fmt_required = parts.get()[0];
-    fmt_optional = parts.get()[1];  // may be null
+    const char* fmt_required = parts.get()[0];
+    const char* fmt_optional = parts.get()[1];  // may be null
 
     return detail::parse_call_args_helper(cx, function_name, args, fmt_required,
                                           fmt_optional, 0, params...);

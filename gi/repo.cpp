@@ -475,13 +475,10 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
 }
 
 char* gjs_hyphen_from_camel(const char* camel_name) {
-    GString *s;
-    const char *p;
-
     // four hyphens should be reasonable guess
-    s = g_string_sized_new(strlen(camel_name) + 4 + 1);
+    GString* s = g_string_sized_new(strlen(camel_name) + 4 + 1);
 
-    for (p = camel_name; *p; ++p) {
+    for (const char* p = camel_name; *p; ++p) {
         if (g_ascii_isupper(*p)) {
             g_string_append_c(s, '-');
             g_string_append_c(s, g_ascii_tolower(*p));

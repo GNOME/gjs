@@ -237,7 +237,6 @@ JS::UniqueChars format_saved_frame(JSContext* cx, JS::HandleObject saved_frame,
 }
 
 void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
-    const char *warning;
     GLogLevelFlags level;
 
     g_assert(report);
@@ -249,6 +248,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
                 report->lineno, report->column.oneOriginValue());
     }
 
+    const char* warning;
     if (report->isWarning()) {
         warning = "WARNING";
         level = G_LOG_LEVEL_MESSAGE;

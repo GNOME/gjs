@@ -1490,7 +1490,7 @@ struct CallbackIn : SkipAll, Callback {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
  private:
-    ffi_closure *m_ffi_closure;
+    ffi_closure* m_ffi_closure;
 };
 
 struct BasicExplicitCArrayOut : ExplicitArrayBase, BasicCArray, Positioned {
@@ -2446,7 +2446,7 @@ bool BoxedCallerAllocatesOut::release(JSContext*, GjsFunctionCallState*,
 GJS_JSAPI_RETURN_CONVENTION
 bool CallbackIn::release(JSContext*, GjsFunctionCallState*, GIArgument* in_arg,
                          GIArgument* out_arg [[maybe_unused]]) {
-    ffi_closure *closure = m_ffi_closure;
+    ffi_closure* closure = m_ffi_closure;
     if (!closure)
         return true;
 

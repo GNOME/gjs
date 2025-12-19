@@ -180,14 +180,13 @@ void gjs_throw_constructor_error(JSContext* cx) {
 
 void gjs_throw_abstract_constructor_error(JSContext* cx,
                                           const JS::CallArgs& args) {
-    const JSClass *proto_class;
-    const char *name = "anonymous";
+    const char* name = "anonymous";
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject callee{cx, &args.callee()};
     JS::RootedValue prototype{cx};
     if (JS_GetPropertyById(cx, callee, atoms.prototype(), &prototype)) {
-        proto_class = JS::GetClass(&prototype.toObject());
+        const JSClass* proto_class = JS::GetClass(&prototype.toObject());
         name = proto_class->name;
     }
 

@@ -108,7 +108,6 @@ bool finish_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 bool CairoSurface::getType_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, obj);
-    cairo_surface_type_t type;
 
     if (argc > 1) {
         gjs_throw(cx, "Surface.getType() takes no arguments");
@@ -119,7 +118,7 @@ bool CairoSurface::getType_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!surface)
         return false;
 
-    type = cairo_surface_get_type(surface);
+    cairo_surface_type_t type = cairo_surface_get_type(surface);
     if (!gjs_cairo_check_status(cx, cairo_surface_status(surface), "surface"))
         return false;
 

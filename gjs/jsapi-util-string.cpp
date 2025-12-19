@@ -42,8 +42,8 @@
 class JSLinearString;
 
 Gjs::AutoChar gjs_hyphen_to_underscore(const char* str) {
-    char *s = g_strdup(str);
-    char *retval = s;
+    char* s = g_strdup(str);
+    char* retval = s;
     while (*(s++) != '\0') {
         if (*s == '-')
             *s = '_';
@@ -251,7 +251,7 @@ static bool from_latin1(JSContext* cx, JSString* str, T** data_p,
      * chars. Crash if that happens. */
     JS::AutoCheckCannotGC nogc;
 
-    const JS::Latin1Char *js_data =
+    const JS::Latin1Char* js_data =
         JS_GetLatin1StringCharsAndLength(cx, nogc, str, len_p);
     if (js_data == nullptr)
         return false;
@@ -329,7 +329,7 @@ bool gjs_string_to_ucs4(JSContext* cx, JS::HandleString str,
      * string's chars */
     JS::AutoCheckCannotGC nogc;
 
-    const char16_t *utf16 =
+    const char16_t* utf16 =
         JS_GetTwoByteStringCharsAndLength(cx, nogc, str, &len);
 
     if (utf16 == nullptr) {
@@ -524,7 +524,7 @@ std::string gjs_debug_symbol(JS::Symbol* const sym) {
      * can't cause a garbage collection */
     JS::HandleSymbol handle = JS::HandleSymbol::fromMarkedLocation(&sym);
     JS::SymbolCode code = JS::GetSymbolCode(handle);
-    JSString *descr = JS::GetSymbolDescription(handle);
+    JSString* descr = JS::GetSymbolDescription(handle);
 
     if (size_t(code) < JS::WellKnownSymbolLimit)
         return gjs_debug_string(descr);

@@ -33,13 +33,11 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool createRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     double red, green, blue;
-    cairo_pattern_t *pattern;
-
     if (!gjs_parse_call_args(cx, "createRGB", args, "fff", "red", &red, "green",
                              &green, "blue", &blue))
         return false;
 
-    pattern = cairo_pattern_create_rgb(red, green, blue);
+    cairo_pattern_t* pattern = cairo_pattern_create_rgb(red, green, blue);
     if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 
@@ -57,13 +55,12 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool createRGBA_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     double red, green, blue, alpha;
-    cairo_pattern_t *pattern;
-
     if (!gjs_parse_call_args(cx, "createRGBA", args, "ffff", "red", &red,
                              "green", &green, "blue", &blue, "alpha", &alpha))
         return false;
 
-    pattern = cairo_pattern_create_rgba(red, green, blue, alpha);
+    cairo_pattern_t* pattern =
+        cairo_pattern_create_rgba(red, green, blue, alpha);
     if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return false;
 

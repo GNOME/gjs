@@ -28,13 +28,13 @@ JSObject* CairoRadialGradient::new_proto(JSContext* cx, JSProtoKey) {
 cairo_pattern_t* CairoRadialGradient::constructor_impl(
     JSContext* cx, const JS::CallArgs& args) {
     double cx0, cy0, radius0, cx1, cy1, radius1;
-    cairo_pattern_t* pattern;
     if (!gjs_parse_call_args(cx, "RadialGradient", args, "ffffff", "cx0", &cx0,
                              "cy0", &cy0, "radius0", &radius0, "cx1", &cx1,
                              "cy1", &cy1, "radius1", &radius1))
         return nullptr;
 
-    pattern = cairo_pattern_create_radial(cx0, cy0, radius0, cx1, cy1, radius1);
+    cairo_pattern_t* pattern =
+        cairo_pattern_create_radial(cx0, cy0, radius0, cx1, cy1, radius1);
 
     if (!gjs_cairo_check_status(cx, cairo_pattern_status(pattern), "pattern"))
         return nullptr;

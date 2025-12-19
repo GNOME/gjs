@@ -60,12 +60,12 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
                                    JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj(cx);
-    GObject *obj;
 
     if (!gjs_parse_call_args(cx, "addressOfGObject", args, "o", "object",
                              &target_obj))
         return false;
 
+    GObject* obj;
     if (!ObjectBase::to_c_ptr(cx, target_obj, &obj)) {
         gjs_throw(cx, "Object %p is not a GObject", &target_obj);
         return false;
@@ -78,11 +78,11 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
 static bool gjs_refcount(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
     JS::RootedObject target_obj{cx};
-    GObject *obj;
 
     if (!gjs_parse_call_args(cx, "refcount", args, "o", "object", &target_obj))
         return false;
 
+    GObject* obj;
     if (!ObjectBase::to_c_ptr(cx, target_obj, &obj))
         return false;
     if (!obj) {

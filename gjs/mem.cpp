@@ -29,18 +29,14 @@ static Gjs::Memory::Counter* counters[] = {
     GJS_FOR_EACH_COUNTER(GJS_LIST_COUNTER)};
 
 void gjs_memory_report(const char* where, bool die_if_leaks) {
-    int i;
-    int n_counters;
-    int64_t total_objects;
-
     gjs_debug(GJS_DEBUG_MEMORY,
               "Memory report: %s",
               where);
 
-    n_counters = G_N_ELEMENTS(counters);
+    size_t n_counters = G_N_ELEMENTS(counters);
 
-    total_objects = 0;
-    for (i = 0; i < n_counters; ++i) {
+    int64_t total_objects = 0;
+    for (size_t i = 0; i < n_counters; ++i) {
         total_objects += counters[i]->value;
     }
 
@@ -53,7 +49,7 @@ void gjs_memory_report(const char* where, bool die_if_leaks) {
               GJS_GET_COUNTER(everything));
 
     if (GJS_GET_COUNTER(everything) != 0) {
-        for (i = 0; i < n_counters; ++i) {
+        for (size_t i = 0; i < n_counters; ++i) {
             gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %" PRId64,
                       counters[i]->name, counters[i]->value.load());
         }

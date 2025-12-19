@@ -452,8 +452,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
                                  const GI::TypeInfo type_info,
                                  GITransfer transfer, GHashTable** hash_p) {
-    size_t id_ix, id_len;
-
     g_assert(props && "Property bag cannot be null");
 
     GI::AutoTypeInfo key_type{type_info.key_type()};
@@ -488,7 +486,7 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
 
     JS::RootedValue key_js{cx}, val_js{cx};
     JS::RootedId cur_id{cx};
-    for (id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
+    for (size_t id_ix = 0, id_len = ids.length(); id_ix < id_len; ++id_ix) {
         cur_id = ids[id_ix];
         void* key_ptr;
         GIArgument val_arg = { 0 };
@@ -601,8 +599,6 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_string_to_intarray(JSContext* cx, JS::HandleString str,
                                    GITypeTag element_type, void** arr_p,
                                    size_t* length) {
-    char16_t *result16;
-
     switch (element_type) {
         case GI_TYPE_TAG_INT8:
         case GI_TYPE_TAG_UINT8: {
@@ -616,6 +612,7 @@ static bool gjs_string_to_intarray(JSContext* cx, JS::HandleString str,
 
         case GI_TYPE_TAG_INT16:
         case GI_TYPE_TAG_UINT16: {
+            char16_t* result16;
             if (!gjs_string_get_char16_data(cx, str, &result16, length))
                 return false;
             *arr_p = result16;
@@ -1137,8 +1134,6 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
                                                  contents, length_p);
     }
 
-    bool found_length;
-
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '%s' JS value %s to C array, transfer %d",
@@ -1168,6 +1163,7 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
         }
 
         const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
+        bool found_length;
         if (!JS_HasPropertyById(cx, array_obj, atoms.length(), &found_length))
             return false;
         if (found_length) {
@@ -2067,7 +2063,7 @@ bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
             throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
             return false;
         } else {
-            GHashTable *ghash;
+            GHashTable* ghash;
             JS::RootedObject props{cx, &value.toObject()};
             if (!gjs_object_to_g_hash(cx, props, type_info, transfer, &ghash))
                 return false;
@@ -2101,7 +2097,7 @@ bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
             // handled in gjs_value_to_basic_array_gi_argument()
             g_assert_not_reached();
         } else if (array_type == GI_ARRAY_TYPE_PTR_ARRAY) {
-            GPtrArray *array = g_ptr_array_sized_new(length);
+            GPtrArray* array = g_ptr_array_sized_new(length);
 
             g_ptr_array_set_size(array, length);
             if (data)
@@ -2622,14 +2618,14 @@ static bool gjs_array_from_boxed_array(JSContext* cx,
                                        GIArrayType array_type,
                                        const GI::TypeInfo element_type,
                                        GITransfer transfer, GIArgument* arg) {
-    GArray *array;
-    GPtrArray *ptr_array;
-    void* data = nullptr;
-
     if (!gjs_arg_get<void*>(arg)) {
         value_p.setNull();
         return true;
     }
+
+    GArray* array;
+    GPtrArray* ptr_array;
+    void* data = nullptr;
 
     size_t length = 0;
     switch (array_type) {
@@ -3373,8 +3369,6 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                     return gjs_string_from_utf8(cx, name, value_p);
                 }
 
-                JSObject *obj;
-
                 if (gtype == G_TYPE_VARIANT) {
                     transfer = GI_TRANSFER_EVERYTHING;
                 } else if (transfer == GI_TRANSFER_CONTAINER) {
@@ -3388,6 +3382,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                     }
                 }
 
+                JSObject* obj;
                 if (transfer == GI_TRANSFER_EVERYTHING)
                     obj = StructInstance::new_for_c_struct(
                         cx, struct_info.value(), gjs_arg_get<void*>(arg));

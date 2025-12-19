@@ -126,10 +126,8 @@ static void check_script_args_for_stray_gjs_args(int argc, char* const* argv) {
         {nullptr}};
 
     Gjs::AutoStrv argv_copy{g_new(char*, argc + 2)};
-    int ix;
-
     argv_copy[0] = g_strdup("dummy");  // Fake argv[0] for GOptionContext
-    for (ix = 0; ix < argc; ix++)
+    for (int ix = 0; ix < argc; ix++)
         argv_copy[ix + 1] = g_strdup(argv[ix]);
     argv_copy[argc + 1] = nullptr;
 
@@ -201,11 +199,7 @@ int define_argv_and_eval_script(GjsContext* gjs_context, int argc,
 
 int main(int argc, char** argv) {
     Gjs::AutoError error;
-    const char *filename;
-    const char *program_name;
-    int gjs_argc = argc, script_argc, ix;
-    char * const *script_argv;
-    const char *env_coverage_output_path;
+    int gjs_argc = argc;
     bool interactive_mode = false;
 
     setlocale(LC_ALL, "");
@@ -223,7 +217,7 @@ int main(int argc, char** argv) {
 
     // Split options so we pass unknown ones through to the JS script
     int argc_copy = g_strv_length(argv_copy);
-    for (ix = 1; ix < argc; ix++) {
+    for (int ix = 1; ix < argc; ix++) {
         // Check if a file was given and split after it
         if (argc_copy >= 2 && strcmp(argv[ix], argv_copy[1]) == 0) {
             // Filename given; split after this argument
@@ -240,8 +234,8 @@ int main(int argc, char** argv) {
     }
     Gjs::AutoStrv gjs_argv_addr{strndupv(gjs_argc, argv)};
     char** gjs_argv = gjs_argv_addr;
-    script_argc = argc - gjs_argc;
-    script_argv = argv + gjs_argc;
+    int script_argc = argc - gjs_argc;
+    char* const* script_argv = argv + gjs_argc;
 
     // Parse again, only the GJS options this time
     include_path.release();
@@ -275,6 +269,8 @@ int main(int argc, char** argv) {
     gjs_argc = g_strv_length(gjs_argv);
     Gjs::AutoChar script;
     size_t len;
+    const char* filename;
+    const char* program_name;
     if (command) {
         script = command;
         len = strlen(script);
@@ -353,7 +349,7 @@ int main(int argc, char** argv) {
                      // clang-format on
                      nullptr))};
 
-    env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
+    const char* env_coverage_output_path = g_getenv("GJS_COVERAGE_OUTPUT");
     if (env_coverage_output_path != nullptr) {
         g_free(coverage_output_path);
         coverage_output_path = g_strdup(env_coverage_output_path);

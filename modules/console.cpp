@@ -72,7 +72,7 @@ static void gjs_console_warning_reporter(JSContext*, JSErrorReport* report) {
 
 // Based on js::shell::AutoReportException from SpiderMonkey.
 class AutoReportException {
-    JSContext *m_cx;
+    JSContext* m_cx;
 
  public:
     explicit AutoReportException(JSContext* cx) : m_cx(cx) {}

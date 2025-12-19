@@ -40,8 +40,8 @@
     G_STMT_END
 
 struct GjsUnitTestFixture {
-    GjsContext *gjs_context;
-    JSContext *cx;
+    GjsContext* gjs_context;
+    JSContext* cx;
     JS::Realm* realm;
 };
 

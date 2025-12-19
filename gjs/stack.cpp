@@ -30,23 +30,20 @@ void gjs_context_print_stack_stderr(GjsContext* self) {
 
 void gjs_dumpstack() {
     Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
-    GList *iter;
 
-    for (iter = contexts; iter; iter = iter->next) {
+    for (GList* iter = contexts; iter; iter = iter->next) {
         Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(iter->data)};
         gjs_context_print_stack_stderr(gjs_context);
     }
 }
 
 std::string gjs_dumpstack_string() {
-    std::string out;
     std::ostringstream all_traces;
 
     Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
     js::Sprinter printer;
-    GList *iter;
 
-    for (iter = contexts; iter; iter = iter->next) {
+    for (GList* iter = contexts; iter; iter = iter->next) {
         Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(iter->data)};
         if (!printer.init()) {
             all_traces << "No stack trace for context " << gjs_context.get()
@@ -61,7 +58,7 @@ std::string gjs_dumpstack_string() {
                    << " ==\n"
                    << trace.get() << "\n";
     }
-    out = all_traces.str();
+    std::string out = all_traces.str();
     out.resize(MAX(out.size() - 2, 0));
 
     return out;

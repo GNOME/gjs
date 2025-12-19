@@ -154,7 +154,7 @@ static JSObject* define_native_accessor_wrapper(JSContext* cx, JSNative call,
     if (!func)
         return nullptr;
 
-    JSObject *func_obj = JS_GetFunctionObject(func);
+    JSObject* func_obj = JS_GetFunctionObject(func);
     js::SetFunctionNativeReserved(func_obj, DYNAMIC_PROPERTY_PRIVATE_SLOT,
                                   private_slot);
     return func_obj;
