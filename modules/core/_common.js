@@ -4,12 +4,13 @@
 // SPDX-FileCopyrightText: 2020 Philip Chimento <philip.chimento@gmail.com>
 
 /* exported _checkAccessors, _createBuilderConnectFunc, _createClosure,
-_registerType, _createWrappersForPlatformSpecificNamespace */
+_registerType, _createWrappersForPlatformSpecificNamespace,
+_defineDeprecatedWrapper */
 
 // This is a helper module in which to put code that is common between the
 // legacy GObject.Class system and the new GObject.registerClass system.
 
-const {warnDeprecatedOncePerCallsite, PLATFORM_SPECIFIC_TYPELIB} = imports._print;
+const {warnDeprecatedOncePerCallsite, RENAMED, PLATFORM_SPECIFIC_TYPELIB} = imports._print;
 
 var _registerType = Symbol('GObject register type hook');
 
@@ -169,14 +170,34 @@ function _createWrappersForPlatformSpecificNamespace(namespace) {
             return;
         }
 
-        Object.defineProperty(namespace, genericProp, {
-            enumerable: true,
-            configurable: false,
-            get() {
-                warnDeprecatedOncePerCallsite(PLATFORM_SPECIFIC_TYPELIB,
-                    `${namespaceName}.${genericProp}`, `${platformNamespace.__name__}.${prop}`);
-                return desc.get?.() ?? desc.value;
-            },
-        });
+        _defineDeprecatedWrapperForDescriptor(
+            namespace, platformNamespace, genericProp, prop, desc,
+            PLATFORM_SPECIFIC_TYPELIB);
     });
+}
+
+function _defineDeprecatedWrapperForDescriptor(
+    namespace, newNamespace, oldName, newName, desc, deprecationReason = RENAMED) {
+    const namespaceName = namespace.__name__;
+    if (Object.hasOwn(namespace, oldName)) {
+        console.log(`${namespaceName} already contains property ${oldName}`);
+        return;
+    }
+
+    Object.defineProperty(namespace, oldName, {
+        enumerable: true,
+        configurable: false,
+        get() {
+            warnDeprecatedOncePerCallsite(deprecationReason,
+                `${namespaceName}.${oldName}`, `${newNamespace.__name__}.${newName}`);
+            return desc.get?.() ?? desc.value;
+        },
+    });
+}
+
+function _defineDeprecatedWrapper(
+    namespace, newNamespace, oldName, newName, deprecationReason = RENAMED) {
+    _defineDeprecatedWrapperForDescriptor(
+        namespace, newNamespace, oldName, newName,
+        Object.getOwnPropertyDescriptor(namespace, newName), deprecationReason);
 }
