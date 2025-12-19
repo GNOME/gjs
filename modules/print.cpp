@@ -245,6 +245,8 @@ static constexpr JSPropertySpec props[] = {
     JSPropertySpec::int32Value(
         "PLATFORM_SPECIFIC_TYPELIB", GJS_MODULE_PROP_FLAGS,
         GjsDeprecationMessageId::PlatformSpecificTypelib),
+    JSPropertySpec::int32Value("RENAMED", GJS_MODULE_PROP_FLAGS,
+                               GjsDeprecationMessageId::Renamed),
     JS_PS_END};
 
 bool gjs_define_print_stuff(JSContext* cx, JS::MutableHandleObject module) {

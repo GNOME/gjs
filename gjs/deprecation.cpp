@@ -53,6 +53,9 @@ const char* messages[] = {
     // PlatformSpecificTypelib:
     ("{} has been moved to a separate platform-specific library. Please update "
      "your code to use {} instead."),
+
+    // Renamed:
+    ("{} has been renamed. Please update your code to use {} instead."),
 };
 
 static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
