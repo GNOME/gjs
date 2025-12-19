@@ -388,15 +388,17 @@ iwyu:
     - meson setup _build -Db_pch=false -Dbuildtype=release
     - include-what-you-use --version
     - ./tools/run_iwyu.sh ci-upstream-base
-  only:
-    refs:
-      - branches
-  except:
-    refs:
-      - schedules
-      - /^gnome-[-\d]+$/
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
+      when: never
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      when: on_success
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      when: on_success
 
 codespell:
   when: on_success
