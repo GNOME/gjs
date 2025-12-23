@@ -3,6 +3,8 @@
 # SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 ---
 include:
+  - project: "gnome/citemplates"
+    file: "templates/default-rules.yml"
   - project: Infrastructure/freedesktop-ci-templates
     file: templates/alpine.yml
     ref: b791bd48996e3ced9ca13f1c5ee82be8540b8adb
@@ -388,15 +390,27 @@ iwyu:
     - meson setup _build -Db_pch=false -Dbuildtype=release
     - include-what-you-use --version
     - ./tools/run_iwyu.sh ci-upstream-base
-  only:
-    refs:
-      - branches
-  except:
-    refs:
-      - schedules
-      - /^gnome-[-\d]+$/
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
+      when: never
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
+      when: on_success
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
+      when: on_success
 
 codespell:
   when: on_success
