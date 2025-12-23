@@ -26,7 +26,7 @@
 #include "gjs/coverage.h"
 #include "gjs/gerror-result.h"
 
-typedef struct _GjsCoverageFixture {
+struct GjsCoverageFixture {
     GjsContext* gjs_context;
     GjsCoverage* coverage;
 
@@ -34,7 +34,7 @@ typedef struct _GjsCoverageFixture {
     GFile* tmp_js_script;
     GFile* lcov_output_dir;
     GFile* lcov_output;
-} GjsCoverageFixture;
+};
 
 static void replace_file(GFile* file, const char* contents) {
     Gjs::AutoError error;
@@ -931,10 +931,9 @@ static void test_end_of_record_section_written_to_coverage_data(
     g_free(coverage_data_contents);
 }
 
-typedef struct _GjsCoverageMultipleSourcesFixture {
-    GjsCoverageFixture base_fixture;
+struct GjsCoverageMultipleSourcesFixture : GjsCoverageFixture {
     GFile* second_js_source_file;
-} GjsCoverageMultipleSourcesFixture;
+};
 
 static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
     void* fixture_data, const void* user_data) {
@@ -942,34 +941,28 @@ static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
 
     auto* fixture =
         static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
-    fixture->second_js_source_file =
-        g_file_get_child(fixture->base_fixture.tmp_output_dir,
-                         "gjs_coverage_second_source_file.js");
+    fixture->second_js_source_file = g_file_get_child(
+        fixture->tmp_output_dir, "gjs_coverage_second_source_file.js");
 
     /* Because GjsCoverage searches the coverage paths at object-creation time,
      * we need to destroy the previously constructed one and construct it again
      */
-    Gjs::AutoChar first_js_script_path{
-        g_file_get_path(fixture->base_fixture.tmp_js_script)};
+    Gjs::AutoChar first_js_script_path{g_file_get_path(fixture->tmp_js_script)};
     Gjs::AutoChar second_js_script_path{
         g_file_get_path(fixture->second_js_source_file)};
     char* coverage_paths[] = {first_js_script_path, second_js_script_path,
                               nullptr};
 
-    g_object_unref(fixture->base_fixture.gjs_context);
-    g_object_unref(fixture->base_fixture.coverage);
-    Gjs::AutoChar output_path{
-        g_file_get_path(fixture->base_fixture.tmp_output_dir)};
+    g_object_unref(fixture->gjs_context);
+    g_object_unref(fixture->coverage);
+    Gjs::AutoChar output_path{g_file_get_path(fixture->tmp_output_dir)};
     char* search_paths[] = {output_path, nullptr};
 
-    fixture->base_fixture.gjs_context =
-        gjs_context_new_with_search_path(search_paths);
-    fixture->base_fixture.coverage =
-        gjs_coverage_new(coverage_paths, fixture->base_fixture.gjs_context,
-                         fixture->base_fixture.lcov_output_dir);
+    fixture->gjs_context = gjs_context_new_with_search_path(search_paths);
+    fixture->coverage = gjs_coverage_new(coverage_paths, fixture->gjs_context,
+                                         fixture->lcov_output_dir);
 
-    Gjs::AutoChar base_name{
-        g_file_get_basename(fixture->base_fixture.tmp_js_script)};
+    Gjs::AutoChar base_name{g_file_get_basename(fixture->tmp_js_script)};
     Gjs::AutoChar base_name_without_extension{
         g_strndup(base_name, strlen(base_name) - 3)};
     char* mock_script = g_strconcat("const FirstScript = imports.",
@@ -1000,8 +993,8 @@ static void test_multiple_source_file_records_written_to_coverage_data(
         static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
-        fixture->base_fixture.gjs_context, fixture->base_fixture.coverage,
-        fixture->second_js_source_file, fixture->base_fixture.lcov_output);
+        fixture->gjs_context, fixture->coverage, fixture->second_js_source_file,
+        fixture->lcov_output);
 
     const char* first_sf_record =
         line_starting_with(coverage_data_contents, "SF:");
@@ -1055,18 +1048,17 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
         static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
-        fixture->base_fixture.gjs_context, fixture->base_fixture.coverage,
-        fixture->second_js_source_file, fixture->base_fixture.lcov_output);
+        fixture->gjs_context, fixture->coverage, fixture->second_js_source_file,
+        fixture->lcov_output);
 
     LineCountIsMoreThanData first_script_matcher = {1, 0};
 
     LineCountIsMoreThanData second_script_matchers[] = {{1, 0}, {2, 0}};
 
     Gjs::AutoChar first_script_output_path{get_output_path_for_script_on_disk(
-        fixture->base_fixture.tmp_js_script,
-        fixture->base_fixture.lcov_output_dir)};
+        fixture->tmp_js_script, fixture->lcov_output_dir)};
     Gjs::AutoChar second_script_output_path{get_output_path_for_script_on_disk(
-        fixture->second_js_source_file, fixture->base_fixture.lcov_output_dir)};
+        fixture->second_js_source_file, fixture->lcov_output_dir)};
 
     ExpectedSourceFileCoverageData expected[] = {
         {
