@@ -934,14 +934,14 @@ static void test_end_of_record_section_written_to_coverage_data(
 typedef struct _GjsCoverageMultipleSourcesFixture {
     GjsCoverageFixture base_fixture;
     GFile* second_js_source_file;
-} GjsCoverageMultpleSourcesFixture;
+} GjsCoverageMultipleSourcesFixture;
 
 static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
     void* fixture_data, const void* user_data) {
     gjs_coverage_fixture_set_up(fixture_data, user_data);
 
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
     fixture->second_js_source_file =
         g_file_get_child(fixture->base_fixture.tmp_output_dir,
                          "gjs_coverage_second_source_file.js");
@@ -988,7 +988,7 @@ static void
 gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(
     void* fixture_data, const void* user_data) {
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
     g_object_unref(fixture->second_js_source_file);
 
     gjs_coverage_fixture_tear_down(fixture_data, user_data);
@@ -997,7 +997,7 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(
 static void test_multiple_source_file_records_written_to_coverage_data(
     void* fixture_data, const void*) {
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->base_fixture.gjs_context, fixture->base_fixture.coverage,
@@ -1052,7 +1052,7 @@ static void
 test_correct_line_coverage_data_written_for_both_source_file_sections(
     void* fixture_data, const void*) {
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->base_fixture.gjs_context, fixture->base_fixture.coverage,
@@ -1187,7 +1187,7 @@ void gjs_test_add_tests_for_coverage() {
         &coverage_fixture, test_end_of_record_section_written_to_coverage_data);
 
     FixturedTest coverage_for_multiple_files_to_single_output_fixture = {
-        sizeof(GjsCoverageMultpleSourcesFixture),
+        sizeof(GjsCoverageMultipleSourcesFixture),
         gjs_coverage_multiple_source_files_to_single_output_fixture_set_up,
         gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down};
 
