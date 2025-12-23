@@ -30,13 +30,19 @@ enum {
 
 static unsigned signals[SIGNAL_LAST];
 
-struct _GjsDBusImplementationPrivate {
+typedef struct {
     GDBusInterfaceVTable  vtable;
     GDBusInterfaceInfo* ifaceinfo;
 
     // from char* to GVariant*
     GHashTable* outstanding_properties;
     unsigned idle_id;
+} GjsDBusImplementationPrivate;
+
+struct _GjsDBusImplementation {
+    GDBusInterfaceSkeleton parent;
+
+    GjsDBusImplementationPrivate* priv;
 };
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
