@@ -30,23 +30,19 @@ enum {
 
 static unsigned signals[SIGNAL_LAST];
 
-typedef struct {
+struct _GjsDBusImplementation {
+    GDBusInterfaceSkeleton parent;
+
     GDBusInterfaceVTable  vtable;
     GDBusInterfaceInfo* ifaceinfo;
 
     // from char* to GVariant*
     GHashTable* outstanding_properties;
     unsigned idle_id;
-} GjsDBusImplementationPrivate;
-
-struct _GjsDBusImplementation {
-    GDBusInterfaceSkeleton parent;
-
-    GjsDBusImplementationPrivate* priv;
 };
 
-G_DEFINE_TYPE_WITH_PRIVATE(GjsDBusImplementation, gjs_dbus_implementation,
-                           G_TYPE_DBUS_INTERFACE_SKELETON);
+G_DEFINE_TYPE(GjsDBusImplementation, gjs_dbus_implementation,
+              G_TYPE_DBUS_INTERFACE_SKELETON);
 
 static inline GVariant* _g_variant_ref_sink0(void* value) {
     if (value)
@@ -81,10 +77,10 @@ static bool gjs_dbus_implementation_check_interface(GjsDBusImplementation* self,
             exported_object_path ? exported_object_path : "unexported object");
         return false;
     }
-    if (strcmp(interface_name, self->priv->ifaceinfo->name) != 0) {
+    if (strcmp(interface_name, self->ifaceinfo->name) != 0) {
         g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_INTERFACE,
                     "Unknown interface %s on %s", interface_name,
-                    self->priv->ifaceinfo->name);
+                    self->ifaceinfo->name);
         return false;
     }
     return true;
@@ -94,7 +90,7 @@ static bool gjs_dbus_implementation_check_property(GjsDBusImplementation* self,
                                                    const char* interface_name,
                                                    const char* property_name,
                                                    GError** error) {
-    if (!g_dbus_interface_info_lookup_property(self->priv->ifaceinfo,
+    if (!g_dbus_interface_info_lookup_property(self->ifaceinfo,
                                                property_name)) {
         g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY,
                     "Unknown property %s on %s", property_name, interface_name);
@@ -118,8 +114,7 @@ static void gjs_dbus_implementation_method_call(
         return;
     }
     if (!G_UNLIKELY(g_dbus_method_invocation_get_method_info(invocation)) ||
-        !g_dbus_interface_info_lookup_method(self->priv->ifaceinfo,
-                                             method_name)) {
+        !g_dbus_interface_info_lookup_method(self->ifaceinfo, method_name)) {
         g_dbus_method_invocation_return_error(
             g_steal_pointer(&invocation), G_DBUS_ERROR,
             G_DBUS_ERROR_UNKNOWN_METHOD, "Unknown method %s on %s", method_name,
@@ -176,25 +171,18 @@ static gboolean gjs_dbus_implementation_property_set(
 }
 
 static void gjs_dbus_implementation_init(GjsDBusImplementation* self) {
-    GjsDBusImplementationPrivate* priv =
-        gjs_dbus_implementation_get_instance_private(self);
+    self->vtable.method_call = gjs_dbus_implementation_method_call;
+    self->vtable.get_property = gjs_dbus_implementation_property_get;
+    self->vtable.set_property = gjs_dbus_implementation_property_set;
 
-    self->priv = priv;
-
-    priv->vtable.method_call = gjs_dbus_implementation_method_call;
-    priv->vtable.get_property = gjs_dbus_implementation_property_get;
-    priv->vtable.set_property = gjs_dbus_implementation_property_set;
-
-    priv->outstanding_properties = g_hash_table_new_full(g_str_hash,
-                                                         g_str_equal,
-                                                         g_free,
-                                                         _g_variant_unref0);
+    self->outstanding_properties = g_hash_table_new_full(
+        g_str_hash, g_str_equal, g_free, _g_variant_unref0);
 }
 
 static void gjs_dbus_implementation_dispose(GObject* object) {
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
 
-    g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+    g_clear_handle_id(&self->idle_id, g_source_remove);
 
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->dispose(object);
 }
@@ -202,8 +190,8 @@ static void gjs_dbus_implementation_dispose(GObject* object) {
 static void gjs_dbus_implementation_finalize(GObject* object) {
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
 
-    g_dbus_interface_info_unref(self->priv->ifaceinfo);
-    g_hash_table_destroy(self->priv->outstanding_properties);
+    g_dbus_interface_info_unref(self->ifaceinfo);
+    g_hash_table_destroy(self->outstanding_properties);
 
     G_OBJECT_CLASS(gjs_dbus_implementation_parent_class)->finalize(object);
 }
@@ -216,8 +204,7 @@ static void gjs_dbus_implementation_set_property(GObject* object,
 
     switch (property_id) {
         case PROP_G_INTERFACE_INFO:
-            self->priv->ifaceinfo =
-                (GDBusInterfaceInfo*)g_value_dup_boxed(value);
+            self->ifaceinfo = (GDBusInterfaceInfo*)g_value_dup_boxed(value);
             break;
         default:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
@@ -228,21 +215,21 @@ static GDBusInterfaceInfo* gjs_dbus_implementation_get_info(
     GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
-    return self->priv->ifaceinfo;
+    return self->ifaceinfo;
 }
 
 static GDBusInterfaceVTable* gjs_dbus_implementation_get_vtable(
     GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
-    return &(self->priv->vtable);
+    return &self->vtable;
 }
 
 static GVariant* gjs_dbus_implementation_get_properties(
     GDBusInterfaceSkeleton* skeleton) {
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(skeleton);
 
-    GDBusInterfaceInfo* info = self->priv->ifaceinfo;
+    GDBusInterfaceInfo* info = self->ifaceinfo;
     GVariantBuilder builder;
 
     g_variant_builder_init(&builder, G_VARIANT_TYPE_VARDICT);
@@ -253,7 +240,7 @@ static GVariant* gjs_dbus_implementation_get_properties(
 
         /* If we have a cached value, we use that instead of querying again */
         if ((value = (GVariant*)g_hash_table_lookup(
-                 self->priv->outstanding_properties, prop->name))) {
+                 self->outstanding_properties, prop->name))) {
             g_variant_builder_add(&builder, "{sv}", prop->name, value);
             continue;
         }
@@ -278,7 +265,7 @@ static void gjs_dbus_implementation_flush(GDBusInterfaceSkeleton* skeleton) {
 
     char* prop_name;
     GVariant* val;
-    g_hash_table_iter_init(&iter, self->priv->outstanding_properties);
+    g_hash_table_iter_init(&iter, self->outstanding_properties);
     while (g_hash_table_iter_next(&iter, (void**) &prop_name, (void**) &val)) {
         if (val)
             g_variant_builder_add(&changed_props, "{sv}", prop_name, val);
@@ -290,7 +277,7 @@ static void gjs_dbus_implementation_flush(GDBusInterfaceSkeleton* skeleton) {
     const char* object_path =
         g_dbus_interface_skeleton_get_object_path(skeleton);
     GVariant* properties =
-        g_variant_new("(s@a{sv}@as)", self->priv->ifaceinfo->name,
+        g_variant_new("(s@a{sv}@as)", self->ifaceinfo->name,
                       g_variant_builder_end(&changed_props),
                       g_variant_builder_end(&invalidated_props));
     g_variant_ref_sink(properties);
@@ -309,8 +296,8 @@ static void gjs_dbus_implementation_flush(GDBusInterfaceSkeleton* skeleton) {
     g_variant_unref(properties);
     g_list_free(connections);
 
-    g_hash_table_remove_all(self->priv->outstanding_properties);
-    g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+    g_hash_table_remove_all(self->outstanding_properties);
+    g_clear_handle_id(&self->idle_id, g_source_remove);
 }
 
 void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
@@ -404,12 +391,11 @@ static gboolean idle_cb(void* data) {
 void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,
                                                    char* property,
                                                    GVariant* newvalue) {
-    g_hash_table_replace(self->priv->outstanding_properties,
-                         g_strdup(property),
+    g_hash_table_replace(self->outstanding_properties, g_strdup(property),
                          _g_variant_ref_sink0(newvalue));
 
-    if (!self->priv->idle_id)
-        self->priv->idle_id = g_idle_add(idle_cb, self);
+    if (!self->idle_id)
+        self->idle_id = g_idle_add(idle_cb, self);
 }
 
 /**
@@ -432,13 +418,9 @@ void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
     _g_variant_ref_sink0(parameters);
 
     for (const GList* iter = connections; iter; iter = iter->next) {
-        g_dbus_connection_emit_signal(G_DBUS_CONNECTION(iter->data),
-                                      NULL,
-                                      object_path,
-                                      self->priv->ifaceinfo->name,
-                                      signal_name,
-                                      parameters,
-                                      NULL);
+        g_dbus_connection_emit_signal(G_DBUS_CONNECTION(iter->data), NULL,
+                                      object_path, self->ifaceinfo->name,
+                                      signal_name, parameters, NULL);
 
         g_object_unref(iter->data);
     }
@@ -459,8 +441,8 @@ void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
 void gjs_dbus_implementation_unexport(GjsDBusImplementation* self) {
     GDBusInterfaceSkeleton* skeleton = G_DBUS_INTERFACE_SKELETON(self);
 
-    g_hash_table_remove_all(self->priv->outstanding_properties);
-    g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+    g_hash_table_remove_all(self->outstanding_properties);
+    g_clear_handle_id(&self->idle_id, g_source_remove);
 
     g_dbus_interface_skeleton_unexport(skeleton);
 }
@@ -481,8 +463,8 @@ void gjs_dbus_implementation_unexport_from_connection(
     GList* connections = g_dbus_interface_skeleton_get_connections(skeleton);
 
     if (g_list_length(connections) <= 1) {
-        g_hash_table_remove_all(self->priv->outstanding_properties);
-        g_clear_handle_id(&self->priv->idle_id, g_source_remove);
+        g_hash_table_remove_all(self->outstanding_properties);
+        g_clear_handle_id(&self->idle_id, g_source_remove);
     }
 
     g_list_free_full(connections, g_object_unref);
