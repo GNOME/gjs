@@ -22,7 +22,7 @@ G_BEGIN_DECLS
  * A GjsMatchInfo is an opaque struct used to return information about
  * matches.
  */
-typedef struct _GjsMatchInfo GjsMatchInfo;
+typedef struct GjsMatchInfo_ GjsMatchInfo;
 
 /**
  * GJS_TYPE_MATCH_INFO:

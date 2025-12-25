@@ -416,7 +416,7 @@ static void gjs_context_dispose(GObject* object) {
 void GjsContextPrivate::free_profiler() {
     gjs_debug(GJS_DEBUG_CONTEXT, "Stopping profiler");
     if (m_profiler)
-        g_clear_pointer(&m_profiler, _gjs_profiler_free);
+        g_clear_pointer(&m_profiler, gjs_profiler_free);
 }
 
 void GjsContextPrivate::register_notifier(DestroyNotify notify_func,
@@ -675,13 +675,13 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         m_should_profile = true;
 
     if (m_should_profile) {
-        m_profiler = _gjs_profiler_new(public_context);
+        m_profiler = gjs_profiler_new(public_context);
 
         if (!m_profiler) {
             m_should_profile = false;
         } else {
             if (m_should_listen_sigusr2)
-                _gjs_profiler_setup_signals(m_profiler, public_context);
+                gjs_profiler_setup_signals(m_profiler, public_context);
         }
     }
 
@@ -922,7 +922,7 @@ void GjsContextPrivate::schedule_gc_if_needed() {
 void GjsContextPrivate::on_garbage_collection(JSGCStatus status,
                                               JS::GCReason reason) {
     if (m_profiler)
-        _gjs_profiler_set_gc_status(m_profiler, status, reason);
+        gjs_profiler_set_gc_status(m_profiler, status, reason);
 
     switch (status) {
         case JSGC_BEGIN:
@@ -1323,7 +1323,7 @@ bool gjs_context_register_module(GjsContext* self, const char* identifier,
 bool GjsContextPrivate::auto_profile_enter() {
     bool auto_profile = m_should_profile;
     if (auto_profile &&
-        (_gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
+        (gjs_profiler_is_running(m_profiler) || m_should_listen_sigusr2))
         auto_profile = false;
 
     Gjs::AutoMainRealm ar{this};

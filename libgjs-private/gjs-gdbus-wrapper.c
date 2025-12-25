@@ -44,14 +44,14 @@ struct _GjsDBusImplementation {
 G_DEFINE_TYPE(GjsDBusImplementation, gjs_dbus_implementation,
               G_TYPE_DBUS_INTERFACE_SKELETON);
 
-static inline GVariant* _g_variant_ref_sink0(void* value) {
+static inline GVariant* gjs_gvariant_ref_sink0(void* value) {
     if (value)
         g_variant_ref_sink(value);
 
     return value;
 }
 
-static inline void _g_variant_unref0(void* value) {
+static inline void gjs_gvariant_unref0(void* value) {
     if (value)
         g_variant_unref(value);
 }
@@ -176,7 +176,7 @@ static void gjs_dbus_implementation_init(GjsDBusImplementation* self) {
     self->vtable.set_property = gjs_dbus_implementation_property_set;
 
     self->outstanding_properties = g_hash_table_new_full(
-        g_str_hash, g_str_equal, g_free, _g_variant_unref0);
+        g_str_hash, g_str_equal, g_free, gjs_gvariant_unref0);
 }
 
 static void gjs_dbus_implementation_dispose(GObject* object) {
@@ -392,7 +392,7 @@ void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,
                                                    char* property,
                                                    GVariant* newvalue) {
     g_hash_table_replace(self->outstanding_properties, g_strdup(property),
-                         _g_variant_ref_sink0(newvalue));
+                         gjs_gvariant_ref_sink0(newvalue));
 
     if (!self->idle_id)
         self->idle_id = g_idle_add(idle_cb, self);
@@ -415,7 +415,7 @@ void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
     const char* object_path =
         g_dbus_interface_skeleton_get_object_path(skeleton);
 
-    _g_variant_ref_sink0(parameters);
+    gjs_gvariant_ref_sink0(parameters);
 
     for (const GList* iter = connections; iter; iter = iter->next) {
         g_dbus_connection_emit_signal(G_DBUS_CONNECTION(iter->data), NULL,
@@ -424,7 +424,7 @@ void gjs_dbus_implementation_emit_signal(GjsDBusImplementation* self,
 
         g_object_unref(iter->data);
     }
-    _g_variant_unref0(parameters);
+    gjs_gvariant_unref0(parameters);
 
     g_list_free(connections);
 }

@@ -51,24 +51,24 @@ namespace Gjs {
 enum GCCounters { GC_HEAP_BYTES, MALLOC_HEAP_BYTES, N_COUNTERS };
 }  // namespace Gjs
 
-GjsProfiler* _gjs_profiler_new(GjsContext*);
-void _gjs_profiler_free(GjsProfiler*);
+GjsProfiler* gjs_profiler_new(GjsContext*);
+void gjs_profiler_free(GjsProfiler*);
 
 using ProfilerTimePoint =
     std::chrono::time_point<GLib::MonotonicClock, std::chrono::nanoseconds>;
 using ProfilerDuration = std::chrono::duration<uint64_t, std::nano>;
 
-void _gjs_profiler_add_mark(GjsProfiler*, ProfilerTimePoint, ProfilerDuration,
-                            const char* group, const char* name,
-                            const char* message);
+void gjs_profiler_add_mark(GjsProfiler*, ProfilerTimePoint, ProfilerDuration,
+                           const char* group, const char* name,
+                           const char* message);
 
 [[nodiscard]]
-bool _gjs_profiler_sample_gc_memory_info(
+bool gjs_profiler_sample_gc_memory_info(
     GjsProfiler*, int64_t gc_counters[Gjs::GCCounters::N_COUNTERS]);
 
-[[nodiscard]] bool _gjs_profiler_is_running(GjsProfiler*);
+[[nodiscard]] bool gjs_profiler_is_running(GjsProfiler*);
 
-void _gjs_profiler_setup_signals(GjsProfiler*, GjsContext*);
+void gjs_profiler_setup_signals(GjsProfiler*, GjsContext*);
 
-void _gjs_profiler_set_finalize_status(GjsProfiler*, JSFinalizeStatus);
-void _gjs_profiler_set_gc_status(GjsProfiler*, JSGCStatus, JS::GCReason);
+void gjs_profiler_set_finalize_status(GjsProfiler*, JSFinalizeStatus);
+void gjs_profiler_set_gc_status(GjsProfiler*, JSGCStatus, JS::GCReason);

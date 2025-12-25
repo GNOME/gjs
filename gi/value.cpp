@@ -205,10 +205,11 @@ static bool gjs_value_from_array_and_length_values(
     bool is_introspected_signal) {
     JS::RootedValue array_length{cx};
 
-    // NOLINTBEGIN(bugprone-assert-side-effect) - G_VALUE_HOLDS* macros mess up
+    // NOLINTBEGIN(bugprone-assert-side-effect,bugprone-reserved-identifier)
+    // G_VALUE_HOLDS* macros mess up these two checks
     g_assert(G_VALUE_HOLDS_POINTER(array_value));
     g_assert(G_VALUE_HOLDS_INT(array_length_value));
-    // NOLINTEND(bugprone-assert-side-effect)
+    // NOLINTEND(bugprone-assert-side-effect,bugprone-reserved-identifier)
 
     if (!gjs_value_from_g_value_internal(cx, &array_length, array_length_value,
                                          no_copy, is_introspected_signal,
@@ -843,7 +844,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         int64_t value_int64;
 
         if (Gjs::js_value_to_c<int64_t>(cx, value, &value_int64)) {
-            if (!_gjs_flags_value_is_valid(cx, gtype, value_int64))
+            if (!gjs_flags_value_is_valid(cx, gtype, value_int64))
                 return false;
 
             // See arg.c:_gjs_enum_to_int()

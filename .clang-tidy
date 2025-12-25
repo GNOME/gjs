@@ -7,12 +7,14 @@ Checks:
   - bugprone-assert-side-effect
   - bugprone-implicit-widening-of-multiplication-result
   - bugprone-macro-parentheses
+  - bugprone-reserved-identifier
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
+  bugprone-reserved-identifier.AllowedIdentifiers: _GNU_SOURCE
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars

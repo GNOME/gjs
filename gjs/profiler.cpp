@@ -312,7 +312,7 @@ static bool gjs_profiler_define_counters(GjsProfiler* self) {
  *
  * Returns: (transfer full) (nullable): A newly allocated #GjsProfiler
  */
-GjsProfiler* _gjs_profiler_new(GjsContext* gjs_context) {
+GjsProfiler* gjs_profiler_new(GjsContext* gjs_context) {
     g_return_val_if_fail(gjs_context, nullptr);
 
     if (profiling_context == gjs_context) {
@@ -351,7 +351,7 @@ GjsProfiler* _gjs_profiler_new(GjsContext* gjs_context) {
  * If the profiler is running, it will be stopped. This may result in blocking
  * to write the contents of the buffer to the underlying file-descriptor.
  */
-void _gjs_profiler_free(GjsProfiler* self) {
+void gjs_profiler_free(GjsProfiler* self) {
     if (!self)
         return;
 
@@ -375,7 +375,7 @@ void _gjs_profiler_free(GjsProfiler* self) {
 }
 
 /**
- * _gjs_profiler_is_running:
+ * gjs_profiler_is_running:
  * @self: A #GjsProfiler
  *
  * Checks if the profiler is currently running. This means that the JS
@@ -383,7 +383,7 @@ void _gjs_profiler_free(GjsProfiler* self) {
  *
  * Returns: true if the profiler is active.
  */
-bool _gjs_profiler_is_running(GjsProfiler* self) {
+bool gjs_profiler_is_running(GjsProfiler* self) {
     g_return_val_if_fail(self, false);
 
     return self->running;
@@ -712,7 +712,7 @@ static gboolean gjs_profiler_sigusr2(void* data) {
     GjsProfiler* current_profiler = gjs_context_get_profiler(gjs_context);
 
     if (current_profiler) {
-        if (_gjs_profiler_is_running(current_profiler))
+        if (gjs_profiler_is_running(current_profiler))
             gjs_profiler_stop(current_profiler);
         else
             gjs_profiler_start(current_profiler);
@@ -724,7 +724,7 @@ static gboolean gjs_profiler_sigusr2(void* data) {
 #endif  // ENABLE_PROFILER
 
 /**
- * _gjs_profiler_setup_signals:
+ * gjs_profiler_setup_signals:
  * @gjs_context: a #GjsContext with a profiler attached
  *
  * If you want to simply allow profiling of your process with minimal fuss,
@@ -736,7 +736,7 @@ static gboolean gjs_profiler_sigusr2(void* data) {
  * If this is not sufficient, use gjs_profiler_chain_signal() from your own
  * signal handler to pass the signal to a GjsProfiler.
  */
-void _gjs_profiler_setup_signals(GjsProfiler* self, GjsContext* gjs_context) {
+void gjs_profiler_setup_signals(GjsProfiler* self, GjsContext* gjs_context) {
     g_return_if_fail(gjs_context == profiling_context);
 
 #ifdef ENABLE_PROFILER
@@ -833,9 +833,9 @@ void gjs_profiler_set_filename(GjsProfiler* self, const char* filename) {
     self->filename = g_strdup(filename);
 }
 
-void _gjs_profiler_add_mark(GjsProfiler* self, ProfilerTimePoint time,
-                            ProfilerDuration duration, const char* group,
-                            const char* name, const char* message) {
+void gjs_profiler_add_mark(GjsProfiler* self, ProfilerTimePoint time,
+                           ProfilerDuration duration, const char* group,
+                           const char* name, const char* message) {
     g_return_if_fail(self);
     g_return_if_fail(group);
     g_return_if_fail(name);
@@ -854,7 +854,7 @@ void _gjs_profiler_add_mark(GjsProfiler* self, ProfilerTimePoint time,
 #endif
 }
 
-bool _gjs_profiler_sample_gc_memory_info(
+bool gjs_profiler_sample_gc_memory_info(
     GjsProfiler* self, int64_t gc_counters[Gjs::GCCounters::N_COUNTERS]) {
     g_return_val_if_fail(self, false);
 
@@ -897,8 +897,8 @@ void gjs_profiler_set_fd(GjsProfiler* self, int fd) {
 #endif
 }
 
-void _gjs_profiler_set_finalize_status(GjsProfiler* self,
-                                       JSFinalizeStatus status) {
+void gjs_profiler_set_finalize_status(GjsProfiler* self,
+                                      JSFinalizeStatus status) {
 #ifdef ENABLE_PROFILER
     // Implementation note for mozjs-140:
     //
@@ -934,17 +934,17 @@ void _gjs_profiler_set_finalize_status(GjsProfiler* self,
             break;
         case JSFINALIZE_GROUP_END:
             if (self->group_sweep_begin_time) {
-                _gjs_profiler_add_mark(self, *self->group_sweep_begin_time,
-                                       now - *self->group_sweep_begin_time,
-                                       "GJS", "Group sweep", nullptr);
+                gjs_profiler_add_mark(self, *self->group_sweep_begin_time,
+                                      now - *self->group_sweep_begin_time,
+                                      "GJS", "Group sweep", nullptr);
             }
             self->group_sweep_begin_time = Nothing{};
             break;
         case JSFINALIZE_COLLECTION_END:
             if (self->sweep_begin_time) {
-                _gjs_profiler_add_mark(self, *self->sweep_begin_time,
-                                       now - *self->sweep_begin_time, "GJS",
-                                       "Sweep", nullptr);
+                gjs_profiler_add_mark(self, *self->sweep_begin_time,
+                                      now - *self->sweep_begin_time, "GJS",
+                                      "Sweep", nullptr);
             }
             self->sweep_begin_time = Nothing{};
             break;
@@ -957,8 +957,8 @@ void _gjs_profiler_set_finalize_status(GjsProfiler* self,
 #endif
 }
 
-void _gjs_profiler_set_gc_status(GjsProfiler* self, JSGCStatus status,
-                                 JS::GCReason reason) {
+void gjs_profiler_set_gc_status(GjsProfiler* self, JSGCStatus status,
+                                JS::GCReason reason) {
 #ifdef ENABLE_PROFILER
     ProfilerTimePoint now = profiler_timestamp();
 
@@ -969,9 +969,9 @@ void _gjs_profiler_set_gc_status(GjsProfiler* self, JSGCStatus status,
             break;
         case JSGC_END:
             if (self->gc_begin_time) {
-                _gjs_profiler_add_mark(self, *self->gc_begin_time,
-                                       now - *self->gc_begin_time, "GJS",
-                                       "Garbage collection", self->gc_reason);
+                gjs_profiler_add_mark(self, *self->gc_begin_time,
+                                      now - *self->gc_begin_time, "GJS",
+                                      "Garbage collection", self->gc_reason);
             }
             self->gc_begin_time = Nothing{};
             self->gc_reason = nullptr;

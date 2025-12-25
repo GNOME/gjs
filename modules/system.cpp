@@ -226,7 +226,7 @@ static bool gjs_dump_memory_info(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     auto* gjs = GjsContextPrivate::from_cx(cx);
     if (gjs->profiler() &&
-        !_gjs_profiler_sample_gc_memory_info(gjs->profiler(), gc_counters)) {
+        !gjs_profiler_sample_gc_memory_info(gjs->profiler(), gc_counters)) {
         gjs_throw(cx, "Could not write GC counters to profiler");
         return false;
     }

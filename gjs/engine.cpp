@@ -48,7 +48,7 @@ static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     if (gjs->profiler())
-        _gjs_profiler_set_finalize_status(gjs->profiler(), status);
+        gjs_profiler_set_finalize_status(gjs->profiler(), status);
 }
 
 static void on_promise_unhandled_rejection(

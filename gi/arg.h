@@ -227,7 +227,7 @@ bool gjs_gi_argument_release_in_arg(JSContext*, GITransfer, const GI::TypeInfo,
                                     GIArgument*);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool _gjs_flags_value_is_valid(JSContext*, GType, int64_t value);
+bool gjs_flags_value_is_valid(JSContext*, GType, int64_t value);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_strv(JSContext*, JS::MutableHandleValue, const char** strv);
