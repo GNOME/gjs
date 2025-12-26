@@ -65,7 +65,7 @@ void add_tests_for_toggle_queue();
 
 template <typename T1, typename T2>
 constexpr bool comparable_types() {
-    if constexpr (std::is_same<T1, T2>()) {
+    if constexpr (std::is_same_v<T1, T2>) {
         return true;
     } else if constexpr (std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2>) {
         return std::is_signed_v<T1> == std::is_signed_v<T2>;

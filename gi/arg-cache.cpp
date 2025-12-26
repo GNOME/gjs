@@ -131,8 +131,8 @@ static bool report_invalid_null(JSContext* cx, const char* arg_name) {
 GjsArgumentFlags operator|(GjsArgumentFlags const& v1,
                            GjsArgumentFlags const& v2) {
     return static_cast<GjsArgumentFlags>(
-        std::underlying_type<GjsArgumentFlags>::type(v1) |
-        std::underlying_type<GjsArgumentFlags>::type(v2));
+        std::underlying_type_t<GjsArgumentFlags>(v1) |
+        std::underlying_type_t<GjsArgumentFlags>(v2));
 }
 
 namespace Gjs {
