@@ -9,6 +9,7 @@
 #    include <windows.h>
 #endif
 
+#include <chrono>  // for duration, operator""us
 #include <sstream>
 #include <string>
 #include <utility>  // for move
@@ -604,15 +605,17 @@ bool gjs_log_exception_uncaught(JSContext* cx) {
 
 void gjs_gc_if_needed(JSContext* cx) {
 #ifdef __linux__
+    using std::chrono_literals::operator""us;
+
     // We initiate a GC if RSS has grown by this much. It is initialized to 0,
     // so currently we always do a full GC early.
     static uint64_t linux_rss_trigger;
-    static int64_t last_gc_check_time;
+    static GLib::MonotonicTime last_gc_check_time;
 
     // We rate limit GCs to at most one per 5 frames. One frame is 16666
     // microseconds (1000000/60)
-    int64_t now = g_get_monotonic_time();
-    if (now - last_gc_check_time < 5 * 16666)
+    GLib::MonotonicTime now{GLib::MonotonicClock::now()};
+    if (now - last_gc_check_time < 5 * 16666us)
         return;
 
     last_gc_check_time = now;
