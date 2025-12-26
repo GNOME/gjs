@@ -2228,18 +2228,11 @@ void ObjectInstance::toggle_down() {
 
 void ObjectInstance::toggle_up() {
     if (G_UNLIKELY(!m_ptr || m_gobj_disposed || m_gobj_finalized)) {
-        if (m_ptr) {
-            gjs_debug_lifecycle(
-                GJS_DEBUG_GOBJECT,
-                "Avoid to toggle up a wrapper for a %s object: %p (%s)",
-                m_gobj_finalized ? "finalized" : "disposed", m_ptr.get(),
-                g_type_name(gtype()));
-        } else {
-            gjs_debug_lifecycle(
-                GJS_DEBUG_GOBJECT,
-                "Avoid to toggle up a wrapper for a released %s object (%p)",
-                g_type_name(gtype()), this);
-        }
+        gjs_debug_lifecycle(
+            GJS_DEBUG_GOBJECT,
+            "Avoid toggling up a wrapper for a %s object: %p (%s)",
+            m_ptr ? (m_gobj_finalized ? "finalized" : "disposed") : "released",
+            m_ptr ? m_ptr.as<void>() : this, g_type_name(gtype()));
         return;
     }
 
