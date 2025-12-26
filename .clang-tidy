@@ -9,6 +9,7 @@ Checks:
   - bugprone-macro-parentheses
   - bugprone-reserved-identifier
   - bugprone-suspicious-string-compare
+  - bugprone-unhandled-self-assignment
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix

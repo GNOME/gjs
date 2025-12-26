@@ -298,6 +298,10 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
 
     // Copying is cheap, UnownedInfo just consists of a pointer.
     constexpr UnownedInfo(const UnownedInfo& other) : m_info(other.m_info) {}
+    // False positive when the class is a template class. In the case of self-
+    // assignment m_info and other.m_info are already the same pointer.
+    // See https://github.com/llvm/llvm-project/issues/53313
+    // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
     UnownedInfo& operator=(const UnownedInfo& other) {
         m_info = other.m_info;
         return *this;
@@ -376,6 +380,9 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
         other.m_info = nullptr;
     }
     OwnedInfo& operator=(const OwnedInfo& other) {
+        if (this == &other)
+            return *this;
+
         m_info = other.m_info;
         gi_base_info_ref(m_info);
         return *this;
