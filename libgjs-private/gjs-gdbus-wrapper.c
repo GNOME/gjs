@@ -70,7 +70,8 @@ static bool gjs_dbus_implementation_check_interface(GjsDBusImplementation* self,
     const char* exported_object_path =
         g_dbus_interface_skeleton_get_object_path(
             G_DBUS_INTERFACE_SKELETON(self));
-    if (!exported_object_path || strcmp(object_path, exported_object_path)) {
+    if (!exported_object_path ||
+        strcmp(object_path, exported_object_path) != 0) {
         g_set_error(
             error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
             "Wrong object path %s for %s", object_path,

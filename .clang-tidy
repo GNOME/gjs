@@ -8,6 +8,7 @@ Checks:
   - bugprone-implicit-widening-of-multiplication-result
   - bugprone-macro-parentheses
   - bugprone-reserved-identifier
+  - bugprone-suspicious-string-compare
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
@@ -15,6 +16,9 @@ Checks:
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-reserved-identifier.AllowedIdentifiers: _GNU_SOURCE
+  bugprone-suspicious-string-compare.WarnOnLogicalNotComparison: true
+  bugprone-suspicious-string-compare.StringCompareLikeFunctions: "g_strcmp0,\
+    g_ascii_strcasecmp,g_ascii_strncasecmp"
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
