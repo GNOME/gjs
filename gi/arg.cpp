@@ -143,9 +143,8 @@ static bool type_needs_release(const GI::TypeInfo& type_info, GITypeTag tag) {
                     interface_info.as<GI::InfoTag::REGISTERED_TYPE>()) {
                 GType gtype = reg_info->gtype();
 
-                if (g_type_is_a(gtype, G_TYPE_CLOSURE))
-                    return true;
-                else if (g_type_is_a(gtype, G_TYPE_VALUE))
+                if (g_type_is_a(gtype, G_TYPE_CLOSURE) ||
+                    g_type_is_a(gtype, G_TYPE_VALUE))
                     return true;
             }
             return false;

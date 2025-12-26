@@ -78,32 +78,26 @@ struct AutoGValue : GValue {
 
 template <typename TAG>
 inline constexpr Tag::RealT<TAG> gvalue_get(const GValue* gvalue) {
-    if constexpr (std::is_same_v<TAG, Tag::GBoolean>)
+    if constexpr (std::is_same_v<TAG, Tag::GBoolean> ||
+                  std::is_same_v<TAG, bool>)
         return gvalue->data[0].v_int != FALSE;
-    else if constexpr (std::is_same_v<TAG, bool>)
-        return gvalue->data[0].v_int != FALSE;
-    else if constexpr (std::is_same_v<TAG, char>)
+    else if constexpr (std::is_same_v<TAG, char> ||
+                       std::is_same_v<TAG, signed char> ||
+                       std::is_same_v<TAG, int>)
         return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<TAG, signed char>)
-        return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<TAG, unsigned char>)
+    else if constexpr (std::is_same_v<TAG, unsigned char> ||
+                       std::is_same_v<TAG, unsigned>)
         return gvalue->data[0].v_uint;
-    else if constexpr (std::is_same_v<TAG, int>)
-        return gvalue->data[0].v_int;
-    else if constexpr (std::is_same_v<TAG, unsigned>)
-        return gvalue->data[0].v_uint;
-    else if constexpr (std::is_same_v<TAG, Tag::Long>)
+    else if constexpr (std::is_same_v<TAG, Tag::Long> ||
+                       std::is_same_v<TAG, Tag::Enum>)
         return gvalue->data[0].v_long;
-    else if constexpr (std::is_same_v<TAG, Tag::UnsignedLong>)
+    else if constexpr (std::is_same_v<TAG, Tag::UnsignedLong> ||
+                       std::is_same_v<TAG, Tag::UnsignedEnum>)
         return gvalue->data[0].v_ulong;
     else if constexpr (std::is_same_v<TAG, int64_t>)
         return gvalue->data[0].v_int64;
     else if constexpr (std::is_same_v<TAG, uint64_t>)
         return gvalue->data[0].v_uint64;
-    else if constexpr (std::is_same_v<TAG, Tag::Enum>)
-        return gvalue->data[0].v_long;
-    else if constexpr (std::is_same_v<TAG, Tag::UnsignedEnum>)
-        return gvalue->data[0].v_ulong;
     else if constexpr (std::is_same_v<TAG, float>)
         return gvalue->data[0].v_float;
     else if constexpr (std::is_same_v<TAG, double>)
@@ -123,28 +117,23 @@ void gvalue_set(GValue* gvalue, Tag::RealT<TAG> value) {
         gvalue->data[0].v_int = value != FALSE;
     else if constexpr (std::is_same_v<TAG, bool>)
         gvalue->data[0].v_int = value != false;
-    else if constexpr (std::is_same_v<TAG, char>)
+    else if constexpr (std::is_same_v<TAG, char> ||
+                       std::is_same_v<TAG, signed char> ||
+                       std::is_same_v<TAG, int>)
         gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<TAG, signed char>)
-        gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<TAG, unsigned char>)
+    else if constexpr (std::is_same_v<TAG, unsigned char> ||
+                       std::is_same_v<TAG, unsigned>)
         gvalue->data[0].v_uint = value;
-    else if constexpr (std::is_same_v<TAG, int>)
-        gvalue->data[0].v_int = value;
-    else if constexpr (std::is_same_v<TAG, unsigned>)
-        gvalue->data[0].v_uint = value;
-    else if constexpr (std::is_same_v<TAG, Tag::Long>)
+    else if constexpr (std::is_same_v<TAG, Tag::Long> ||
+                       std::is_same_v<TAG, Tag::Enum>)
         gvalue->data[0].v_long = value;
-    else if constexpr (std::is_same_v<TAG, Tag::UnsignedLong>)
+    else if constexpr (std::is_same_v<TAG, Tag::UnsignedLong> ||
+                       std::is_same_v<TAG, Tag::UnsignedEnum>)
         gvalue->data[0].v_ulong = value;
     else if constexpr (std::is_same_v<TAG, int64_t>)
         gvalue->data[0].v_int64 = value;
     else if constexpr (std::is_same_v<TAG, uint64_t>)
         gvalue->data[0].v_uint64 = value;
-    else if constexpr (std::is_same_v<TAG, Tag::Enum>)
-        gvalue->data[0].v_long = value;
-    else if constexpr (std::is_same_v<TAG, Tag::UnsignedEnum>)
-        gvalue->data[0].v_ulong = value;
     else if constexpr (std::is_same_v<TAG, float>)
         gvalue->data[0].v_float = value;
     else if constexpr (std::is_same_v<TAG, double>)
