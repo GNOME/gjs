@@ -743,7 +743,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
                           JS::InformalValueTypeName(value));
                 return false;
             } else if (gtype == G_TYPE_PTR_ARRAY) {
-                gjs_throw(cx, "Converting %s to GArray is not supported",
+                gjs_throw(cx, "Converting %s to GPtrArray is not supported",
                           JS::InformalValueTypeName(value));
                 return false;
             } else if (gtype == G_TYPE_HASH_TABLE) {
