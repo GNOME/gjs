@@ -3858,7 +3858,8 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
     Maybe<GI::AutoFieldInfo> field_info = result->second;
     if (field_info) {
         int offset = field_info->offset();
-        void* method_ptr = G_STRUCT_MEMBER_P(implementor_vtable, offset);
+        void** vfunc_slot_ptr =
+            static_cast<void**>(G_STRUCT_MEMBER_P(implementor_vtable, offset));
 
         if (!JS::IsCallable(callable)) {
             gjs_throw(cx, "Tried to deal with a vfunc that wasn't callable");
@@ -3882,7 +3883,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             trampoline, nullptr,
             [](void*, GClosure* closure) { g_closure_unref(closure); });
 
-        *reinterpret_cast<void**>(method_ptr) = trampoline->closure();
+        *vfunc_slot_ptr = trampoline->get_func_ptr();
     }
 
     return true;

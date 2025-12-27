@@ -1854,10 +1854,10 @@ GJS_JSAPI_RETURN_CONVENTION
 bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
                     JS::HandleValue value) {
     GjsCallbackTrampoline* trampoline;
-    void* closure;
+    void* callback;
 
     if (value.isNull() && m_nullable) {
-        closure = nullptr;
+        callback = nullptr;
         trampoline = nullptr;
         m_ffi_closure = nullptr;
     } else {
@@ -1883,7 +1883,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             if (!priv->associate_closure(cx, trampoline))
                 return false;
         }
-        closure = trampoline->closure();
+        callback = trampoline->get_func_ptr();
         m_ffi_closure = trampoline->get_ffi_closure();
     }
 
@@ -1915,7 +1915,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
     if (trampoline && keep_forever) {
         trampoline->mark_forever();
     }
-    gjs_arg_set(arg, closure);
+    gjs_arg_set(arg, callback);
 
     return true;
 }
