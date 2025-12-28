@@ -164,6 +164,7 @@ inline void gvalue_set(GValue* gvalue, char* value) {
 
 template <>
 inline void gvalue_set(GValue* gvalue, GObject* value) {
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
     g_set_object(&gvalue->data[0].v_pointer, value);
 }
 
@@ -179,6 +180,7 @@ void gvalue_set(GValue* gvalue, std::nullptr_t) {
     if constexpr (std::is_same_v<T, char*>) {
         g_clear_pointer(&gvalue->data[0].v_pointer, g_free);
     } else if constexpr (std::is_same_v<T, GObject*>) {
+        // NOLINTNEXTLINE(bugprone-sizeof-expression)
         g_set_object(&gvalue->data[0].v_pointer, nullptr);
     } else if constexpr (std::is_same_v<T, GVariant*>) {
         g_clear_pointer(reinterpret_cast<T*>(&gvalue->data[0].v_pointer),
