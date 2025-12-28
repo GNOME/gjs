@@ -11,6 +11,7 @@ Checks:
   - bugprone-reserved-identifier
   - bugprone-sizeof-expression
   - bugprone-suspicious-string-compare
+  - bugprone-switch-missing-default-case
   - bugprone-unhandled-self-assignment
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling

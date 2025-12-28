@@ -1020,6 +1020,8 @@ static bool gjs_value_from_g_value_internal(
         case G_TYPE_STRING:
             return Gjs::c_value_to_js(cx, Gjs::gvalue_get<char*>(gvalue),
                                       value_p);
+        default: {
+        }
     }
 
     if (g_type_is_a(gtype, G_TYPE_OBJECT) ||
