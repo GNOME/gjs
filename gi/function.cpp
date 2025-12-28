@@ -1371,7 +1371,7 @@ JSObject* Function::create(JSContext* cx, GType gtype,
 
     Function::init_private(function, priv);
 
-    debug_lifecycle(function, priv, "Constructor");
+    debug_lifecycle(priv, function, "Constructor");
 
     if (!priv->init(cx, gtype))
         return nullptr;

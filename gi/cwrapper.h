@@ -278,19 +278,19 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
 
  protected:
     static void debug_lifecycle(
-        const void* wrapped_ptr GJS_USED_VERBOSE_LIFECYCLE,
-        const void* obj GJS_USED_VERBOSE_LIFECYCLE,
+        const Wrapped* wrapped_ptr GJS_USED_VERBOSE_LIFECYCLE,
+        const JSObject* obj GJS_USED_VERBOSE_LIFECYCLE,
         const char* message GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(Base::DEBUG_TOPIC, "[%p: JS wrapper %p] %s",
                             wrapped_ptr, obj, message);
     }
     void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
                       const char* id GJS_USED_VERBOSE_PROPS,
-                      const void* obj GJS_USED_VERBOSE_PROPS) const {
+                      const JSObject* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(Base::DEBUG_TOPIC, "[%p: JS wrapper %p] %s prop %s",
                          this, obj, message, id);
     }
-    void debug_jsprop(const char* message, jsid id, const void* obj) const {
+    void debug_jsprop(const char* message, jsid id, const JSObject* obj) const {
         if constexpr (GJS_VERBOSE_ENABLE_PROPS)
             debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
     }
