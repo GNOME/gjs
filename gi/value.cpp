@@ -688,7 +688,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         if (!gjs_array_to_strv(cx, value, length, &result))
             return false;
 
-        g_value_take_boxed(gvalue, static_cast<char**>(result));
+        g_value_take_boxed(gvalue, result);
     } else if (g_type_is_a(gtype, G_TYPE_BOXED)) {
         if (value.isNull())
             return true;
