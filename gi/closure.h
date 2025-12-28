@@ -58,8 +58,7 @@ class Closure : public GClosure {
 
     [[nodiscard]]
     constexpr static Closure* for_gclosure(GClosure* gclosure) {
-        // We need to do this in order to ensure this is a constant expression
-        return static_cast<Closure*>(static_cast<void*>(gclosure));
+        return static_cast<Closure*>(gclosure);
     }
 
     [[nodiscard]]
