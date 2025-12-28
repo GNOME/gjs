@@ -13,6 +13,7 @@ Checks:
   - bugprone-suspicious-string-compare
   - bugprone-switch-missing-default-case
   - bugprone-unhandled-self-assignment
+  - bugprone-use-after-move
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
@@ -23,6 +24,7 @@ CheckOptions:
   bugprone-suspicious-string-compare.WarnOnLogicalNotComparison: true
   bugprone-suspicious-string-compare.StringCompareLikeFunctions: "g_strcmp0,\
     g_ascii_strcasecmp,g_ascii_strncasecmp"
+  bugprone-use-after-move.InvalidationFunctions: g_steal_pointer
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
