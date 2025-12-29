@@ -13,6 +13,7 @@ Checks:
   - bugprone-suspicious-string-compare
   - bugprone-switch-missing-default-case
   - bugprone-unhandled-self-assignment
+  - bugprone-unused-local-non-trivial-variable
   - bugprone-use-after-move
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
@@ -24,6 +25,11 @@ CheckOptions:
   bugprone-suspicious-string-compare.WarnOnLogicalNotComparison: true
   bugprone-suspicious-string-compare.StringCompareLikeFunctions: "g_strcmp0,\
     g_ascii_strcasecmp,g_ascii_strncasecmp"
+  bugprone-unused-local-non-trivial-variable.IncludeTypes: .*
+  bugprone-unused-local-non-trivial-variable.ExcludeTypes: "AutoProfilerLabel;\
+    AutoReportException;AutoResetExit;Gjs::AutoInternalRealm;\
+    Gjs::AutoMainRealm;JSAutoRealm;JS::AutoSaveExceptionState;\
+    mozilla::ScopeExit;ToggleQueue::Locked"
   bugprone-use-after-move.InvalidationFunctions: g_steal_pointer
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?

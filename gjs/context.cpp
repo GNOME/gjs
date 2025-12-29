@@ -1294,7 +1294,7 @@ bool gjs_context_eval(GjsContext* self, const char* script, ssize_t script_len,
     size_t real_len = script_len < 0 ? strlen(script) : script_len;
 
     Gjs::AutoUnref<GjsContext> self_ref{self, Gjs::TakeOwnership{}};
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self_ref);
 
     gjs->register_non_module_sourcemap(script, filename);
     return result_to_c(gjs->eval(script, real_len, filename, exit_status_p),
@@ -1307,7 +1307,7 @@ bool gjs_context_eval_module(GjsContext* self, const char* identifier,
 
     Gjs::AutoUnref<GjsContext> self_ref{self, Gjs::TakeOwnership{}};
 
-    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self_ref);
     return result_to_c(gjs->eval_module(identifier, exit_code), error);
 }
 

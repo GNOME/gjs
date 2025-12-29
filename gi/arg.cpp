@@ -2947,7 +2947,6 @@ bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue value_p,
     value_p.setObject(*obj);
 
     JS::RootedValue keyjs{cx}, valjs{cx};
-    JS::RootedString keystr{cx};
 
     g_hash_table_iter_init(&iter, hash);
     void* key_pointer;

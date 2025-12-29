@@ -200,6 +200,7 @@ static void test_gjs_autopointer_cast_free_func_type() {
     using TypedAutoPointer =
         Gjs::AutoPointer<GjsTestObject, GObject, gobject_free, gobject_copy>;
     TypedAutoPointer autoptr{gjs_test_object_new()};
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     TypedAutoPointer copy{autoptr.copy()};
 }
 
