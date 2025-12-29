@@ -4,6 +4,7 @@
 Checks:
   - -*
   - modernize-concat-nested-namespaces
+  - modernize-use-nodiscard
   - modernize-use-using
 CheckOptions:
   modernize-use-using.IgnoreExternC: true

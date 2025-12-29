@@ -72,11 +72,14 @@ class SelectResultImpl<Ok, Gjs::AutoError> {
             m_value = other.m_value.release();
             return *this;
         }
-        constexpr bool isOk() const { return !m_value; }
-        constexpr const Ok inspect() const { return {}; }
-        constexpr Ok unwrap() { return {}; }
-        constexpr const GError* inspectErr() const { return m_value.get(); }
-        Gjs::AutoError unwrapErr() { return m_value.release(); }
+        [[nodiscard]] constexpr bool isOk() const { return !m_value; }
+        [[nodiscard]] constexpr const Ok inspect() const { return {}; }
+        [[nodiscard]] constexpr Ok unwrap() { return {}; }
+        [[nodiscard]]
+        constexpr const GError* inspectErr() const {
+            return m_value.get();
+        }
+        [[nodiscard]] Gjs::AutoError unwrapErr() { return m_value.release(); }
     };
 };
 
