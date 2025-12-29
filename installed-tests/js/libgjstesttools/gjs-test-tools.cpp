@@ -126,16 +126,16 @@ void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
     // cppcheck-suppress memleak
 }
 
-typedef enum {
+enum RefType {
     REF = 1 << 0,
     UNREF = 1 << 1,
-} RefType;
+};
 
-typedef struct {
+struct RefThreadData {
     GObject* object;
     RefType ref_type;
     int delay;
-} RefThreadData;
+};
 
 static RefThreadData* ref_thread_data_new(GObject* object, int interval,
                                           RefType ref_type) {

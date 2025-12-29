@@ -18,7 +18,7 @@
 #include "util/log.h"
 
 void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
-                                       GjsDefineModuleFunc func) {
+                                       DefineModuleFunc func) {
     bool inserted;
     std::tie(std::ignore, inserted) = m_modules.insert({module_id, func});
     if (!inserted) {

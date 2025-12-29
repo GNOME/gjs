@@ -3,6 +3,9 @@
 
 Checks:
   - -*
+  - modernize-use-using
+CheckOptions:
+  modernize-use-using.IgnoreExternC: true
 ExcludeHeaderFilterRegex: /include|/subprojects
 HeaderFilterRegex: .*
 UseColor: true

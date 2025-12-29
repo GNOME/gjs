@@ -198,7 +198,7 @@ class ObjectBase
 
 // See https://bugzilla.mozilla.org/show_bug.cgi?id=1614220
 struct IdHasher {
-    typedef jsid Lookup;
+    using Lookup = jsid;
     static mozilla::HashNumber hash(jsid id) {
         if (MOZ_LIKELY(id.isString()))
             return js::DefaultHasher<JSString*>::hash(id.toString());
