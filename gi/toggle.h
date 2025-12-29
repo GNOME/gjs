@@ -18,10 +18,8 @@
 #include <glib.h>  // for gboolean
 
 class ObjectInstance;
-namespace Gjs {
-namespace Test {
+namespace Gjs::Test {
 struct ToggleQueue;
-}
 }
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects

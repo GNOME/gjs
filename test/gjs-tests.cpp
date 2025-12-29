@@ -51,19 +51,16 @@ namespace mozilla {
 union Utf8Unit;
 }
 
-namespace Gjs {
-namespace Tag {
+namespace Gjs::Tag {
 struct Enum;
 struct GBoolean;
 struct GType;
 struct UnsignedEnum;
-}  // namespace Tag
-}  // namespace Gjs
+}  // namespace Gjs::Tag
 
 #define VALID_UTF8_STRING "\303\211\303\226 foobar \343\203\237"
 
-namespace Gjs {
-namespace Test {
+namespace Gjs::Test {
 static unsigned cpp_random_seed = 0;
 
 using Gjs::Test::assert_equal;
@@ -1216,8 +1213,7 @@ static void gjstest_test_func_gjs_context_eval_file_source_map() {
     g_assert_cmpuint(exit_status, ==, 1);
     g_test_assert_expected_messages();
 }
-}  // namespace Test
-}  // namespace Gjs
+}  // namespace Gjs::Test
 
 int main(int argc, char** argv) {
     using namespace Gjs::Test;  // NOLINT(build/namespaces)

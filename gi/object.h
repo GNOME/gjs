@@ -43,10 +43,8 @@ class JSTracer;
 namespace JS {
 class CallArgs;
 }
-namespace Gjs {
-namespace Test {
+namespace Gjs::Test {
 struct ObjectInstance;
-}
 }
 class ObjectInstance;
 class ObjectPrototype;

@@ -91,8 +91,7 @@ static const std::chrono::milliseconds SAMPLING_PERIOD = 1ms;
 
 // Custom packing for Maybe<ProfilerTimePoint>. We assume that 0 is not a value
 // that comes out of the monotonic clock and so can be used to indicate Nothing
-namespace mozilla {
-namespace detail {
+namespace mozilla::detail {
 template <>
 struct MaybeStorage<ProfilerTimePoint> {
  protected:
@@ -113,8 +112,7 @@ struct MaybeStorage<ProfilerTimePoint> {
 static_assert(sizeof(Maybe<ProfilerTimePoint>) == sizeof(ProfilerTimePoint),
               "Maybe<ProfilerTimePoint> should pack");
 
-}  // namespace detail
-}  // namespace mozilla
+}  // namespace mozilla::detail
 
 G_DEFINE_POINTER_TYPE(GjsProfiler, gjs_profiler)
 

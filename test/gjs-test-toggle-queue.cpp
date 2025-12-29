@@ -28,8 +28,7 @@
 #include "installed-tests/js/libgjstesttools/gjs-test-tools.h"
 #include "test/gjs-test-utils.h"
 
-namespace Gjs {
-namespace Test {
+namespace Gjs::Test {
 
 static GMutex s_gc_lock;
 static GCond s_gc_finished;
@@ -684,5 +683,4 @@ void add_tests_for_toggle_queue() {
 #undef ADD_TOGGLE_QUEUE_TEST
 }
 
-}  // namespace Test
-}  // namespace Gjs
+}  // namespace Gjs::Test
