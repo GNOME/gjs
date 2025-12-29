@@ -1156,7 +1156,7 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
         gjs->stop_draining_job_queue();
     }
 
-    ~SavedQueue() {
+    ~SavedQueue() override {
         gjs_debug(GJS_DEBUG_CONTEXT, "Unpausing job queue");
         g_assert(m_gjs->m_job_queue.empty() &&
                  "Current queue should be empty when restoring saved queue");
