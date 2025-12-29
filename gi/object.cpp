@@ -3584,7 +3584,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
     if (!prototype)
         return nullptr;
 
-    ObjectInstance* priv = new ObjectInstance(prototype, obj);
+    auto* priv = new ObjectInstance(prototype, obj);
 
     ObjectBase::init_private(obj, priv);
 

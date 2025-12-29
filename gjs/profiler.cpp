@@ -420,9 +420,9 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
      * overflow the stack; however, dynamic allocation is not an option here
      * since we are in a signal handler.
      */
-    SysprofCaptureAddress* addrs =
+    auto* addrs = static_cast<SysprofCaptureAddress*>(
         // cppcheck-suppress allocaCalled
-        static_cast<SysprofCaptureAddress*>(alloca(sizeof *addrs * depth));
+        alloca(sizeof(SysprofCaptureAddress) * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {
         js::ProfilingStackFrame& entry = self->stack.frames[ix];

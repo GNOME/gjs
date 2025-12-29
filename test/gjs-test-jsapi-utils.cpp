@@ -141,7 +141,7 @@ static void test_gjs_autopointer_dtor_cpp_array() {
         // using GjsAutoCppPointer1 = Gjs::AutoPointer<TestStruct[],
         // TestStruct[], Gjs::AutoPointerDeleter<TestStruct[]>>;
 
-        TestStruct* ptrs =
+        auto* ptrs =
             new TestStruct[3]{dtor_callback, dtor_callback, dtor_callback};
         Gjs::AutoCppPointer<TestStruct[]> autoptr{ptrs};
         g_assert_cmpint(autoptr[0].val, ==, 5);

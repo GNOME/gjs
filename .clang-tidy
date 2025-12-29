@@ -5,10 +5,12 @@ Checks:
   - -*
   - modernize-concat-nested-namespaces
   - modernize-type-traits
+  - modernize-use-auto
   - modernize-use-nodiscard
   - modernize-use-using
 CheckOptions:
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
+  modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-using.IgnoreExternC: true
 ExcludeHeaderFilterRegex: /include|/subprojects
 HeaderFilterRegex: .*
