@@ -6,8 +6,11 @@ Checks:
   - bugprone-argument-comment
   - bugprone-assert-side-effect
   - bugprone-branch-clone
+  - bugprone-dangling-handle
+  - bugprone-derived-method-shadowing-base-method
   - bugprone-implicit-widening-of-multiplication-result
   - bugprone-macro-parentheses
+  - bugprone-macro-repeated-side-effects
   - bugprone-reserved-identifier
   - bugprone-sizeof-expression
   - bugprone-suspicious-string-compare
@@ -15,12 +18,35 @@ Checks:
   - bugprone-unhandled-self-assignment
   - bugprone-unused-local-non-trivial-variable
   - bugprone-use-after-move
+
+  # bugprone checks that we will definitely not deal with:
+  - -bugprone-casting-through-void
+    # Triggers on every GObject cast macro. Unusable unless GObject fixes this.
+  - -bugprone-easily-swappable-parameters  # Too many false positives.
+  - -bugprone-parent-virtual-call
+    # We extensively use chain-ups in arg-cache.cpp in a way that triggers false
+    # positives for this check.
+  - -bugprone-signed-char-misuse
+    # False positive on g_assert_cmp(u)int, and also too many false positives in
+    # marshalling code.
+
+  # To do list for bugprone checks:
+  # - bugprone-assignment-in-if-condition - False positives on every use of
+  #   g_str_has_prefix/suffix. Consider enabling in C++20 and switch to using
+  #   string/string_view::starts_with/ends_with. (COMPAT)
+  # - bugprone-multi-level-implicit-pointer-conversion - Many false postives on
+  #   GLib macros (e.g. g_free, g_steal_pointer) but on the other hand it has
+  #   caught several real bugs. GLib might be able to fix this.
+  # - bugprone-narrowing-conversions
+
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
+  bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
+    mozilla::Span"
   bugprone-reserved-identifier.AllowedIdentifiers: _GNU_SOURCE
   bugprone-suspicious-string-compare.WarnOnLogicalNotComparison: true
   bugprone-suspicious-string-compare.StringCompareLikeFunctions: "g_strcmp0,\
