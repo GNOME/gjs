@@ -42,10 +42,10 @@ class LogFile {
     const char* m_errmsg;
     bool m_should_close : 1;
 
+ public:
     LogFile(const LogFile&) = delete;
     LogFile& operator=(const LogFile&) = delete;
 
- public:
     explicit LogFile(const char* filename, FILE* fallback_fp = stdout)
         : m_errmsg(nullptr), m_should_close(false) {
         if (filename) {

@@ -34,10 +34,6 @@ class CairoRegion : public CWrapper<CairoRegion, cairo_region_t> {
     friend CWrapperPointerOps<CairoRegion, cairo_region_t>;
     friend CWrapper<CairoRegion, cairo_region_t>;
 
-    CairoRegion() = delete;
-    CairoRegion(CairoRegion&) = delete;
-    CairoRegion(CairoRegion&&) = delete;
-
     static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
         GjsGlobalSlot::PROTOTYPE_cairo_region;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_CAIRO;
@@ -68,6 +64,11 @@ class CairoRegion : public CWrapper<CairoRegion, cairo_region_t> {
     static constexpr JSClass klass = {
         "Region", JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
         &CairoRegion::class_ops, &CairoRegion::class_spec};
+
+ public:
+    CairoRegion() = delete;
+    CairoRegion(CairoRegion&) = delete;
+    CairoRegion(CairoRegion&&) = delete;
 };
 
 void gjs_cairo_region_init();
@@ -75,10 +76,6 @@ void gjs_cairo_region_init();
 class CairoContext : public CWrapper<CairoContext, cairo_t> {
     friend CWrapperPointerOps<CairoContext, cairo_t>;
     friend CWrapper<CairoContext, cairo_t>;
-
-    CairoContext() = delete;
-    CairoContext(CairoContext&) = delete;
-    CairoContext(CairoContext&&) = delete;
 
     static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
         GjsGlobalSlot::PROTOTYPE_cairo_context;
@@ -111,6 +108,11 @@ class CairoContext : public CWrapper<CairoContext, cairo_t> {
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool dispose(JSContext*, unsigned, JS::Value*);
+
+ public:
+    CairoContext() = delete;
+    CairoContext(CairoContext&) = delete;
+    CairoContext(CairoContext&&) = delete;
 };
 
 void gjs_cairo_context_init();
@@ -121,10 +123,6 @@ void gjs_cairo_path_init();
 class CairoPath : public CWrapper<CairoPath, cairo_path_t> {
     friend CWrapperPointerOps<CairoPath, cairo_path_t>;
     friend CWrapper<CairoPath, cairo_path_t>;
-
-    CairoPath() = delete;
-    CairoPath(CairoPath&) = delete;
-    CairoPath(CairoPath&&) = delete;
 
     static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
         GjsGlobalSlot::PROTOTYPE_cairo_path;
@@ -150,6 +148,10 @@ class CairoPath : public CWrapper<CairoPath, cairo_path_t> {
     static cairo_path_t* copy_ptr(cairo_path_t*);
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* take_c_ptr(JSContext*, cairo_path_t*);
+
+    CairoPath() = delete;
+    CairoPath(CairoPath&) = delete;
+    CairoPath(CairoPath&&) = delete;
 };
 
 // surface
@@ -161,10 +163,6 @@ class CairoSurface : public CWrapper<CairoSurface, cairo_surface_t> {
     friend class CairoPSSurface;
     friend class CairoPDFSurface;
     friend class CairoSVGSurface;
-
-    CairoSurface() = delete;
-    CairoSurface(CairoSurface&) = delete;
-    CairoSurface(CairoSurface&&) = delete;
 
     static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
         GjsGlobalSlot::PROTOTYPE_cairo_surface;
@@ -203,6 +201,10 @@ class CairoSurface : public CWrapper<CairoSurface, cairo_surface_t> {
     GJS_JSAPI_RETURN_CONVENTION
     static cairo_surface_t* for_js(JSContext*,
                                    JS::HandleObject surface_wrapper);
+
+    CairoSurface() = delete;
+    CairoSurface(CairoSurface&) = delete;
+    CairoSurface(CairoSurface&&) = delete;
 };
 
 class CairoImageSurface : public CWrapper<CairoImageSurface, cairo_surface_t> {
@@ -392,10 +394,6 @@ class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
     friend class CairoSurfacePattern;
     friend class CairoSolidPattern;
 
-    CairoPattern() = delete;
-    CairoPattern(CairoPattern&) = delete;
-    CairoPattern(CairoPattern&&) = delete;
-
     static constexpr GjsGlobalSlot PROTOTYPE_SLOT =
         GjsGlobalSlot::PROTOTYPE_cairo_pattern;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_CAIRO;
@@ -430,6 +428,10 @@ class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
  public:
     static cairo_pattern_t* for_js(JSContext*,
                                    JS::HandleObject pattern_wrapper);
+
+    CairoPattern() = delete;
+    CairoPattern(CairoPattern&) = delete;
+    CairoPattern(CairoPattern&&) = delete;
 };
 
 GJS_JSAPI_RETURN_CONVENTION
