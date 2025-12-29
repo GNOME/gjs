@@ -39,7 +39,7 @@ char** gjs_g_strv_concat(const char** strv_array[], int len);
  */
 class LogFile {
     FILE* m_fp;
-    const char* m_errmsg;
+    const char* m_errmsg = nullptr;
     bool m_should_close : 1;
 
  public:
@@ -47,7 +47,7 @@ class LogFile {
     LogFile& operator=(const LogFile&) = delete;
 
     explicit LogFile(const char* filename, FILE* fallback_fp = stdout)
-        : m_errmsg(nullptr), m_should_close(false) {
+        : m_should_close(false) {
         if (filename) {
             m_fp = fopen(filename, "a");
             if (!m_fp)
