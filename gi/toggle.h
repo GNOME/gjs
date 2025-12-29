@@ -37,7 +37,7 @@ class ToggleQueue {
  private:
     friend Gjs::Test::ToggleQueue;
     struct Item {
-        Item() {}
+        Item() = default;
         Item(ObjectInstance* o, Direction d) : object(o), direction(d) {}
         ObjectInstance* object;
         ToggleQueue::Direction direction;

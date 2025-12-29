@@ -1748,7 +1748,7 @@ class StackArgInfo : public InfoOperations<StackArgInfo, InfoTag::ARG> {
     }
 
  public:
-    constexpr StackArgInfo() {}
+    constexpr StackArgInfo() = default;
     ~StackArgInfo() { gi_base_info_clear(&m_info); }
     // Moving is okay, we copy the contents of the GIArgInfo struct and reset
     // the existing one
@@ -1776,7 +1776,7 @@ class StackTypeInfo : public InfoOperations<StackTypeInfo, InfoTag::TYPE> {
     }
 
  public:
-    constexpr StackTypeInfo() {}
+    constexpr StackTypeInfo() = default;
     ~StackTypeInfo() { gi_base_info_clear(&m_info); }
     // Moving is okay, we copy the contents of the GITypeInfo struct and reset
     // the existing one

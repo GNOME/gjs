@@ -108,8 +108,8 @@ struct GjsSymbolAtom : GjsAtom {
 
 class GjsAtoms {
  public:
-    GjsAtoms() {}
-    ~GjsAtoms() {}  // prevents giant destructor from being inlined
+    GjsAtoms() = default;
+    ~GjsAtoms() = default;  // prevents giant destructor from being inlined
     GJS_JSAPI_RETURN_CONVENTION bool init_atoms(JSContext*);
 
     void trace(JSTracer*);
