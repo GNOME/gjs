@@ -3,23 +3,16 @@
 
 Checks:
   - -*
-  - modernize-concat-nested-namespaces
-  - modernize-type-traits
-  - modernize-use-auto
-  - modernize-use-default-member-init
-  - modernize-use-emplace
-  - modernize-use-equals-default
-  - modernize-use-equals-delete
-  - modernize-use-nodiscard
-  - modernize-use-nullptr
-  - modernize-use-override
-  - modernize-use-using
+  - modernize-*
+  - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
+  - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
+  - -modernize-use-trailing-return-type  # churn; stylistic
 CheckOptions:
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
   modernize-use-using.IgnoreExternC: true
-ExcludeHeaderFilterRegex: /include|/subprojects
+ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true
 WarningsAsErrors: '*'
