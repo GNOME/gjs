@@ -549,7 +549,7 @@ void gjs_profiler_start(GjsProfiler* self) {
 
     g_return_if_fail(!self->capture);
 
-    struct sigaction sa = {{0}};
+    struct sigaction sa = {{nullptr}};
     struct sigevent sev = {{0}};
     struct itimerspec its = {{0}};
     struct itimerspec old_its;
