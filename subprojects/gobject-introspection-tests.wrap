@@ -4,7 +4,7 @@
 [wrap-git]
 directory=gobject-introspection-tests
 url=https://gitlab.gnome.org/GNOME/gobject-introspection-tests.git
-revision=67a03e86da0636c02cac2390ee2f0d5d981875a8
+revision=67432ee4ebf74349cb3c848f73945b21a767e276
 depth=1
 
 [provide]
