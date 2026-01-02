@@ -49,7 +49,10 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
     ~GjsCallbackTrampoline();
 
-    void* closure() const { return m_info.closure_native_address(m_closure); }
+    [[nodiscard]]
+    void* get_func_ptr() const {
+        return m_info.closure_native_address(m_closure);
+    }
 
     ffi_closure* get_ffi_closure() const {
         return m_closure;
