@@ -17,7 +17,7 @@
    fun:_ZN7mozilla9TimeStamp15ProcessCreation*
    fun:_ZN2JS6detail25InitWithFailureDiagnosticEb*
    ...
-   fun:_ZN7GjsInitC1Ev
+   fun:_ZN7GjsInitC*
 }
 
 # Various things that I don't believe are related to GJS
@@ -32,6 +32,26 @@
    fun:gtk_css_node_declaration_make_writable*
    ...
    fun:gtk_style_constructed
+}
+
+{
+    gtk-static-display-settings
+    Memcheck:Leak
+    match-leak-kinds: possible
+    ...
+    fun:g_object_bind_property_full
+    fun:g_object_bind_property
+    fun:settings_init_style
+    fun:gtk_settings_create_for_display
+}
+
+{
+    gdk-static-x11-screen
+    Memcheck:Leak
+    match-leak-kinds: definite
+    ...
+    fun:epoxy_glx_version
+    fun:gdk_x11_screen_init_gl
 }
 
 # https://bugs.freedesktop.org/show_bug.cgi?id=105466
@@ -51,12 +71,34 @@
    fun:cairo_show_text
 }
 
+{
+    pango-static-default-language
+    Memcheck:Leak
+    match-leak-kinds: possible
+    fun:calloc
+    fun:g_malloc0
+    fun:pango_language_from_string
+    fun:pango_language_get_default
+}
+
+# Oddly, Valgrind does not detect that sysprof_malloc0 produces initialized
+# memory
+{
+   sysprof-malloc0
+   Memcheck:Param
+   write(buf)
+   fun:write
+   fun:sysprof_capture_writer_flush_data
+   fun:sysprof_capture_writer_flush
+   fun:gjs_profiler_stop
+}
+
 # Data that Cairo keeps around for the process lifetime
 # This could be freed by calling cairo_debug_reset_static_data(), but it's
 # not a good idea to call that function in production, because certain versions
 # of Cairo have bugs that cause it to fail assertions and crash.
 {
-   cairo-static-data
+   cairo-static-data-show-text
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
@@ -71,44 +113,18 @@
    fun:cairo_show_text
 }
 
-# https://gitlab.gnome.org/GNOME/gobject-introspection/issues/265
 {
-   gobject-introspection-default-repository
-   Memcheck:Leak
-   match-leak-kinds: definite
-   fun:realloc
-   ...
-   fun:build_typelib_key
-   fun:register_internal
-}
-
-# Workaround for https://github.com/mesonbuild/meson/issues/4427
-# When fixed, valgrind should already not trace bash
-{
-   bash-workaround
+   cairo-static-data-text-extents
    Memcheck:Leak
    match-leak-kinds: definite
    fun:malloc
-   fun:xmalloc
-   fun:set_default_locale
-   fun:main
-}
-
-# https://gitlab.gnome.org/GNOME/glib/-/issues/1911
-{
-   g-type-register-static
-   Memcheck:Leak
-   match-leak-kinds:possible
-   fun:malloc
    ...
-   fun:g_type_register_static
-}
-
-{
-   g-type-register-static-calloc
-   Memcheck:Leak
-   match-leak-kinds:possible
-   fun:calloc
+   fun:FcPatternDuplicate
+   fun:_cairo_ft_font_face_create_for_pattern
    ...
-   fun:g_type_register_static
+   fun:_cairo_gstate_ensure_scaled_font
+   ...
+   fun:_cairo_default_context_get_scaled_font
+   ...
+   fun:cairo_text_extents
 }
