@@ -472,6 +472,7 @@ libgjs_sources = [
 ]
 
 enum_files = gnome.mkenums_simple('gjs-enums', decorator: 'GJS_EXPORT',
+    body_prefix: '#include <config.h>',
     header_prefix: '#include "gjs/macros.h"',
     sources: 'libgjs-private/gjs-util.h')
 
