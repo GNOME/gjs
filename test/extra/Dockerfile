@@ -53,6 +53,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     cairo-debugsource \
     cairo-gobject-devel \
     clang \
+    clang-tools-extra \
     compiler-rt \
     dbus-daemon \
     dbus-x11 \
