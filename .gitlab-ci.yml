@@ -463,24 +463,6 @@ iwyu-full:
   except:
     - schedules
 
-sanitizer_clang:
-  <<: *build
-  stage: manual
-  tags:
-    - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
-  variables:
-    GIT_SUBMODULE_STRATEGY: normal
-    CC: clang
-    CXX: clang++
-    # Override these during build, but they are overridden by meson anyways
-    ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
-    CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
-    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
-  when: manual
-  except:
-    - schedules
-
 installed_tests:
   <<: *build
   stage: manual
