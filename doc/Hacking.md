@@ -40,23 +40,21 @@ GJS requires five other libraries to be installed: GLib, libffi,
 gobject-introspection, SpiderMonkey (also called "mozjs140" on some
 systems.) and the build tool Meson.
 The readline library is not required, but strongly recommended.
-We recommend installing your system's development packages for libffi,
-gobject-introspection, Meson and readline.
+We recommend installing your system's development packages for GLib,
+libffi, gobject-introspection, Meson and readline.
 
 <details>
     <summary>Ubuntu</summary>
-    <code>sudo apt-get install libffi-dev libreadline-dev libgirepository1.0-dev meson</code>
+    <code>sudo apt-get install libglib2.0-dev libffi-dev libreadline-dev libgirepository1.0-dev meson</code>
 </details>
 
 <details>
     <summary>Fedora</summary>
-    <code>sudo dnf install libffi readline-devel gobject-introspection-devel meson</code>
+    <code>sudo dnf install glib2-devel libffi readline-devel gobject-introspection-devel meson</code>
 </details>
 
 But, if your system's versions of these packages aren't new enough, then
 the build process will download and build sufficient versions.
-(Temporarily, until GNOME 49 is released, GJS requires a development
-version of GLib, so the build process will always download GLib.)
 
 SpiderMonkey cannot be auto-installed, so you will need to install it
 either through your system's package manager, or building it yourself.
@@ -92,13 +90,6 @@ If you are using `-Dprefix` to build GJS into a different path, then
 make sure to use the same build prefix for SpiderMonkey with `--prefix`.
 
 ## First build
-
-Temporarily, until GNOME 49 is released, you will need to first run:
-```sh
-export GI_TYPELIB_PATH=$(pkg-config --variable=typelibdir girepository-2.0)
-```
-You need to do this once per terminal session, and you can put it in
-your shell profile file if you want to do it automatically.
 
 To build GJS, change to your `gjs` directory, and run:
 ```sh

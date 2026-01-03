@@ -157,7 +157,7 @@ sanitizer_thread_gcc:
       if [[ "$CI_RUNNER_TAGS" != *"aarch64"* ]]; then
         test/test-ci.sh SH_CHECKS
       fi
-    - xvfb-run -a meson dist -C _build --no-tests
+    - xvfb-run -a meson dist -C _build
   artifacts:
     reports:
       junit: _build/meson-logs/testlog*.junit.xml
@@ -188,22 +188,21 @@ build_minimal:
   except:
     - schedules
 
-## Temporarily disabled, until CI images move to Fedora 43 with new enough GLib
-# build_unity:
-#   <<: *build
-#   stage: test
-#   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
-#   variables:
-#     GIT_SUBMODULE_STRATEGY: normal
+build_unity:
+  <<: *build
+  stage: test
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
     # unity-size here is forced to use an high number to check whether we can
     # join all the sources together, but should not be used in real world to
     # not to break multi-jobs compilation
-#     CONFIG_OPTS: >-
-#       -Dprofiler=disabled
-#       --unity on --unity-size=10000
-#     TEST_OPTS: --setup=verbose
-#   except:
-#     - schedules
+    CONFIG_OPTS: >-
+      -Dprofiler=disabled
+      --unity on --unity-size=10000
+    TEST_OPTS: --setup=verbose
+  except:
+    - schedules
 
 # Generates
 # The Code Coverage Report
@@ -234,42 +233,41 @@ pages:
 #############################################
 #              Static Analyzers             #
 #############################################
-## Temporarily disabled, until CI images move to Fedora 43 with new enough GLib
-# cppcheck:
-#   when: on_success
-#   extends:
-#     - .fdo.distribution-image@alpine
-#     - .gjs-alpine
-#   stage: test  # so that we have compile_commands.json and generated C files
-#   script:
-#     - cppcheck --version
+cppcheck:
+  when: on_success
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
+  stage: test  # so that we have compile_commands.json and generated C files
+  script:
+    - cppcheck --version
     # Create fake g-i test files, we are not analyzing them anyway
-#     - mkdir -p subprojects/gobject-introspection-tests
-#     - |
-#       touch \
-#         subprojects/gobject-introspection-tests/annotation.{c,h} \
-#         subprojects/gobject-introspection-tests/drawable.{c,h} \
-#         subprojects/gobject-introspection-tests/foo.{c,h} \
-#         subprojects/gobject-introspection-tests/gimarshallingtests.{c,h} \
-#         subprojects/gobject-introspection-tests/gimarshallingtestsextra.{c,h} \
-#         subprojects/gobject-introspection-tests/regress.{c,h} \
-#         subprojects/gobject-introspection-tests/regressextra.{c,h} \
-#         subprojects/gobject-introspection-tests/regress-unix.{c,h} \
-#         subprojects/gobject-introspection-tests/warnlib.{c,h} \
-#         subprojects/gobject-introspection-tests/utility.{c,h}
-#     - ./tools/run_cppcheck.sh -q
-#   except:
-#     refs:
-#       - schedules
-#       - tags
-#     variables:
-#       - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
-#   only:
-#     changes:
-#       - "**/*.c"
-#       - "**/*.cpp"
-#       - "**/*.h"
-#       - "**/*.hh"
+    - mkdir -p subprojects/gobject-introspection-tests
+    - |
+      touch \
+        subprojects/gobject-introspection-tests/annotation.{c,h} \
+        subprojects/gobject-introspection-tests/drawable.{c,h} \
+        subprojects/gobject-introspection-tests/foo.{c,h} \
+        subprojects/gobject-introspection-tests/gimarshallingtests.{c,h} \
+        subprojects/gobject-introspection-tests/gimarshallingtestsextra.{c,h} \
+        subprojects/gobject-introspection-tests/regress.{c,h} \
+        subprojects/gobject-introspection-tests/regressextra.{c,h} \
+        subprojects/gobject-introspection-tests/regress-unix.{c,h} \
+        subprojects/gobject-introspection-tests/warnlib.{c,h} \
+        subprojects/gobject-introspection-tests/utility.{c,h}
+    - ./tools/run_cppcheck.sh -q
+  except:
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
+  only:
+    changes:
+      - "**/*.c"
+      - "**/*.cpp"
+      - "**/*.h"
+      - "**/*.hh"
 
 cpplint:
   when: on_success
