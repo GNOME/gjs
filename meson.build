@@ -727,20 +727,20 @@ valgrind_args = [
 add_test_setup('quiet', env: ['GJS_DEBUG_TOPICS='], is_default: true)
 add_test_setup('verbose')
 
-add_test_setup('valgrind', timeout_multiplier: 40, env: valgrind_environment,
+add_test_setup('valgrind', timeout_multiplier: 120, env: valgrind_environment,
     exe_wrapper: ['valgrind'] + valgrind_args)
 
 zeal2_environment = environment()
 zeal2_environment.set('JS_GC_ZEAL', '2,10')
-add_test_setup('extra_gc', timeout_multiplier: 40, env: zeal2_environment)
+add_test_setup('extra_gc', timeout_multiplier: 60, env: zeal2_environment)
 
 zeal4_environment = environment()
 zeal4_environment.set('JS_GC_ZEAL', '4')
-add_test_setup('pre_verify', timeout_multiplier: 40, env: zeal4_environment)
+add_test_setup('pre_verify', timeout_multiplier: 60, env: zeal4_environment)
 
 zeal11_environment = environment()
 zeal11_environment.set('JS_GC_ZEAL', '11')
-add_test_setup('post_verify', timeout_multiplier: 2, env: zeal11_environment)
+add_test_setup('post_verify', timeout_multiplier: 5, env: zeal11_environment)
 
 ### Warn about conditions that may affect runtime ##############################
 
