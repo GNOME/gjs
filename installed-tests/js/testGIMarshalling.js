@@ -2006,7 +2006,7 @@ describe('Virtual function', function () {
     // middle of C++ code.
     const skipExtraGC = {};
     const zeal = GLib.getenv('JS_GC_ZEAL');
-    if (zeal && zeal.startsWith('2,'))
+    if (zeal && (zeal.startsWith('Alloc,') || zeal.startsWith('2,')))
         skipExtraGC.skip = 'Skip during extra-gc.';
     // 1 reference = the object is owned only by JS.
     // 2 references = the object is owned by JS and the vfunc caller.

@@ -112,7 +112,7 @@ environment.addReporter(new TapReporter());
 // disable Jasmine timeouts and just let the Meson timeout take effect.
 const gcZeal = GLib.getenv('JS_GC_ZEAL');
 const valgrind = GLib.getenv('VALGRIND');
-if (valgrind || (gcZeal && (gcZeal === '2' || gcZeal.startsWith('2,') || gcZeal === '4')))
+if (valgrind || gcZeal)
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 2 ** 31 - 1;
 
 /**
