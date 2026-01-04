@@ -201,6 +201,10 @@ GObject.registerClass({
 }, LeakTestWidget);
 
 describe('Gtk 4', function () {
+    // This test file times out on CI under Valgrind
+    if (GLib.getenv('CI_JOB_NAME') === 'valgrind')
+        return;
+
     let writerFunc;
     beforeAll(function () {
         Gtk.init();
