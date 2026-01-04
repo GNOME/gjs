@@ -1,3 +1,82 @@
+Version 1.87.1
+--------------
+
+- In this alpha release for the GNOME 50 cycle, the main focus has been on
+  modernizing the code base and making it more type-safe. Expect more of this in
+  the beta release.
+
+- We have better support for boxed C unions now in gobject-introspection.
+
+- Gtk.Builder has gained some JS-only conveniences, which should make it less
+  tedious to use from JS code.
+
+  The following construct properties are now recognized:
+
+  * "data" accepts a string or UTF-8-encoded Uint8Array containing Gtk.Builder
+    XML, and automatically calls add_from_string().
+  * "resource" accepts a string resource path, and automatically calls
+    add_from_resource().
+  * "filename" accepts a string filename, and automatically calls
+    add_from_file().
+  * "callbacks" accepts a property bag with properties equal to callbacks that
+    are referenced in the Gtk.Builder XML.
+  * "objects" accepts a property bag with properties equal to objects that
+    should be exposed to the Gtk.Builder XML.
+
+  Gtk.Builder has also gained a few JS-only convenience methods:
+
+  * exposeObjects() calls expose_object() for each name and object in a property
+    bag, much like the new "objects" construct property.
+  * get_objects() overrides the original C get_objects() method, but on the
+    returned array, additionally, there are named properties representing the
+    exposed objects.
+
+- Gio.ActionMap.add_action_entries() now supports additional types in its
+  array of entries: GLib.Variant and GLib.VariantType. It also interprets JS
+  values as unpacked GLib.Variants where appropriate.
+
+- GLib.idle_add_once(), GLib.timeout_add_once(), and
+  GLib.timeout_add_seconds_once() are now introspectable.
+
+- Closed bugs and merge requests:
+  * Support accessing fields of unions [#273, !770, Marco Trevisan, Philip
+    Chimento]
+  * Default union constructor should be guessed the same way that struct
+    constructors are [#657, !770, Marco Trevisan, Philip Chimento]
+  * Gtk.BuilderScope only works with template classes [#631, !1031, Philip
+    Chimento, Sonny Piers]
+  * installed-tests/testCommandLine: Use bash to write escaped sequences [!1032,
+    Marco Trevisan]
+  * Remove link to dead developer-old.gnome.org [#619, !1034, Philip Chimento]
+  * Remove copy constructor from GjsAutoError [#654, !1034, Philip Chimento]
+  * Various maintenance and big coding style fixes [!1034, !1040, !1044, !1045,
+    !1050, !1053, Philip Chimento]
+  * Unknown signal error on array properties [#717, !1035, Philip Chimento]
+  * overrides/Gio: Improve handling of errors and return values in GDBus servers
+    async functions [!1036, Marco Trevisan]
+  * Investigate improvements to Gio.ActionGroup.add_action_entries override
+    [#713, !1037, Andy Holmes]
+  * Fix IWYU jobs for current Clang version and Fedora-packaged IWYU [!1038,
+    Philip Chimento]
+  * ci, test-ci: Check the installed tests with shellcheck [!1039, Marco
+    Trevisan]
+  * ci: Save cobertura reports as artifacts and run coverage on MRs [!1041,
+    Marco Trevisan]
+  * Consistent style and targeted shells for all shell scripts in project [#720,
+    !1042, Philip Chimento]
+  * overrides/GLib: Add overrides for one-shot timeout/idle functions [!1043,
+    Florian Müllner]
+  * gi/boxed.cpp: fix gcc-16 build [!1046, Sergei Trofimovich]
+  * gi: Allow optional inout arguments to be null [!1047, Florian Müllner]
+  * Remove inline overloads [!1048, Philip Chimento]
+  * Remove uses of JS::Value::setObjectOrNull [!1049, Philip Chimento]
+  * jsapi-util: Improve reading of process RSS [!1051, !1056, Philip Chimento]
+  * CI: Run cpplint on the whole codebase [!1052, Philip Chimento]
+  * ci/coverage: Strip the build path from coverage report on JS files (and
+    other CI cleanups) [!1055, Marco Trevisan]
+  * info: Fix return type of GI::CallableInfo::closure_native_address() [!1057,
+    Philip Chimento]
+
 Version 1.86.0
 --------------
 
