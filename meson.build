@@ -658,10 +658,6 @@ lsan_suppressions = files('installed-tests/extra/lsan.supp')
 tests_environment.set('LSAN_OPTIONS',
     'fast_unwind_on_malloc=0,exitcode=23,suppressions=@0@'.format(
         lsan_suppressions[0].full_path()))
-tsan_suppressions = files('installed-tests/extra/tsan.supp')
-tests_environment.set('TSAN_OPTIONS',
-    'history_size=5,force_seq_cst_atomics=1,suppressions=@0@'.format(
-        tsan_suppressions[0].full_path()))
 tests_environment.set('G_SLICE', 'always-malloc')
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GTK_A11Y', 'none')

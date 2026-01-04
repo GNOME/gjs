@@ -118,21 +118,6 @@ sanitizer_gcc:
   except:
     - schedules
 
-sanitizer_thread_gcc:
-  <<: *build
-  stage: manual
-  when: manual
-  allow_failure: true
-  tags:
-    - asan # TSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
-  variables:
-    GIT_SUBMODULE_STRATEGY: normal
-    CONFIG_OPTS: -Db_sanitize=thread
-    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
-  except:
-    - schedules
-
 # There are a lot of debug log statements that are ifdef'd out in normal usage.
 # These sometimes get invalid expressions in them, leading to annoyance the
 # next time you try to use debug logging.
