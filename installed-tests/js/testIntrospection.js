@@ -170,7 +170,6 @@ describe('Garbage collection of introspected objects', function () {
         settings.bind('fullscreen', obj, 'screenfull', Gio.SettingsBindFlags.DEFAULT);
         const handler = settings.connect('changed::fullscreen', () => {
             obj.run_dispose();
-            obj = null;
             settings.disconnect(handler);
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 GLib.test_assert_expected_messages_internal('Gjs',
