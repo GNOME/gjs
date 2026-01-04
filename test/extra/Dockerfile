@@ -82,7 +82,6 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     lcov \
     libasan \
     libubsan \
-    libtsan \
     meson \
     ninja-build \
     pkgconf \
