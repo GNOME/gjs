@@ -519,14 +519,14 @@ describe('Gtk 4', function () {
             const sortFunc = jasmine.createSpy('sortFunc').and.returnValue(1);
             const model = Gtk.StringList.new(['hello', 'world']);
             const sorter = Gtk.CustomSorter.new(sortFunc);
-            void Gtk.SortListModel.new(model, sorter);
+            const unused = Gtk.SortListModel.new(model, sorter);
             expect(sortFunc).toHaveBeenCalledOnceWith(jasmine.any(Gtk.StringObject), jasmine.any(Gtk.StringObject));
         });
 
         it('can change the callback of a Gtk.CustomSorter', function () {
             const model = Gtk.StringList.new(['hello', 'world']);
             const sorter = Gtk.CustomSorter.new(null);
-            void Gtk.SortListModel.new(model, sorter);
+            const unused = Gtk.SortListModel.new(model, sorter);
 
             const sortFunc = jasmine.createSpy('sortFunc').and.returnValue(1);
             sorter.set_sort_func(sortFunc);
