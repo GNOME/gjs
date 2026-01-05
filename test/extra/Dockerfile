@@ -3,7 +3,7 @@
 
 # === Build Spidermonkey stage ===
 
-FROM registry.fedoraproject.org/fedora:42 AS mozjs-build
+FROM registry.fedoraproject.org/fedora:43 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs140
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
@@ -37,7 +37,7 @@ RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
 
 # === Actual Docker image ===
 
-FROM registry.fedoraproject.org/fedora:42
+FROM registry.fedoraproject.org/fedora:43
 
 ARG LOCALES=ar_EG en_CA fa_IR tr_TR
 ENV SHELL=/bin/bash
@@ -53,6 +53,7 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     cairo-debugsource \
     cairo-gobject-devel \
     clang \
+    clang-tools-extra \
     compiler-rt \
     dbus-daemon \
     dbus-x11 \
@@ -81,7 +82,6 @@ RUN dnf -y install --enablerepo=fedora-debuginfo,updates-debuginfo \
     lcov \
     libasan \
     libubsan \
-    libtsan \
     meson \
     ninja-build \
     pkgconf \
