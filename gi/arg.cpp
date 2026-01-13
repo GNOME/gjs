@@ -37,6 +37,7 @@
 #include <js/experimental/TypedData.h>
 #include <jsapi.h>  // for InformalValueTypeName, IdVector
 #include <mozilla/Maybe.h>
+#include <mozilla/Result.h>
 #include <mozilla/Span.h>
 #include <mozilla/Unused.h>
 

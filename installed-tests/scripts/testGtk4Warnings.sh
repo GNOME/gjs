@@ -20,6 +20,11 @@ report () {
     fi
 }
 
+skip () {
+    total=$((total + 1))
+    echo "ok $total - $1 # SKIP $2"
+}
+
 cat <<'EOF' >gcWrapperWarning.js
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
@@ -101,9 +106,13 @@ win.present();
 loop.run();
 EOF
 
-$gjs -m gcWrapperWarning.js 2>&1 | \
-    grep -q 'Wrapper for GObject.*was disposed, cannot set property string-object'
-report "Issue 443 GObject wrapper disposed warning"
+if test "$CI_JOB_NAME" = "valgrind"; then
+    skip "Issue 443 GObject wrapper disposed warning" "Valgrind takes too long on CI"
+else
+    $gjs -m gcWrapperWarning.js 2>&1 | \
+        grep -q 'Wrapper for GObject.*was disposed, cannot set property string-object'
+    report "Issue 443 GObject wrapper disposed warning"
+fi
 
 rm -f gcWrapperWarning.js
 

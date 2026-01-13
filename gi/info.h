@@ -28,7 +28,6 @@
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/ResultVariant.h>
 #include <mozilla/Span.h>
 
 #include "gjs/auto.h"

@@ -96,7 +96,7 @@ build-alpine-image:
 build_recommended:
   <<: *build
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:job-5355251_fedora-mozjs140-debug-x86-64  # pinned on purpose
+  image: registry.gitlab.gnome.org/gnome/gjs:job-5973809_fedora-mozjs140-debug-x86-64  # pinned on purpose
   variables:
     GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
@@ -115,21 +115,6 @@ sanitizer_gcc:
     TEST_OPTS: --timeout-multiplier=3
     # Override these during build, but they are overridden by meson anyways
     ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
-  except:
-    - schedules
-
-sanitizer_thread_gcc:
-  <<: *build
-  stage: manual
-  when: manual
-  allow_failure: true
-  tags:
-    - asan # TSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
-  variables:
-    GIT_SUBMODULE_STRATEGY: normal
-    CONFIG_OPTS: -Db_sanitize=thread
-    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
   except:
     - schedules
 
@@ -157,7 +142,7 @@ sanitizer_thread_gcc:
       if [[ "$CI_RUNNER_TAGS" != *"aarch64"* ]]; then
         test/test-ci.sh SH_CHECKS
       fi
-    - xvfb-run -a meson dist -C _build --no-tests
+    - xvfb-run -a meson dist -C _build
   artifacts:
     reports:
       junit: _build/meson-logs/testlog*.junit.xml
@@ -188,22 +173,21 @@ build_minimal:
   except:
     - schedules
 
-## Temporarily disabled, until CI images move to Fedora 43 with new enough GLib
-# build_unity:
-#   <<: *build
-#   stage: test
-#   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
-#   variables:
-#     GIT_SUBMODULE_STRATEGY: normal
+build_unity:
+  <<: *build
+  stage: test
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
     # unity-size here is forced to use an high number to check whether we can
     # join all the sources together, but should not be used in real world to
     # not to break multi-jobs compilation
-#     CONFIG_OPTS: >-
-#       -Dprofiler=disabled
-#       --unity on --unity-size=10000
-#     TEST_OPTS: --setup=verbose
-#   except:
-#     - schedules
+    CONFIG_OPTS: >-
+      -Dprofiler=disabled
+      --unity on --unity-size=10000
+    TEST_OPTS: --setup=verbose
+  except:
+    - schedules
 
 # Generates
 # The Code Coverage Report
@@ -234,42 +218,41 @@ pages:
 #############################################
 #              Static Analyzers             #
 #############################################
-## Temporarily disabled, until CI images move to Fedora 43 with new enough GLib
-# cppcheck:
-#   when: on_success
-#   extends:
-#     - .fdo.distribution-image@alpine
-#     - .gjs-alpine
-#   stage: test  # so that we have compile_commands.json and generated C files
-#   script:
-#     - cppcheck --version
+cppcheck:
+  when: on_success
+  extends:
+    - .fdo.distribution-image@alpine
+    - .gjs-alpine
+  stage: test  # so that we have compile_commands.json and generated C files
+  script:
+    - cppcheck --version
     # Create fake g-i test files, we are not analyzing them anyway
-#     - mkdir -p subprojects/gobject-introspection-tests
-#     - |
-#       touch \
-#         subprojects/gobject-introspection-tests/annotation.{c,h} \
-#         subprojects/gobject-introspection-tests/drawable.{c,h} \
-#         subprojects/gobject-introspection-tests/foo.{c,h} \
-#         subprojects/gobject-introspection-tests/gimarshallingtests.{c,h} \
-#         subprojects/gobject-introspection-tests/gimarshallingtestsextra.{c,h} \
-#         subprojects/gobject-introspection-tests/regress.{c,h} \
-#         subprojects/gobject-introspection-tests/regressextra.{c,h} \
-#         subprojects/gobject-introspection-tests/regress-unix.{c,h} \
-#         subprojects/gobject-introspection-tests/warnlib.{c,h} \
-#         subprojects/gobject-introspection-tests/utility.{c,h}
-#     - ./tools/run_cppcheck.sh -q
-#   except:
-#     refs:
-#       - schedules
-#       - tags
-#     variables:
-#       - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
-#   only:
-#     changes:
-#       - "**/*.c"
-#       - "**/*.cpp"
-#       - "**/*.h"
-#       - "**/*.hh"
+    - mkdir -p subprojects/gobject-introspection-tests
+    - |
+      touch \
+        subprojects/gobject-introspection-tests/annotation.{c,h} \
+        subprojects/gobject-introspection-tests/drawable.{c,h} \
+        subprojects/gobject-introspection-tests/foo.{c,h} \
+        subprojects/gobject-introspection-tests/gimarshallingtests.{c,h} \
+        subprojects/gobject-introspection-tests/gimarshallingtestsextra.{c,h} \
+        subprojects/gobject-introspection-tests/regress.{c,h} \
+        subprojects/gobject-introspection-tests/regressextra.{c,h} \
+        subprojects/gobject-introspection-tests/regress-unix.{c,h} \
+        subprojects/gobject-introspection-tests/warnlib.{c,h} \
+        subprojects/gobject-introspection-tests/utility.{c,h}
+    - ./tools/run_cppcheck.sh -q
+  except:
+    refs:
+      - schedules
+      - tags
+    variables:
+      - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
+  only:
+    changes:
+      - "**/*.c"
+      - "**/*.cpp"
+      - "**/*.h"
+      - "**/*.hh"
 
 cpplint:
   when: on_success
@@ -462,24 +445,6 @@ iwyu-full:
   script:
     - meson setup _build -Db_pch=false -Dbuildtype=release
     - ./tools/run_iwyu.sh
-  except:
-    - schedules
-
-sanitizer_clang:
-  <<: *build
-  stage: manual
-  tags:
-    - asan # LSAN needs CAP_SYS_PTRACE
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
-  variables:
-    GIT_SUBMODULE_STRATEGY: normal
-    CC: clang
-    CXX: clang++
-    # Override these during build, but they are overridden by meson anyways
-    ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
-    CONFIG_OPTS: -Db_sanitize=address,undefined -Db_lundef=false
-    TEST_OPTS: --timeout-multiplier=3 --setup=verbose
-  when: manual
   except:
     - schedules
 

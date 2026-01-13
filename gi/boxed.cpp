@@ -33,6 +33,7 @@
 #include <js/ValueArray.h>
 #include <jsapi.h>  // for IdVector
 #include <mozilla/HashTable.h>
+#include <mozilla/Result.h>
 #include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"

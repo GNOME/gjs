@@ -10,6 +10,13 @@
 #include <stdlib.h>  // for strtol, atoi, mkdtemp
 #include <string.h>  // for strlen, strstr, strcmp, strncmp, strcspn
 
+#include <algorithm>  // for find, min
+#include <charconv>   // for from_chars
+#include <string>
+#include <string_view>
+#include <system_error>  // for errc
+#include <vector>
+
 #include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -126,6 +133,25 @@ static const char* line_starting_with(const char* data, const char* needle) {
     return nullptr;
 }
 
+static std::string_view line_starting_with(const std::string_view& data,
+                                           const std::string& needle) {
+    const size_t needle_length = needle.size();
+    std::string_view iter = data;
+
+    while (!iter.empty()) {
+        // COMPAT: Use starts_with in C++20
+        std::string_view prefix{iter.data(),
+                                std::min(iter.size(), needle_length)};
+        if (prefix == needle)
+            return iter;
+
+        size_t newline = iter.find('\n');
+        iter.remove_prefix(std::min(iter.size(), newline + 1));
+    }
+
+    return iter;
+}
+
 static char* write_statistics_and_get_coverage_data(GjsCoverage* coverage,
                                                     GFile* lcov_output) {
     gjs_coverage_write_statistics(coverage);
@@ -199,6 +225,31 @@ static void assert_coverage_data_matches_values_for_key(
 
     // If n is zero then we've found all available matches
     g_assert_cmpuint(n, ==, 0);
+}
+
+template <typename T>
+using CoverageDataExtractFunc = T (*)(std::string_view&);
+
+template <typename T>
+static void assert_coverage_data_matches_values_for_key(
+    std::string_view& data, const std::string& key,
+    CoverageDataExtractFunc<T> extract,
+    const std::vector<T>& expected_matches) {
+    std::vector<T> remaining_matches{expected_matches};
+    std::string_view line = line_starting_with(data, key);
+
+    while (!line.empty() && remaining_matches.size() > 0) {
+        T entry = (*extract)(line);
+
+        auto found = std::find(remaining_matches.begin(),
+                               remaining_matches.end(), entry);
+        g_assert_false(found == remaining_matches.end());
+        remaining_matches.erase(found);
+
+        line = line_starting_with(line, key);
+    }
+
+    g_assert_cmpuint(remaining_matches.size(), ==, 0);
 }
 
 static void test_covered_file_is_duplicated_into_output_if_resource(
@@ -547,19 +598,14 @@ static void test_branch_not_hit_written_to_coverage_data(void* fixture_data,
     g_free(coverage_data_contents);
 }
 
-static void has_function_name(const char* line, const void* user_data) {
-    const char* expected_function_name =
-        *(static_cast<const char* const*>(user_data));
-
+static std::string extract_function_name(std::string_view& line) {
     // Advance past "FN:"
-    line += 3;
+    line.remove_prefix(3);
 
     // Advance past the first comma
-    while (*(line - 1) != ',')
-        ++line;
+    line.remove_prefix(line.find(',') + 1);
 
-    Gjs::AutoChar actual{g_strndup(line, strlen(expected_function_name))};
-    g_assert_cmpstr(actual, ==, expected_function_name);
+    return std::string{line.substr(0, line.find('\n'))};
 }
 
 static void test_function_names_written_to_coverage_data(void* fixture_data,
@@ -577,32 +623,25 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const char* expected_function_names[] = {
+    std::vector<std::string> expected_function_names{
         "top-level",
         "f",
         "b",
     };
-    const size_t expected_function_names_len =
-        G_N_ELEMENTS(expected_function_names);
 
-    // Just expect that we've got an FN matching out expected function names
-    assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
-                                                expected_function_names_len,
-                                                has_function_name,
-                                                expected_function_names,
-                                                sizeof(const char *));
+    // Just expect that we've got an FN matching our expected function names
+    std::string_view contents_view{coverage_data_contents};
+    assert_coverage_data_matches_values_for_key(
+        contents_view, "FN:", extract_function_name, expected_function_names);
+
     g_free(coverage_data_contents);
 }
 
-static void has_function_line(const char* line, const void* user_data) {
-    const char* expected_function_line =
-        *(static_cast<const char* const*>(user_data));
-
+static std::string extract_function_line(std::string_view& line) {
     // Advance past "FN:"
-    line += 3;
+    line.remove_prefix(3);
 
-    Gjs::AutoChar actual{g_strndup(line, strlen(expected_function_line))};
-    g_assert_cmpstr(actual, ==, expected_function_line);
+    return std::string{line.substr(0, line.find(','))};
 }
 
 static void test_function_lines_written_to_coverage_data(void* fixture_data,
@@ -619,55 +658,44 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
     char* coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
-    const char* const expected_function_lines[] = {
+    std::vector<std::string> expected_function_lines{
         "1",
         "1",
         "3",
     };
-    const size_t expected_function_lines_len =
-        G_N_ELEMENTS(expected_function_lines);
 
-    assert_coverage_data_matches_values_for_key(coverage_data_contents, "FN:",
-                                                expected_function_lines_len,
-                                                has_function_line,
-                                                expected_function_lines,
-                                                sizeof(const char *));
+    std::string_view contents_view{coverage_data_contents};
+    assert_coverage_data_matches_values_for_key(
+        contents_view, "FN:", extract_function_line, expected_function_lines);
     g_free(coverage_data_contents);
 }
 
-typedef struct _FunctionHitCountData {
-    const char* function;
+struct FunctionHitCountData {
+    std::string function;
     unsigned hit_count_minimum;
-} FunctionHitCountData;
 
-static void hit_count_is_more_than_for_function(const char* line,
-                                                const void* user_data) {
-    auto* data = static_cast<const FunctionHitCountData*>(user_data);
+    bool operator==(const FunctionHitCountData& other) const {
+        return function == other.function &&
+               other.hit_count_minimum >= hit_count_minimum;
+    }
+};
 
+static FunctionHitCountData extract_hit_count(std::string_view& line) {
     // Advance past "FNDA:"
-    line += 5;
+    line.remove_prefix(5);
 
-    size_t max_buf_size = strcspn(line, "\n");
-    Gjs::AutoChar detected_function{g_new(char, max_buf_size + 1)};
-    Gjs::AutoChar format_string{g_strdup_printf("%%5u,%%%zus", max_buf_size)};
+    size_t comma_pos = line.find(',');
+    std::string hit_count_string{line.substr(0, comma_pos)};
+    line.remove_prefix(comma_pos + 1);
 
-    unsigned hit_count;
-    // clang-format off
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic push")
-_Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
-#endif
-    int nmatches =
-        sscanf(line, format_string, &hit_count, detected_function.get());
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-_Pragma("GCC diagnostic pop")
-#endif
-// clang-format on
-
-    g_assert_cmpint(nmatches, ==, 2);
-
-    g_assert_cmpstr(data->function, ==, detected_function);
-    g_assert_cmpuint(hit_count, >=, data->hit_count_minimum);
+    FunctionHitCountData retval;
+    auto result =
+        std::from_chars(hit_count_string.data(),
+                        hit_count_string.data() + hit_count_string.size(),
+                        retval.hit_count_minimum);
+    g_assert_true(result.ec == std::errc{});
+    retval.function = line.substr(0, line.find('\n'));
+    return retval;
 }
 
 /* For functions with whitespace between their definition and first executable
@@ -694,19 +722,17 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const FunctionHitCountData expected_hit_counts[] = {
+    std::vector<FunctionHitCountData> expected_hit_counts{
         {"top-level", 1},
         {"f", 1},
         {"b", 1},
     };
-    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken and the
      * first should not have been */
+    std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
-        coverage_data_contents, "FNDA:", expected_hit_count_len,
-        hit_count_is_more_than_for_function, expected_hit_counts,
-        sizeof(FunctionHitCountData));
+        contents_view, "FNDA:", extract_hit_count, expected_hit_counts);
 
     g_free(coverage_data_contents);
 }
@@ -732,19 +758,17 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const FunctionHitCountData expected_hit_counts[] = {
+    std::vector<FunctionHitCountData> expected_hit_counts{
         {"top-level", 1},
         {"f", 1},
         {"b", 1},
     };
-    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken and the
      * first should not have been */
+    std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
-        coverage_data_contents, "FNDA:", expected_hit_count_len,
-        hit_count_is_more_than_for_function, expected_hit_counts,
-        sizeof(FunctionHitCountData));
+        contents_view, "FNDA:", extract_hit_count, expected_hit_counts);
 
     g_free(coverage_data_contents);
 }
@@ -765,19 +789,17 @@ static void test_function_hit_counts_written_to_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const FunctionHitCountData expected_hit_counts[] = {
+    std::vector<FunctionHitCountData> expected_hit_counts{
         {"top-level", 1},
         {"f", 1},
         {"b", 1},
     };
-    const size_t expected_hit_count_len = G_N_ELEMENTS(expected_hit_counts);
 
     /* There are two possible branches here, the second should be taken and the
      * first should not have been */
+    std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
-        coverage_data_contents, "FNDA:", expected_hit_count_len,
-        hit_count_is_more_than_for_function, expected_hit_counts,
-        sizeof(FunctionHitCountData));
+        contents_view, "FNDA:", extract_hit_count, expected_hit_counts);
 
     g_free(coverage_data_contents);
 }

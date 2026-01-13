@@ -178,6 +178,7 @@ describe('Access to finalized GObject', function () {
     beforeEach(function () {
         destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
         destroyedWindow.set_title('To be destroyed');
+        destroyedWindow.previouslySetExpandoProperty = 'Hello!';
         destroyedWindow.destroy();
 
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
@@ -234,11 +235,7 @@ describe('Access to finalized GObject', function () {
     });
 
     it('Access previously set expando property', function () {
-        destroyedWindow = new Gtk.Window({type: Gtk.WindowType.TOPLEVEL});
-        destroyedWindow.expandoProperty = 'Hello!';
-        destroyedWindow.destroy();
-
-        expect(destroyedWindow.expandoProperty).toBe('Hello!');
+        expect(destroyedWindow.previouslySetExpandoProperty).toBe('Hello!');
     });
 
     it('Access to getter method', function () {

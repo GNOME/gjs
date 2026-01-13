@@ -170,7 +170,6 @@ describe('Garbage collection of introspected objects', function () {
         settings.bind('fullscreen', obj, 'screenfull', Gio.SettingsBindFlags.DEFAULT);
         const handler = settings.connect('changed::fullscreen', () => {
             obj.run_dispose();
-            obj = null;
             settings.disconnect(handler);
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 GLib.test_assert_expected_messages_internal('Gjs',
@@ -201,6 +200,11 @@ describe('Complete enumeration (boxed types)', function () {
     });
 
     it('enumerates all properties of a union', function () {
+        if (GLib.getenv('ENABLE_GTK') !== 'yes') {
+            pending('GTK disabled');
+            return;
+        }
+        Gtk.init(null);
         const event = new Gdk.Event(Gdk.EventType.KEY_PRESS);
         const names = Object.getOwnPropertyNames(Object.getPrototypeOf(event));
         const expectAtLeast = ['_get_angle', '_get_center', '_get_distance',

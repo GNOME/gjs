@@ -472,6 +472,7 @@ libgjs_sources = [
 ]
 
 enum_files = gnome.mkenums_simple('gjs-enums', decorator: 'GJS_EXPORT',
+    body_prefix: '#include <config.h>',
     header_prefix: '#include "gjs/macros.h"',
     sources: 'libgjs-private/gjs-util.h')
 
@@ -658,10 +659,6 @@ lsan_suppressions = files('installed-tests/extra/lsan.supp')
 tests_environment.set('LSAN_OPTIONS',
     'fast_unwind_on_malloc=0,exitcode=23,suppressions=@0@'.format(
         lsan_suppressions[0].full_path()))
-tsan_suppressions = files('installed-tests/extra/tsan.supp')
-tests_environment.set('TSAN_OPTIONS',
-    'history_size=5,force_seq_cst_atomics=1,suppressions=@0@'.format(
-        tsan_suppressions[0].full_path()))
 tests_environment.set('G_SLICE', 'always-malloc')
 tests_environment.set('NO_AT_BRIDGE', '1')
 tests_environment.set('GTK_A11Y', 'none')
@@ -730,20 +727,20 @@ valgrind_args = [
 add_test_setup('quiet', env: ['GJS_DEBUG_TOPICS='], is_default: true)
 add_test_setup('verbose')
 
-add_test_setup('valgrind', timeout_multiplier: 40, env: valgrind_environment,
+add_test_setup('valgrind', timeout_multiplier: 120, env: valgrind_environment,
     exe_wrapper: ['valgrind'] + valgrind_args)
 
 zeal2_environment = environment()
-zeal2_environment.set('JS_GC_ZEAL', '2,10')
-add_test_setup('extra_gc', timeout_multiplier: 40, env: zeal2_environment)
+zeal2_environment.set('JS_GC_ZEAL', 'Alloc,10')
+add_test_setup('extra_gc', timeout_multiplier: 60, env: zeal2_environment)
 
 zeal4_environment = environment()
-zeal4_environment.set('JS_GC_ZEAL', '4')
-add_test_setup('pre_verify', timeout_multiplier: 40, env: zeal4_environment)
+zeal4_environment.set('JS_GC_ZEAL', 'VerifierPre')
+add_test_setup('pre_verify', timeout_multiplier: 60, env: zeal4_environment)
 
 zeal11_environment = environment()
-zeal11_environment.set('JS_GC_ZEAL', '11')
-add_test_setup('post_verify', timeout_multiplier: 2, env: zeal11_environment)
+zeal11_environment.set('JS_GC_ZEAL', 'VerifierPost')
+add_test_setup('post_verify', timeout_multiplier: 5, env: zeal11_environment)
 
 ### Warn about conditions that may affect runtime ##############################
 

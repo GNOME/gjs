@@ -42,6 +42,7 @@
 #include <jsapi.h>    // for HandleValueArray
 #include <jspubtd.h>  // for JSProtoKey
 #include <mozilla/Maybe.h>
+#include <mozilla/Result.h>
 
 #ifndef G_DISABLE_ASSERT
 #    include <js/CallAndConstruct.h>  // for IsCallable

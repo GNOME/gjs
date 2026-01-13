@@ -109,11 +109,11 @@ environment.addReporter(new TapReporter());
 
 // If we're running the tests in certain JS_GC_ZEAL modes or Valgrind, then some
 // will time out if the CI machine is under a certain load. In that case
-// increase the default timeout.
+// disable Jasmine timeouts and just let the Meson timeout take effect.
 const gcZeal = GLib.getenv('JS_GC_ZEAL');
 const valgrind = GLib.getenv('VALGRIND');
-if (valgrind || (gcZeal && (gcZeal === '2' || gcZeal.startsWith('2,') || gcZeal === '4')))
-    jasmine.DEFAULT_TIMEOUT_INTERVAL *= 5;
+if (valgrind || gcZeal)
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 2 ** 31 - 1;
 
 /**
  * The Promise (or null) that minijasmine-executor locks on
