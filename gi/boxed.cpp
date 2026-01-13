@@ -23,10 +23,10 @@
 #include <js/Exception.h>
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/GCVector.h>     // for MutableWrappedPtrOperations
+#include <js/Id.h>
 #include <js/Object.h>       // for SetReservedSlot
 #include <js/PropertyAndElement.h>  // for JS_DefineFunction, JS_Enumerate
 #include <js/String.h>
-#include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
@@ -34,6 +34,7 @@
 #include <jsapi.h>  // for IdVector
 #include <mozilla/HashTable.h>
 #include <mozilla/Result.h>
+#include <mozilla/ScopeExit.h>
 #include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
@@ -357,19 +358,19 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
     Prototype* proto = get_prototype();
 
     // If the structure is registered as a boxed, we can create a new instance
-    // by looking for a zero-args constructor and calling it.
-    // Constructors don't really make sense for non-boxed types, since there is
-    // no memory management for the return value, and zero_args_constructor and
-    // default_constructor are always -1 for them.
+    // by looking for a zero-args constructor and calling it. Constructors don't
+    // really make sense for non-boxed types, since there is no memory
+    // management for the return value, and m_zero_args_constructor and
+    // m_default_constructor are always Nothing for them.
     //
     // For backward compatibility, we choose the zero args constructor if one
     // exists, otherwise we malloc the correct amount of space if possible;
     // finally, we fallback on the default constructor.
-    if (proto->has_zero_args_constructor()) {
-        GI::AutoFunctionInfo func_info{proto->zero_args_constructor_info()};
-
+    if (Maybe<GI::AutoFunctionInfo> zero_args_info{
+            proto->zero_args_constructor_info()};
+        zero_args_info) {
         GIArgument rval_arg;
-        Gjs::GErrorResult<> result = func_info.invoke({}, {}, &rval_arg);
+        Gjs::GErrorResult<> result = zero_args_info->invoke({}, {}, &rval_arg);
         if (result.isErr()) {
             gjs_throw(cx, "Failed to invoke boxed constructor: %s",
                       result.inspectErr()->message);
@@ -382,7 +383,9 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
 
     } else if (proto->can_allocate_directly_without_pointers()) {
         allocate_directly();
-    } else if (proto->has_default_constructor()) {
+    } else if (Maybe<GI::AutoFunctionInfo> default_ctor_info{
+                   proto->default_constructor_info()};
+               default_ctor_info) {
         js::ESClass es_class = js::ESClass::Other;
         if (proto->can_allocate_directly() && args.length() == 1 &&
             args[0].isObject()) {
@@ -401,8 +404,10 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
             // constructor function (which we retrieve from the JS constructor,
             // that is, Namespace.BoxedType, or object.constructor, given that
             // object was created with the right prototype.
-            if (!invoke_static_method(cx, obj,
-                                      proto->default_constructor_name(), args))
+            JS::RootedId ctor_name{
+                cx, gjs_intern_string_to_id(cx, default_ctor_info->name())};
+            if (ctor_name.isVoid() ||
+                !invoke_static_method(cx, obj, ctor_name, args))
                 return false;
 
             // The return value of the JS constructor gets its own
@@ -717,20 +722,21 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
             GjsArgumentFlags::MAY_BE_NULL, field_info.name()))
         return false;
 
-    bool success = true;
+    auto cleanup = mozilla::MakeScopeExit([cx, &arg, &type_info]() {
+        JS::AutoSaveExceptionState saved_exc{cx};
+        if (!gjs_gi_argument_release(cx, GI_TRANSFER_NOTHING, type_info, &arg,
+                                     GjsArgumentFlags::ARG_IN))
+            gjs_log_exception(cx);
+        saved_exc.restore();
+    });
+
     if (field_info.write(m_ptr, &arg).isErr()) {
         gjs_throw(cx, "Writing field %s.%s is not supported",
                   format_name().c_str(), field_info.name());
-        success = false;
+        return false;
     }
 
-    JS::AutoSaveExceptionState saved_exc{cx};
-    if (!gjs_gi_argument_release(cx, GI_TRANSFER_NOTHING, type_info, &arg,
-                                 GjsArgumentFlags::ARG_IN))
-        gjs_log_exception(cx);
-    saved_exc.restore();
-
-    return success;
+    return true;
 }
 
 /**
@@ -828,8 +834,6 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
 // Overrides GIWrapperPrototype::trace_impl().
 template <class Base, class Prototype, class Instance>
 void BoxedPrototype<Base, Prototype, Instance>::trace_impl(JSTracer* trc) {
-    JS::TraceEdge<jsid>(trc, &m_default_constructor_name,
-                        "Boxed::default_constructor_name");
     if (m_field_map)
         m_field_map->trace(trc);
 }
@@ -920,9 +924,6 @@ template <class Base, class Prototype, class Instance>
 BoxedPrototype<Base, Prototype, Instance>::BoxedPrototype(const BoxedInfo info,
                                                           GType gtype)
     : BaseClass(info, gtype),
-      m_zero_args_constructor(-1),
-      m_default_constructor(-1),
-      m_default_constructor_name(JS::PropertyKey::Void()),
       m_can_allocate_directly(struct_is_simple(info)) {
     if (!m_can_allocate_directly) {
         m_can_allocate_directly_without_pointers = false;
@@ -930,62 +931,36 @@ BoxedPrototype<Base, Prototype, Instance>::BoxedPrototype(const BoxedInfo info,
         m_can_allocate_directly_without_pointers =
             !simple_struct_has_pointers(info);
     }
-}
 
-// Overrides GIWrapperPrototype::init().
-template <class Base, class Prototype, class Instance>
-bool BoxedPrototype<Base, Prototype, Instance>::init(JSContext* cx) {
-    if (gtype() == G_TYPE_NONE)
-        return true;
+    if (gtype == G_TYPE_NONE)
+        return;
 
-    int i = 0;
-    int first_constructor = -1;
-    jsid first_constructor_name = JS::PropertyKey::Void();
-    jsid zero_args_constructor_name = JS::PropertyKey::Void();
+    ConstructorIndex i = 0;
+    Maybe<ConstructorIndex> first_constructor;
 
     /* If the structure is registered as a boxed, we can create a new instance
      * by looking for a zero-args constructor and calling it; constructors don't
      * really make sense for non-boxed types, since there is no memory
      * management for the return value.
      */
-    for (GI::AutoFunctionInfo func_info : info().methods()) {
+    for (GI::AutoFunctionInfo func_info : info.methods()) {
         if (func_info.is_constructor()) {
-            if (first_constructor < 0) {
-                first_constructor = i;
-                first_constructor_name =
-                    gjs_intern_string_to_id(cx, func_info.name());
-                if (first_constructor_name.isVoid())
-                    return false;
-            }
+            if (!first_constructor)
+                first_constructor = Some(i);
 
-            if (m_zero_args_constructor < 0 && func_info.n_args() == 0) {
-                m_zero_args_constructor = i;
-                zero_args_constructor_name =
-                    gjs_intern_string_to_id(cx, func_info.name());
-                if (zero_args_constructor_name.isVoid())
-                    return false;
-            }
+            if (!m_zero_args_constructor && func_info.n_args() == 0)
+                m_zero_args_constructor = Some(i);
 
-            if (m_default_constructor < 0 &&
-                strcmp(func_info.name(), "new") == 0) {
-                m_default_constructor = i;
-                const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
-                m_default_constructor_name = atoms.new_();
-            }
+            if (!m_default_constructor && strcmp(func_info.name(), "new") == 0)
+                m_default_constructor = Some(i);
         }
         i++;
     }
 
-    if (m_default_constructor < 0) {
+    if (!m_default_constructor && m_zero_args_constructor)
         m_default_constructor = m_zero_args_constructor;
-        m_default_constructor_name = zero_args_constructor_name;
-    }
-    if (m_default_constructor < 0) {
+    if (!m_default_constructor && first_constructor)
         m_default_constructor = first_constructor;
-        m_default_constructor_name = first_constructor_name;
-    }
-
-    return true;
 }
 
 /**

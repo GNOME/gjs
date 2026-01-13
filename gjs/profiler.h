@@ -19,10 +19,8 @@ G_BEGIN_DECLS
 
 #define GJS_TYPE_PROFILER (gjs_profiler_get_type())
 
-typedef struct _GjsProfiler GjsProfiler;
-
 GJS_EXPORT
-GType gjs_profiler_get_type(void);
+G_DECLARE_FINAL_TYPE(GjsProfiler, gjs_profiler, GJS, PROFILER, GObject);
 
 GJS_EXPORT
 void gjs_profiler_set_capture_writer(GjsProfiler* self, void* capture);

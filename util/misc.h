@@ -12,7 +12,11 @@
 #include <string.h>  // for memcpy
 
 #include <charconv>
+#include <chrono>
+#include <ratio>  // for micro
 #include <string>
+
+#include <glib.h>  // for g_get_monotonic_time
 
 #include <mozilla/Result.h>
 #include <mozilla/ResultVariant.h>  // IWYU pragma: keep
@@ -83,3 +87,21 @@ using StatmParseResult = mozilla::Result<uint64_t, StatmParseError>;
 StatmParseResult parse_statm_file_rss(const char* file_contents);
 
 }  // namespace Gjs
+
+namespace GLib {
+
+// GLib monotonic clock interface for std::chrono
+struct MonotonicClock {
+    using rep = int64_t;
+    using period = std::micro;
+    using duration = std::chrono::microseconds;
+    using time_point = std::chrono::time_point<MonotonicClock>;
+    static constexpr const bool is_steady = true;
+    [[nodiscard]]
+    static time_point now() {
+        return time_point{duration{g_get_monotonic_time()}};
+    }
+};
+using MonotonicTime = MonotonicClock::time_point;
+
+}  // namespace GLib

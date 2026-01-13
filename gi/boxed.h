@@ -20,7 +20,6 @@
 #include <js/AllocPolicy.h>
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <js/HashTable.h>    // for DefaultHasher
-#include <js/Id.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <mozilla/Maybe.h>
@@ -87,17 +86,15 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
                                          GI::OwnedInfo<Base::TAG>, BoxedInfo>;
     friend class GIWrapperBase<Base, Prototype, Instance>;
 
-    int m_zero_args_constructor;  // -1 if none
-    int m_default_constructor;  // -1 if none
-    JS::Heap<jsid> m_default_constructor_name;
+    using ConstructorIndex = unsigned;
+    mozilla::Maybe<ConstructorIndex> m_zero_args_constructor{};
+    mozilla::Maybe<ConstructorIndex> m_default_constructor{};
     std::unique_ptr<Boxed::FieldMap> m_field_map;
     bool m_can_allocate_directly_without_pointers : 1;
     bool m_can_allocate_directly : 1;
 
  protected:
     explicit BoxedPrototype(const BoxedInfo, GType);
-
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext* cx);
 
     // Accessors
 
@@ -115,23 +112,14 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
         return m_can_allocate_directly;
     }
     [[nodiscard]]
-    bool has_zero_args_constructor() const {
-        return m_zero_args_constructor >= 0;
+    mozilla::Maybe<GI::AutoFunctionInfo> zero_args_constructor_info() const {
+        return m_zero_args_constructor.map(
+            [this](ConstructorIndex ix) { return *info().methods()[ix]; });
     }
     [[nodiscard]]
-    bool has_default_constructor() const {
-        return m_default_constructor >= 0;
-    }
-    [[nodiscard]]
-    GI::AutoFunctionInfo zero_args_constructor_info() const {
-        g_assert(has_zero_args_constructor());
-        return *info().methods()[m_zero_args_constructor];
-    }
-    // The ID is traced from the object, so it's OK to create a handle from it.
-    [[nodiscard]]
-    JS::HandleId default_constructor_name() const {
-        return JS::HandleId::fromMarkedLocation(
-            m_default_constructor_name.unsafeAddress());
+    mozilla::Maybe<GI::AutoFunctionInfo> default_constructor_info() const {
+        return m_default_constructor.map(
+            [this](ConstructorIndex ix) { return *info().methods()[ix]; });
     }
 
     using BaseClass::format_name;

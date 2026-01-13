@@ -1158,6 +1158,8 @@ class GjsContextPrivate::SavedQueue : public JS::JobQueue::SavedJobQueue {
 
     ~SavedQueue() {
         gjs_debug(GJS_DEBUG_CONTEXT, "Unpausing job queue");
+        g_assert(m_gjs->m_job_queue.empty() &&
+                 "Current queue should be empty when restoring saved queue");
         m_gjs->m_job_queue = std::move(m_queue.get());
         m_gjs->m_draining_job_queue = m_was_draining;
         m_gjs->start_draining_job_queue();

@@ -8,7 +8,7 @@
 #include <errno.h>   // for errno
 #include <stdio.h>   // for sscanf, size_t
 #include <stdlib.h>  // for strtol, atoi, mkdtemp
-#include <string.h>  // for strlen, strstr, strcmp, strncmp, strcspn
+#include <string.h>  // for strlen, strstr, strncmp, strcspn
 
 #include <algorithm>  // for find, min
 #include <charconv>   // for from_chars
@@ -26,7 +26,7 @@
 #include "gjs/coverage.h"
 #include "gjs/gerror-result.h"
 
-typedef struct _GjsCoverageFixture {
+struct GjsCoverageFixture {
     GjsContext* gjs_context;
     GjsCoverage* coverage;
 
@@ -34,7 +34,7 @@ typedef struct _GjsCoverageFixture {
     GFile* tmp_js_script;
     GFile* lcov_output_dir;
     GFile* lcov_output;
-} GjsCoverageFixture;
+};
 
 static void replace_file(GFile* file, const char* contents) {
     Gjs::AutoError error;
@@ -196,35 +196,32 @@ static void assert_coverage_data_contains_value_for_key(const char* data,
     g_assert_cmpstr(value, ==, actual);
 }
 
-using CoverageDataMatchFunc = void (*)(const char* value,
-                                       const void* user_data);
+template <typename T>
+using CoverageDataMatchFunc = void (*)(const char* value, const T& data);
 
+template <typename T>
 static void assert_coverage_data_matches_value_for_key(
-    const char* data, const char* key, CoverageDataMatchFunc match,
-    const void* user_data) {
+    const char* data, const char* key, CoverageDataMatchFunc<T> match,
+    const T& user_data) {
     const char* line = line_starting_with(data, key);
 
     g_assert_nonnull(line);
     (*match)(line, user_data);
 }
 
+template <typename T>
 static void assert_coverage_data_matches_values_for_key(
-    const char* data, const char* key, size_t n, CoverageDataMatchFunc match,
-    const void* user_data, size_t data_size) {
+    const char* data, const char* key, CoverageDataMatchFunc<T> match,
+    const std::vector<T>& user_data) {
     const char* line = line_starting_with(data, key);
     // Keep matching. If we fail to match one of them then bail out
-    const char* data_iterator = static_cast<const char*>(user_data);
+    for (auto& data_iterator : user_data) {
+        g_assert_nonnull(line);
 
-    while (line && n > 0) {
         (*match)(line, data_iterator);
 
         line = line_starting_with(line + 1, key);
-        --n;
-        data_iterator += data_size;
     }
-
-    // If n is zero then we've found all available matches
-    g_assert_cmpuint(n, ==, 0);
 }
 
 template <typename T>
@@ -390,8 +387,7 @@ typedef struct _BranchLineData {
 } BranchLineData;
 
 static void branch_at_line_should_be_taken(const char* line,
-                                           const void* user_data) {
-    auto* branch_data = static_cast<const BranchLineData*>(user_data);
+                                           const BranchLineData& branch_data) {
     int line_no, branch_id, block_no, hit_count_num;
     char hit_count[20];  // can hold maxint64 (19 digits) + nul terminator
 
@@ -413,10 +409,10 @@ static void branch_at_line_should_be_taken(const char* line,
     else
         hit_count_num = atoi(hit_count);
 
-    g_assert_cmpint(line_no, ==, branch_data->expected_branch_line);
-    g_assert_cmpint(branch_id, ==, branch_data->expected_id);
+    g_assert_cmpint(line_no, ==, branch_data.expected_branch_line);
+    g_assert_cmpint(branch_id, ==, branch_data.expected_id);
 
-    switch (branch_data->taken) {
+    switch (branch_data.taken) {
         case NOT_EXECUTED:
             g_assert_cmpint(hit_count_num, ==, -1);
             break;
@@ -448,17 +444,14 @@ static void test_single_branch_coverage_written_to_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const BranchLineData expected_branches[] = {{2, 0, TAKEN},
-                                                {2, 1, NOT_TAKEN}};
-    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
+    std::vector<BranchLineData> expected_branches = {{2, 0, TAKEN},
+                                                     {2, 1, NOT_TAKEN}};
 
     /* There are two possible branches here, the second should be taken and the
      * first should not have been */
-    assert_coverage_data_matches_values_for_key(coverage_data_contents, "BRDA:",
-                                                expected_branches_len,
-                                                branch_at_line_should_be_taken,
-                                                expected_branches,
-                                                sizeof(BranchLineData));
+    assert_coverage_data_matches_values_for_key(
+        coverage_data_contents, "BRDA:", branch_at_line_should_be_taken,
+        expected_branches);
 
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "BRF:", "2");
@@ -493,19 +486,16 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const BranchLineData expected_branches[] = {
+    std::vector<BranchLineData> expected_branches{
         {2, 0, TAKEN}, {2, 1, TAKEN}, {3, 0, TAKEN},
         {3, 1, TAKEN}, {3, 2, TAKEN}, {3, 3, NOT_TAKEN},
     };
-    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken and the
      * first should not have been */
-    assert_coverage_data_matches_values_for_key(coverage_data_contents, "BRDA:",
-                                                expected_branches_len,
-                                                branch_at_line_should_be_taken,
-                                                expected_branches,
-                                                sizeof(BranchLineData));
+    assert_coverage_data_matches_values_for_key(
+        coverage_data_contents, "BRDA:", branch_at_line_should_be_taken,
+        expected_branches);
     g_free(coverage_data_contents);
 }
 
@@ -536,19 +526,16 @@ static void test_branches_for_multiple_case_statements_fallthrough(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    const BranchLineData expected_branches[] = {
+    std::vector<BranchLineData> expected_branches = {
         {2, 0, TAKEN}, {2, 1, TAKEN},     {3, 0, TAKEN},
         {3, 1, TAKEN}, {3, 2, NOT_TAKEN}, {3, 3, NOT_TAKEN},
     };
-    const size_t expected_branches_len = G_N_ELEMENTS(expected_branches);
 
     /* There are two possible branches here, the second should be taken and the
      * first should not have been */
-    assert_coverage_data_matches_values_for_key(coverage_data_contents, "BRDA:",
-                                                expected_branches_len,
-                                                branch_at_line_should_be_taken,
-                                                expected_branches,
-                                                sizeof(BranchLineData));
+    assert_coverage_data_matches_values_for_key(
+        coverage_data_contents, "BRDA:", branch_at_line_should_be_taken,
+        expected_branches);
     g_free(coverage_data_contents);
 }
 
@@ -832,9 +819,7 @@ typedef struct _LineCountIsMoreThanData {
 } LineCountIsMoreThanData;
 
 static void line_hit_count_is_more_than(const char* line,
-                                        const void* user_data) {
-    auto* data = static_cast<const LineCountIsMoreThanData*>(user_data);
-
+                                        const LineCountIsMoreThanData& data) {
     const char* coverage_line = &line[3];
     char* comma_ptr = nullptr;
 
@@ -848,8 +833,8 @@ static void line_hit_count_is_more_than(const char* line,
 
     g_assert_true(end_ptr[0] == '\0' || end_ptr[0] == '\n');
 
-    g_assert_cmpuint(lineno, ==, data->expected_lineno);
-    g_assert_cmpuint(value, >, data->expected_to_be_more_than);
+    g_assert_cmpuint(lineno, ==, data.expected_lineno);
+    g_assert_cmpuint(value, >, data.expected_to_be_more_than);
 }
 
 static void test_single_line_hit_written_to_coverage_data(void* fixture_data,
@@ -862,9 +847,8 @@ static void test_single_line_hit_written_to_coverage_data(void* fixture_data,
 
     const LineCountIsMoreThanData data = {1, 0};
 
-    assert_coverage_data_matches_value_for_key(coverage_data_contents, "DA:",
-                                               line_hit_count_is_more_than,
-                                               &data);
+    assert_coverage_data_matches_value_for_key(
+        coverage_data_contents, "DA:", line_hit_count_is_more_than, data);
     g_free(coverage_data_contents);
 }
 
@@ -885,11 +869,10 @@ static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
         fixture->lcov_output);
 
     // Hits on all lines, including both lines with a condition (3 and 4)
-    const LineCountIsMoreThanData data[] = {{1, 0}, {2, 0}, {3, 0}, {4, 0}};
+    std::vector<LineCountIsMoreThanData> data{{1, 0}, {2, 0}, {3, 0}, {4, 0}};
 
-    assert_coverage_data_matches_value_for_key(coverage_data_contents, "DA:",
-                                               line_hit_count_is_more_than,
-                                               data);
+    assert_coverage_data_matches_values_for_key(
+        coverage_data_contents, "DA:", line_hit_count_is_more_than, data);
     g_free(coverage_data_contents);
 }
 
@@ -931,45 +914,38 @@ static void test_end_of_record_section_written_to_coverage_data(
     g_free(coverage_data_contents);
 }
 
-typedef struct _GjsCoverageMultipleSourcesFixture {
-    GjsCoverageFixture base_fixture;
+struct GjsCoverageMultipleSourcesFixture : GjsCoverageFixture {
     GFile* second_js_source_file;
-} GjsCoverageMultpleSourcesFixture;
+};
 
 static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
     void* fixture_data, const void* user_data) {
     gjs_coverage_fixture_set_up(fixture_data, user_data);
 
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
-    fixture->second_js_source_file =
-        g_file_get_child(fixture->base_fixture.tmp_output_dir,
-                         "gjs_coverage_second_source_file.js");
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
+    fixture->second_js_source_file = g_file_get_child(
+        fixture->tmp_output_dir, "gjs_coverage_second_source_file.js");
 
     /* Because GjsCoverage searches the coverage paths at object-creation time,
      * we need to destroy the previously constructed one and construct it again
      */
-    Gjs::AutoChar first_js_script_path{
-        g_file_get_path(fixture->base_fixture.tmp_js_script)};
+    Gjs::AutoChar first_js_script_path{g_file_get_path(fixture->tmp_js_script)};
     Gjs::AutoChar second_js_script_path{
         g_file_get_path(fixture->second_js_source_file)};
     char* coverage_paths[] = {first_js_script_path, second_js_script_path,
                               nullptr};
 
-    g_object_unref(fixture->base_fixture.gjs_context);
-    g_object_unref(fixture->base_fixture.coverage);
-    Gjs::AutoChar output_path{
-        g_file_get_path(fixture->base_fixture.tmp_output_dir)};
+    g_object_unref(fixture->gjs_context);
+    g_object_unref(fixture->coverage);
+    Gjs::AutoChar output_path{g_file_get_path(fixture->tmp_output_dir)};
     char* search_paths[] = {output_path, nullptr};
 
-    fixture->base_fixture.gjs_context =
-        gjs_context_new_with_search_path(search_paths);
-    fixture->base_fixture.coverage =
-        gjs_coverage_new(coverage_paths, fixture->base_fixture.gjs_context,
-                         fixture->base_fixture.lcov_output_dir);
+    fixture->gjs_context = gjs_context_new_with_search_path(search_paths);
+    fixture->coverage = gjs_coverage_new(coverage_paths, fixture->gjs_context,
+                                         fixture->lcov_output_dir);
 
-    Gjs::AutoChar base_name{
-        g_file_get_basename(fixture->base_fixture.tmp_js_script)};
+    Gjs::AutoChar base_name{g_file_get_basename(fixture->tmp_js_script)};
     Gjs::AutoChar base_name_without_extension{
         g_strndup(base_name, strlen(base_name) - 3)};
     char* mock_script = g_strconcat("const FirstScript = imports.",
@@ -988,7 +964,7 @@ static void
 gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(
     void* fixture_data, const void* user_data) {
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
     g_object_unref(fixture->second_js_source_file);
 
     gjs_coverage_fixture_tear_down(fixture_data, user_data);
@@ -997,11 +973,11 @@ gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down(
 static void test_multiple_source_file_records_written_to_coverage_data(
     void* fixture_data, const void*) {
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
-        fixture->base_fixture.gjs_context, fixture->base_fixture.coverage,
-        fixture->second_js_source_file, fixture->base_fixture.lcov_output);
+        fixture->gjs_context, fixture->coverage, fixture->second_js_source_file,
+        fixture->lcov_output);
 
     const char* first_sf_record =
         line_starting_with(coverage_data_contents, "SF:");
@@ -1016,30 +992,28 @@ static void test_multiple_source_file_records_written_to_coverage_data(
 
 typedef struct _ExpectedSourceFileCoverageData {
     const char* source_file_path;
-    LineCountIsMoreThanData* more_than;
-    unsigned n_more_than_matchers;
+    std::vector<LineCountIsMoreThanData> more_than;
     const char expected_lines_hit_character;
     const char expected_lines_found_character;
 } ExpectedSourceFileCoverageData;
 
 static void assert_coverage_data_for_source_file(
-    ExpectedSourceFileCoverageData* expected, const size_t expected_size,
+    const std::vector<ExpectedSourceFileCoverageData>& expected_data,
     const char* section_start) {
-    for (size_t i = 0; i < expected_size; ++i) {
-        if (strncmp(&section_start[3], expected[i].source_file_path,
-                    strlen(expected[i].source_file_path)) == 0) {
+    for (auto& expected : expected_data) {
+        if (strncmp(&section_start[3], expected.source_file_path,
+                    strlen(expected.source_file_path)) == 0) {
             assert_coverage_data_matches_values_for_key(
-                section_start, "DA:", expected[i].n_more_than_matchers,
-                line_hit_count_is_more_than, expected[i].more_than,
-                sizeof(LineCountIsMoreThanData));
+                section_start, "DA:", line_hit_count_is_more_than,
+                expected.more_than);
             const char* total_hits_record =
                 line_starting_with(section_start, "LH:");
             g_assert_cmpint(total_hits_record[3], ==,
-                            expected[i].expected_lines_hit_character);
+                            expected.expected_lines_hit_character);
             const char* total_found_record =
                 line_starting_with(section_start, "LF:");
             g_assert_cmpint(total_found_record[3], ==,
-                            expected[i].expected_lines_found_character);
+                            expected.expected_lines_found_character);
 
             return;
         }
@@ -1052,49 +1026,28 @@ static void
 test_correct_line_coverage_data_written_for_both_source_file_sections(
     void* fixture_data, const void*) {
     auto* fixture =
-        static_cast<GjsCoverageMultpleSourcesFixture*>(fixture_data);
+        static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
     char* coverage_data_contents = eval_script_and_get_coverage_data(
-        fixture->base_fixture.gjs_context, fixture->base_fixture.coverage,
-        fixture->second_js_source_file, fixture->base_fixture.lcov_output);
-
-    LineCountIsMoreThanData first_script_matcher = {1, 0};
-
-    LineCountIsMoreThanData second_script_matchers[] = {{1, 0}, {2, 0}};
+        fixture->gjs_context, fixture->coverage, fixture->second_js_source_file,
+        fixture->lcov_output);
 
     Gjs::AutoChar first_script_output_path{get_output_path_for_script_on_disk(
-        fixture->base_fixture.tmp_js_script,
-        fixture->base_fixture.lcov_output_dir)};
+        fixture->tmp_js_script, fixture->lcov_output_dir)};
     Gjs::AutoChar second_script_output_path{get_output_path_for_script_on_disk(
-        fixture->second_js_source_file, fixture->base_fixture.lcov_output_dir)};
+        fixture->second_js_source_file, fixture->lcov_output_dir)};
 
-    ExpectedSourceFileCoverageData expected[] = {
-        {
-            first_script_output_path,
-            &first_script_matcher,
-            1,
-            '1',
-            '1'
-        },
-        {
-            second_script_output_path,
-            second_script_matchers,
-            2,
-            '2',
-            '2'
-        }
-    };
-    const size_t expected_len = G_N_ELEMENTS(expected);
+    std::vector<ExpectedSourceFileCoverageData> expected{
+        {first_script_output_path, {{1, 0}}, '1', '1'},
+        {second_script_output_path, {{1, 0}, {2, 0}}, '2', '2'}};
 
     const char* first_sf_record =
         line_starting_with(coverage_data_contents, "SF:");
-    assert_coverage_data_for_source_file(expected, expected_len,
-                                         first_sf_record);
+    assert_coverage_data_for_source_file(expected, first_sf_record);
 
     const char* second_sf_record =
         line_starting_with(first_sf_record + 3, "SF:");
-    assert_coverage_data_for_source_file(expected, expected_len,
-                                         second_sf_record);
+    assert_coverage_data_for_source_file(expected, second_sf_record);
 
     g_free(coverage_data_contents);
 }
@@ -1187,7 +1140,7 @@ void gjs_test_add_tests_for_coverage() {
         &coverage_fixture, test_end_of_record_section_written_to_coverage_data);
 
     FixturedTest coverage_for_multiple_files_to_single_output_fixture = {
-        sizeof(GjsCoverageMultpleSourcesFixture),
+        sizeof(GjsCoverageMultipleSourcesFixture),
         gjs_coverage_multiple_source_files_to_single_output_fixture_set_up,
         gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down};
 

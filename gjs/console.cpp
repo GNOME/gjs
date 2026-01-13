@@ -197,6 +197,39 @@ int define_argv_and_eval_script(GjsContext* gjs_context, int argc,
     return code;
 }
 
+class TraceFD {
+    int m_fd = -1;
+
+ public:
+    TraceFD() = default;
+    ~TraceFD() { close(); }
+
+    TraceFD(const TraceFD&) = delete;
+    TraceFD& operator=(const TraceFD&) = delete;
+
+    operator bool() { return m_fd != -1; }
+
+    TraceFD& operator=(int fd) {
+        if (m_fd != fd) {
+            close();
+            m_fd = fd;
+        }
+        return *this;
+    }
+
+    void close() {
+        if (m_fd != -1)
+            ::close(m_fd);
+        m_fd = -1;
+    }
+
+    int release() {
+        int fd = m_fd;
+        m_fd = -1;
+        return fd;
+    }
+};
+
 int main(int argc, char** argv) {
     Gjs::AutoError error;
     int gjs_argc = argc;
@@ -309,11 +342,11 @@ int main(int argc, char** argv) {
 
     // Check for GJS_TRACE_FD for sysprof profiling
     const char* env_tracefd = g_getenv("GJS_TRACE_FD");
-    int tracefd = -1;
+    TraceFD tracefd;
     if (env_tracefd) {
         tracefd = g_ascii_strtoll(env_tracefd, nullptr, 10);
         g_setenv("GJS_TRACE_FD", "", true);
-        if (tracefd > 0)
+        if (tracefd)
             enable_profiler = true;
     }
 
@@ -370,16 +403,12 @@ int main(int argc, char** argv) {
     if (enable_profiler && profile_output_path) {
         GjsProfiler* profiler = gjs_context_get_profiler(gjs_context);
         gjs_profiler_set_filename(profiler, profile_output_path);
-    } else if (enable_profiler && tracefd > -1) {
+    } else if (enable_profiler && tracefd) {
         GjsProfiler* profiler = gjs_context_get_profiler(gjs_context);
-        gjs_profiler_set_fd(profiler, tracefd);
-        tracefd = -1;
+        gjs_profiler_set_fd(profiler, tracefd.release());
     }
 
-    if (tracefd != -1) {
-        close(tracefd);
-        tracefd = -1;
-    }
+    tracefd.close();
 
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */

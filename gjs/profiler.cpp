@@ -24,6 +24,8 @@
 #    include <array>
 #endif
 
+#include <chrono>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -38,6 +40,7 @@
 #include <js/ProfilingStack.h>  // for EnableContextProfilingStack, ...
 #include <js/TypeDecls.h>
 #include <mozilla/Atomics.h>  // for ProfilingStack operators
+#include <mozilla/Maybe.h>
 
 #include "gjs/auto.h"
 #include "gjs/context.h"
@@ -45,8 +48,15 @@
 #include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"  // IWYU pragma: associated
 #include "gjs/profiler.h"
+#include "util/misc.h"
 
-#define FLUSH_DELAY_SECONDS 3
+namespace mozilla::detail {
+template <typename T, bool TriviallyDestructibleAndCopyable>
+struct MaybeStorage;
+}
+
+using mozilla::Maybe, mozilla::Nothing, mozilla::Some,
+    std::chrono_literals::operator""s, std::chrono_literals::operator""ms;
 
 /*
  * This is mostly non-exciting code wrapping the builtin Profiler in mozjs. In
@@ -76,8 +86,35 @@
  * likely. Most of GjsProfilerCapture is signal-safe.
  */
 
-#define SAMPLES_PER_SEC G_GUINT64_CONSTANT(1000)
-#define NSEC_PER_SEC G_GUINT64_CONSTANT(1000000000)
+static const std::chrono::seconds FLUSH_DELAY = 3s;
+static const std::chrono::milliseconds SAMPLING_PERIOD = 1ms;
+
+// Custom packing for Maybe<ProfilerTimePoint>. We assume that 0 is not a value
+// that comes out of the monotonic clock and so can be used to indicate Nothing
+namespace mozilla {
+namespace detail {
+template <>
+struct MaybeStorage<ProfilerTimePoint> {
+ protected:
+    union {
+        struct {
+            ProfilerTimePoint val;
+        } mStorage;
+        ProfilerTimePoint::rep mIsSome;
+    };
+
+    explicit MaybeStorage(ProfilerTimePoint some) : mStorage({some}) {
+        g_assert(some.time_since_epoch().count() != 0 &&
+                 "0 is not a valid value for Maybe<ProfilerTimePoint>");
+    }
+    MaybeStorage() : mIsSome(0) {}
+};
+
+static_assert(sizeof(Maybe<ProfilerTimePoint>) == sizeof(ProfilerTimePoint),
+              "Maybe<ProfilerTimePoint> should pack");
+
+}  // namespace detail
+}  // namespace mozilla
 
 G_DEFINE_POINTER_TYPE(GjsProfiler, gjs_profiler)
 
@@ -116,9 +153,9 @@ struct _GjsProfiler {
     GPid pid;
 
     // Timing information
-    int64_t gc_begin_time;
-    int64_t sweep_begin_time;
-    int64_t group_sweep_begin_time;
+    Maybe<ProfilerTimePoint> gc_begin_time;
+    Maybe<ProfilerTimePoint> sweep_begin_time;
+    Maybe<ProfilerTimePoint> group_sweep_begin_time;
     const char* gc_reason;  // statically allocated
 
     // GLib signal handler ID for SIGUSR2
@@ -134,6 +171,13 @@ struct _GjsProfiler {
 static GjsContext* profiling_context;
 
 #ifdef ENABLE_PROFILER
+
+[[nodiscard]]
+static inline ProfilerTimePoint profiler_timestamp() {
+    return std::chrono::time_point_cast<std::chrono::nanoseconds>(
+        GLib::MonotonicClock::now());
+}
+
 /**
  * gjs_profiler_extract_maps:
  *
@@ -145,7 +189,7 @@ static GjsContext* profiling_context;
  */
 [[nodiscard]]
 static bool gjs_profiler_extract_maps(GjsProfiler* self) {
-    int64_t now = g_get_monotonic_time() * 1000L;
+    ProfilerTimePoint now = profiler_timestamp();
 
     g_assert(self && "Profiler must be set up before extracting maps");
 
@@ -177,8 +221,9 @@ static bool gjs_profiler_extract_maps(GjsProfiler* self) {
             inode = 0;
         }
 
-        if (!sysprof_capture_writer_add_map(self->capture, now, -1, self->pid,
-                                            start, end, offset, inode, file))
+        if (!sysprof_capture_writer_add_map(
+                self->capture, now.time_since_epoch().count(), -1, self->pid,
+                start, end, offset, inode, file))
             return false;
     }
 
@@ -199,7 +244,7 @@ static void setup_counter_helper(SysprofCaptureCounter* counter,
 
 [[nodiscard]]
 static bool gjs_profiler_define_counters(GjsProfiler* self) {
-    int64_t now = g_get_monotonic_time() * 1000L;
+    ProfilerTimePoint now = profiler_timestamp();
 
     g_assert(self && "Profiler must be set up before defining counters");
 
@@ -214,7 +259,8 @@ static bool gjs_profiler_define_counters(GjsProfiler* self) {
 #    undef SETUP_COUNTER
 
     if (!sysprof_capture_writer_define_counters(
-            self->capture, now, -1, self->pid, counters.data(), GJS_N_COUNTERS))
+            self->capture, now.time_since_epoch().count(), -1, self->pid,
+            counters.data(), GJS_N_COUNTERS))
         return false;
 
     std::array<SysprofCaptureCounter, Gjs::GCCounters::N_COUNTERS> gc_counters;
@@ -240,9 +286,9 @@ static bool gjs_profiler_define_counters(GjsProfiler* self) {
     g_snprintf(gc_counters[Gjs::GCCounters::MALLOC_HEAP_BYTES].description,
                description_size, "Malloc bytes owned by tenured GC things");
 
-    return sysprof_capture_writer_define_counters(self->capture, now, -1,
-                                                  self->pid, gc_counters.data(),
-                                                  Gjs::GCCounters::N_COUNTERS);
+    return sysprof_capture_writer_define_counters(
+        self->capture, now.time_since_epoch().count(), -1, self->pid,
+        gc_counters.data(), Gjs::GCCounters::N_COUNTERS);
 }
 
 #endif  /* ENABLE_PROFILER */
@@ -370,7 +416,7 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
     if (depth == 0)
         return;
 
-    int64_t now = g_get_monotonic_time() * 1000L;
+    ProfilerTimePoint now = profiler_timestamp();
 
     /* NOTE: cppcheck warns that alloca() is not recommended since it can easily
      * overflow the stack; however, dynamic allocation is not an option here
@@ -438,8 +484,9 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
             addrs[flipped] = SysprofCaptureAddress(entry.stackAddress());
     }
 
-    if (!sysprof_capture_writer_add_sample(self->capture, now, -1, self->pid,
-                                           -1, addrs, depth)) {
+    if (!sysprof_capture_writer_add_sample(self->capture,
+                                           now.time_since_epoch().count(), -1,
+                                           self->pid, -1, addrs, depth)) {
         gjs_profiler_stop(self);
         return;
     }
@@ -461,9 +508,9 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
     GJS_FOR_EACH_COUNTER(FETCH_COUNTERS);
 #    undef FETCH_COUNTERS
 
-    if (new_counts > 0 &&
-        !sysprof_capture_writer_set_counters(self->capture, now, -1, self->pid,
-                                             ids, values, new_counts))
+    if (new_counts > 0 && !sysprof_capture_writer_set_counters(
+                              self->capture, now.time_since_epoch().count(), -1,
+                              self->pid, ids, values, new_counts))
         gjs_profiler_stop(self);
 }
 
@@ -530,7 +577,7 @@ void gjs_profiler_start(GjsProfiler* self) {
     // Automatically flush to be resilient against SIGINT, etc
     if (!self->periodic_flush) {
         self->periodic_flush =
-            g_timeout_source_new_seconds(FLUSH_DELAY_SECONDS);
+            g_timeout_source_new_seconds(FLUSH_DELAY.count());
         g_source_set_name(self->periodic_flush,
                           "[sysprof-capture-writer-flush]");
         g_source_set_priority(self->periodic_flush, G_PRIORITY_LOW + 100);
@@ -591,9 +638,9 @@ void gjs_profiler_start(GjsProfiler* self) {
 
     // Calculate sampling interval
     its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = NSEC_PER_SEC / SAMPLES_PER_SEC;
+    its.it_interval.tv_nsec = std::chrono::nanoseconds{SAMPLING_PERIOD}.count();
     its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = NSEC_PER_SEC / SAMPLES_PER_SEC;
+    its.it_value.tv_nsec = std::chrono::nanoseconds{SAMPLING_PERIOD}.count();
 
     // Now start this timer
     if (timer_settime(self->timer, 0, &its, &old_its) != 0) {
@@ -793,8 +840,8 @@ void gjs_profiler_set_filename(GjsProfiler* self, const char* filename) {
     self->filename = g_strdup(filename);
 }
 
-void _gjs_profiler_add_mark(GjsProfiler* self, int64_t time_nsec,
-                            int64_t duration_nsec, const char* group,
+void _gjs_profiler_add_mark(GjsProfiler* self, ProfilerTimePoint time,
+                            ProfilerDuration duration, const char* group,
                             const char* name, const char* message) {
     g_return_if_fail(self);
     g_return_if_fail(group);
@@ -802,13 +849,14 @@ void _gjs_profiler_add_mark(GjsProfiler* self, int64_t time_nsec,
 
 #ifdef ENABLE_PROFILER
     if (self->running && self->capture != nullptr) {
-        sysprof_capture_writer_add_mark(self->capture, time_nsec, -1, self->pid,
-                                        duration_nsec, group, name, message);
+        sysprof_capture_writer_add_mark(
+            self->capture, time.time_since_epoch().count(), -1, self->pid,
+            duration.count(), group, name, message);
     }
 #else
     // Unused in the no-profiler case
-    (void)time_nsec;
-    (void)duration_nsec;
+    (void)time;
+    (void)duration;
     (void)message;
 #endif
 }
@@ -827,10 +875,10 @@ bool _gjs_profiler_sample_gc_memory_info(
             values[ix].v64 = gc_counters[ix];
         }
 
-        int64_t now = g_get_monotonic_time() * 1000L;
-        if (!sysprof_capture_writer_set_counters(self->capture, now, -1,
-                                                 self->pid, ids, values,
-                                                 Gjs::GCCounters::N_COUNTERS))
+        ProfilerTimePoint time = profiler_timestamp();
+        if (!sysprof_capture_writer_set_counters(
+                self->capture, time.time_since_epoch().count(), -1, self->pid,
+                ids, values, Gjs::GCCounters::N_COUNTERS))
             return false;
     }
 #else
@@ -882,30 +930,30 @@ void _gjs_profiler_set_finalize_status(GjsProfiler* self,
     // GROUP_START, the collector may yield to the mutator meaning JS code can
     // run between the callback for GROUP_START and GROUP_END.
 
-    int64_t now = g_get_monotonic_time() * 1000L;
+    ProfilerTimePoint now = profiler_timestamp();
 
     switch (status) {
         case JSFINALIZE_GROUP_PREPARE:
-            self->sweep_begin_time = now;
+            self->sweep_begin_time = Some(now);
             break;
         case JSFINALIZE_GROUP_START:
-            self->group_sweep_begin_time = now;
+            self->group_sweep_begin_time = Some(now);
             break;
         case JSFINALIZE_GROUP_END:
-            if (self->group_sweep_begin_time != 0) {
-                _gjs_profiler_add_mark(self, self->group_sweep_begin_time,
-                                       now - self->group_sweep_begin_time,
+            if (self->group_sweep_begin_time) {
+                _gjs_profiler_add_mark(self, *self->group_sweep_begin_time,
+                                       now - *self->group_sweep_begin_time,
                                        "GJS", "Group sweep", nullptr);
             }
-            self->group_sweep_begin_time = 0;
+            self->group_sweep_begin_time = Nothing{};
             break;
         case JSFINALIZE_COLLECTION_END:
-            if (self->sweep_begin_time != 0) {
-                _gjs_profiler_add_mark(self, self->sweep_begin_time,
-                                       now - self->sweep_begin_time, "GJS",
+            if (self->sweep_begin_time) {
+                _gjs_profiler_add_mark(self, *self->sweep_begin_time,
+                                       now - *self->sweep_begin_time, "GJS",
                                        "Sweep", nullptr);
             }
-            self->sweep_begin_time = 0;
+            self->sweep_begin_time = Nothing{};
             break;
         default:
             g_assert_not_reached();
@@ -919,20 +967,20 @@ void _gjs_profiler_set_finalize_status(GjsProfiler* self,
 void _gjs_profiler_set_gc_status(GjsProfiler* self, JSGCStatus status,
                                  JS::GCReason reason) {
 #ifdef ENABLE_PROFILER
-    int64_t now = g_get_monotonic_time() * 1000L;
+    ProfilerTimePoint now = profiler_timestamp();
 
     switch (status) {
         case JSGC_BEGIN:
-            self->gc_begin_time = now;
+            self->gc_begin_time = Some(now);
             self->gc_reason = gjs_explain_gc_reason(reason);
             break;
         case JSGC_END:
-            if (self->gc_begin_time != 0) {
-                _gjs_profiler_add_mark(self, self->gc_begin_time,
-                                       now - self->gc_begin_time, "GJS",
+            if (self->gc_begin_time) {
+                _gjs_profiler_add_mark(self, *self->gc_begin_time,
+                                       now - *self->gc_begin_time, "GJS",
                                        "Garbage collection", self->gc_reason);
             }
-            self->gc_begin_time = 0;
+            self->gc_begin_time = Nothing{};
             self->gc_reason = nullptr;
             break;
         default:

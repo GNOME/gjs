@@ -7,6 +7,9 @@
 #include <config.h>
 
 #include <stdint.h>
+
+#include <chrono>
+#include <ratio>  // for nano
 #include <string>
 
 #include <js/GCAPI.h>  // for JSFinalizeStatus, JSGCStatus, GCReason
@@ -17,6 +20,7 @@
 
 #include "gjs/context.h"
 #include "gjs/profiler.h"
+#include "util/misc.h"
 
 #define GJS_PROFILER_DYNAMIC_STRING(cx, str) \
     js::GetContextProfilingStackIfEnabled(cx) ? (str) : ""
@@ -50,7 +54,11 @@ enum GCCounters { GC_HEAP_BYTES, MALLOC_HEAP_BYTES, N_COUNTERS };
 GjsProfiler* _gjs_profiler_new(GjsContext*);
 void _gjs_profiler_free(GjsProfiler*);
 
-void _gjs_profiler_add_mark(GjsProfiler*, int64_t time, int64_t duration,
+using ProfilerTimePoint =
+    std::chrono::time_point<GLib::MonotonicClock, std::chrono::nanoseconds>;
+using ProfilerDuration = std::chrono::duration<uint64_t, std::nano>;
+
+void _gjs_profiler_add_mark(GjsProfiler*, ProfilerTimePoint, ProfilerDuration,
                             const char* group, const char* name,
                             const char* message);
 
