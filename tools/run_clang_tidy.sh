@@ -13,18 +13,19 @@ if [ "$1" = '--help' ] || [ "$1" = '-h' ]; then
 fi
 
 BUILD="${BUILDDIR:-_build}"
-pushd "${BUILD}" || exit 1
+pushd "${BUILD}" > /dev/null || exit 1
 if ! ninja -t compdb > compile_commands.json; then
     echo 'Generating compile_commands.json failed.'
     exit 1
 fi
-popd || exit 1
+popd > /dev/null || exit 1
 
 if [ $# -eq 0 ]; then
     run-clang-tidy -p "${BUILD}" gi/*.cpp gjs/*.cpp installed-tests/*.cpp \
         installed-tests/js/libgjstesttools/*.cpp libgjs-private/*.c \
         modules/*.cpp test/*.cpp util/*.cpp
 else
+    git diff --stat "$1"
     git diff -U0 --no-color "$1" | \
         /usr/share/clang/clang-tidy-diff.py -p1 -path "${BUILD}"
 fi
