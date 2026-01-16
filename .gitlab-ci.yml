@@ -428,6 +428,39 @@ clang-tidy:
         - "**/*.hh"
       when: on_success
 
+clang-static-analyzer:
+  when: on_success
+  stage: source_check
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  script:
+    - test/test-ci.sh UPSTREAM_BASE
+    - meson setup _build -Db_pch=false -Dbuildtype=debugoptimized
+    - clang-tidy --version
+    - ./tools/run_clang_tidy.sh --analyzer ci-upstream-base
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
+      when: never
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip clang-tidy\]/
+      when: never
+    - if: $CI_COMMIT_BRANCH
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
+      when: on_success
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
+      when: on_success
+
 codespell:
   when: on_success
   extends:
@@ -490,6 +523,18 @@ clang-tidy-full:
   script:
     - meson setup _build -Db_pch=false -Dbuildtype=release
     - ./tools/run_clang_tidy.sh
+  except:
+    - schedules
+
+clang-static-analyzer-full:
+  when: manual
+  stage: manual
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+  script:
+    - meson setup _build -Db_pch=false -Dbuildtype=debugoptimized
+    - ./tools/run_clang_tidy.sh --analyzer
   except:
     - schedules
 
