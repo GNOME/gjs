@@ -222,13 +222,13 @@ inline bool js_value_to_c<char*>(JSContext* cx, JS::HandleValue value,
 
 template <typename BigT>
 [[nodiscard]]
-inline constexpr BigT max_safe_big_number() {
+constexpr BigT max_safe_big_number() {
     return (BigT(1) << std::numeric_limits<double>::digits) - 1;
 }
 
 template <typename BigT>
 [[nodiscard]]
-inline constexpr BigT min_safe_big_number() {
+constexpr BigT min_safe_big_number() {
     if constexpr (std::is_signed_v<BigT>)
         return -(max_safe_big_number<BigT>());
 

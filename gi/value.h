@@ -77,7 +77,7 @@ struct AutoGValue : GValue {
  */
 
 template <typename TAG>
-inline constexpr Tag::RealT<TAG> gvalue_get(const GValue* gvalue) {
+constexpr Tag::RealT<TAG> gvalue_get(const GValue* gvalue) {
     if constexpr (std::is_same_v<TAG, Tag::GBoolean> ||
                   std::is_same_v<TAG, bool>)
         return gvalue->data[0].v_int != FALSE;

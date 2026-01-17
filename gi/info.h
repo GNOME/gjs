@@ -1801,10 +1801,10 @@ class StackTypeInfo : public InfoOperations<StackTypeInfo, InfoTag::TYPE> {
 };
 
 namespace detail {
-constexpr inline GIArgInfo* Pointer::get_from(const StackArgInfo& stack) {
+constexpr GIArgInfo* Pointer::get_from(const StackArgInfo& stack) {
     return const_cast<GIArgInfo*>(&stack.m_info);
 }
-constexpr inline GITypeInfo* Pointer::get_from(const StackTypeInfo& stack) {
+constexpr GITypeInfo* Pointer::get_from(const StackTypeInfo& stack) {
     return const_cast<GITypeInfo*>(&stack.m_info);
 }
 inline void Pointer::to_stack(GITypeInfo* ptr, StackTypeInfo* stack) {

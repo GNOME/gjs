@@ -1184,8 +1184,8 @@ struct NotIntrospectable : SkipAll {
 };
 
 struct NullableIn : SkipAll, Nullable {
-    inline bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
-                   JS::HandleValue) override {
+    bool in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
+            JS::HandleValue) override {
         return handle_nullable(cx, arg, m_arg_name);
     }
 
