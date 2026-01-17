@@ -153,7 +153,7 @@ void gjs_warn_deprecated_once_per_callsite(JSContext* cx,
         return;
     }
 
-    message << format_string.substr(copied, std::string::npos);
+    message << format_string.substr(copied);
 
     std::string message_formatted = message.str();
     warn_deprecated_unsafe_internal(cx, id, message_formatted.c_str(),

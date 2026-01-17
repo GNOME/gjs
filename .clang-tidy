@@ -45,6 +45,7 @@ Checks:
   - -modernize-use-trailing-return-type  # churn; stylistic
 
   - readability-const-return-type
+  - readability-suspicious-call-argument
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
