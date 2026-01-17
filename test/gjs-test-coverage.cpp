@@ -235,7 +235,7 @@ static void assert_coverage_data_matches_values_for_key(
     std::vector<T> remaining_matches{expected_matches};
     std::string_view line = line_starting_with(data, key);
 
-    while (!line.empty() && remaining_matches.size() > 0) {
+    while (!line.empty() && !remaining_matches.empty()) {
         T entry = (*extract)(line);
 
         auto found = std::find(remaining_matches.begin(),

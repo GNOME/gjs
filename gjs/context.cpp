@@ -1037,7 +1037,7 @@ bool GjsContextPrivate::run_jobs_fallible() {
     JS::HandleValueArray args(JS::HandleValueArray::empty());
     JS::RootedValue rval(m_cx);
 
-    if (m_job_queue.length() == 0) {
+    if (m_job_queue.empty()) {
         // Check FinalizationRegistry cleanup tasks at least once if there are
         // no microtasks queued. This may enqueue more microtasks, which will be
         // appended to m_job_queue.
