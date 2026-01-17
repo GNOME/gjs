@@ -415,8 +415,7 @@ inline GIArgument* get_argument_for_arg_info(const GI::ArgInfo& arg_info,
                                              GIArgument** args, int index) {
     if (!arg_info.caller_allocates())
         return *reinterpret_cast<GIArgument**>(args[index]);
-    else
-        return args[index];
+    return args[index];
 }
 
 bool GjsCallbackTrampoline::callback_closure_inner(
@@ -1175,13 +1174,9 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
         }
     }
 
-    if (!state->failed && state->did_throw_gerror()) {
+    if (!state->failed && state->did_throw_gerror())
         return gjs_throw_gerror(cx, state->local_error.release());
-    } else if (state->failed) {
-        return false;
-    } else {
-        return true;
-    }
+    return !state->failed;
 }
 
 bool Function::call(JSContext* cx, unsigned argc, JS::Value* vp) {

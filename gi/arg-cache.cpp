@@ -2949,7 +2949,9 @@ void ArgsCache::build_return(const GI::CallableInfo& callable,
                        flags);
         }
         return;
-    } else if (tag == GI_TYPE_TAG_GLIST || tag == GI_TYPE_TAG_GSLIST) {
+    }
+
+    if (tag == GI_TYPE_TAG_GLIST || tag == GI_TYPE_TAG_GSLIST) {
         if (type_info.element_type().is_basic()) {
             set_return(new Arg::BasicGListReturn(type_info), transfer, flags);
             return;
@@ -3409,7 +3411,9 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index,
             set_argument(new Arg::BasicTypeTransferableOut(tag), common_args);
         }
         return;
-    } else if (tag == GI_TYPE_TAG_ARRAY) {
+    }
+
+    if (tag == GI_TYPE_TAG_ARRAY) {
         GIArrayType array_type = type_info.array_type();
         if (array_type == GI_ARRAY_TYPE_BYTE_ARRAY) {
             set_argument(new Arg::ByteArrayOut(), common_args);

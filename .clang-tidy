@@ -47,6 +47,7 @@ Checks:
   - readability-avoid-const-params-in-decls
   - readability-const-return-type
   - readability-container-size-empty
+  - readability-else-after-return
   - readability-redundant-inline-specifier
   - readability-suspicious-call-argument
 CheckOptions:

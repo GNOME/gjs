@@ -1346,16 +1346,16 @@ static JSNative get_getter_for_property(
             if (G_LIKELY(type_info_compatible(return_type, prop_type))) {
                 return create_getter_invoker(cx, pspec, *prop_getter,
                                              return_type, priv_out);
-            } else {
-                Maybe<GI::BaseInfo> container = prop_getter->container();
-                g_warning(
-                    "Type %s of property %s.%s::%s does not match return type "
-                    "%s of getter %s. Falling back to slow path",
-                    prop_type.type_string(), container->ns(), container->name(),
-                    property_info->name(), return_type.type_string(),
-                    prop_getter->name());
-                // fall back to GValue below
             }
+
+            Maybe<GI::BaseInfo> container = prop_getter->container();
+            g_warning(
+                "Type %s of property %s.%s::%s does not match return type %s "
+                "of getter %s. Falling back to slow path",
+                prop_type.type_string(), container->ns(), container->name(),
+                property_info->name(), return_type.type_string(),
+                prop_getter->name());
+            // fall back to GValue below
         }
     }
 
@@ -1454,16 +1454,16 @@ static JSNative get_setter_for_property(
             if (G_LIKELY(type_info_compatible(type_info, prop_type))) {
                 return create_setter_invoker(cx, pspec, *prop_setter, value_arg,
                                              type_info, priv_out);
-            } else {
-                Maybe<GI::BaseInfo> container = prop_setter->container();
-                g_warning(
-                    "Type %s of property %s.%s::%s does not match type %s of "
-                    "first argument of setter %s. Falling back to slow path",
-                    prop_type.type_string(), container->ns(), container->name(),
-                    property_info->name(), type_info.type_string(),
-                    prop_setter->name());
-                // fall back to GValue below
             }
+
+            Maybe<GI::BaseInfo> container = prop_setter->container();
+            g_warning(
+                "Type %s of property %s.%s::%s does not match type %s of first "
+                "argument of setter %s. Falling back to slow path",
+                prop_type.type_string(), container->ns(), container->name(),
+                property_info->name(), type_info.type_string(),
+                prop_setter->name());
+            // fall back to GValue below
         }
     }
 

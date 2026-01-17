@@ -105,8 +105,7 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
 static const char* format_dynamic_class_name(const char* name) {
     if (g_str_has_prefix(name, "_private_"))
         return name + strlen("_private_");
-    else
-        return name;
+    return name;
 }
 
 bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,

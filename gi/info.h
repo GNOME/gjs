@@ -1199,8 +1199,7 @@ class InfoOperations<Wrapper, InfoTag::ENUM>
     int64_t enum_from_int(int int_value) const {
         if (uses_signed_type())
             return int64_t{int_value};
-        else
-            return int64_t{static_cast<uint32_t>(int_value)};
+        return int64_t{static_cast<uint32_t>(int_value)};
     }
 
     // Here for symmetry, but result is the same for the two cases

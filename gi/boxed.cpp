@@ -349,7 +349,8 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
         if (g_type_is_a(gtype(), G_TYPE_BOXED)) {
             copy_boxed(source_priv->to_instance());
             return true;
-        } else if (get_prototype()->can_allocate_directly()) {
+        }
+        if (get_prototype()->can_allocate_directly()) {
             copy_memory(source_priv->to_instance());
             return true;
         }
@@ -586,7 +587,8 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
         if (auto union_info = interface.as<GI::InfoTag::UNION>()) {
             return get_nested_interface_object<UnionInstance>(
                 cx, obj, field_info, union_info.value(), rval);
-        } else if (auto struct_info = interface.as<GI::InfoTag::STRUCT>()) {
+        }
+        if (auto struct_info = interface.as<GI::InfoTag::STRUCT>()) {
             return get_nested_interface_object<StructInstance>(
                 cx, obj, field_info, struct_info.value(), rval);
         }
@@ -710,8 +712,8 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
         if (auto union_info = interface_info.as<GI::InfoTag::UNION>()) {
             return set_nested_interface_object<UnionBase>(
                 cx, field_info, union_info.value(), value);
-        } else if (auto struct_info =
-                       interface_info.as<GI::InfoTag::STRUCT>()) {
+        }
+        if (auto struct_info = interface_info.as<GI::InfoTag::STRUCT>()) {
             return set_nested_interface_object<StructBase>(
                 cx, field_info, struct_info.value(), value);
         }
@@ -883,7 +885,7 @@ static bool direct_allocation_has_pointers(const GI::TypeInfo& type_info) {
     GI::AutoBaseInfo interface{type_info.interface()};
     if (auto struct_info = interface.as<GI::InfoTag::STRUCT>())
         return simple_struct_has_pointers(struct_info.value());
-    else if (auto union_info = interface.as<GI::InfoTag::UNION>())
+    if (auto union_info = interface.as<GI::InfoTag::UNION>())
         return simple_struct_has_pointers(union_info.value());
 
     return false;
@@ -1034,11 +1036,13 @@ bool BoxedInstance<Base, Prototype, Instance>::init_from_c_struct(
     if (gtype() != G_TYPE_NONE && g_type_is_a(gtype(), G_TYPE_BOXED)) {
         copy_boxed(gboxed);
         return true;
-    } else if (gtype() == G_TYPE_VARIANT) {
+    }
+    if (gtype() == G_TYPE_VARIANT) {
         own_ptr(g_variant_ref_sink(static_cast<GVariant*>(gboxed)));
         debug_lifecycle("Boxed pointer created by sinking GVariant ref");
         return true;
-    } else if (get_prototype()->can_allocate_directly()) {
+    }
+    if (get_prototype()->can_allocate_directly()) {
         copy_memory(gboxed);
         return true;
     }

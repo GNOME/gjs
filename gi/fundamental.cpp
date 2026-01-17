@@ -448,8 +448,10 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         if (g_value_type_compatible(instance->gtype(), G_VALUE_TYPE(gvalue))) {
             g_value_set_instance(gvalue, instance->m_ptr);
             return true;
-        } else if (g_value_type_transformable(instance->gtype(),
-                                              G_VALUE_TYPE(gvalue))) {
+        }
+
+        if (g_value_type_transformable(instance->gtype(),
+                                       G_VALUE_TYPE(gvalue))) {
             Gjs::AutoGValue instance_value;
             g_value_init(&instance_value, instance->gtype());
             g_value_set_instance(&instance_value, instance->m_ptr);

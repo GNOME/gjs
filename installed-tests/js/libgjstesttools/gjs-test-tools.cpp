@@ -164,9 +164,10 @@ static void* ref_thread_func(void* data) {
     if (ref_data->ref_type & REF)
         g_object_ref(ref_data->object);
 
-    if (!(ref_data->ref_type & UNREF)) {
+    if (!(ref_data->ref_type & UNREF))
         return ref_data->object;
-    } else if (ref_data->ref_type & REF) {
+
+    if (ref_data->ref_type & REF) {
         g_usleep(ref_data->delay);
 
         if (FinalizedObjectsLocked()->count(ref_data->object))
