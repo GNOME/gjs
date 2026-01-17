@@ -1015,7 +1015,7 @@ class InfoOperations<Wrapper, InfoTag::REGISTERED_TYPE>
         return g_type_is_a(gtype(), G_TYPE_VALUE);
     }
 
-    operator const BaseInfo() const {
+    operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 };
@@ -1035,11 +1035,11 @@ class InfoOperations<Wrapper, InfoTag::CALLBACK>
     }
 
  public:
-    operator const BaseInfo() const {
+    operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 
-    operator const CallableInfo() const {
+    operator CallableInfo() const {
         return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
             GI_CALLABLE_INFO(ptr()));
     }
@@ -1126,7 +1126,7 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
         return flags() & GI_FUNCTION_IS_CONSTRUCTOR;
     }
 
-    operator const CallableInfo() const {
+    operator CallableInfo() const {
         return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
             GI_CALLABLE_INFO(ptr()));
     }
@@ -1320,7 +1320,7 @@ class InfoOperations<Wrapper, InfoTag::STRUCT>
     }
     [[nodiscard]] size_t size() const { return gi_struct_info_get_size(ptr()); }
 
-    operator const BaseInfo() const {
+    operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 };
@@ -1381,7 +1381,7 @@ class InfoOperations<Wrapper, InfoTag::VFUNC>
         return address;
     }
 
-    [[nodiscard]] operator const CallableInfo() const {
+    [[nodiscard]] operator CallableInfo() const {
         return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
             GI_CALLABLE_INFO(ptr()));
     }
@@ -1435,7 +1435,7 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
             gi_interface_info_find_vfunc(ptr(), name));
     }
 
-    operator const RegisteredTypeInfo() const {
+    operator RegisteredTypeInfo() const {
         return detail::Pointer::to_unowned<InfoTag::REGISTERED_TYPE>(
             GI_REGISTERED_TYPE_INFO(ptr()));
     }
@@ -1567,7 +1567,7 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
             gi_object_info_find_vfunc(ptr(), name));
     }
 
-    [[nodiscard]] operator const BaseInfo() const {
+    [[nodiscard]] operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
 };

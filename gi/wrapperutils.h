@@ -1062,7 +1062,7 @@ class GIWrapperPrototype : public Base {
     // Accessors
 
     static constexpr bool may_not_have_info = is_maybe<UnownedInfo>::value;
-    [[nodiscard]] const UnownedInfo info() const { return m_info; }
+    [[nodiscard]] UnownedInfo info() const { return m_info; }
     [[nodiscard]] GType gtype() const { return m_gtype; }
 
     // Helper methods

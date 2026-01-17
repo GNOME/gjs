@@ -73,7 +73,7 @@ class SelectResultImpl<Ok, Gjs::AutoError> {
             return *this;
         }
         [[nodiscard]] constexpr bool isOk() const { return !m_value; }
-        [[nodiscard]] constexpr const Ok inspect() const { return {}; }
+        [[nodiscard]] constexpr Ok inspect() const { return {}; }
         [[nodiscard]] constexpr Ok unwrap() { return {}; }
         [[nodiscard]]
         constexpr const GError* inspectErr() const {
