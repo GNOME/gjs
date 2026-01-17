@@ -312,9 +312,8 @@ static void test_gjs_autopointer_operator_move(Fixture* fx, const void*) {
     // the old autoptr.
 
     test_move_fun(std::move(autoptr));
-    g_assert_nonnull(autoptr);  // cppcheck-suppress accessMoved
+    g_assert_nonnull(autoptr);
 
-    // cppcheck-suppress accessMoved
     GjsAutoTestObject autoptr2 = std::move(autoptr);
     g_assert_true(autoptr2 == fx->ptr);
     g_assert_null(autoptr);  // NOLINT(clang-analyzer-cplusplus.Move)

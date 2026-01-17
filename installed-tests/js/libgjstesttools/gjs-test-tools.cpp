@@ -108,7 +108,6 @@ void gjs_test_tools_ref_other_thread(GObject* object, GError** error) {
         g_thread_try_new("ref_object", g_object_ref, object, error);
     if (thread)
         g_thread_join(thread);
-    // cppcheck-suppress memleak
 }
 
 static void* emit_test_signal_other_thread_func(void* data) {
@@ -123,7 +122,6 @@ void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
                          emit_test_signal_other_thread_func, object, error);
     if (thread)
         g_thread_join(thread);
-    // cppcheck-suppress memleak
 }
 
 enum [[clang::flag_enum]] RefType {
@@ -187,7 +185,6 @@ void gjs_test_tools_unref_other_thread(GObject* object, GError** error) {
                          ref_thread_data_new(object, -1, UNREF), error);
     if (thread)
         g_thread_join(thread);
-    // cppcheck-suppress memleak
 }
 
 /**
@@ -234,9 +231,7 @@ void gjs_test_tools_run_dispose_other_thread(GObject* object, GError** error) {
             return nullptr;
         },
         object, error);
-    // cppcheck-suppress leakNoVarFunctionCall
     g_thread_join(thread);
-    // cppcheck-suppress memleak
 }
 
 /**
@@ -295,9 +290,7 @@ GObject* gjs_test_tools_get_weak_other_thread(GError** error) {
     if (!thread)
         return nullptr;
 
-    return static_cast<GObject*>(
-        // cppcheck-suppress leakNoVarFunctionCall
-        g_thread_join(thread));
+    return static_cast<GObject*>(g_thread_join(thread));
 }
 
 /**

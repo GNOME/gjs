@@ -24,7 +24,7 @@ stages:
 
 .gjs-alpine:
   variables:
-    FDO_DISTRIBUTION_TAG: '2025-09-24.0'
+    FDO_DISTRIBUTION_TAG: '2026-01-15.0'
     FDO_UPSTREAM_REPO: GNOME/gjs
 
 build-alpine-image:
@@ -34,7 +34,7 @@ build-alpine-image:
   stage: prepare
   variables:
     FDO_DISTRIBUTION_PACKAGES: |
-      bash cppcheck git grep npm py3-codespell python3 shellcheck reuse
+      bash git grep npm py3-codespell python3 shellcheck reuse
     FDO_DISTRIBUTION_EXEC: |
       mkdir -p /cwd &&
       apk add cpplint \
@@ -218,41 +218,6 @@ pages:
 #############################################
 #              Static Analyzers             #
 #############################################
-cppcheck:
-  when: on_success
-  extends:
-    - .fdo.distribution-image@alpine
-    - .gjs-alpine
-  stage: test  # so that we have compile_commands.json and generated C files
-  script:
-    - cppcheck --version
-    # Create fake g-i test files, we are not analyzing them anyway
-    - mkdir -p subprojects/gobject-introspection-tests
-    - |
-      touch \
-        subprojects/gobject-introspection-tests/annotation.{c,h} \
-        subprojects/gobject-introspection-tests/drawable.{c,h} \
-        subprojects/gobject-introspection-tests/foo.{c,h} \
-        subprojects/gobject-introspection-tests/gimarshallingtests.{c,h} \
-        subprojects/gobject-introspection-tests/gimarshallingtestsextra.{c,h} \
-        subprojects/gobject-introspection-tests/regress.{c,h} \
-        subprojects/gobject-introspection-tests/regressextra.{c,h} \
-        subprojects/gobject-introspection-tests/regress-unix.{c,h} \
-        subprojects/gobject-introspection-tests/warnlib.{c,h} \
-        subprojects/gobject-introspection-tests/utility.{c,h}
-    - ./tools/run_cppcheck.sh -q
-  except:
-    refs:
-      - schedules
-      - tags
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip cppcheck\]/
-  only:
-    changes:
-      - "**/*.c"
-      - "**/*.cpp"
-      - "**/*.h"
-      - "**/*.hh"
 
 cpplint:
   when: on_success

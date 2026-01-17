@@ -310,8 +310,6 @@ inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value, U* out,
                 *out_of_range |= std::isnan(*out);
         }
         return ret;
-        // https://trac.cppcheck.net/ticket/10731
-        // cppcheck-suppress missingReturn
     }
 }
 
@@ -355,8 +353,6 @@ inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value,
                   std::is_same_v<U, uint64_t>) {
         return js_value_to_c_checked<uint64_t, uint64_t>(cx, value, out,
                                                          out_of_range);
-        // https://trac.cppcheck.net/ticket/10731
-        // cppcheck-suppress missingReturn
     }
 }
 
