@@ -44,6 +44,7 @@ Checks:
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 
+  - readability-avoid-const-params-in-decls
   - readability-const-return-type
   - readability-redundant-inline-specifier
   - readability-suspicious-call-argument
