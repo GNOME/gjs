@@ -152,7 +152,7 @@ struct BasicType {
 };
 
 struct HasTypeInfo {
-    explicit HasTypeInfo(GI::TypeInfo info) {
+    explicit HasTypeInfo(const GI::TypeInfo& info) {
         GI::detail::Pointer::to_stack(GI::detail::Pointer::get_from(info),
                                       &m_type_info);
     }
@@ -233,7 +233,7 @@ struct BasicCArray {
 };
 
 struct ZeroTerminatedArray {
-    constexpr explicit ZeroTerminatedArray(const GI::TypeInfo) {}
+    constexpr explicit ZeroTerminatedArray(const GI::TypeInfo&) {}
 
     bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
             const char* arg_name, GjsArgumentFlags flags,
@@ -266,7 +266,7 @@ struct ZeroTerminatedArray {
 };
 
 struct GArrayContainer {
-    constexpr explicit GArrayContainer(const GI::TypeInfo) {}
+    constexpr explicit GArrayContainer(const GI::TypeInfo&) {}
 
     bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
             const char* arg_name, GjsArgumentFlags flags,
@@ -299,7 +299,7 @@ struct GArrayContainer {
 };
 
 struct GPtrArrayContainer {
-    constexpr explicit GPtrArrayContainer(const GI::TypeInfo) {}
+    constexpr explicit GPtrArrayContainer(const GI::TypeInfo&) {}
 
     bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
             const char* arg_name, GjsArgumentFlags flags,
@@ -332,7 +332,7 @@ struct GPtrArrayContainer {
 };
 
 struct FixedSizeArray {
-    explicit FixedSizeArray(const GI::TypeInfo type_info) {
+    explicit FixedSizeArray(const GI::TypeInfo& type_info) {
         size_t fixed_size = type_info.array_fixed_size().value();
         g_assert(
             fixed_size <= UINT32_MAX &&
@@ -373,7 +373,7 @@ struct FixedSizeArray {
 };
 
 struct GListContainer {
-    explicit GListContainer(const GI::TypeInfo type_info)
+    explicit GListContainer(const GI::TypeInfo& type_info)
         : m_double_link(type_info.tag() == GI_TYPE_TAG_GLIST) {}
     bool m_double_link : 1;
 
@@ -426,7 +426,7 @@ struct GListContainer {
 };
 
 struct GHashContainer {
-    explicit GHashContainer(const GI::TypeInfo type_info)
+    explicit GHashContainer(const GI::TypeInfo& type_info)
         : m_value_tag(type_info.value_type().tag()) {}
     [[nodiscard]] constexpr GITypeTag value_tag() const { return m_value_tag; }
 
@@ -454,7 +454,7 @@ struct GTypedType {
 struct RegisteredType : GTypedType {
     RegisteredType(GType gtype, bool is_enum_or_flags)
         : GTypedType(gtype), m_is_enum_or_flags(is_enum_or_flags) {}
-    explicit RegisteredType(const GI::RegisteredTypeInfo info)
+    explicit RegisteredType(const GI::RegisteredTypeInfo& info)
         : GTypedType(info.gtype()),
           m_is_enum_or_flags(info.is_enum_or_flags()) {
         g_assert(m_gtype != G_TYPE_NONE &&
@@ -471,7 +471,7 @@ struct RegisteredType : GTypedType {
 
 template <GI::InfoTag TAG>
 struct RegisteredInterface : HasIntrospectionInfo<TAG>, GTypedType {
-    explicit RegisteredInterface(const GI::UnownedInfo<TAG> info)
+    explicit RegisteredInterface(const GI::UnownedInfo<TAG>& info)
         : HasIntrospectionInfo<TAG>(info), GTypedType(info.gtype()) {}
 
     [[nodiscard]]
@@ -482,7 +482,7 @@ struct RegisteredInterface : HasIntrospectionInfo<TAG>, GTypedType {
 };
 
 struct Callback : Nullable, HasIntrospectionInfo<GI::InfoTag::CALLBACK> {
-    explicit Callback(const GI::CallbackInfo info, Maybe<unsigned> closure_pos,
+    explicit Callback(const GI::CallbackInfo& info, Maybe<unsigned> closure_pos,
                       Maybe<unsigned> destroy_pos, GIScopeType scope)
         : HasIntrospectionInfo(info),
           m_closure_pos(closure_pos.valueOr(Argument::ABSENT)),
@@ -508,14 +508,14 @@ struct Callback : Nullable, HasIntrospectionInfo<GI::InfoTag::CALLBACK> {
 };
 
 struct Enum {
-    explicit Enum(const GI::EnumInfo);
+    explicit Enum(const GI::EnumInfo&);
     bool m_unsigned : 1;
     uint32_t m_min = 0;
     uint32_t m_max = 0;
 };
 
 struct Flags {
-    explicit Flags(const GI::FlagsInfo);
+    explicit Flags(const GI::FlagsInfo&);
     unsigned m_mask = 0;
 };
 
@@ -760,7 +760,7 @@ struct BasicTypeContainerReturn : BasicTypeTransferableReturn, Nullable {
     explicit BasicTypeContainerReturn(GITypeTag element_tag)
         : BasicTypeTransferableReturn(element_tag) {}
 
-    explicit BasicTypeContainerReturn(const GI::TypeInfo type_info)
+    explicit BasicTypeContainerReturn(const GI::TypeInfo& type_info)
         : BasicTypeContainerReturn(type_info.element_type().tag()) {}
 
     [[nodiscard]]
@@ -794,7 +794,7 @@ struct BasicTypeContainerInOut : BasicTypeContainerOut {
 
 template <class Marshaller, class Container>
 struct BasicTypeContainer : Marshaller, Container {
-    explicit BasicTypeContainer(const GI::TypeInfo type_info)
+    explicit BasicTypeContainer(const GI::TypeInfo& type_info)
         : Marshaller(type_info), Container(type_info) {}
 
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
@@ -942,7 +942,7 @@ using BasicGPtrArrayInOut =
 struct BasicGHashReturn : BasicTypeTransferableReturn,
                           GHashContainer,
                           Nullable {
-    explicit BasicGHashReturn(const GI::TypeInfo type_info)
+    explicit BasicGHashReturn(const GI::TypeInfo& type_info)
         : BasicTypeTransferableReturn(type_info.key_type().tag()),
           GHashContainer(type_info) {
         g_assert(GI_TYPE_TAG_IS_BASIC(m_value_tag));
@@ -1119,7 +1119,7 @@ struct ExplicitArrayBase : BasicTypeContainerReturn, ExplicitArray {
 };
 
 struct CArrayIn : ExplicitArrayBase, HasTypeInfo {
-    CArrayIn(const GI::TypeInfo type_info, unsigned length_pos,
+    CArrayIn(const GI::TypeInfo& type_info, unsigned length_pos,
              GITypeTag length_tag, GIDirection length_direction)
         : ExplicitArrayBase(length_pos, length_tag, length_direction),
           HasTypeInfo(type_info) {}
@@ -1137,7 +1137,7 @@ struct CArrayIn : ExplicitArrayBase, HasTypeInfo {
 // Positioned must come before HasTypeInfo for struct packing reasons, otherwise
 // this could inherit from CArrayIn
 struct CArrayInOut : ExplicitArrayBase, Positioned, HasTypeInfo {
-    CArrayInOut(const GI::TypeInfo type_info, unsigned length_pos,
+    CArrayInOut(const GI::TypeInfo& type_info, unsigned length_pos,
                 GITypeTag length_tag, GIDirection length_direction)
         : ExplicitArrayBase(length_pos, length_tag, length_direction),
           HasTypeInfo(type_info) {}
@@ -1302,7 +1302,7 @@ struct BoxedIn : BoxedInTransferNone {
 
 struct UnregisteredBoxedIn : BoxedIn,
                              HasIntrospectionInfo<GI::InfoTag::STRUCT> {
-    explicit UnregisteredBoxedIn(const GI::StructInfo info)
+    explicit UnregisteredBoxedIn(const GI::StructInfo& info)
         : BoxedIn(info.gtype(), /* is_enum_or_flags = */ false),
           HasIntrospectionInfo(info) {}
     // This is a smart argument, no release needed
@@ -1658,7 +1658,7 @@ struct BasicExplicitCArrayInOut : BasicExplicitCArrayIn {
 };
 
 struct CallerAllocatesOut : FallbackOut, CallerAllocates {
-    CallerAllocatesOut(const GI::TypeInfo type_info, size_t size)
+    CallerAllocatesOut(const GI::TypeInfo& type_info, size_t size)
         : FallbackOut(type_info), CallerAllocates(size) {}
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
@@ -1672,7 +1672,7 @@ struct CallerAllocatesOut : FallbackOut, CallerAllocates {
 };
 
 struct BoxedCallerAllocatesOut : CallerAllocatesOut, GTypedType {
-    BoxedCallerAllocatesOut(const GI::TypeInfo type_info, size_t size,
+    BoxedCallerAllocatesOut(const GI::TypeInfo& type_info, size_t size,
                             GType gtype)
         : CallerAllocatesOut(type_info, size), GTypedType(gtype) {}
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
@@ -2653,7 +2653,7 @@ void Argument::init_common(const Init& init, T* arg) {
         arg->m_transfer = init.transfer;
 }
 
-bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo callable) {
+bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo& callable) {
     if (m_args) {
         gjs_throw(cx, "Arguments cache already initialized!");
         return false;
@@ -2718,7 +2718,7 @@ void ArgsCache::set_skip_all(uint8_t index, const char* name) {
                                 GjsArgumentFlags::SKIP_ALL});
 }
 
-void ArgsCache::init_out_array_length_argument(const GI::ArgInfo length_arg,
+void ArgsCache::init_out_array_length_argument(const GI::ArgInfo& length_arg,
                                                GjsArgumentFlags flags,
                                                unsigned length_pos) {
     // Even if we skip the length argument most of time, we need to do some
@@ -2732,12 +2732,10 @@ void ArgsCache::init_out_array_length_argument(const GI::ArgInfo length_arg,
             static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL)});
 }
 
-void ArgsCache::set_array_argument(const GI::CallableInfo callable,
-                                   uint8_t gi_index,
-                                   const GI::TypeInfo type_info,
-                                   GIDirection direction, const GI::ArgInfo arg,
-                                   GjsArgumentFlags flags,
-                                   unsigned length_pos) {
+void ArgsCache::set_array_argument(
+    const GI::CallableInfo& callable, uint8_t gi_index,
+    const GI::TypeInfo& type_info, GIDirection direction,
+    const GI::ArgInfo& arg, GjsArgumentFlags flags, unsigned length_pos) {
     g_assert(type_info.array_type() == GI_ARRAY_TYPE_C);
 
     GI::AutoTypeInfo element_type{type_info.element_type()};
@@ -2793,8 +2791,8 @@ void ArgsCache::set_array_argument(const GI::CallableInfo callable,
         init_out_array_length_argument(length_arg, flags, length_pos);
 }
 
-void ArgsCache::set_array_return(const GI::CallableInfo callable,
-                                 const GI::TypeInfo type_info,
+void ArgsCache::set_array_return(const GI::CallableInfo& callable,
+                                 const GI::TypeInfo& type_info,
                                  GjsArgumentFlags flags, unsigned length_pos) {
     g_assert(type_info.array_type() == GI_ARRAY_TYPE_C);
 
@@ -2822,7 +2820,7 @@ void ArgsCache::set_array_return(const GI::CallableInfo callable,
     init_out_array_length_argument(length_arg, flags, length_pos);
 }
 
-void ArgsCache::build_return(const GI::CallableInfo callable,
+void ArgsCache::build_return(const GI::CallableInfo& callable,
                              bool* inc_counter_out) {
     g_assert(inc_counter_out && "forgot out parameter");
 
@@ -2971,7 +2969,7 @@ void ArgsCache::build_return(const GI::CallableInfo callable,
 
 namespace Arg {
 
-Enum::Enum(const GI::EnumInfo info) {
+Enum::Enum(const GI::EnumInfo& info) {
     int64_t min = std::numeric_limits<int64_t>::max();
     int64_t max = std::numeric_limits<int64_t>::min();
     for (GI::AutoValueInfo value_info : info.values()) {
@@ -2994,7 +2992,7 @@ Enum::Enum(const GI::EnumInfo info) {
     m_unsigned = (min >= 0 && max > std::numeric_limits<int32_t>::max());
 }
 
-Flags::Flags(const GI::FlagsInfo info) {
+Flags::Flags(const GI::FlagsInfo& info) {
     uint64_t mask = 0;
     for (GI::AutoValueInfo value_info : info.values()) {
         // From the docs for g_value_info_get_value(): "This will always be
@@ -3012,7 +3010,7 @@ Flags::Flags(const GI::FlagsInfo info) {
 
 template <Arg::Kind ArgKind>
 void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
-                                       const GI::BaseInfo interface_info) {
+                                       const GI::BaseInfo& interface_info) {
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
     if (G_UNLIKELY(base_args.transfer == GI_TRANSFER_CONTAINER)) {
@@ -3159,8 +3157,8 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
 }
 
 void ArgsCache::build_normal_in_arg(uint8_t gi_index,
-                                    const GI::TypeInfo type_info,
-                                    const GI::ArgInfo arg,
+                                    const GI::TypeInfo& type_info,
+                                    const GI::ArgInfo& arg,
                                     GjsArgumentFlags flags) {
     // "Normal" in arguments are those arguments that don't require special
     // processing, and don't touch other arguments.
@@ -3338,8 +3336,8 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index,
 }
 
 void ArgsCache::build_normal_out_arg(uint8_t gi_index,
-                                     const GI::TypeInfo type_info,
-                                     const GI::ArgInfo arg,
+                                     const GI::TypeInfo& type_info,
+                                     const GI::ArgInfo& arg,
                                      GjsArgumentFlags flags) {
     GITransfer transfer = arg.ownership_transfer();
     Argument::Init common_args{arg.name(), gi_index, transfer, flags};
@@ -3490,8 +3488,8 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index,
 }
 
 void ArgsCache::build_normal_inout_arg(uint8_t gi_index,
-                                       const GI::TypeInfo type_info,
-                                       const GI::ArgInfo arg,
+                                       const GI::TypeInfo& type_info,
+                                       const GI::ArgInfo& arg,
                                        GjsArgumentFlags flags) {
     GITransfer transfer = arg.ownership_transfer();
     Argument::Init common_args{arg.name(), gi_index, transfer, flags};
@@ -3622,7 +3620,7 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index,
     set_argument(new Arg::FallbackInOut(type_info), common_args);
 }
 
-void ArgsCache::build_instance(const GI::CallableInfo callable) {
+void ArgsCache::build_instance(const GI::CallableInfo& callable) {
     if (!m_is_method)
         return;
 
@@ -3663,8 +3661,8 @@ static constexpr bool type_tag_is_scalar(GITypeTag tag) {
 }
 
 void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
-                          const GI::ArgInfo arg,
-                          const GI::CallableInfo callable,
+                          const GI::ArgInfo& arg,
+                          const GI::CallableInfo& callable,
                           bool* inc_counter_out) {
     g_assert(inc_counter_out && "forgot out parameter");
 

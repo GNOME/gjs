@@ -48,7 +48,7 @@
 
 using mozilla::Maybe;
 
-ErrorPrototype::ErrorPrototype(const GI::EnumInfo info, GType gtype)
+ErrorPrototype::ErrorPrototype(const GI::EnumInfo& info, GType gtype)
     : GIWrapperPrototype(info, gtype),
       m_domain(g_quark_from_string(info.error_domain())) {
     GJS_INC_COUNTER(gerror_prototype);
@@ -232,7 +232,7 @@ bool ErrorPrototype::get_parent_proto(JSContext* cx,
 }
 
 bool ErrorPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
-                                  const GI::EnumInfo info) {
+                                  const GI::EnumInfo& info) {
     JS::RootedObject prototype{cx}, constructor{cx};
     if (!ErrorPrototype::create_class(cx, in_object, info, G_TYPE_ERROR,
                                       &constructor, &prototype))

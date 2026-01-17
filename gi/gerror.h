@@ -113,7 +113,7 @@ class ErrorPrototype
 
     GQuark m_domain;
 
-    explicit ErrorPrototype(const GI::EnumInfo, GType);
+    explicit ErrorPrototype(const GI::EnumInfo&, GType);
     ~ErrorPrototype();
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -124,7 +124,7 @@ class ErrorPrototype
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext*, JS::HandleObject in_object,
-                             const GI::EnumInfo);
+                             const GI::EnumInfo&);
 };
 
 class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,

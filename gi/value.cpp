@@ -146,8 +146,8 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool maybe_release_signal_value(JSContext* cx,
-                                       const GI::ArgInfo arg_info,
-                                       const GI::TypeInfo type_info,
+                                       const GI::ArgInfo& arg_info,
+                                       const GI::TypeInfo& type_info,
                                        const GValue* gvalue,
                                        GITransfer transfer) {
     if (transfer == GI_TRANSFER_NOTHING)
@@ -199,7 +199,7 @@ static Maybe<GI::AutoSignalInfo> get_signal_info_if_available(
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_value_from_array_and_length_values(
     JSContext* cx, JS::MutableHandleValue value_p,
-    const GI::TypeInfo array_type_info, const GValue* array_value,
+    const GI::TypeInfo& array_type_info, const GValue* array_value,
     Maybe<std::pair<const GI::ArgInfo, const GI::TypeInfo>> array_length_info,
     const GValue* array_length_value, bool no_copy,
     bool is_introspected_signal) {

@@ -13,7 +13,7 @@
 #include "gi/union.h"
 #include "gjs/mem-private.h"
 
-UnionPrototype::UnionPrototype(const GI::UnionInfo info, GType gtype)
+UnionPrototype::UnionPrototype(const GI::UnionInfo& info, GType gtype)
     : BoxedPrototype(info, gtype) {
     GJS_INC_COUNTER(union_prototype);
 }
@@ -49,13 +49,13 @@ const struct JSClass UnionBase::klass = {
     &UnionBase::class_ops};
 
 bool UnionPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
-                                  const GI::UnionInfo info) {
+                                  const GI::UnionInfo& info) {
     JS::RootedObject unused{cx};
     return BoxedPrototype::define_class_impl(cx, in_object, info, &unused);
 }
 
 JSObject* UnionInstance::new_for_c_union(JSContext* cx,
-                                         const GI::UnionInfo info,
+                                         const GI::UnionInfo& info,
                                          void* gboxed) {
     return new_for_c_struct_impl(cx, info, gboxed);
 }

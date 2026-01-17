@@ -93,7 +93,7 @@ class Function : public CWrapper<Function> {
     uint8_t m_js_out_argc = 0;
     GIFunctionInvoker m_invoker{};
 
-    explicit Function(const GI::CallableInfo info) : m_info(info) {
+    explicit Function(const GI::CallableInfo& info) : m_info(info) {
         GJS_INC_COUNTER(function);
     }
     ~Function();
@@ -170,7 +170,7 @@ class Function : public CWrapper<Function> {
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* create(JSContext*, GType, const GI::CallableInfo);
+    static JSObject* create(JSContext*, GType, const GI::CallableInfo&);
 
     [[nodiscard]] std::string format_name();
 
@@ -181,7 +181,7 @@ class Function : public CWrapper<Function> {
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool invoke_constructor_uncached(JSContext* cx,
-                                            const GI::FunctionInfo info,
+                                            const GI::FunctionInfo& info,
                                             JS::HandleObject obj,
                                             const JS::CallArgs& args,
                                             GIArgument* rvalue) {
@@ -207,7 +207,7 @@ static inline void set_ffi_arg(void* result, GIArgument* value) {
     }
 }
 
-static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo ret_type,
+static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo& ret_type,
                                                 void* result,
                                                 GIArgument* return_value) {
     // Be consistent with gjs_value_to_gi_argument()
@@ -411,7 +411,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     }
 }
 
-inline GIArgument* get_argument_for_arg_info(const GI::ArgInfo arg_info,
+inline GIArgument* get_argument_for_arg_info(const GI::ArgInfo& arg_info,
                                              GIArgument** args, int index) {
     if (!arg_info.caller_allocates())
         return *reinterpret_cast<GIArgument**>(args[index]);
@@ -421,8 +421,9 @@ inline GIArgument* get_argument_for_arg_info(const GI::ArgInfo arg_info,
 
 bool GjsCallbackTrampoline::callback_closure_inner(
     JSContext* cx, JS::HandleObject this_object, GObject* gobject,
-    JS::MutableHandleValue rval, GIArgument** args, const GI::TypeInfo ret_type,
-    unsigned n_args, unsigned c_args_offset, void* result) {
+    JS::MutableHandleValue rval, GIArgument** args,
+    const GI::TypeInfo& ret_type, unsigned n_args, unsigned c_args_offset,
+    void* result) {
     unsigned n_outargs = 0;
     JS::RootedValueVector jsargs{cx};
 
@@ -665,7 +666,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
 GjsCallbackTrampoline* GjsCallbackTrampoline::create(
     JSContext* cx, JS::HandleObject callable,
-    const GI::CallableInfo callable_info, GIScopeType scope,
+    const GI::CallableInfo& callable_info, GIScopeType scope,
     bool has_scope_object, bool is_vfunc) {
     g_assert(JS::IsCallable(callable) &&
              "tried to create a callback trampoline for a non-callable object");
@@ -687,7 +688,7 @@ decltype(GjsCallbackTrampoline::s_forever_closure_list)
 GjsCallbackTrampoline::GjsCallbackTrampoline(
     // optional?
     JSContext* cx, JS::HandleObject callable,
-    const GI::CallableInfo callable_info, GIScopeType scope,
+    const GI::CallableInfo& callable_info, GIScopeType scope,
     bool has_scope_object, bool is_vfunc)
     // The rooting rule is:
     // - notify callbacks in GObject methods are traced from the scope object
@@ -1354,7 +1355,7 @@ bool Function::init(JSContext* cx, GType gtype /* = G_TYPE_NONE */) {
 }
 
 JSObject* Function::create(JSContext* cx, GType gtype,
-                           const GI::CallableInfo info) {
+                           const GI::CallableInfo& info) {
     JS::RootedObject proto{cx, Function::create_prototype(cx)};
     if (!proto)
         return nullptr;
@@ -1382,7 +1383,7 @@ JSObject* Function::create(JSContext* cx, GType gtype,
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
-                              GType gtype, const GI::CallableInfo info) {
+                              GType gtype, const GI::CallableInfo& info) {
     using std::string_literals::operator""s;
     std::string name;
 
@@ -1407,7 +1408,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
     return function;
 }
 
-bool gjs_invoke_constructor_from_c(JSContext* cx, const GI::FunctionInfo info,
+bool gjs_invoke_constructor_from_c(JSContext* cx, const GI::FunctionInfo& info,
                                    JS::HandleObject obj,
                                    const JS::CallArgs& args,
                                    GIArgument* rvalue) {

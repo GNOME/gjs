@@ -82,11 +82,11 @@ using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(JSContext*, GITransfer,
-                                       const GI::TypeInfo, GITypeTag,
+                                       const GI::TypeInfo&, GITypeTag,
                                        GjsArgumentType, GjsArgumentFlags,
                                        GIArgument*);
 static void throw_invalid_argument(JSContext*, JS::HandleValue,
-                                   const GI::TypeInfo, const char*,
+                                   const GI::TypeInfo&, const char*,
                                    GjsArgumentType);
 
 bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
@@ -107,7 +107,7 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo info,
+static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo& info,
                                     int64_t value) {
     GI::EnumInfo::ValuesIterator values = info.values();
     if (std::none_of(values.begin(), values.end(),
@@ -198,7 +198,7 @@ static bool type_needs_out_release(const GI::TypeInfo& type_info,
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_g_list(JSContext* cx, JS::HandleValue value,
-                                const GI::TypeInfo type_info,
+                                const GI::TypeInfo& type_info,
                                 GITransfer transfer, const char* arg_name,
                                 GjsArgumentType arg_type, T** list_p) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
@@ -449,7 +449,7 @@ static Gjs::Tag::RealT<TAG>* heap_value_new_from_arg(GIArgument* val_arg) {
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
-                                 const GI::TypeInfo type_info,
+                                 const GI::TypeInfo& type_info,
                                  GITransfer transfer, GHashTable** hash_p) {
     g_assert(props && "Property bag cannot be null");
 
@@ -670,7 +670,8 @@ static bool array_to_basic_c_array(JSContext* cx, JS::HandleValue v_array,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_ptrarray(JSContext* cx, JS::Value array_value,
                                   unsigned length, GITransfer transfer,
-                                  const GI::TypeInfo param_info, void** arr_p) {
+                                  const GI::TypeInfo& param_info,
+                                  void** arr_p) {
     JS::RootedObject array_obj{cx, array_value.toObjectOrNull()};
     JS::RootedValue elem{cx};
 
@@ -704,7 +705,7 @@ static bool gjs_array_to_ptrarray(JSContext* cx, JS::Value array_value,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
                                     unsigned length,
-                                    const GI::TypeInfo param_info,
+                                    const GI::TypeInfo& param_info,
                                     size_t param_size, void** arr_p) {
     g_assert((param_size > 0) &&
              "Only flat arrays of elements of known size are supported");
@@ -799,7 +800,7 @@ static bool gjs_array_to_basic_array(JSContext* cx, JS::HandleValue v_array,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_array(JSContext* cx, JS::HandleValue array_value,
                                size_t length, GITransfer transfer,
-                               const GI::TypeInfo param_info, void** arr_p) {
+                               const GI::TypeInfo& param_info, void** arr_p) {
     GITypeTag element_type = param_info.storage_type();
 
     if (GI_TYPE_TAG_IS_BASIC(element_type)) {
@@ -941,7 +942,7 @@ static inline void set_arg_from_carray_element(GIArgument* arg,
 }
 
 size_t gjs_type_get_element_size(GITypeTag element_type,
-                                 const GI::TypeInfo type_info) {
+                                 const GI::TypeInfo& type_info) {
     if (type_info.is_pointer() && element_type != GI_TYPE_TAG_ARRAY)
         return sizeof(void*);
 
@@ -990,7 +991,7 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
 
 static GArray* garray_new_for_storage_type(unsigned length,
                                            GITypeTag storage_type,
-                                           const GI::TypeInfo type_info) {
+                                           const GI::TypeInfo& type_info) {
     size_t element_size = gjs_type_get_element_size(storage_type, type_info);
     return g_array_sized_new(true, false, element_size, length);
 }
@@ -1021,7 +1022,7 @@ char* gjs_argument_display_name(const char* arg_name,
 }
 
 static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
-                                   const GI::TypeInfo arginfo,
+                                   const GI::TypeInfo& arginfo,
                                    const char* arg_name,
                                    GjsArgumentType arg_type) {
     Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
@@ -1046,7 +1047,7 @@ static bool throw_invalid_argument_tag(JSContext* cx, JS::HandleValue value,
 GJS_JSAPI_RETURN_CONVENTION
 static bool throw_invalid_interface_argument(JSContext* cx,
                                              JS::HandleValue value,
-                                             const GI::BaseInfo interface_info,
+                                             const GI::BaseInfo& interface_info,
                                              const char* arg_name,
                                              GjsArgumentType arg_type) {
     Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
@@ -1120,7 +1121,7 @@ bool gjs_array_to_basic_explicit_array(
 }
 
 bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
-                                 const GI::TypeInfo type_info,
+                                 const GI::TypeInfo& type_info,
                                  const char* arg_name, GjsArgumentType arg_type,
                                  GITransfer transfer, GjsArgumentFlags flags,
                                  void** contents, size_t* length_p) {
@@ -1228,7 +1229,7 @@ static bool value_to_gdk_atom_gi_argument_internal(JSContext* cx,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool value_to_interface_gi_argument_internal(
-    JSContext* cx, JS::HandleValue value, const GI::BaseInfo interface_info,
+    JSContext* cx, JS::HandleValue value, const GI::BaseInfo& interface_info,
     GITransfer transfer, GIArgument* arg, const char* arg_name,
     GjsArgumentType arg_type, GjsArgumentFlags flags) {
     auto reg_type = interface_info.as<GI::InfoTag::REGISTERED_TYPE>();
@@ -1679,7 +1680,7 @@ bool gjs_value_to_gdk_atom_gi_argument(JSContext* cx, JS::HandleValue value,
 // Convert a JS value to GIArgument, specifically for arguments with type tag
 // GI_TYPE_TAG_INTERFACE.
 bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
-                                        const GI::BaseInfo interface_info,
+                                        const GI::BaseInfo& interface_info,
                                         GITransfer transfer, GIArgument* arg,
                                         const char* arg_name,
                                         GjsArgumentType arg_type,
@@ -1971,7 +1972,7 @@ bool gjs_value_to_byte_array_gi_argument(JSContext* cx, JS::HandleValue value,
 }
 
 bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
-                              const GI::TypeInfo type_info,
+                              const GI::TypeInfo& type_info,
                               GjsArgumentType arg_type, GITransfer transfer,
                               GIArgument* arg,
                               GjsArgumentFlags flags /* = NONE */,
@@ -2116,7 +2117,7 @@ bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
 }
 
 bool gjs_value_to_callback_out_arg(JSContext* cx, JS::HandleValue value,
-                                   const GI::ArgInfo arg_info,
+                                   const GI::ArgInfo& arg_info,
                                    GIArgument* arg) {
     g_assert((arg_info.direction() == GI_DIRECTION_OUT ||
               arg_info.direction() == GI_DIRECTION_INOUT) &&
@@ -2302,7 +2303,7 @@ bool gjs_array_from_strv(JSContext* cx, JS::MutableHandleValue value_out,
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_g_list(JSContext* cx, JS::MutableHandleValue value_p,
-                                  const GI::TypeInfo type_info,
+                                  const GI::TypeInfo& type_info,
                                   GITransfer transfer, T* list) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     JS::RootedValueVector elems(cx);
@@ -2354,7 +2355,7 @@ template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool fill_vector_from_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
-    const GI::TypeInfo element_type, GIArgument* arg, void* array,
+    const GI::TypeInfo& element_type, GIArgument* arg, void* array,
     size_t length, GITransfer transfer = GI_TRANSFER_EVERYTHING) {
     for (size_t i = 0; i < length; i++) {
         gjs_arg_set<T>(arg, *(static_cast<Gjs::Tag::RealT<T>*>(array) + i));
@@ -2488,7 +2489,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_carray_internal(JSContext* cx,
                                            JS::MutableHandleValue value_p,
                                            GIArrayType array_type,
-                                           const GI::TypeInfo element_type,
+                                           const GI::TypeInfo& element_type,
                                            GITransfer transfer, size_t length,
                                            void* array) {
     GITypeTag element_tag = element_type.tag();
@@ -2581,7 +2582,7 @@ static bool gjs_array_from_carray_internal(JSContext* cx,
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_fixed_size_array(JSContext* cx,
                                             JS::MutableHandleValue value_p,
-                                            const GI::TypeInfo type_info,
+                                            const GI::TypeInfo& type_info,
                                             GITransfer transfer, void* array) {
     Maybe<size_t> length = type_info.array_fixed_size();
     g_assert(length);
@@ -2592,8 +2593,8 @@ static bool gjs_array_from_fixed_size_array(JSContext* cx,
 }
 
 bool gjs_value_from_explicit_array(
-    JSContext* cx, JS::MutableHandleValue value_p, const GI::TypeInfo type_info,
-    GIArgument* arg, size_t length,
+    JSContext* cx, JS::MutableHandleValue value_p,
+    const GI::TypeInfo& type_info, GIArgument* arg, size_t length,
     GITransfer transfer /* = GI_TRANSFER_EVERYTHING */) {
     return gjs_array_from_carray_internal(cx, value_p, type_info.array_type(),
                                           type_info.element_type(), transfer,
@@ -2612,7 +2613,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_boxed_array(JSContext* cx,
                                        JS::MutableHandleValue value_p,
                                        GIArrayType array_type,
-                                       const GI::TypeInfo element_type,
+                                       const GI::TypeInfo& element_type,
                                        GITransfer transfer, GIArgument* arg) {
     if (!gjs_arg_get<void*>(arg)) {
         value_p.setNull();
@@ -2649,7 +2650,7 @@ static bool gjs_array_from_boxed_array(JSContext* cx,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
-                                  const GI::TypeInfo element_type,
+                                  const GI::TypeInfo& element_type,
                                   GITransfer transfer, const GValue* gvalue) {
     void* data = nullptr;
     size_t length = 0;
@@ -2706,7 +2707,7 @@ static bool fill_vector_from_basic_zero_terminated_c_array(
 GJS_JSAPI_RETURN_CONVENTION
 static bool fill_vector_from_zero_terminated_pointer_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
-    const GI::TypeInfo param_info, GIArgument* arg, void* c_array,
+    const GI::TypeInfo& param_info, GIArgument* arg, void* c_array,
     GITransfer transfer = GI_TRANSFER_EVERYTHING) {
     void** array = static_cast<void**>(c_array);
 
@@ -2733,7 +2734,7 @@ static bool fill_vector_from_zero_terminated_pointer_carray(
 GJS_JSAPI_RETURN_CONVENTION
 static bool fill_vector_from_zero_terminated_non_pointer_carray(
     JSContext* cx, JS::RootedValueVector& elems,  // NOLINT(runtime/references)
-    const GI::TypeInfo param_info, GIArgument* arg, size_t element_size,
+    const GI::TypeInfo& param_info, GIArgument* arg, size_t element_size,
     void* c_array, GITransfer transfer = GI_TRANSFER_EVERYTHING) {
     uint8_t* element_start = reinterpret_cast<uint8_t*>(c_array);
 
@@ -2869,7 +2870,7 @@ bool gjs_array_from_basic_zero_terminated_array(
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_zero_terminated_c_array(
     JSContext* cx, JS::MutableHandleValue value_p,
-    const GI::TypeInfo element_type, GITransfer transfer, void* c_array) {
+    const GI::TypeInfo& element_type, GITransfer transfer, void* c_array) {
     GITypeTag element_tag = element_type.tag();
 
     if (element_type.is_basic()) {
@@ -2925,8 +2926,8 @@ static bool gjs_array_from_zero_terminated_c_array(
 }
 
 bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue value_p,
-                            const GI::TypeInfo key_type,
-                            const GI::TypeInfo val_type, GITransfer transfer,
+                            const GI::TypeInfo& key_type,
+                            const GI::TypeInfo& val_type, GITransfer transfer,
                             GHashTable* hash) {
     GHashTableIter iter;
 
@@ -3149,7 +3150,7 @@ bool gjs_value_from_basic_ghash(JSContext* cx, JS::MutableHandleValue value_out,
 }
 
 bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
-                                const GI::TypeInfo type_info,
+                                const GI::TypeInfo& type_info,
                                 GjsArgumentType argument_type,
                                 GITransfer transfer, GIArgument* arg) {
     GITypeTag type_tag = type_info.tag();
@@ -3515,7 +3516,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_g_list(JSContext* cx, GITransfer transfer,
-                                     const GI::TypeInfo type_info,
+                                     const GI::TypeInfo& type_info,
                                      GjsArgumentFlags flags, GIArgument* arg) {
     static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
@@ -3567,7 +3568,7 @@ static inline void release_basic_array_internal(GITypeTag element_tag,
 template <ArrayReleaseType release_type = ArrayReleaseType::EXPLICIT_LENGTH>
 static inline bool gjs_gi_argument_release_array_internal(
     JSContext* cx, GITransfer element_transfer, GjsArgumentFlags flags,
-    const GI::TypeInfo element_type, Maybe<size_t> length, GIArgument* arg) {
+    const GI::TypeInfo& element_type, Maybe<size_t> length, GIArgument* arg) {
     Gjs::AutoPointer<uint8_t, void, g_free> arg_array{
         gjs_arg_steal<uint8_t*>(arg)};
 
@@ -3788,7 +3789,7 @@ void gjs_gi_argument_release_basic_gptrarray(GITransfer transfer,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(
-    JSContext* cx, GITransfer transfer, const GI::TypeInfo type_info,
+    JSContext* cx, GITransfer transfer, const GI::TypeInfo& type_info,
     GITypeTag type_tag, [[maybe_unused]] GjsArgumentType argument_type,
     GjsArgumentFlags flags, GIArgument* arg) {
     g_assert(transfer != GI_TRANSFER_NOTHING ||
@@ -4131,7 +4132,7 @@ static bool gjs_g_arg_release_internal(
 }
 
 bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
-                             const GI::TypeInfo type_info, GIArgument* arg,
+                             const GI::TypeInfo& type_info, GIArgument* arg,
                              GjsArgumentFlags flags /* = NONE */) {
     if (transfer == GI_TRANSFER_NOTHING &&
         !is_transfer_in_nothing(transfer, flags))
@@ -4159,7 +4160,7 @@ void gjs_gi_argument_release_basic(GITransfer transfer, GITypeTag type_tag,
 }
 
 bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
-                                    const GI::TypeInfo type_info,
+                                    const GI::TypeInfo& type_info,
                                     GIArgument* arg) {
     /* GI_TRANSFER_EVERYTHING: we don't own the argument anymore.
      * GI_TRANSFER_CONTAINER:
@@ -4217,7 +4218,7 @@ void gjs_gi_argument_release_basic_in_array(GITransfer transfer,
 }
 
 bool gjs_gi_argument_release_in_array(JSContext* cx, GITransfer transfer,
-                                      const GI::TypeInfo type_info,
+                                      const GI::TypeInfo& type_info,
                                       size_t length, GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
         return true;
@@ -4232,7 +4233,7 @@ bool gjs_gi_argument_release_in_array(JSContext* cx, GITransfer transfer,
 }
 
 bool gjs_gi_argument_release_in_array(JSContext* cx, GITransfer transfer,
-                                      const GI::TypeInfo type_info,
+                                      const GI::TypeInfo& type_info,
                                       GIArgument* arg) {
     if (transfer != GI_TRANSFER_NOTHING)
         return true;
@@ -4280,7 +4281,7 @@ void gjs_gi_argument_release_basic_out_array(GITransfer transfer,
 }
 
 bool gjs_gi_argument_release_out_array(JSContext* cx, GITransfer transfer,
-                                       const GI::TypeInfo type_info,
+                                       const GI::TypeInfo& type_info,
                                        size_t length, GIArgument* arg) {
     if (transfer == GI_TRANSFER_NOTHING)
         return true;
@@ -4299,7 +4300,7 @@ bool gjs_gi_argument_release_out_array(JSContext* cx, GITransfer transfer,
 }
 
 bool gjs_gi_argument_release_out_array(JSContext* cx, GITransfer transfer,
-                                       const GI::TypeInfo type_info,
+                                       const GI::TypeInfo& type_info,
                                        GIArgument* arg) {
     if (transfer == GI_TRANSFER_NOTHING)
         return true;

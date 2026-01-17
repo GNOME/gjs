@@ -26,7 +26,7 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
-                                  const GI::ValueInfo info) {
+                                  const GI::ValueInfo& info) {
     const char* value_name = info.name();
     int64_t value_val = info.value();
 
@@ -60,7 +60,7 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
 }
 
 bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
-                            const GI::EnumInfo info) {
+                            const GI::EnumInfo& info) {
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
      */
@@ -72,7 +72,7 @@ bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
 }
 
 bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
-                            const GI::EnumInfo info) {
+                            const GI::EnumInfo& info) {
     /* An enumeration is simply an object containing integer attributes for each
      * enum value. It does not have a special JSClass.
      *

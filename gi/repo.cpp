@@ -273,7 +273,7 @@ static bool gjs_value_from_constant_info(JSContext* cx,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_define_constant(JSContext* cx, JS::HandleObject in_object,
-                                const GI::ConstantInfo info) {
+                                const GI::ConstantInfo& info) {
     JS::RootedValue value{cx};
 
     if (!gjs_value_from_constant_info(cx, info, &value))
@@ -284,7 +284,7 @@ static bool gjs_define_constant(JSContext* cx, JS::HandleObject in_object,
 }
 
 bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
-                     const GI::BaseInfo info, bool* defined) {
+                     const GI::BaseInfo& info, bool* defined) {
     info.log_usage();
 
     *defined = true;
@@ -363,7 +363,7 @@ JSObject* gjs_lookup_private_namespace(JSContext* cx) {
 }
 
 // Get the namespace object that the GIBaseInfo should be inside
-JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo info) {
+JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo& info) {
     const char* ns = info.ns();
     if (ns == nullptr) {
         gjs_throw(cx, "%s '%s' does not have a namespace", info.type_string(),
@@ -491,7 +491,7 @@ char* gjs_hyphen_from_camel(const char* camel_name) {
 }
 
 JSObject* gjs_lookup_generic_constructor(JSContext* cx,
-                                         const GI::BaseInfo info) {
+                                         const GI::BaseInfo& info) {
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
     const char* constructor_name = info.name();
 
@@ -512,7 +512,8 @@ JSObject* gjs_lookup_generic_constructor(JSContext* cx,
     return &value.toObject();
 }
 
-JSObject* gjs_lookup_generic_prototype(JSContext* cx, const GI::BaseInfo info) {
+JSObject* gjs_lookup_generic_prototype(JSContext* cx,
+                                       const GI::BaseInfo& info) {
     JS::RootedObject constructor{cx, gjs_lookup_generic_constructor(cx, info)};
     if (G_UNLIKELY(!constructor))
         return nullptr;
@@ -533,7 +534,7 @@ JSObject* gjs_lookup_generic_prototype(JSContext* cx, const GI::BaseInfo info) {
 }
 
 JSObject* gjs_new_object_with_generic_prototype(JSContext* cx,
-                                                const GI::BaseInfo info) {
+                                                const GI::BaseInfo& info) {
     JS::RootedObject proto(cx, gjs_lookup_generic_prototype(cx, info));
     if (!proto)
         return nullptr;
