@@ -67,6 +67,7 @@ Checks:
   - readability-suspicious-call-argument
   - readability-use-anyofallof
   - readability-use-concise-preprocessor-directives
+  - readability-use-std-min-max
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\

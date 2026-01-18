@@ -10,6 +10,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <algorithm>
 #include <functional>  // for mem_fn
 #include <limits>
 #include <type_traits>
@@ -2978,10 +2979,8 @@ Enum::Enum(const GI::EnumInfo& info) {
     for (GI::AutoValueInfo value_info : info.values()) {
         int64_t value = value_info.value();
 
-        if (value > max)
-            max = value;
-        if (value < min)
-            min = value;
+        max = std::max(value, max);
+        min = std::min(value, min);
     }
 
     // From the docs for g_value_info_get_value(): "This will always be
