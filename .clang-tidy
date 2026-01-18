@@ -41,6 +41,9 @@ Checks:
   #   caught several real bugs. GLib might be able to fix this.
   # - bugprone-narrowing-conversions
 
+  - custom-use-typesafe-min
+  - custom-use-typesafe-max
+
   - modernize-*
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
@@ -105,6 +108,17 @@ CheckOptions:
   readability-simplify-boolean-expr.IgnoreMacros: true  # GLib macros trigger
   readability-uppercase-literal-suffix.NewSuffixes: L;LL
     # we only care about confusion between 1 and l
+CustomChecks:
+  - Name: use-typesafe-min
+    Query: match conditionalOperator(isExpandedFromMacro("MIN")).bind("min")
+    Diagnostic:
+      - BindName: min
+        Message: Prefer std::min() instead of MIN macro for type safety
+  - Name: use-typesafe-max
+    Query: match conditionalOperator(isExpandedFromMacro("MAX")).bind("max")
+    Diagnostic:
+      - BindName: max
+        Message: Prefer std::max() instead of MAX macro for type safety
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true
