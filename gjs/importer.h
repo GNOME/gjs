@@ -19,4 +19,4 @@ JSObject* gjs_create_root_importer(JSContext*,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_import_native_module(JSContext*, JS::HandleObject importer,
-                              const char* name);
+                              const char* id_str);

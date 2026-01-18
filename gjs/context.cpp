@@ -133,16 +133,16 @@ struct _GjsContext {
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsContext, gjs_context, G_TYPE_OBJECT);
 
-GjsContextPrivate* GjsContextPrivate::from_object(GObject* gjs_context) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(gjs_context), nullptr);
+GjsContextPrivate* GjsContextPrivate::from_object(GObject* public_context) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(public_context), nullptr);
     return static_cast<GjsContextPrivate*>(
-        gjs_context_get_instance_private(GJS_CONTEXT(gjs_context)));
+        gjs_context_get_instance_private(GJS_CONTEXT(public_context)));
 }
 
-GjsContextPrivate* GjsContextPrivate::from_object(GjsContext* gjs_context) {
-    g_return_val_if_fail(GJS_IS_CONTEXT(gjs_context), nullptr);
+GjsContextPrivate* GjsContextPrivate::from_object(GjsContext* public_context) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(public_context), nullptr);
     return static_cast<GjsContextPrivate*>(
-        gjs_context_get_instance_private(gjs_context));
+        gjs_context_get_instance_private(public_context));
 }
 
 GjsContextPrivate* GjsContextPrivate::from_current_context() {
@@ -1334,8 +1334,8 @@ bool GjsContextPrivate::auto_profile_enter() {
     return auto_profile;
 }
 
-void GjsContextPrivate::auto_profile_exit(bool auto_profile) {
-    if (auto_profile)
+void GjsContextPrivate::auto_profile_exit(bool auto_profile_is_on) {
+    if (auto_profile_is_on)
         gjs_profiler_stop(m_profiler);
 }
 
@@ -1521,7 +1521,7 @@ GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
 }
 
 GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
-                                              uint8_t* exit_status_p) {
+                                              uint8_t* exit_code_p) {
     AutoResetExit reset(this);
 
     bool auto_profile = auto_profile_enter();
@@ -1536,8 +1536,8 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
         g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                     "Cannot load module with identifier: '%s'", identifier);
 
-        if (exit_status_p)
-            *exit_status_p = 1;
+        if (exit_code_p)
+            *exit_code_p = 1;
         return Err(error.release());
     }
 
@@ -1547,8 +1547,8 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
         g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
                     "Failed to resolve imports for module: '%s'", identifier);
 
-        if (exit_status_p)
-            *exit_status_p = 1;
+        if (exit_code_p)
+            *exit_code_p = 1;
         return Err(error.release());
     }
 
@@ -1598,8 +1598,8 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
     uint8_t out_code;
     GErrorResult<> result =
         handle_exit_code(ok, "Module", identifier, &out_code);
-    if (exit_status_p)
-        *exit_status_p = out_code;
+    if (exit_code_p)
+        *exit_code_p = out_code;
 
     return result;
 }
@@ -1794,10 +1794,10 @@ static GjsContext* current_context;
 
 GjsContext* gjs_context_get_current() { return current_context; }
 
-void gjs_context_make_current(GjsContext* gjs_context) {
-    g_assert(gjs_context == nullptr || current_context == nullptr);
+void gjs_context_make_current(GjsContext* self) {
+    g_assert(self == nullptr || current_context == nullptr);
 
-    current_context = gjs_context;
+    current_context = self;
 }
 
 namespace Gjs {

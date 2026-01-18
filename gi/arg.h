@@ -238,11 +238,11 @@ bool gjs_array_to_strv(JSContext*, JS::Value array_value, unsigned length,
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_array_from_g_value_array(JSContext*, JS::MutableHandleValue,
-                                  const GI::TypeInfo& param_info, GITransfer,
+                                  const GI::TypeInfo& element_type, GITransfer,
                                   const GValue*);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_object_from_g_hash(JSContext*, JS::MutableHandleValue,
-                            const GI::TypeInfo& key_param_info,
-                            const GI::TypeInfo& val_param_info, GITransfer,
+                            const GI::TypeInfo& key_type,
+                            const GI::TypeInfo& val_type, GITransfer,
                             GHashTable*);

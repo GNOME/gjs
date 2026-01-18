@@ -921,12 +921,12 @@ static inline void set_arg_from_carray_element(GIArgument* arg,
     }
 }
 
-size_t gjs_type_get_element_size(GITypeTag element_type,
+size_t gjs_type_get_element_size(GITypeTag element_tag,
                                  const GI::TypeInfo& type_info) {
-    if (type_info.is_pointer() && element_type != GI_TYPE_TAG_ARRAY)
+    if (type_info.is_pointer() && element_tag != GI_TYPE_TAG_ARRAY)
         return sizeof(void*);
 
-    switch (element_type) {
+    switch (element_tag) {
         case GI_TYPE_TAG_GLIST:
             return sizeof(GSList);
         case GI_TYPE_TAG_GSLIST:
@@ -963,7 +963,7 @@ size_t gjs_type_get_element_size(GITypeTag element_type,
             break;
 
         default:
-            return basic_type_element_size(element_type);
+            return basic_type_element_size(element_tag);
     }
 
     g_return_val_if_reached(0);

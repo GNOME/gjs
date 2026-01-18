@@ -156,7 +156,7 @@ class GjsContextPrivate : public JS::JobQueue {
                                          const char* identifier,
                                          uint8_t* exit_code);
     [[nodiscard]] bool auto_profile_enter();
-    void auto_profile_exit(bool status);
+    void auto_profile_exit(bool auto_profile_is_on);
 
     class AutoResetExit {
         GjsContextPrivate* m_self;
@@ -252,8 +252,8 @@ class GjsContextPrivate : public JS::JobQueue {
     Gjs::GErrorResult<> eval(const char* script, size_t script_len,
                              const char* filename, int* exit_status_p);
     GJS_JSAPI_RETURN_CONVENTION
-    bool eval_with_scope(JS::HandleObject scope_object, const char* script,
-                         size_t script_len, const char* filename,
+    bool eval_with_scope(JS::HandleObject scope_object, const char* source,
+                         size_t source_len, const char* filename,
                          JS::MutableHandleValue retval);
     [[nodiscard]]
     Gjs::GErrorResult<> eval_module(const char* identifier,
@@ -302,7 +302,7 @@ class GjsContextPrivate : public JS::JobQueue {
 
     [[nodiscard]]
     Gjs::GErrorResult<> register_module(const char* identifier,
-                                        const char* filename);
+                                        const char* uri);
 
     static void trace(JSTracer*, void* data);
 

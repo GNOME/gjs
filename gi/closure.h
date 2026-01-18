@@ -123,8 +123,9 @@ class Closure : public GClosure {
     void closure_invalidated();
     void closure_set_invalid();
     void global_context_finalized();
-    void marshal(GValue* ret, unsigned n_parms, const GValue* params,
-                 void* hint, void* data);
+    void marshal(GValue* return_value, unsigned n_param_values,
+                 const GValue* param_values, void* invocation_hint,
+                 void* marshal_data);
 
     //  The saved context is used for lifetime management, so that the closure
     //  will be torn down with the context that created it.
