@@ -87,8 +87,8 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
     friend class GIWrapperBase<Base, Prototype, Instance>;
 
     using ConstructorIndex = unsigned;
-    mozilla::Maybe<ConstructorIndex> m_zero_args_constructor{};
-    mozilla::Maybe<ConstructorIndex> m_default_constructor{};
+    mozilla::Maybe<ConstructorIndex> m_zero_args_constructor;
+    mozilla::Maybe<ConstructorIndex> m_default_constructor;
     std::unique_ptr<Boxed::FieldMap> m_field_map;
     bool m_can_allocate_directly_without_pointers : 1;
     bool m_can_allocate_directly : 1;

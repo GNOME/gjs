@@ -52,6 +52,7 @@ Checks:
   - readability-else-after-return
   - readability-qualified-auto
   - readability-redundant-inline-specifier
+  - readability-redundant-member-init
   - readability-suspicious-call-argument
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
