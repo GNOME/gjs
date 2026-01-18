@@ -57,6 +57,7 @@ Checks:
   - readability-redundant-declaration
   - readability-redundant-inline-specifier
   - readability-redundant-member-init
+  - readability-simplify-boolean-expr
   - readability-suspicious-call-argument
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
@@ -78,6 +79,7 @@ CheckOptions:
   modernize-use-using.IgnoreExternC: true
   readability-ambiguous-smartptr-reset-call.SmartPointers: "Gjs::AutoPointer;\
     JS::PersistentRooted;JS::UniqueChars;mozilla::UniquePtr"
+  readability-simplify-boolean-expr.IgnoreMacros: true  # GLib macros trigger
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true

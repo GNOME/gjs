@@ -1225,11 +1225,8 @@ bool value_to_interface_gi_argument_internal(
 
     if (gtype == G_TYPE_VALUE) {
         if (flags & GjsArgumentFlags::CALLER_ALLOCATES) {
-            if (!gjs_value_to_g_value_no_copy(cx, value,
-                                              gjs_arg_get<GValue*>(arg)))
-                return false;
-
-            return true;
+            return gjs_value_to_g_value_no_copy(cx, value,
+                                                gjs_arg_get<GValue*>(arg));
         }
 
         Gjs::AutoGValue gvalue;

@@ -159,9 +159,7 @@ class ModuleLoaderPrincipals final : public JSPrincipals {
 
  public:
     static bool subsumes(JSPrincipals* first, JSPrincipals* second) {
-        if (first != &the_principals && second == &the_principals)
-            return false;
-        return true;
+        return first == &the_principals || second != &the_principals;
     }
 
     static void destroy(JSPrincipals* principals [[maybe_unused]]) {

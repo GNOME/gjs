@@ -101,13 +101,9 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
         return false;
 
     JS::RootedValue ignore{cx};
-    if (!gjs_global_registry_set(cx, registry, key, module) ||
-        !JS::ModuleLink(cx, module) ||
-        !JS::ModuleEvaluate(cx, module, &ignore)) {
-        return false;
-    }
-
-    return true;
+    return gjs_global_registry_set(cx, registry, key, module) &&
+           JS::ModuleLink(cx, module) &&
+           JS::ModuleEvaluate(cx, module, &ignore);
 }
 
 static bool handle_wrong_args(JSContext* cx) {
