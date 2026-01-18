@@ -260,7 +260,6 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     static JSObject* new_for_c_struct_impl(JSContext*, const BoxedInfo&,
                                            void* gboxed, Args&&...);
 
- protected:
     using BaseClass::debug_lifecycle;
     using BaseClass::get_copy_source;
     using BaseClass::get_field_info;

@@ -135,7 +135,6 @@ class ObjectBase
 
     // JS property getters/setters
 
- public:
     template <typename TAG = void>
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter(JSContext*, unsigned, JS::Value*);
@@ -450,7 +449,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     // JS property getters/setters
 
- private:
     template <typename TAG>
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_getter_impl(JSContext*, GParamSpec*, JS::MutableHandleValue rval);
@@ -484,7 +482,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     // JS methods
 
- private:
     GJS_JSAPI_RETURN_CONVENTION
     bool connect_impl(JSContext*, const JS::CallArgs&, bool after,
                       bool object = false);

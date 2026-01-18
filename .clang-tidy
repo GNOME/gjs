@@ -52,6 +52,7 @@ Checks:
   - readability-else-after-return
   - readability-make-member-function-const
   - readability-qualified-auto
+  - readability-redundant-access-specifiers
   - readability-redundant-declaration
   - readability-redundant-inline-specifier
   - readability-redundant-member-init
