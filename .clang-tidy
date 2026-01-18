@@ -51,6 +51,7 @@ Checks:
   - readability-container-size-empty
   - readability-else-after-return
   - readability-qualified-auto
+  - readability-redundant-declaration
   - readability-redundant-inline-specifier
   - readability-redundant-member-init
   - readability-suspicious-call-argument

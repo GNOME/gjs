@@ -289,9 +289,6 @@ JSObject* gjs_module_import(JSContext* cx, JS::HandleObject importer,
     return GjsScriptModule::import(cx, importer, id, name, file);
 }
 
-decltype(GjsScriptModule::klass) constexpr GjsScriptModule::klass;
-decltype(GjsScriptModule::class_ops) constexpr GjsScriptModule::class_ops;
-
 /**
  * gjs_get_native_registry:
  * @global: The JS global object
