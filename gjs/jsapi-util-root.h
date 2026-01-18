@@ -72,7 +72,7 @@ class GjsMaybeOwned {
         debug("teardown_rooting()");
         g_assert(m_root);
 
-        m_root.reset();
+        m_root = nullptr;
 
         new (&m_heap) JS::Heap<JSObject*>();
     }

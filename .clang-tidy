@@ -44,6 +44,7 @@ Checks:
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 
+  - readability-ambiguous-smartptr-reset-call
   - readability-avoid-const-params-in-decls
   - readability-const-return-type
   - readability-container-data-pointer
@@ -70,6 +71,8 @@ CheckOptions:
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
   modernize-use-using.IgnoreExternC: true
+  readability-ambiguous-smartptr-reset-call.SmartPointers: "Gjs::AutoPointer;\
+    JS::PersistentRooted;JS::UniqueChars;mozilla::UniquePtr"
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true
