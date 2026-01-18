@@ -176,7 +176,8 @@ struct Nullable {
     constexpr Nullable() : m_nullable(false) {}
     bool m_nullable : 1;
 
-    bool handle_nullable(JSContext* cx, GIArgument* arg, const char* arg_name);
+    bool handle_nullable(JSContext* cx, GIArgument* arg,
+                         const char* arg_name) const;
 
     [[nodiscard]]
     constexpr GjsArgumentFlags flags() const {
@@ -193,7 +194,7 @@ struct Positioned {
     }
 
     constexpr bool set_out_parameter(GjsFunctionCallState* state,
-                                     GIArgument* arg) {
+                                     GIArgument* arg) const {
         gjs_arg_unset(&state->out_cvalue(m_arg_pos));
         // The value passed to the function is actually the address of the out
         // C value
@@ -202,7 +203,7 @@ struct Positioned {
     }
 
     constexpr bool set_inout_parameter(GjsFunctionCallState* state,
-                                       GIArgument* arg) {
+                                       GIArgument* arg) const {
         state->out_cvalue(m_arg_pos) = state->inout_original_cvalue(m_arg_pos) =
             *arg;
         gjs_arg_set(arg, &state->out_cvalue(m_arg_pos));
@@ -351,7 +352,7 @@ struct FixedSizeArray {
     }
 
     bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-             JS::MutableHandleValue value) {
+             JS::MutableHandleValue value) const {
         return gjs_value_from_basic_fixed_size_array_gi_argument(
             cx, value, element_tag, m_fixed_size, arg);
     }
@@ -360,7 +361,7 @@ struct FixedSizeArray {
         g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
     }
 
-    void release_contents(GIArgument* arg) {
+    void release_contents(GIArgument* arg) const {
         char** array = gjs_arg_get<char**>(arg);
         for (size_t ix = 0; ix < m_fixed_size; ix++)
             g_free(array[ix]);
@@ -378,7 +379,8 @@ struct GListContainer {
     bool m_double_link : 1;
 
     bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-            const char* arg_name, GjsArgumentFlags, JS::HandleValue value) {
+            const char* arg_name, GjsArgumentFlags,
+            JS::HandleValue value) const {
         if (m_double_link) {
             return gjs_value_to_basic_glist_gi_argument(
                 cx, value, element_tag, arg, arg_name, GJS_ARGUMENT_ARGUMENT);
@@ -388,7 +390,7 @@ struct GListContainer {
     }
 
     bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-             JS::MutableHandleValue value) {
+             JS::MutableHandleValue value) const {
         if (m_double_link)
             return gjs_array_from_basic_glist_gi_argument(cx, value,
                                                           element_tag, arg);
@@ -396,14 +398,14 @@ struct GListContainer {
                                                        arg);
     }
 
-    void release_container(GIArgument* arg) {
+    void release_container(GIArgument* arg) const {
         if (m_double_link)
             g_clear_pointer(&gjs_arg_member<GList*>(arg), g_list_free);
         else
             g_clear_pointer(&gjs_arg_member<GSList*>(arg), g_slist_free);
     }
 
-    void release_contents(GIArgument* arg) {
+    void release_contents(GIArgument* arg) const {
         GFunc free_gfunc = [](void* data, void*) { g_free(data); };
 
         if (m_double_link) {
@@ -494,11 +496,11 @@ struct Callback : Nullable, HasIntrospectionInfo<GI::InfoTag::CALLBACK> {
                  "No more than 253 arguments allowed");
     }
 
-    [[nodiscard]] constexpr bool has_callback_destroy() {
+    [[nodiscard]] constexpr bool has_callback_destroy() const {
         return m_destroy_pos != Argument::ABSENT;
     }
 
-    [[nodiscard]] constexpr bool has_callback_closure() {
+    [[nodiscard]] constexpr bool has_callback_closure() const {
         return m_closure_pos != Argument::ABSENT;
     }
 
@@ -2019,7 +2021,7 @@ bool GTypeIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
 
 // Common code for most types that are pointers on the C side
 bool Nullable::handle_nullable(JSContext* cx, GIArgument* arg,
-                               const char* arg_name) {
+                               const char* arg_name) const {
     if (!m_nullable)
         return report_invalid_null(cx, arg_name);
     gjs_arg_unset(arg);

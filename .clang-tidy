@@ -50,6 +50,7 @@ Checks:
   - readability-container-data-pointer
   - readability-container-size-empty
   - readability-else-after-return
+  - readability-make-member-function-const
   - readability-qualified-auto
   - readability-redundant-declaration
   - readability-redundant-inline-specifier

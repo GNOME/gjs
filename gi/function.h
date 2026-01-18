@@ -148,9 +148,11 @@ class GjsFunctionCallState {
         return can_throw_gerror && local_error;
     }
 
-    constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
+    constexpr bool call_completed() const {
+        return !failed && !did_throw_gerror();
+    }
 
-    constexpr unsigned last_processed_index() {
+    constexpr unsigned last_processed_index() const {
         return first_arg_offset() + processed_c_args;
     }
 
