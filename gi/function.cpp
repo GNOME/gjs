@@ -885,8 +885,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
                           format_name().c_str(), m_js_in_argc, args.length()))
             return false;
     } else if (args.length() < m_js_in_argc) {
-        args.reportMoreArgsNeeded(cx, format_name().c_str(), m_js_in_argc,
-                                  args.length());
+        JS::CallArgs::reportMoreArgsNeeded(cx, format_name().c_str(),
+                                           m_js_in_argc, args.length());
         return false;
     }
 

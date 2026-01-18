@@ -588,7 +588,7 @@ static void test_toggle_queue_object_handle_many_up(GjsUnitTestFixture* fx,
     AutoUnref<GObject> reffed{instance->ptr()};
     // Simulating the case where late threads are causing this...
     ToggleQueue::get_default()->enqueue(instance, ::ToggleQueue::Direction::UP,
-                                        ToggleQueue().handler());
+                                        ToggleQueue::handler());
 
     assert_equal(ToggleQueue::queue().size(), 2LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
@@ -612,11 +612,11 @@ static void test_toggle_queue_object_handle_many_up_and_down(
     gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     ToggleQueue::get_default()->enqueue(instance, ::ToggleQueue::Direction::UP,
-                                        ToggleQueue().handler());
+                                        ToggleQueue::handler());
     gjs_test_tools_unref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
     ToggleQueue::get_default()->enqueue(
-        instance, ::ToggleQueue::Direction::DOWN, ToggleQueue().handler());
+        instance, ::ToggleQueue::Direction::DOWN, ToggleQueue::handler());
 
     g_assert_true(ToggleQueue::queue().empty());
 
