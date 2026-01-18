@@ -7,6 +7,8 @@
 #include <stddef.h>  // for size_t
 #include <inttypes.h>
 
+#include <algorithm>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -63,11 +65,12 @@ bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
      */
-    for (GI::AutoValueInfo value_info : info.values()) {
-        if (!gjs_define_enum_value(cx, in_object, value_info))
-            return false;
-    }
-    return true;
+    auto iter = info.values();
+    return std::all_of(iter.begin(), iter.end(),
+                       [cx, in_object](const GI::AutoValueInfo& value_info) {
+                           return gjs_define_enum_value(cx, in_object,
+                                                        value_info);
+                       });
 }
 
 bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,

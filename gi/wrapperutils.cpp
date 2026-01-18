@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <algorithm>
 #include <sstream>
 
 #include <glib-object.h>
@@ -86,12 +87,12 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
     if (!type_struct)
         return true;
 
-    for (GI::AutoFunctionInfo meth_info : type_struct->methods()) {
-        if (!gjs_define_function(cx, constructor, gtype, meth_info))
-            return false;
-    }
-
-    return true;
+    auto iter = type_struct->methods();
+    return std::all_of(
+        iter.begin(), iter.end(),
+        [cx, constructor, gtype](const GI::AutoFunctionInfo& meth_info) {
+            return gjs_define_function(cx, constructor, gtype, meth_info);
+        });
 }
 
 // All possible instantiations are needed

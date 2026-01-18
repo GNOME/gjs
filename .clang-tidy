@@ -59,6 +59,7 @@ Checks:
   - readability-redundant-member-init
   - readability-simplify-boolean-expr
   - readability-suspicious-call-argument
+  - readability-use-anyofallof
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
