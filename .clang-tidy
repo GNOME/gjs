@@ -46,6 +46,7 @@ Checks:
 
   - readability-ambiguous-smartptr-reset-call
   - readability-avoid-const-params-in-decls
+  - readability-avoid-nested-conditional-operator
   - readability-const-return-type
   - readability-container-data-pointer
   - readability-container-size-empty

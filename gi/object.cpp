@@ -2961,12 +2961,18 @@ bool ObjectBase::connect_object(JSContext* cx, unsigned argc, JS::Value* vp) {
     return priv->to_instance()->connect_impl(cx, args, false, true);
 }
 
+static constexpr const char* connect_func_name(bool after, bool object) {
+    if (object)
+        return "connect_object";
+    if (after)
+        return "connect_after";
+    return "connect";
+}
+
 bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
                                   bool after, bool object) {
     GQuark signal_detail;
-    const char* func_name = object  ? "connect_object"
-                            : after ? "connect_after"
-                                    : "connect";
+    const char* func_name = connect_func_name(after, object);
 
     gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
 
