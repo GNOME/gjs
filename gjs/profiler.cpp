@@ -855,7 +855,7 @@ void gjs_profiler_add_mark(GjsProfiler* self, ProfilerTimePoint time,
 }
 
 bool gjs_profiler_sample_gc_memory_info(
-    GjsProfiler* self, int64_t gc_counters[Gjs::GCCounters::N_COUNTERS]) {
+    GjsProfiler* self, const int64_t gc_counters[Gjs::GCCounters::N_COUNTERS]) {
     g_return_val_if_fail(self, false);
 
 #ifdef ENABLE_PROFILER

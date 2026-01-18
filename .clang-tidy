@@ -51,6 +51,7 @@ Checks:
   - readability-container-size-empty
   - readability-else-after-return
   - readability-make-member-function-const
+  - readability-non-const-parameter
   - readability-qualified-auto
   - readability-redundant-access-specifiers
   - readability-redundant-declaration
