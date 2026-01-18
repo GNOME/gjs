@@ -3823,8 +3823,6 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         build_normal_inout_arg(gi_index, type_info, arg, flags);
     else
         build_normal_out_arg(gi_index, type_info, arg, flags);
-
-    return;
 }
 
 }  // namespace Gjs
