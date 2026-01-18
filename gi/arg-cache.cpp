@@ -2727,11 +2727,10 @@ void ArgsCache::init_out_array_length_argument(const GI::ArgInfo& length_arg,
     // basic initialization here.
     g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
     uint8_t validated_length_pos = length_pos;
-    set_argument(
-        new Arg::ArrayLengthOut(),
-        Argument::Init{
-            length_arg.name(), validated_length_pos, GI_TRANSFER_NOTHING,
-            static_cast<GjsArgumentFlags>(flags | GjsArgumentFlags::SKIP_ALL)});
+    set_argument(new Arg::ArrayLengthOut(),
+                 Argument::Init{length_arg.name(), validated_length_pos,
+                                GI_TRANSFER_NOTHING,
+                                flags | GjsArgumentFlags::SKIP_ALL});
 }
 
 void ArgsCache::set_array_argument(

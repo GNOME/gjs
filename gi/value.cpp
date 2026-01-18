@@ -991,7 +991,7 @@ static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
         // Native enums don't have type info, assume they are signed to avoid
         // crashing when they are exposed to JS.
         if (!info) {
-            v_double = static_cast<int64_t>(v);
+            v_double = v;
         } else {
             v_double = info->enum_from_int(v);
         }
