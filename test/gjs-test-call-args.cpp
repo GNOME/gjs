@@ -279,7 +279,7 @@ static void setup(GjsUnitTestFixture* fx, const void* unused) {
 }
 
 static void run_code(GjsUnitTestFixture* fx, const void* code) {
-    auto* script = static_cast<const char*>(code);
+    const auto* script = static_cast<const char*>(code);
 
     JS::SourceText<mozilla::Utf8Unit> source;
     bool ok = source.init(fx->cx, script, strlen(script),
@@ -298,7 +298,7 @@ static void run_code(GjsUnitTestFixture* fx, const void* code) {
 
 static void run_code_expect_exception(GjsUnitTestFixture* fx,
                                       const void* code) {
-    auto* script = static_cast<const char*>(code);
+    const auto* script = static_cast<const char*>(code);
 
     JS::SourceText<mozilla::Utf8Unit> source;
     bool ok = source.init(fx->cx, script, strlen(script),

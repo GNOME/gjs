@@ -34,7 +34,7 @@ static void statm_max_value() {
 }
 
 static void statm_failure_case(int*, const void* data) {
-    auto* contents = static_cast<const char*>(data);
+    const auto* contents = static_cast<const char*>(data);
     g_assert_err(parse_statm_file_rss(contents));
 }
 

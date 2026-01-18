@@ -48,6 +48,7 @@ Checks:
   - readability-const-return-type
   - readability-container-size-empty
   - readability-else-after-return
+  - readability-qualified-auto
   - readability-redundant-inline-specifier
   - readability-suspicious-call-argument
 CheckOptions:

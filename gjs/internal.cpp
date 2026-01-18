@@ -361,8 +361,8 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
         void* key_ptr;
         void* value_ptr;
         while (g_hash_table_iter_next(&iter, &key_ptr, &value_ptr)) {
-            auto* key = static_cast<const char*>(key_ptr);
-            auto* value = static_cast<const char*>(value_ptr);
+            const auto* key = static_cast<const char*>(key_ptr);
+            const auto* value = static_cast<const char*>(value_ptr);
 
             JS::ConstUTF8CharsZ value_chars{value, strlen(value)};
             JS::RootedString value_str(cx,

@@ -54,7 +54,7 @@ struct ObjectBox::impl {
     }
 
     ~impl() {
-        auto it = std::find(m_wrappers.begin(), m_wrappers.end(), m_parent);
+        auto* it = std::find(m_wrappers.begin(), m_wrappers.end(), m_parent);
         m_wrappers.erase(it);
         debug("Finalized");
     }
