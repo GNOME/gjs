@@ -232,19 +232,19 @@ static JSObject* repo_new(JSContext* cx) {
                                JSPROP_PERMANENT))
         return nullptr;
 
-#    if defined(G_OS_UNIX)
+#ifdef G_OS_UNIX
     if (!JS_DefineProperty(cx, versions, "GLibUnix", two_point_oh,
                            JSPROP_PERMANENT) ||
         !JS_DefineProperty(cx, versions, "GioUnix", two_point_oh,
                            JSPROP_PERMANENT))
         return nullptr;
-#    elif defined(G_OS_WIN32)
+#elif defined(G_OS_WIN32)
     if (!JS_DefineProperty(cx, versions, "GLibWin32", two_point_oh,
                            JSPROP_PERMANENT) ||
         !JS_DefineProperty(cx, versions, "GioWin32", two_point_oh,
                            JSPROP_PERMANENT))
         return nullptr;
-#    endif  // G_OS_UNIX/G_OS_WIN32
+#endif  // G_OS_UNIX/G_OS_WIN32
 
     JS::RootedObject private_ns{cx, JS_NewPlainObject(cx)};
     if (!JS_DefinePropertyById(cx, repo, atoms.private_ns_marker(), private_ns,
