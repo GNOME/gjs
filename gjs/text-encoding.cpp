@@ -121,7 +121,7 @@ static JSString* gjs_lossy_decode_from_uint8array_slow(
     size_t input_len = bytes_len;
 
     // The base string that we'll append to.
-    std::u16string output_str = u"";
+    std::u16string output_str;
 
     do {
         Gjs::AutoError local_error;
