@@ -470,7 +470,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
 
     GIArgument ret;
     std::array<GIArgument, 1> gi_args;
-    gjs_arg_set(&gi_args[0], m_ptr.get());
+    gjs_arg_set(gi_args.data(), m_ptr.get());
 
     GI::StackTypeInfo type_info;
     getter.load_return_type(&type_info);

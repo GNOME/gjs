@@ -46,6 +46,7 @@ Checks:
 
   - readability-avoid-const-params-in-decls
   - readability-const-return-type
+  - readability-container-data-pointer
   - readability-container-size-empty
   - readability-else-after-return
   - readability-qualified-auto

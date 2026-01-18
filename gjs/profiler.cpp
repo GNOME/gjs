@@ -250,9 +250,9 @@ static bool gjs_profiler_define_counters(GjsProfiler* self) {
     self->counter_base =
         sysprof_capture_writer_request_counter(self->capture, GJS_N_COUNTERS);
 
-#    define SETUP_COUNTER(counter_name, ix)                                    \
-        setup_counter_helper(&counters[ix], #counter_name, self->counter_base, \
-                             ix);
+#    define SETUP_COUNTER(counter_name, ix)                         \
+        setup_counter_helper(counters.data() + (ix), #counter_name, \
+                             self->counter_base, ix);
     GJS_FOR_EACH_COUNTER(SETUP_COUNTER);
 #    undef SETUP_COUNTER
 

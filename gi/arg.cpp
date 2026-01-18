@@ -1172,8 +1172,8 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
 
     std::vector<GIArgument> atom_intern_args{2};
 
-    gjs_arg_set(&atom_intern_args[0], name);
-    gjs_arg_set(&atom_intern_args[1], false);
+    gjs_arg_set(atom_intern_args.data(), name);
+    gjs_arg_set(atom_intern_args.data() + 1, false);
 
     mozilla::Unused << atom_intern_fun.invoke(atom_intern_args, {}, ret);
 }
