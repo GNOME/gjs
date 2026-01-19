@@ -44,32 +44,34 @@ Checks:
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 
-  - readability-ambiguous-smartptr-reset-call
-  - readability-avoid-const-params-in-decls
-  - readability-avoid-nested-conditional-operator
-  - readability-const-return-type
-  - readability-container-data-pointer
-  - readability-container-size-empty
-  - readability-convert-member-functions-to-static
-  - readability-else-after-return
-  - readability-inconsistent-declaration-parameter-name
-  - readability-make-member-function-const
-  - readability-non-const-parameter
-  - readability-qualified-auto
-  - readability-redundant-access-specifiers
-  - readability-redundant-casting
-  - readability-redundant-control-flow
-  - readability-redundant-declaration
-  - readability-redundant-inline-specifier
-  - readability-redundant-member-init
-  - readability-redundant-string-init
-  - readability-simplify-boolean-expr
-  - readability-static-accessed-through-instance
-  - readability-suspicious-call-argument
-  - readability-use-anyofallof
-  - readability-use-concise-preprocessor-directives
-  - readability-use-std-min-max
-  - readability-uppercase-literal-suffix
+  - readability-*
+
+  # readability checks that we will definitely not deal with:
+  - -readability-implicit-bool-conversion
+  - -readability-named-parameter
+    # The above checks enforce styles that we intentionally avoid
+  - -readability-identifier-length
+    # Too many false positives; we use short names when they are obvious and
+    # often repeated, like "cx". Use good judgement instead.
+  - -readability-magic-numbers
+    # Too many false positives; incentivizes constants just for their own sake,
+    # like const int TEN = 10; Use good judgement instead.
+
+  # readability checks that may be enabled in the future:
+  - -readability-braces-around-statements
+    # For now, we intentionally avoid this style; low priority and too much
+    # churn to switch.
+  - -readability-function-cognitive-complexity
+    # It would be a good practice to enable this check locally from time to time
+    # and use it as a suggestion for refactoring, but it's too much churn to
+    # do all at once.
+  - -readability-isolate-declaration
+    # False positives on g_assert_ macros. May consider enabling if it gains a
+    # configuration option to ignore macros.
+  - -readability-math-missing-parentheses
+    # Too many false positives. Parentheses are nice on lesser-used operators
+    # but are not needed for basic PEMDAS. May consider enabling if this is made
+    # configurable.
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
