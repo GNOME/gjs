@@ -117,7 +117,7 @@ class ErrorPrototype
     ~ErrorPrototype();
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const;
+    static bool get_parent_proto(JSContext*, JS::MutableHandleObject proto);
 
  public:
     [[nodiscard]] GQuark domain() const { return m_domain; }

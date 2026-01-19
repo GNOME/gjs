@@ -220,7 +220,7 @@ JSFunctionSpec ErrorBase::static_methods[] = {
 
 // Overrides GIWrapperPrototype::get_parent_proto().
 bool ErrorPrototype::get_parent_proto(JSContext* cx,
-                                      JS::MutableHandleObject proto) const {
+                                      JS::MutableHandleObject proto) {
     GI::Repository repo{};
     repo.require("GLib", "2.0").unwrap();
 

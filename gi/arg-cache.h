@@ -161,7 +161,7 @@ struct Argument {
 
     constexpr void set_return_value() { m_arg_name = "return value"; }
 
-    bool invalid(JSContext*, const char* func = nullptr) const;
+    static bool invalid(JSContext*, const char* func = nullptr);
 
     const char* m_arg_name = nullptr;
     bool m_skip_in : 1;

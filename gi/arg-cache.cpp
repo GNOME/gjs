@@ -237,32 +237,32 @@ struct BasicCArray {
 struct ZeroTerminatedArray {
     constexpr explicit ZeroTerminatedArray(const GI::TypeInfo&) {}
 
-    bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-            const char* arg_name, GjsArgumentFlags flags,
-            JS::HandleValue value) {
+    static bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                   const char* arg_name, GjsArgumentFlags flags,
+                   JS::HandleValue value) {
         return gjs_value_to_basic_array_gi_argument(
             cx, value, element_tag, GI_ARRAY_TYPE_C, arg, arg_name,
             GJS_ARGUMENT_ARGUMENT, flags);
     }
 
-    bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-             JS::MutableHandleValue value) {
+    static bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                    JS::MutableHandleValue value) {
         return gjs_array_from_basic_zero_terminated_array(
             cx, value, element_tag, gjs_arg_get<void*>(arg));
     }
 
-    void release_container(GIArgument* arg) {
+    static void release_container(GIArgument* arg) {
         g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
     }
 
-    void release_contents(GIArgument* arg) {
+    static void release_contents(GIArgument* arg) {
         char** array = gjs_arg_get<char**>(arg);
         for (size_t ix = 0; array[ix]; ix++)
             g_free(array[ix]);
     }
 
     [[nodiscard]]
-    Maybe<ReturnTag> return_tag() const {
+    static Maybe<ReturnTag> return_tag() {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
 };
@@ -270,32 +270,32 @@ struct ZeroTerminatedArray {
 struct GArrayContainer {
     constexpr explicit GArrayContainer(const GI::TypeInfo&) {}
 
-    bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-            const char* arg_name, GjsArgumentFlags flags,
-            JS::HandleValue value) {
+    static bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                   const char* arg_name, GjsArgumentFlags flags,
+                   JS::HandleValue value) {
         return gjs_value_to_basic_array_gi_argument(
             cx, value, element_tag, GI_ARRAY_TYPE_ARRAY, arg, arg_name,
             GJS_ARGUMENT_ARGUMENT, flags);
     }
 
-    bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-             JS::MutableHandleValue value_out) {
+    static bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                    JS::MutableHandleValue value_out) {
         return gjs_value_from_basic_garray_gi_argument(cx, value_out,
                                                        element_tag, arg);
     }
 
-    void release_container(GIArgument* arg) {
+    static void release_container(GIArgument* arg) {
         g_clear_pointer(&gjs_arg_member<GArray*>(arg), g_array_unref);
     }
 
-    void release_contents(GIArgument* arg) {
+    static void release_contents(GIArgument* arg) {
         GArray* array = gjs_arg_get<GArray*>(arg);
         for (size_t ix = 0; ix < array->len; ix++)
             g_free(g_array_index(array, char*, ix));
     }
 
     [[nodiscard]]
-    Maybe<ReturnTag> return_tag() const {
+    static Maybe<ReturnTag> return_tag() {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
 };
@@ -303,32 +303,32 @@ struct GArrayContainer {
 struct GPtrArrayContainer {
     constexpr explicit GPtrArrayContainer(const GI::TypeInfo&) {}
 
-    bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-            const char* arg_name, GjsArgumentFlags flags,
-            JS::HandleValue value) {
+    static bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                   const char* arg_name, GjsArgumentFlags flags,
+                   JS::HandleValue value) {
         return gjs_value_to_basic_array_gi_argument(
             cx, value, element_tag, GI_ARRAY_TYPE_PTR_ARRAY, arg, arg_name,
             GJS_ARGUMENT_ARGUMENT, flags);
     }
 
-    bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-             JS::MutableHandleValue value_out) {
+    static bool out(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                    JS::MutableHandleValue value_out) {
         return gjs_value_from_basic_gptrarray_gi_argument(cx, value_out,
                                                           element_tag, arg);
     }
 
-    void release_container(GIArgument* arg) {
+    static void release_container(GIArgument* arg) {
         g_clear_pointer(&gjs_arg_member<GPtrArray*>(arg), g_ptr_array_unref);
     }
 
-    void release_contents(GIArgument* arg) {
+    static void release_contents(GIArgument* arg) {
         GPtrArray* array = gjs_arg_get<GPtrArray*>(arg);
         g_ptr_array_foreach(
             array, [](void* ptr, void*) { g_free(ptr); }, nullptr);
     }
 
     [[nodiscard]]
-    Maybe<ReturnTag> return_tag() const {
+    static Maybe<ReturnTag> return_tag() {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
 };
@@ -344,9 +344,9 @@ struct FixedSizeArray {
 
     uint32_t m_fixed_size = -1;
 
-    bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
-            const char* arg_name, GjsArgumentFlags flags,
-            JS::HandleValue value) {
+    static bool in(JSContext* cx, GITypeTag element_tag, GIArgument* arg,
+                   const char* arg_name, GjsArgumentFlags flags,
+                   JS::HandleValue value) {
         return gjs_value_to_basic_array_gi_argument(
             cx, value, element_tag, GI_ARRAY_TYPE_C, arg, arg_name,
             GJS_ARGUMENT_ARGUMENT, flags);
@@ -358,7 +358,7 @@ struct FixedSizeArray {
             cx, value, element_tag, m_fixed_size, arg);
     }
 
-    void release_container(GIArgument* arg) {
+    static void release_container(GIArgument* arg) {
         g_clear_pointer(&gjs_arg_member<void*>(arg), g_free);
     }
 
@@ -369,7 +369,7 @@ struct FixedSizeArray {
     }
 
     [[nodiscard]]
-    Maybe<ReturnTag> return_tag() const {
+    static Maybe<ReturnTag> return_tag() {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
 };
@@ -554,7 +554,7 @@ struct SkipAll : Argument {
     }
 
  protected:
-    constexpr bool skip() { return true; }
+    constexpr static bool skip() { return true; }
 };
 
 struct Fallback : Transferable, HasTypeInfo {
@@ -2528,7 +2528,7 @@ bool GValueInTransferNone::release(JSContext* cx, GjsFunctionCallState* state,
 
 }  // namespace Arg
 
-bool Argument::invalid(JSContext* cx, const char* func) const {
+bool Argument::invalid(JSContext* cx, const char* func) {
     gjs_throw(cx, "%s not implemented", func ? func : "Function");
     return false;
 }

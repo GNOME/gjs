@@ -103,7 +103,7 @@ class ObjectBase
         GIWrapperBase::debug_lifecycle(jsobj_addr(), message);
     }
 
-    [[nodiscard]] bool id_is_never_lazy(jsid name, const GjsAtoms&);
+    [[nodiscard]] static bool id_is_never_lazy(jsid name, const GjsAtoms&);
     [[nodiscard]] bool is_custom_js_class();
 
  public:
@@ -478,7 +478,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     // JS constructor
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool constructor_impl(JSContext*, JS::HandleObject, const JS::CallArgs&);
+    static bool constructor_impl(JSContext*, JS::HandleObject,
+                                 const JS::CallArgs&);
 
     // JS methods
 

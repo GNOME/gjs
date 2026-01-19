@@ -788,7 +788,7 @@ class GIWrapperPrototype : public Base {
      * inherit in JS.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const {
+    static bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) {
         proto.set(nullptr);
         return true;
     }
