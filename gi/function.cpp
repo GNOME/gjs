@@ -1028,8 +1028,6 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     /* Return value and out arguments are valid only if invocation doesn't
      * return error. In arguments need to be released always.
      */
-    if (!r_value)
-        args.rval().setUndefined();
 
     if (return_tag) {
         gi_type_tag_extract_ffi_return_value(
@@ -1156,30 +1154,32 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
         }
     }
 
-    if (postinvoke_release_failed)
-        state->failed = true;
+    if (postinvoke_release_failed || state->failed)
+        return false;
+    if (state->did_throw_gerror())
+        return gjs_throw_gerror(cx, state->local_error.release());
 
     g_assert(ffi_arg_pos == state->last_processed_index());
 
-    if (!r_value && m_js_out_argc > 0 && state->call_completed()) {
-        // If we have one return value or out arg, return that item on its
-        // own, otherwise return a JavaScript array with [return value,
-        // out arg 1, out arg 2, ...]
-        if (m_js_out_argc == 1) {
-            args.rval().set(state->return_values[0]);
-        } else {
-            JSObject* array = JS::NewArrayObject(cx, state->return_values);
-            if (!array) {
-                state->failed = true;
-            } else {
-                args.rval().setObject(*array);
-            }
-        }
+    // Function doesn't return a value, or we stored the C return value in
+    // r_value and don't want a JS return value
+    if (m_js_out_argc == 0 || r_value) {
+        args.rval().setUndefined();
+        return true;
     }
 
-    if (!state->failed && state->did_throw_gerror())
-        return gjs_throw_gerror(cx, state->local_error.release());
-    return !state->failed;
+    // If we have one return value or out arg, return that item on its own
+    if (m_js_out_argc == 1) {
+        args.rval().set(state->return_values[0]);
+        return true;
+    }
+
+    // Return a JS array with [return value, out arg 1, out arg 2, ...]
+    JSObject* array = JS::NewArrayObject(cx, state->return_values);
+    if (!array)
+        return false;
+    args.rval().setObject(*array);
+    return true;
 }
 
 bool Function::call(JSContext* cx, unsigned argc, JS::Value* vp) {
