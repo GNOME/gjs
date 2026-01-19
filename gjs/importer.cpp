@@ -526,7 +526,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
             gjs_debug(GJS_DEBUG_IMPORTER,
                       "Adding directory '%s' to child importer '%s'",
                       full_path.get(), name.get());
-            directories.push_back(full_path.get());
+            directories.emplace_back(full_path.get());
         }
 
         /* If we just added to directories, we know we don't need to check for a
@@ -755,18 +755,19 @@ static const std::vector<std::string>& gjs_get_search_path() {
             Gjs::AutoFree<char*> dirs{
                 g_strsplit(envstr, G_SEARCHPATH_SEPARATOR_S, 0)};
             for (char** d = dirs; *d != nullptr; d++)
-                gjs_search_path.push_back(*d);
+                gjs_search_path.emplace_back(*d);
         }
 
-        gjs_search_path.push_back("resource:///org/gnome/gjs/modules/script/");
-        gjs_search_path.push_back("resource:///org/gnome/gjs/modules/core/");
+        gjs_search_path.emplace_back(
+            "resource:///org/gnome/gjs/modules/script/");
+        gjs_search_path.emplace_back("resource:///org/gnome/gjs/modules/core/");
 
         // $XDG_DATA_DIRS /gjs-1.0
         const char* const* system_data_dirs = g_get_system_data_dirs();
         for (size_t i = 0; system_data_dirs[i] != nullptr; ++i) {
             Gjs::AutoChar s{
                 g_build_filename(system_data_dirs[i], "gjs-1.0", nullptr)};
-            gjs_search_path.push_back(s.get());
+            gjs_search_path.emplace_back(s.get());
         }
 
         // ${datadir}/share/gjs-1.0
@@ -776,10 +777,10 @@ static const std::vector<std::string>& gjs_get_search_path() {
             g_win32_get_package_installation_directory_of_module(gjs_dll);
         Gjs::AutoChar gjs_data_dir{
             g_build_filename(basedir, "share", "gjs-1.0", nullptr)};
-        gjs_search_path.push_back(gjs_data_dir.get());
+        gjs_search_path.emplace_back(gjs_data_dir.get());
         g_free(basedir);
 #else
-        gjs_search_path.push_back(GJS_JS_DIR);
+        gjs_search_path.emplace_back(GJS_JS_DIR);
 #endif
 
         search_path_initialized = true;

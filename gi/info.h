@@ -274,11 +274,6 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
 
     using CStruct = typename detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
-    UnownedInfo() = delete;
-    UnownedInfo(std::nullptr_t) = delete;  // NOLINT(runtime/explicit)
-    // https://github.com/cpplint/cpplint/issues/386
-    // No need to delete move constructor; declaring a copy constructor prevents
-    // it from being generated.
 
     explicit UnownedInfo(CStruct* info) : m_info(info) { validate(); }
     [[nodiscard]] CStruct* ptr() const { return m_info; }
@@ -295,6 +290,12 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     }
 
  public:
+    UnownedInfo() = delete;
+    UnownedInfo(std::nullptr_t) = delete;  // NOLINT(runtime/explicit)
+    // https://github.com/cpplint/cpplint/issues/386
+    // No need to delete move constructor; declaring a copy constructor prevents
+    // it from being generated.
+
     // Copying is cheap, UnownedInfo just consists of a pointer.
     constexpr UnownedInfo(const UnownedInfo& other) : m_info(other.m_info) {}
     UnownedInfo& operator=(const UnownedInfo& other) {
@@ -348,9 +349,6 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     using CStruct = typename detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
 
-    OwnedInfo() = delete;
-    OwnedInfo(std::nullptr_t) = delete;  // NOLINT(runtime/explicit)
-    // https://github.com/cpplint/cpplint/issues/386
     explicit OwnedInfo(CStruct* info) : m_info(info) {
         static_assert(sizeof(CStruct*) == sizeof(OwnedInfo<TAG>),
                       "OwnedInfo<T> should be byte-compatible with T*");
@@ -364,6 +362,10 @@ class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     [[nodiscard]] CStruct* ptr() const { return m_info; }
 
  public:
+    OwnedInfo() = delete;
+    OwnedInfo(std::nullptr_t) = delete;  // NOLINT(runtime/explicit)
+    // https://github.com/cpplint/cpplint/issues/386
+
     // Copy OwnedInfo from another OwnedInfo. Explicit because it takes a
     // reference.
     explicit OwnedInfo(const OwnedInfo& other) : OwnedInfo(other.m_info) {
@@ -1746,7 +1748,7 @@ class StackArgInfo : public InfoOperations<StackArgInfo, InfoTag::ARG> {
     }
 
  public:
-    constexpr StackArgInfo() {}
+    constexpr StackArgInfo() = default;
     ~StackArgInfo() { gi_base_info_clear(&m_info); }
     // Moving is okay, we copy the contents of the GIArgInfo struct and reset
     // the existing one
@@ -1774,7 +1776,7 @@ class StackTypeInfo : public InfoOperations<StackTypeInfo, InfoTag::TYPE> {
     }
 
  public:
-    constexpr StackTypeInfo() {}
+    constexpr StackTypeInfo() = default;
     ~StackTypeInfo() { gi_base_info_clear(&m_info); }
     // Moving is okay, we copy the contents of the GITypeInfo struct and reset
     // the existing one

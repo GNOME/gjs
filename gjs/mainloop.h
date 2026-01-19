@@ -20,7 +20,7 @@ class MainLoop {
     // We nonetheless use grefcount here because it takes care of dealing with
     // integer overflow for us.
     grefcount m_hold_count;
-    bool m_exiting;
+    bool m_exiting = false;
 
     void debug(const char* msg) {
         gjs_debug(GJS_DEBUG_MAINLOOP, "Main loop instance %p: %s", this, msg);
@@ -47,7 +47,7 @@ class MainLoop {
     }
 
  public:
-    MainLoop() : m_exiting(false) { g_ref_count_init(&m_hold_count); }
+    MainLoop() { g_ref_count_init(&m_hold_count); }
     ~MainLoop() {
         g_assert(g_ref_count_compare(&m_hold_count, 1) &&
                  "mismatched hold/release on main loop");

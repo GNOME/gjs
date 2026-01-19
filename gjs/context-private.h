@@ -183,7 +183,7 @@ class GjsContextPrivate : public JS::JobQueue {
     static GjsContextPrivate* from_current_context();
 
     GjsContextPrivate(JSContext*, GjsContext* public_context);
-    ~GjsContextPrivate();
+    ~GjsContextPrivate() override;
 
     // Accessors
     [[nodiscard]]

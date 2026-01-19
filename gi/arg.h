@@ -21,14 +21,14 @@
 
 // Different roles for a GIArgument; currently used only in exception and debug
 // messages.
-typedef enum {
+enum GjsArgumentType {
     GJS_ARGUMENT_ARGUMENT,
     GJS_ARGUMENT_RETURN_VALUE,
     GJS_ARGUMENT_FIELD,
     GJS_ARGUMENT_LIST_ELEMENT,
     GJS_ARGUMENT_HASH_ELEMENT,
     GJS_ARGUMENT_ARRAY_ELEMENT
-} GjsArgumentType;
+};
 
 enum class GjsArgumentFlags : uint8_t {
     NONE = 0,

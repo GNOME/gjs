@@ -53,7 +53,7 @@ class ParseArgsErr {
     ParseArgsErr(const char* format_string, F param)
         : m_message(g_strdup_printf(format_string, param)) {}
 
-    const char* message() const { return m_message.get(); }
+    [[nodiscard]] const char* message() const { return m_message.get(); }
 };
 
 template <typename... Args>

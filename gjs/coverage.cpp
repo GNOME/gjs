@@ -44,13 +44,13 @@ struct _GjsCoverage {
     GObject parent;
 };
 
-typedef struct {
+struct GjsCoveragePrivate {
     char** prefixes;
     GjsContext* coverage_context;
     JS::Heap<JSObject*> global;
 
     GFile* output_dir;
-} GjsCoveragePrivate;
+};
 
 G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            gjs_coverage,

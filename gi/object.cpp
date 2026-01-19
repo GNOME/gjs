@@ -335,10 +335,10 @@ bool ObjectBase::prop_getter_write_only(JSContext*, unsigned argc,
 class ObjectPropertyInfoCaller {
  public:
     GI::AutoFunctionInfo func_info;
-    void* native_address;
+    void* native_address = nullptr;
 
     explicit ObjectPropertyInfoCaller(const GI::FunctionInfo info)
-        : func_info(info), native_address(nullptr) {}
+        : func_info(info) {}
 
     Gjs::GErrorResult<> init() {
         GIFunctionInvoker invoker;
@@ -508,10 +508,9 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
 class ObjectPropertyPspecCaller {
  public:
     GParamSpec* pspec;
-    void* native_address;
+    void* native_address = nullptr;
 
-    explicit ObjectPropertyPspecCaller(GParamSpec* param)
-        : pspec(param), native_address(nullptr) {}
+    explicit ObjectPropertyPspecCaller(GParamSpec* param) : pspec(param) {}
 
     Gjs::GErrorResult<> init(const GI::FunctionInfo info) {
         GIFunctionInvoker invoker;
@@ -3584,7 +3583,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
     if (!prototype)
         return nullptr;
 
-    ObjectInstance* priv = new ObjectInstance(prototype, obj);
+    auto* priv = new ObjectInstance(prototype, obj);
 
     ObjectBase::init_private(obj, priv);
 

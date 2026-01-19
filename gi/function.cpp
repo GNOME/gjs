@@ -89,12 +89,11 @@ class Function : public CWrapper<Function> {
 
     ArgsCache m_arguments;
 
-    uint8_t m_js_in_argc;
-    uint8_t m_js_out_argc;
-    GIFunctionInvoker m_invoker;
+    uint8_t m_js_in_argc = 0;
+    uint8_t m_js_out_argc = 0;
+    GIFunctionInvoker m_invoker{};
 
-    explicit Function(const GI::CallableInfo info)
-        : m_info(info), m_js_in_argc(0), m_js_out_argc(0), m_invoker({}) {
+    explicit Function(const GI::CallableInfo info) : m_info(info) {
         GJS_INC_COUNTER(function);
     }
     ~Function();

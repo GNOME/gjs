@@ -42,18 +42,9 @@ union Utf8Unit;
     }                                                                       \
     G_STMT_END
 
-typedef enum _test_enum {
-    ZERO,
-    ONE,
-    TWO,
-    THREE
-} test_enum_t;
+enum test_enum_t { ZERO, ONE, TWO, THREE };
 
-typedef enum _test_signed_enum {
-    MINUS_THREE = -3,
-    MINUS_TWO,
-    MINUS_ONE
-} test_signed_enum_t;
+enum test_signed_enum_t { MINUS_THREE = -3, MINUS_TWO, MINUS_ONE };
 
 #define JSNATIVE_TEST_FUNC_BEGIN(name)                              \
     static bool name(JSContext* cx, unsigned argc, JS::Value* vp) { \

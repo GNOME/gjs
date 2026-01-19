@@ -15,23 +15,23 @@
 #include "gi/info.h"
 #include "gjs/macros.h"
 
-typedef bool (*GjsArgOverrideToGIArgumentFunc)(JSContext*, JS::Value,
-                                               const char* arg_name,
-                                               GjsArgumentType, GITransfer,
-                                               GjsArgumentFlags, GIArgument*);
+using GjsArgOverrideToGIArgumentFunc = bool (*)(JSContext*, JS::Value,
+                                                const char* arg_name,
+                                                GjsArgumentType, GITransfer,
+                                                GjsArgumentFlags, GIArgument*);
 
-typedef bool (*GjsArgOverrideFromGIArgumentFunc)(JSContext*,
-                                                 JS::MutableHandleValue,
-                                                 GIArgument*);
+using GjsArgOverrideFromGIArgumentFunc = bool (*)(JSContext*,
+                                                  JS::MutableHandleValue,
+                                                  GIArgument*);
 
-typedef bool (*GjsArgOverrideReleaseGIArgumentFunc)(JSContext*, GITransfer,
-                                                    GIArgument*);
+using GjsArgOverrideReleaseGIArgumentFunc = bool (*)(JSContext*, GITransfer,
+                                                     GIArgument*);
 
-typedef struct {
+struct GjsForeignInfo {
     GjsArgOverrideToGIArgumentFunc to_func;
     GjsArgOverrideFromGIArgumentFunc from_func;
     GjsArgOverrideReleaseGIArgumentFunc release_func;
-} GjsForeignInfo;
+};
 
 void gjs_struct_foreign_register(const char* gi_namespace,
                                  const char* type_name, GjsForeignInfo*);

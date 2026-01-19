@@ -374,17 +374,13 @@ static void test_expected_entry_not_written_for_nonexistent_file(
     g_free(coverage_data_contents);
 }
 
-typedef enum _BranchTaken {
-    NOT_EXECUTED,
-    NOT_TAKEN,
-    TAKEN
-} BranchTaken;
+enum BranchTaken { NOT_EXECUTED, NOT_TAKEN, TAKEN };
 
-typedef struct _BranchLineData {
+struct BranchLineData {
     int expected_branch_line;
     int expected_id;
     BranchTaken taken;
-} BranchLineData;
+};
 
 static void branch_at_line_should_be_taken(const char* line,
                                            const BranchLineData& branch_data) {
@@ -813,10 +809,10 @@ static void test_total_function_coverage_written_to_coverage_data(
     g_free(coverage_data_contents);
 }
 
-typedef struct _LineCountIsMoreThanData {
+struct LineCountIsMoreThanData {
     unsigned expected_lineno;
     unsigned expected_to_be_more_than;
-} LineCountIsMoreThanData;
+};
 
 static void line_hit_count_is_more_than(const char* line,
                                         const LineCountIsMoreThanData& data) {
@@ -990,12 +986,12 @@ static void test_multiple_source_file_records_written_to_coverage_data(
     g_free(coverage_data_contents);
 }
 
-typedef struct _ExpectedSourceFileCoverageData {
+struct ExpectedSourceFileCoverageData {
     const char* source_file_path;
     std::vector<LineCountIsMoreThanData> more_than;
     const char expected_lines_hit_character;
     const char expected_lines_found_character;
-} ExpectedSourceFileCoverageData;
+};
 
 static void assert_coverage_data_for_source_file(
     const std::vector<ExpectedSourceFileCoverageData>& expected_data,
@@ -1052,11 +1048,11 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
     g_free(coverage_data_contents);
 }
 
-typedef struct _FixturedTest {
+struct FixturedTest {
     size_t fixture_size;
     GTestFixtureFunc set_up;
     GTestFixtureFunc tear_down;
-} FixturedTest;
+};
 
 static void add_test_for_fixture(const char* name, FixturedTest* fixture,
                                  GTestFixtureFunc test_func) {

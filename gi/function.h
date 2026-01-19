@@ -33,13 +33,13 @@ namespace JS {
 class CallArgs;
 }
 
-typedef enum {
+enum GjsParamType {
     PARAM_NORMAL,
     PARAM_SKIPPED,
     PARAM_ARRAY,
     PARAM_CALLBACK,
     PARAM_UNKNOWN,
-} GjsParamType;
+};
 
 struct GjsCallbackTrampoline : public Gjs::Closure {
     GJS_JSAPI_RETURN_CONVENTION
@@ -54,9 +54,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
         return m_info.closure_native_address(m_closure);
     }
 
-    ffi_closure* get_ffi_closure() const {
-        return m_closure;
-    }
+    [[nodiscard]] ffi_closure* get_ffi_closure() const { return m_closure; }
 
     void mark_forever();
 

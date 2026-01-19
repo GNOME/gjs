@@ -16,10 +16,10 @@
 namespace Gjs {
 class NativeModuleDefineFuncs {
     NativeModuleDefineFuncs() {}
-    typedef bool (*GjsDefineModuleFunc)(JSContext*,
-                                        JS::MutableHandleObject module_out);
+    using DefineModuleFunc = bool (*)(JSContext*,
+                                      JS::MutableHandleObject module_out);
 
-    std::unordered_map<std::string, GjsDefineModuleFunc> m_modules;
+    std::unordered_map<std::string, DefineModuleFunc> m_modules;
 
  public:
     static NativeModuleDefineFuncs& get() {
@@ -28,7 +28,7 @@ class NativeModuleDefineFuncs {
     }
 
     // called on context init
-    void add(const char* module_id, GjsDefineModuleFunc);
+    void add(const char* module_id, DefineModuleFunc);
 
     // called by importer.cpp to to check for already loaded modules
     [[nodiscard]] bool is_registered(const char* name) const;

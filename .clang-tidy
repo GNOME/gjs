@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+# SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
+
+Checks:
+  - -*
+  - modernize-*
+  - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
+  - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
+  - -modernize-use-trailing-return-type  # churn; stylistic
+CheckOptions:
+  modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
+  modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
+  modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
+  modernize-use-using.IgnoreExternC: true
+ExcludeHeaderFilterRegex: /include|/subprojects|config.h
+HeaderFilterRegex: .*
+UseColor: true
+WarningsAsErrors: '*'

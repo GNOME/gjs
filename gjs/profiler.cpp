@@ -91,8 +91,7 @@ static const std::chrono::milliseconds SAMPLING_PERIOD = 1ms;
 
 // Custom packing for Maybe<ProfilerTimePoint>. We assume that 0 is not a value
 // that comes out of the monotonic clock and so can be used to indicate Nothing
-namespace mozilla {
-namespace detail {
+namespace mozilla::detail {
 template <>
 struct MaybeStorage<ProfilerTimePoint> {
  protected:
@@ -113,8 +112,7 @@ struct MaybeStorage<ProfilerTimePoint> {
 static_assert(sizeof(Maybe<ProfilerTimePoint>) == sizeof(ProfilerTimePoint),
               "Maybe<ProfilerTimePoint> should pack");
 
-}  // namespace detail
-}  // namespace mozilla
+}  // namespace mozilla::detail
 
 G_DEFINE_POINTER_TYPE(GjsProfiler, gjs_profiler)
 
@@ -422,9 +420,9 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
      * overflow the stack; however, dynamic allocation is not an option here
      * since we are in a signal handler.
      */
-    SysprofCaptureAddress* addrs =
+    auto* addrs = static_cast<SysprofCaptureAddress*>(
         // cppcheck-suppress allocaCalled
-        static_cast<SysprofCaptureAddress*>(alloca(sizeof *addrs * depth));
+        alloca(sizeof(SysprofCaptureAddress) * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {
         js::ProfilingStackFrame& entry = self->stack.frames[ix];
@@ -551,7 +549,7 @@ void gjs_profiler_start(GjsProfiler* self) {
 
     g_return_if_fail(!self->capture);
 
-    struct sigaction sa = {{0}};
+    struct sigaction sa = {{nullptr}};
     struct sigevent sev = {{0}};
     struct itimerspec its = {{0}};
     struct itimerspec old_its;

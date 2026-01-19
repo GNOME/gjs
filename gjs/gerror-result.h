@@ -12,12 +12,10 @@
 
 #include "gjs/auto.h"
 
-namespace mozilla {
-namespace detail {
+namespace mozilla::detail {
 template <typename V, typename E, PackingStrategy Strategy>
 class ResultImplementation;
 }
-}  // namespace mozilla
 
 // Auto pointer type for GError, as well as a Result type that can be used as a
 // type-safe return type for fallible GNOME-platform operations.
@@ -58,8 +56,7 @@ using GErrorResult = mozilla::Result<T, AutoError>;
 
 }  // namespace Gjs
 
-namespace mozilla {
-namespace detail {
+namespace mozilla::detail {
 // Custom packing for GErrorResult<>
 template <>
 class SelectResultImpl<Ok, Gjs::AutoError> {
@@ -75,11 +72,14 @@ class SelectResultImpl<Ok, Gjs::AutoError> {
             m_value = other.m_value.release();
             return *this;
         }
-        constexpr bool isOk() const { return !m_value; }
-        constexpr const Ok inspect() const { return {}; }
-        constexpr Ok unwrap() { return {}; }
-        constexpr const GError* inspectErr() const { return m_value.get(); }
-        Gjs::AutoError unwrapErr() { return m_value.release(); }
+        [[nodiscard]] constexpr bool isOk() const { return !m_value; }
+        [[nodiscard]] constexpr const Ok inspect() const { return {}; }
+        [[nodiscard]] constexpr Ok unwrap() { return {}; }
+        [[nodiscard]]
+        constexpr const GError* inspectErr() const {
+            return m_value.get();
+        }
+        [[nodiscard]] Gjs::AutoError unwrapErr() { return m_value.release(); }
     };
 };
 
@@ -92,5 +92,4 @@ class SelectResultImpl<T*, Gjs::AutoError> {
                                       PackingStrategy::PackedVariant>;
 };
 
-}  // namespace detail
-}  // namespace mozilla
+}  // namespace mozilla::detail

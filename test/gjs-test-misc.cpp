@@ -11,8 +11,7 @@
 #include "test/gjs-test-utils.h"
 #include "util/misc.h"
 
-namespace Gjs {
-namespace Test {
+namespace Gjs::Test {
 
 static void statm_expected() {
     StatmParseResult result =
@@ -62,5 +61,4 @@ void add_tests_for_misc_utils() {
 #undef ADD_STATM_FAILURE_CASE
 }
 
-}  // namespace Test
-}  // namespace Gjs
+}  // namespace Gjs::Test

@@ -31,8 +31,7 @@
     macro(union_prototype, 15)
 // clang-format on
 
-namespace Gjs {
-namespace Memory {
+namespace Gjs::Memory {
 
 struct Counter {
     explicit Counter(const char* n) : name(n) {}
@@ -59,8 +58,7 @@ constexpr void dec() {
 }
 
 }  // namespace Counters
-}  // namespace Memory
-}  // namespace Gjs
+}  // namespace Gjs::Memory
 
 #define COUNT(name, ix) +1
 static constexpr size_t GJS_N_COUNTERS = 0 GJS_FOR_EACH_COUNTER(COUNT);

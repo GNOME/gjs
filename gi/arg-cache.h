@@ -72,7 +72,7 @@ class ReturnTag {
         }
     }
 
-    constexpr GITypeTag tag() const { return m_tag; }
+    [[nodiscard]] constexpr GITypeTag tag() const { return m_tag; }
     [[nodiscard]]
     constexpr bool is_enum_or_flags_interface() const {
         return m_tag == GI_TYPE_TAG_INTERFACE && m_is_enum_or_flags_interface;
@@ -81,7 +81,7 @@ class ReturnTag {
     constexpr GType interface_gtype() const {
         return is_enum_or_flags_interface() ? GI_TYPE_ENUM_INFO : G_TYPE_NONE;
     }
-    constexpr bool is_pointer() const { return m_is_pointer; }
+    [[nodiscard]] constexpr bool is_pointer() const { return m_is_pointer; }
 };
 
 }  // namespace Arg
@@ -113,6 +113,7 @@ struct Argument {
     virtual bool release(JSContext*, GjsFunctionCallState*,
                          GIArgument* in_argument, GIArgument* out_argument);
 
+    [[nodiscard]]
     virtual GjsArgumentFlags flags() const {
         GjsArgumentFlags flags = GjsArgumentFlags::NONE;
         if (m_skip_in)
@@ -133,16 +134,20 @@ struct Argument {
     static constexpr uint8_t MAX_ARGS = std::numeric_limits<uint8_t>::max() - 2;
     static constexpr uint8_t ABSENT = std::numeric_limits<uint8_t>::max();
 
-    constexpr const char* arg_name() const { return m_arg_name; }
+    [[nodiscard]] constexpr const char* arg_name() const { return m_arg_name; }
 
-    constexpr bool skip_in() const { return m_skip_in; }
+    [[nodiscard]] constexpr bool skip_in() const { return m_skip_in; }
 
-    constexpr bool skip_out() const { return m_skip_out; }
+    [[nodiscard]] constexpr bool skip_out() const { return m_skip_out; }
 
  protected:
     constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
 
-    virtual mozilla::Maybe<Arg::ReturnTag> return_tag() const { return {}; }
+    [[nodiscard]]
+    virtual mozilla::Maybe<Arg::ReturnTag> return_tag() const {
+        return {};
+    }
+    [[nodiscard]]
     virtual mozilla::Maybe<const Arg::Instance*> as_instance() const {
         return {};
     }
@@ -203,8 +208,8 @@ struct ArgsCache {
 
     void build_instance(const GI::CallableInfo);
 
-    mozilla::Maybe<GType> instance_type() const;
-    mozilla::Maybe<Arg::ReturnTag> return_tag() const;
+    [[nodiscard]] mozilla::Maybe<GType> instance_type() const;
+    [[nodiscard]] mozilla::Maybe<Arg::ReturnTag> return_tag() const;
 
  private:
     void build_normal_in_arg(uint8_t gi_index, const GI::TypeInfo,
@@ -244,6 +249,7 @@ struct ArgsCache {
     void set_skip_all(uint8_t index, const char* name = nullptr);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    [[nodiscard]]
     constexpr uint8_t arg_index(uint8_t index
                                 [[maybe_unused]] = Argument::MAX_ARGS) const {
         if constexpr (ArgKind == Arg::Kind::RETURN_VALUE)
@@ -255,15 +261,18 @@ struct ArgsCache {
     }
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    [[nodiscard]]
     constexpr ArgumentPtr& arg_get(uint8_t index = Argument::MAX_ARGS) const {
         return m_args[arg_index<ArgKind>(index)];
     }
 
  public:
+    [[nodiscard]]
     constexpr Argument* argument(uint8_t index) const {
         return arg_get(index).get();
     }
 
+    [[nodiscard]]
     constexpr mozilla::Maybe<Argument*> instance() const {
         if (!m_is_method)
             return {};
@@ -271,6 +280,7 @@ struct ArgsCache {
         return mozilla::Some(arg_get<Arg::Kind::INSTANCE>().get());
     }
 
+    [[nodiscard]]
     constexpr mozilla::Maybe<Argument*> return_value() const {
         if (!m_has_return)
             return {};

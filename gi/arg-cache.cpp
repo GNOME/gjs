@@ -131,8 +131,8 @@ static bool report_invalid_null(JSContext* cx, const char* arg_name) {
 GjsArgumentFlags operator|(GjsArgumentFlags const& v1,
                            GjsArgumentFlags const& v2) {
     return static_cast<GjsArgumentFlags>(
-        std::underlying_type<GjsArgumentFlags>::type(v1) |
-        std::underlying_type<GjsArgumentFlags>::type(v2));
+        std::underlying_type_t<GjsArgumentFlags>(v1) |
+        std::underlying_type_t<GjsArgumentFlags>(v2));
 }
 
 namespace Gjs {
@@ -157,7 +157,10 @@ struct HasTypeInfo {
                                       &m_type_info);
     }
 
-    Maybe<ReturnTag> return_tag() const { return Some(ReturnTag{m_type_info}); }
+    [[nodiscard]]
+    Maybe<ReturnTag> return_tag() const {
+        return Some(ReturnTag{m_type_info});
+    }
 
     GI::StackTypeInfo m_type_info;
 };
@@ -175,6 +178,7 @@ struct Nullable {
 
     bool handle_nullable(JSContext* cx, GIArgument* arg, const char* arg_name);
 
+    [[nodiscard]]
     constexpr GjsArgumentFlags flags() const {
         return m_nullable ? GjsArgumentFlags::MAY_BE_NULL
                           : GjsArgumentFlags::NONE;
@@ -255,6 +259,7 @@ struct ZeroTerminatedArray {
             g_free(array[ix]);
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -287,6 +292,7 @@ struct GArrayContainer {
             g_free(g_array_index(array, char*, ix));
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -319,6 +325,7 @@ struct GPtrArrayContainer {
             array, [](void* ptr, void*) { g_free(ptr); }, nullptr);
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -359,6 +366,7 @@ struct FixedSizeArray {
             g_free(array[ix]);
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -407,9 +415,11 @@ struct GListContainer {
         }
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{container_tag()});
     }
+    [[nodiscard]]
     constexpr GITypeTag container_tag() const {
         return m_double_link ? GI_TYPE_TAG_GLIST : GI_TYPE_TAG_GSLIST;
     }
@@ -418,7 +428,7 @@ struct GListContainer {
 struct GHashContainer {
     explicit GHashContainer(const GI::TypeInfo type_info)
         : m_value_tag(type_info.value_type().tag()) {}
-    constexpr GITypeTag value_tag() const { return m_value_tag; }
+    [[nodiscard]] constexpr GITypeTag value_tag() const { return m_value_tag; }
 
     // Key type is managed by the basic container
     GITypeTag m_value_tag;
@@ -435,7 +445,7 @@ struct HasIntrospectionInfo {
 // boxed / union / GObject
 struct GTypedType {
     explicit GTypedType(GType gtype) : m_gtype(gtype) {}
-    constexpr GType gtype() const { return m_gtype; }
+    [[nodiscard]] constexpr GType gtype() const { return m_gtype; }
 
  protected:
     GType m_gtype;
@@ -451,6 +461,7 @@ struct RegisteredType : GTypedType {
                  "Use RegisteredInterface for this type");
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{GI_TYPE_TAG_INTERFACE, m_is_enum_or_flags, true});
     }
@@ -463,6 +474,7 @@ struct RegisteredInterface : HasIntrospectionInfo<TAG>, GTypedType {
     explicit RegisteredInterface(const GI::UnownedInfo<TAG> info)
         : HasIntrospectionInfo<TAG>(info), GTypedType(info.gtype()) {}
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const {
         return Some(ReturnTag{GI_TYPE_TAG_INTERFACE,
                               HasIntrospectionInfo<TAG>::m_info.type(), true});
@@ -554,6 +566,7 @@ struct FallbackIn : SkipAll, Fallback, Nullable {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
@@ -587,6 +600,7 @@ struct FallbackReturn : FallbackOut {
         return invalid(cx, G_STRFUNC);
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return HasTypeInfo::return_tag();
     }
@@ -620,6 +634,7 @@ struct NumericReturn : SkipAll {
         return Gjs::c_value_to_js_checked<TAG>(cx, gjs_arg_get<TAG>(arg),
                                                value);
     }
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{MarshallingInfo<TAG>::gi_tag});
     }
@@ -653,6 +668,7 @@ struct BasicTypeReturn : SkipAll, BasicType {
         return true;
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{m_tag});
     }
@@ -731,6 +747,7 @@ struct ErrorIn : SkipAll, Transferable, Nullable {
                                                GJS_ARGUMENT_ARGUMENT, flags());
     }
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
@@ -746,9 +763,11 @@ struct BasicTypeContainerReturn : BasicTypeTransferableReturn, Nullable {
     explicit BasicTypeContainerReturn(const GI::TypeInfo type_info)
         : BasicTypeContainerReturn(type_info.element_type().tag()) {}
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         // in Return subclasses, this must be overridden with the container tag
         g_return_val_if_reached(Nothing{});
@@ -872,6 +891,7 @@ struct BasicTypeContainer : Marshaller, Container {
         g_return_val_if_reached(false);
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Container::return_tag();
     }
@@ -948,9 +968,11 @@ struct BasicGHashReturn : BasicTypeTransferableReturn,
         return true;
     }
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{GI_TYPE_TAG_GHASH});
     }
@@ -1037,6 +1059,7 @@ struct ByteArrayReturn : SkipAll, Transferable {
         return true;
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -1143,6 +1166,7 @@ struct CArrayOut : CArrayInOut {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -1165,6 +1189,7 @@ struct NullableIn : SkipAll, Nullable {
         return handle_nullable(cx, arg, m_arg_name);
     }
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }
@@ -1181,12 +1206,15 @@ struct Instance : NullableIn {
         return skip();
     }
 
-    Maybe<const Instance*> as_instance() const override { return Some(this); }
+    [[nodiscard]]
+    Maybe<const Instance*> as_instance() const override {
+        return Some(this);
+    }
 
     //  The instance GType can be useful only in few cases such as GObjects and
     //  GInterfaces, so we don't store it by default, unless needed.
     //  See Function's code to see where this is relevant.
-    virtual GType gtype() const { return G_TYPE_NONE; }
+    [[nodiscard]] virtual GType gtype() const { return G_TYPE_NONE; }
 };
 
 struct EnumIn : Instance, Enum {
@@ -1204,7 +1232,10 @@ struct FlagsIn : Instance, Flags {
 struct RegisteredIn : Instance, RegisteredType, Transferable {
     using RegisteredType::RegisteredType;
 
-    GType gtype() const override { return RegisteredType::gtype(); }
+    [[nodiscard]]
+    GType gtype() const override {
+        return RegisteredType::gtype();
+    }
 };
 
 template <GI::InfoTag TAG>
@@ -1213,7 +1244,10 @@ struct RegisteredInterfaceIn : Instance,
                                Transferable {
     using RegisteredInterface<TAG>::RegisteredInterface;
 
-    GType gtype() const override { return RegisteredInterface<TAG>::gtype(); }
+    [[nodiscard]]
+    GType gtype() const override {
+        return RegisteredInterface<TAG>::gtype();
+    }
 };
 
 struct ForeignStructInstanceIn : RegisteredInterfaceIn<GI::InfoTag::STRUCT> {
@@ -1254,7 +1288,7 @@ struct BoxedInTransferNone : RegisteredIn {
             JS::HandleValue) override;
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
-    virtual Maybe<const GI::BaseInfo> info() const { return {}; }
+    [[nodiscard]] virtual Maybe<const GI::BaseInfo> info() const { return {}; }
 };
 
 struct BoxedIn : BoxedInTransferNone {
@@ -1439,6 +1473,7 @@ struct StringReturn : StringOutBase<TRANSFER> {
         return Argument::invalid(cx, G_STRFUNC);
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{GI_TYPE_TAG_UTF8});
     }
@@ -1523,6 +1558,7 @@ struct BasicExplicitCArrayOut : ExplicitArrayBase, BasicCArray, Positioned {
         return true;
     }
 
+    [[nodiscard]]
     Maybe<ReturnTag> return_tag() const override {
         return Some(ReturnTag{GI_TYPE_TAG_ARRAY});
     }
@@ -1629,6 +1665,7 @@ struct CallerAllocatesOut : FallbackOut, CallerAllocates {
     bool release(JSContext*, GjsFunctionCallState*, GIArgument*,
                  GIArgument*) override;
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return FallbackOut::flags() | GjsArgumentFlags::CALLER_ALLOCATES;
     }
@@ -1676,6 +1713,7 @@ struct ZeroTerminatedArrayIn : FallbackIn {
                                                 in_arg);
     }
 
+    [[nodiscard]]
     GjsArgumentFlags flags() const override {
         return Argument::flags() | Nullable::flags();
     }

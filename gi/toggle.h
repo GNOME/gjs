@@ -18,10 +18,8 @@
 #include <glib.h>  // for gboolean
 
 class ObjectInstance;
-namespace Gjs {
-namespace Test {
+namespace Gjs::Test {
 struct ToggleQueue;
-}
 }
 
 /* Thread-safe queue for enqueueing toggle-up or toggle-down events on GObjects
@@ -39,7 +37,7 @@ class ToggleQueue {
  private:
     friend Gjs::Test::ToggleQueue;
     struct Item {
-        Item() {}
+        Item() = default;
         Item(ObjectInstance* o, Direction d) : object(o), direction(d) {}
         ObjectInstance* object;
         ToggleQueue::Direction direction;

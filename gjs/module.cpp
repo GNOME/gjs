@@ -74,9 +74,6 @@ class GjsScriptModule {
 
     ~GjsScriptModule() { GJS_DEC_COUNTER(module); }
 
-    GjsScriptModule(GjsScriptModule&) = delete;
-    GjsScriptModule& operator=(GjsScriptModule&) = delete;
-
     // Private data accessors
 
     [[nodiscard]]
@@ -251,6 +248,9 @@ class GjsScriptModule {
 
         return module;
     }
+
+    GjsScriptModule(GjsScriptModule&) = delete;
+    GjsScriptModule& operator=(GjsScriptModule&) = delete;
 };
 
 /**

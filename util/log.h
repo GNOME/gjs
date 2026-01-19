@@ -11,7 +11,7 @@
  * have its own entry in the enum. Be sure to add new enum entries to the switch
  * in log.cpp
  */
-typedef enum {
+enum GjsDebugTopic {
     GJS_DEBUG_GI_USAGE,
     GJS_DEBUG_MEMORY,
     GJS_DEBUG_CONTEXT,
@@ -33,7 +33,7 @@ typedef enum {
     GJS_DEBUG_GINTERFACE,
     GJS_DEBUG_GTYPE,
     GJS_DEBUG_LAST,
-} GjsDebugTopic;
+};
 
 /* These defines are because we have some pretty expensive and extremely verbose
  * debug output in certain areas, that's useful sometimes, but just too much to

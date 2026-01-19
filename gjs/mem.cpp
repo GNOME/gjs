@@ -12,16 +12,12 @@
 #include "gjs/mem.h"
 #include "util/log.h"
 
-namespace Gjs {
-namespace Memory {
-namespace Counters {
+namespace Gjs::Memory::Counters {
 #define GJS_DEFINE_COUNTER(name, ix) Counter name(#name);
 
 GJS_DEFINE_COUNTER(everything, -1)
 GJS_FOR_EACH_COUNTER(GJS_DEFINE_COUNTER)
-}  // namespace Counters
-}  // namespace Memory
-}  // namespace Gjs
+}  // namespace Gjs::Memory::Counters
 
 #define GJS_LIST_COUNTER(name, ix) &Gjs::Memory::Counters::name,
 
