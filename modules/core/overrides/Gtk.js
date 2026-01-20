@@ -110,11 +110,10 @@ function _init() {
     });
 
     class GtkJSBuilder extends Gtk.Builder {
+        static [GObject.GTypeName] = 'GtkJSBuilder';
         static {
             GObject.registerClass(GtkJSBuilder);
         }
-
-        static [GObject.GTypeName] = 'GtkJSBuilder';
 
         /**
          * @param {object} [props] Construct properties
