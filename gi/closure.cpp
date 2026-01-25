@@ -40,7 +40,7 @@ Closure::Closure(JSContext* cx, JSObject* callable, bool root,
         };
     } else {
         // Only mark the closure as invalid if memory is managed
-        // outside (i.e. by object.c for signals)
+        // outside (i.e. by object.cpp for signals)
         m_callable = callable;
         closure_notify = [](void*, GClosure* closure) {
             static_cast<Closure*>(closure)->closure_set_invalid();
