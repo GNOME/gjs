@@ -416,12 +416,7 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
 
     ProfilerTimePoint now = profiler_timestamp();
 
-    /* NOTE: cppcheck warns that alloca() is not recommended since it can easily
-     * overflow the stack; however, dynamic allocation is not an option here
-     * since we are in a signal handler.
-     */
     auto* addrs = static_cast<SysprofCaptureAddress*>(
-        // cppcheck-suppress allocaCalled
         alloca(sizeof(SysprofCaptureAddress) * depth));
 
     for (uint32_t ix = 0; ix < depth; ix++) {

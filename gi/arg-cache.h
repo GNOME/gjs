@@ -69,6 +69,8 @@ class ReturnTag {
         if (m_tag == GI_TYPE_TAG_INTERFACE) {
             GI::AutoBaseInfo interface_info{type_info.interface()};
             m_is_enum_or_flags_interface = interface_info.is_enum_or_flags();
+        } else {
+            m_is_enum_or_flags_interface = false;
         }
     }
 

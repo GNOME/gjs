@@ -102,9 +102,6 @@ T get_random_number() {
     } else if constexpr (std::is_pointer_v<T>) {
         return reinterpret_cast<T>(get_random_number<uintptr_t>());
     }
-
-    // COMPAT: Work around cppcheck bug https://trac.cppcheck.net/ticket/10731
-    g_assert_not_reached();
 }
 
 static void gjstest_test_func_gjs_context_construct_destroy() {
@@ -1215,20 +1212,22 @@ static void gjstest_test_func_gjs_context_eval_file_source_map() {
 }
 }  // namespace Gjs::Test
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
+    mozilla::Span<char*> args{argv, static_cast<size_t>(argc)};
+
     using namespace Gjs::Test;  // NOLINT(build/namespaces)
 
     // Avoid interference in the tests from stray environment variable
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
 
-    for (int i = 0; i < argc; i++) {
+    for (size_t i = 0; i < args.size(); i++) {
         const char* seed = nullptr;
 
-        if (g_str_has_prefix(argv[i], "--cpp-seed=") && strlen(argv[i]) > 11)
-            seed = argv[i] + 11;
-        else if (i < argc - 1 && g_str_equal(argv[i], "--cpp-seed"))
-            seed = argv[i + 1];
+        if (g_str_has_prefix(args[i], "--cpp-seed=") && strlen(args[i]) > 11)
+            seed = args[i] + 11;
+        else if (i < args.size() - 1 && g_str_equal(args[i], "--cpp-seed"))
+            seed = args[i + 1];
 
         if (seed)
             cpp_random_seed = std::stoi(seed);

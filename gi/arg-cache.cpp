@@ -1756,45 +1756,26 @@ struct FixedSizeArrayInOut : FallbackInOut {
     }
 };
 
+static const char* reason_strings[] = {
+    "callback out-argument",                     // CALLBACK_OUT
+    "DestroyNotify argument with no callback",   // DESTROY_NOTIFY_NO_CALLBACK
+    "DestroyNotify argument with no user data",  // DESTROY_NOTIFY_NO_USER_DATA
+    "type not supported for (transfer container)",  // INTERFACE_TRANSFER_CONTAINER
+    "type not supported for (out caller-allocates)",  // OUT_CALLER_ALLOCATES_NON_STRUCT
+    "boxed type with transfer not registered as a GType",  // UNREGISTERED_BOXED_WITH_TRANSFER
+    "union type not registered as a GType",                // UNREGISTERED_UNION
+    "type not supported by introspection",                 // UNSUPPORTED_TYPE
+};
+static_assert(G_N_ELEMENTS(reason_strings) == LAST_REASON);
+
 GJS_JSAPI_RETURN_CONVENTION
 bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
                            GIArgument*, JS::HandleValue) {
-    const char* reason_string = "invalid introspection";
-
-    switch (m_reason) {
-        case CALLBACK_OUT:
-            reason_string = "callback out-argument";
-            break;
-        case DESTROY_NOTIFY_NO_CALLBACK:
-            reason_string = "DestroyNotify argument with no callback";
-            break;
-        case DESTROY_NOTIFY_NO_USER_DATA:
-            reason_string = "DestroyNotify argument with no user data";
-            break;
-        case INTERFACE_TRANSFER_CONTAINER:
-            reason_string = "type not supported for (transfer container)";
-            break;
-        case OUT_CALLER_ALLOCATES_NON_STRUCT:
-            reason_string = "type not supported for (out caller-allocates)";
-            break;
-        case UNREGISTERED_BOXED_WITH_TRANSFER:
-            reason_string =
-                "boxed type with transfer not registered as a GType";
-            break;
-        case UNREGISTERED_UNION:
-            reason_string = "union type not registered as a GType";
-            break;
-        case UNSUPPORTED_TYPE:
-            reason_string = "type not supported by introspection";
-            break;
-        case LAST_REASON:
-            g_assert_not_reached();
-    }
-
     gjs_throw(cx,
               "Function %s() cannot be called: argument '%s' is not "
               "introspectable because it has a %s",
-              state->display_name().get(), m_arg_name, reason_string);
+              state->display_name().get(), m_arg_name,
+              reason_strings[m_reason]);
     return false;
 }
 

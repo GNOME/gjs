@@ -30,7 +30,7 @@ enum GjsArgumentType {
     GJS_ARGUMENT_ARRAY_ELEMENT
 };
 
-enum class GjsArgumentFlags : uint8_t {
+enum class [[clang::flag_enum]] GjsArgumentFlags : uint8_t {
     NONE = 0,
     MAY_BE_NULL = 1 << 0,
     CALLER_ALLOCATES = 1 << 1,

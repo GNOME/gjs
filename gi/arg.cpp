@@ -93,10 +93,9 @@ bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
     // Do proper value check for flags with GTypes
     if (gtype != G_TYPE_NONE) {
         Gjs::AutoTypeClass<GFlagsClass> gflags_class{gtype};
-        uint32_t tmpval = static_cast<uint32_t>(value);
 
         // check all bits are valid bits for the flag and is a 32 bit flag
-        if ((tmpval &= gflags_class->mask) != value) {
+        if ((static_cast<uint32_t>(value) & gflags_class->mask) != value) {
             // Not a uint32_t with invalid mask values
             gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
                       value, g_type_name(gtype));
@@ -1481,8 +1480,8 @@ inline static bool gjs_arg_set_from_js_value(JSContext* cx,
             Gjs::AutoChar display_name{
                 gjs_argument_display_name(arg_name, arg_type)};
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
-                      display_name.get(), Gjs::static_type_name<TAG>());
+                      gjs_debug_value(value).c_str(), display_name.get(),
+                      Gjs::static_type_name<TAG>());
         }
 
         return false;
@@ -1851,15 +1850,12 @@ bool gjs_value_to_basic_ghash_gi_argument(
                                           arg_name, arg_type);
     }
 
-    if (transfer == GI_TRANSFER_CONTAINER) {
-        if (Gjs::basic_type_needs_release(key_tag) ||
-            Gjs::basic_type_needs_release(value_tag)) {
-            // See comment in gjs_value_to_g_hash()
-            gjs_throw(cx, "Container transfer for in parameters not supported");
-            return false;
-        }
-
-        transfer = GI_TRANSFER_NOTHING;
+    if (transfer == GI_TRANSFER_CONTAINER &&
+        (Gjs::basic_type_needs_release(key_tag) ||
+         Gjs::basic_type_needs_release(value_tag))) {
+        // See comment in gjs_value_to_g_hash()
+        gjs_throw(cx, "Container transfer for in parameters not supported");
+        return false;
     }
 
     JS::RootedObject props{cx, &value.toObject()};
