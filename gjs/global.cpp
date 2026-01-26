@@ -49,7 +49,7 @@ union Utf8Unit;
 class GjsBaseGlobal {
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* base(JSContext* cx, const JSClass* clasp,
-                          JS::RealmCreationOptions options,
+                          const JS::RealmCreationOptions& options,
                           JSPrincipals* principals = nullptr) {
         JS::RealmBehaviors behaviors;
         JS::RealmOptions compartment_options(options, behaviors);

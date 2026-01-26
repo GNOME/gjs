@@ -213,7 +213,7 @@ static bool gjs_value_from_array_and_length_values(
 
     if (!gjs_value_from_g_value_internal(cx, &array_length, array_length_value,
                                          no_copy, is_introspected_signal,
-                                         array_length_info))
+                                         std::move(array_length_info)))
         return false;
 
     GIArgument array_arg;

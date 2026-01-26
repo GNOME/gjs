@@ -25,8 +25,8 @@
 
 using mozilla::Maybe, mozilla::Nothing;
 
-InterfacePrototype::InterfacePrototype(Maybe<const GI::InterfaceInfo> info,
-                                       GType gtype)
+InterfacePrototype::InterfacePrototype(
+    const Maybe<const GI::InterfaceInfo>& info, GType gtype)
     : GIWrapperPrototype(info, gtype),
       m_vtable(
           static_cast<GTypeInterface*>(g_type_default_interface_ref(gtype))) {

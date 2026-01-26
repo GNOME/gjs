@@ -29,7 +29,7 @@ static std::unordered_map<std::string, LoadedStatus> foreign_modules{
 using StructID = std::pair<std::string, std::string>;
 struct StructIDHash {
     [[nodiscard]]
-    size_t operator()(StructID val) const {
+    size_t operator()(const StructID& val) const {
         std::hash<std::string> hasher;
         return hasher(val.first) ^ hasher(val.second);
     }

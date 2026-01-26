@@ -85,7 +85,8 @@ class InterfacePrototype
     // the GTypeInterface vtable wrapped by this JS object
     GTypeInterface* m_vtable;
 
-    explicit InterfacePrototype(mozilla::Maybe<const GI::InterfaceInfo>, GType);
+    explicit InterfacePrototype(const mozilla::Maybe<const GI::InterfaceInfo>&,
+                                GType);
     ~InterfacePrototype();
 
     // JSClass operations

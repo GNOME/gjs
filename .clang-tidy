@@ -44,6 +44,8 @@ Checks:
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 
+  - performance-unnecessary-value-param
+
   - readability-*
 
   # readability checks that we will definitely not deal with:

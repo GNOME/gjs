@@ -943,7 +943,7 @@ static bool simple_struct_has_pointers(const GI::UnownedInfo<TAG>& info) {
 
     typename GI::UnownedInfo<TAG>::FieldsIterator fields = info.fields();
     return std::any_of(
-        fields.begin(), fields.end(), [](GI::AutoFieldInfo field) {
+        fields.begin(), fields.end(), [](const GI::AutoFieldInfo& field) {
             return direct_allocation_has_pointers(field.type_info());
         });
 }
