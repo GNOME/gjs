@@ -5,6 +5,7 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for strlen
 
 #include <glib.h>
@@ -34,7 +35,7 @@ struct JSFunctionSpec;
 struct JSPropertySpec;
 
 // Reserved slots of JSNative accessor wrappers
-enum {
+enum JSNativeAccessorSlot : uint32_t {
     DYNAMIC_PROPERTY_PRIVATE_SLOT,
 };
 

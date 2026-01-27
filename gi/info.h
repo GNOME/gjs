@@ -57,7 +57,7 @@ using BoolResult = mozilla::Result<mozilla::Ok, mozilla::Nothing>;
 
 namespace GI {
 
-enum class InfoTag : unsigned {
+enum class InfoTag : uint8_t {
     ARG,
     BASE,
     CALLABLE,

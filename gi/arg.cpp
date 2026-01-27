@@ -3546,7 +3546,7 @@ static bool gjs_g_arg_release_g_list(JSContext* cx, GITransfer transfer,
     return true;
 }
 
-enum class ArrayReleaseType {
+enum class ArrayReleaseType : uint8_t {
     EXPLICIT_LENGTH,
     ZERO_TERMINATED,
 };

@@ -124,7 +124,7 @@ void gjs_test_tools_emit_test_signal_other_thread(GObject* object,
         g_thread_join(thread);
 }
 
-enum [[clang::flag_enum]] RefType {
+enum [[clang::flag_enum]] RefType : uint8_t {
     REF = 1 << 0,
     UNREF = 1 << 1,
 };

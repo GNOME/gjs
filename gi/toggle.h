@@ -10,6 +10,8 @@
 
 #include <config.h>
 
+#include <stdint.h>
+
 #include <atomic>
 #include <deque>
 #include <thread>
@@ -27,10 +29,7 @@ struct ToggleQueue;
  * wrapped_gobj_toggle_notify(). */
 class ToggleQueue {
  public:
-    enum Direction {
-        DOWN,
-        UP
-    };
+    enum Direction : uint8_t { DOWN, UP };
 
     using Handler = void (*)(ObjectInstance*, Direction);
 

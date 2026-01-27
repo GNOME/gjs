@@ -5,6 +5,7 @@
 
 #include <config.h>
 
+#include <stdint.h>
 #include <string.h>  // for strcmp, strlen
 
 #include <new>
@@ -56,7 +57,7 @@ G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            gjs_coverage,
                            G_TYPE_OBJECT)
 
-enum {
+enum : uint8_t {
     PROP_COVERAGE_0,
     PROP_PREFIXES,
     PROP_CONTEXT,

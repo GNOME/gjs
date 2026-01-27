@@ -5,6 +5,7 @@
 #include <config.h>
 
 #include <stddef.h>  // for size_t
+#include <stdint.h>
 
 #include <string>
 #include <unordered_map>
@@ -22,7 +23,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 
-enum LoadedStatus { NotLoaded, Loaded };
+enum LoadedStatus : uint8_t { NotLoaded, Loaded };
 static std::unordered_map<std::string, LoadedStatus> foreign_modules{
     {"cairo", NotLoaded}};
 

@@ -21,7 +21,7 @@ namespace JS {
 struct PropertyKey;
 }
 
-enum class GjsGlobalType {
+enum class GjsGlobalType : uint8_t {
     DEFAULT,
     DEBUGGER,
     INTERNAL,

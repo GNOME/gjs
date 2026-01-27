@@ -42,7 +42,7 @@ namespace Arg {
 
 struct Instance;
 
-enum class Kind {
+enum class Kind : uint8_t {
     NORMAL,
     INSTANCE,
     RETURN_VALUE,

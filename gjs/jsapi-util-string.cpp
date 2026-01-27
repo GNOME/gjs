@@ -462,7 +462,7 @@ std::string gjs_debug_bigint(JS::BigInt* bi) {
     return out.str();
 }
 
-enum Quotes {
+enum Quotes : uint8_t {
     DoubleQuotes,
     NoQuotes,
 };

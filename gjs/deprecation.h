@@ -6,12 +6,14 @@
 
 #include <config.h>
 
+#include <stdint.h>
+
 #include <string>
 #include <vector>
 
 struct JSContext;
 
-enum GjsDeprecationMessageId : unsigned {
+enum GjsDeprecationMessageId : uint8_t {
     None,
     ByteArrayInstanceToString,
     DeprecatedGObjectProperty,

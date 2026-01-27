@@ -247,7 +247,10 @@ class ObjectPrototype
         const char* name,
         const mozilla::Maybe<const GI::AutoPropertyInfo>& = {});
 
-    enum ResolveWhat { ConsiderOnlyMethods, ConsiderMethodsAndProperties };
+    enum ResolveWhat : uint8_t {
+        ConsiderOnlyMethods,
+        ConsiderMethodsAndProperties
+    };
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_no_info(JSContext*, JS::HandleObject, JS::HandleId,
                          bool* resolved, const char* name, ResolveWhat);

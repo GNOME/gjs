@@ -22,7 +22,7 @@ GJS_EXPORT
 GQuark gjs_error_quark(void);
 #define GJS_ERROR gjs_error_quark()
 
-typedef enum {
+typedef enum GjsError {
     GJS_ERROR_FAILED,
     GJS_ERROR_SYSTEM_EXIT,
 } GjsError;
@@ -35,7 +35,7 @@ GJS_EXPORT
 GType gjs_js_error_get_type(void);
 #define GJS_TYPE_JS_ERROR gjs_js_error_get_type()
 
-typedef enum {
+typedef enum GjsJSError {
     GJS_JS_ERROR_ERROR,
     GJS_JS_ERROR_EVAL_ERROR,
     GJS_JS_ERROR_INTERNAL_ERROR,

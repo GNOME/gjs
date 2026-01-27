@@ -44,6 +44,7 @@ Checks:
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
 
+  - performance-enum-size
   - performance-unnecessary-value-param
 
   - readability-*
@@ -92,6 +93,8 @@ CheckOptions:
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
   modernize-use-using.IgnoreExternC: true
+  performance-enum-size.EnumIgnoreList: GjsError;GjsJSError;.*Slot;test_.*
+    # GError enums must be C-compatible; global slots must be uint32_t
   readability-ambiguous-smartptr-reset-call.SmartPointers: "Gjs::AutoPointer;\
     JS::PersistentRooted;JS::UniqueChars;mozilla::UniquePtr"
   readability-simplify-boolean-expr.IgnoreMacros: true  # GLib macros trigger
