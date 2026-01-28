@@ -56,8 +56,7 @@ struct AutoGValue : GValue {
             case G_TYPE_UINT64:
             case G_TYPE_FLOAT:
             case G_TYPE_DOUBLE:
-                *static_cast<GValue*>(this) =
-                    std::move(static_cast<GValue const&&>(src));
+                *this = src;
                 break;
             default:
                 // We can't safely move in complex cases, so let's just copy

@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <utility>  // for move
-
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/PropertyAndElement.h>  // for JS_DefineFunction
@@ -139,8 +137,7 @@ JSObject* StructInstance::new_for_c_struct(JSContext* cx,
                                            const GI::StructInfo& info,
                                            void* gboxed,
                                            Boxed::NoCopy no_copy) {
-    JS::RootedObject obj{
-        cx, new_for_c_struct_impl(cx, info, gboxed, std::move(no_copy))};
+    JS::RootedObject obj{cx, new_for_c_struct_impl(cx, info, gboxed, no_copy)};
     if (!obj || !define_extra_error_properties(cx, obj))
         return nullptr;
     return obj;

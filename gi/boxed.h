@@ -267,7 +267,7 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     template <typename... Args>
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* new_for_c_struct_impl(JSContext*, const BoxedInfo&,
-                                           void* gboxed, Args&&...);
+                                           void* gboxed, Args...);
 
     using BaseClass::debug_lifecycle;
     using BaseClass::get_copy_source;

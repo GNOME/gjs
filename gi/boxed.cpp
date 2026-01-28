@@ -1014,7 +1014,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_class_impl(
 template <class Base, class Prototype, class Instance>
 template <typename... Args>
 JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
-    JSContext* cx, const BoxedInfo& info, void* gboxed, Args&&... args) {
+    JSContext* cx, const BoxedInfo& info, void* gboxed, Args... args) {
     if (gboxed == nullptr)
         return nullptr;
 
@@ -1083,7 +1083,7 @@ template class BoxedInstance<StructBase, StructPrototype, StructInstance>;
 template JSObject* StructInstance::new_for_c_struct_impl<>(
     JSContext*, const GI::StructInfo&, void*);
 template JSObject* StructInstance::new_for_c_struct_impl<Boxed::NoCopy>(
-    JSContext*, const GI::StructInfo&, void*, Boxed::NoCopy&&);
+    JSContext*, const GI::StructInfo&, void*, Boxed::NoCopy);
 template class BoxedBase<UnionBase, UnionPrototype, UnionInstance>;
 template class BoxedPrototype<UnionBase, UnionPrototype, UnionInstance>;
 template class BoxedInstance<UnionBase, UnionPrototype, UnionInstance>;
