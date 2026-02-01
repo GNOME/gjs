@@ -1,3 +1,21 @@
+Version 1.87.2
+--------------
+
+- The beta release for the GNOME 50 cycle brings more modernization of the code
+  base and type-safety.
+
+- Known defects: The new Gtk.Builder convenience API does not work correctly in
+  some cases when connecting signals without a widget template, which may lead
+  to the signals being disconnected after a garbage collection. This is planned
+  to be addressed in 1.87.3 (https://gitlab.gnome.org/GNOME/gjs/-/issues/727).
+
+- Closed bugs and merge requests:
+  * overrides/GLib: Add wrappers for GLib platform-depedent namespace split
+    [!1054, Marco Trevisan]
+  * Various maintenance [!1058, Philip Chimento]
+  * Update CI images [!1060, !1061, Philip Chimento]
+  * Enabling various clang-tidy checks [!1062, !1064, !1065, Philip Chimento]
+
 Version 1.87.1
 --------------
 
