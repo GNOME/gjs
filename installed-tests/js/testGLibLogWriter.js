@@ -92,4 +92,19 @@ describe('GLib Structured logging handler', function () {
             })
         );
     });
+
+    it('only considers own properties of the field argument', function () {
+        const proto = {BAD_PROP: 'a prototype property'};
+        const fields = Object.assign(Object.create(proto), {
+            MESSAGE: 'own property',
+            GJS_CUSTOM_FIELD: 'another own property',
+        });
+
+        GLib.log_structured('Gjs-Console', GLib.LogLevelFlags.LEVEL_MESSAGE, fields);
+
+        expect(writer_func).toHaveBeenCalled();
+        expect(writer_func).not.toHaveBeenCalledWith(
+            GLib.LogLevelFlags.LEVEL_MESSAGE,
+            jasmine.objectContaining({BAD_PROP: jasmine.anything()}));
+    });
 });

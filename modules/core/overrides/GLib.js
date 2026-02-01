@@ -339,9 +339,7 @@ function _init() {
         /** @type {Record<string, GLib.Variant>} */
         let variantFields = {};
 
-        for (let key in fields) {
-            const field = fields[key];
-
+        for (const [key, field] of Object.entries(fields)) {
             if (field instanceof Uint8Array) {
                 variantFields[key] = new GLib.Variant('ay', field);
             } else if (typeof field === 'string') {
