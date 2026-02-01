@@ -200,6 +200,7 @@ static void test_gjs_autopointer_cast_free_func_type() {
     using TypedAutoPointer =
         Gjs::AutoPointer<GjsTestObject, GObject, gobject_free, gobject_copy>;
     TypedAutoPointer autoptr{gjs_test_object_new()};
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     TypedAutoPointer copy{autoptr.copy()};
 }
 
@@ -310,6 +311,7 @@ static void test_gjs_autopointer_operator_move(Fixture* fx, const void*) {
     // Accessing a value after moving out of it is bad in general, but here it
     // is done on purpose, to test that the autoptr's move constructor empties
     // the old autoptr.
+    // NOLINTBEGIN(bugprone-use-after-move)
 
     test_move_fun(std::move(autoptr));
     g_assert_nonnull(autoptr);
@@ -317,6 +319,7 @@ static void test_gjs_autopointer_operator_move(Fixture* fx, const void*) {
     GjsAutoTestObject autoptr2 = std::move(autoptr);
     g_assert_true(autoptr2 == fx->ptr);
     g_assert_null(autoptr);  // NOLINT(clang-analyzer-cplusplus.Move)
+    // NOLINTEND(bugprone-use-after-move)
 }
 
 static void test_gjs_autopointer_operator_swap(Fixture* fx, const void*) {

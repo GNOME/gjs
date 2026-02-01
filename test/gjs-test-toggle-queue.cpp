@@ -160,6 +160,7 @@ static void test_toggle_blocks_other_thread(GjsUnitTestFixture*, const void*) {
     std::atomic_bool accessed_from_other_thread(false);
     auto th = std::thread([&accessed_from_other_thread, &other_thread_running] {
         other_thread_running.store(true);
+        // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
         auto locked_queue = std::make_unique<LockedQueue>();
         accessed_from_other_thread.store(true);
         assert_equal(ToggleQueue::get_default()->cancel(nullptr), false, false);
@@ -391,6 +392,7 @@ static void test_toggle_queue_object_from_main_thread(GjsUnitTestFixture* fx,
     ::ObjectInstance* instance = new_test_gobject(fx);
     auto tq = ToggleQueue::get_default();
 
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     AutoUnref<GObject> reffed{instance->ptr(), TakeOwnership{}};
 
     bool toggle_down_queued, toggle_up_queued;
@@ -486,6 +488,7 @@ static void test_toggle_queue_object_handle_up(GjsUnitTestFixture* fx,
     AutoError error;
     gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     AutoUnref<GObject> reffed{instance->ptr()};
     assert_equal(ToggleQueue::queue().size(), 1LU);
     assert_equal(ToggleQueue::queue().at(0).direction,
@@ -581,6 +584,7 @@ static void test_toggle_queue_object_handle_many_up(GjsUnitTestFixture* fx,
     AutoError error;
     gjs_test_tools_ref_other_thread(instance->ptr(), &error);
     g_assert_no_error(error);
+    // NOLINTNEXTLINE(bugprone-unused-local-non-trivial-variable)
     AutoUnref<GObject> reffed{instance->ptr()};
     // Simulating the case where late threads are causing this...
     ToggleQueue::get_default()->enqueue(instance, ::ToggleQueue::Direction::UP,

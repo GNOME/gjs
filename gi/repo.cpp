@@ -29,6 +29,7 @@
 #include <jsapi.h>  // for JS_NewPlainObject, JS_NewObject
 #include <mozilla/Maybe.h>
 #include <mozilla/ScopeExit.h>
+#include <mozilla/Unused.h>
 
 #include "gi/arg.h"
 #include "gi/enumeration.h"
@@ -96,7 +97,7 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
 
     GI::Repository repo;
     size_t nversions;
-    Gjs::AutoStrv versions{repo.enumerate_versions(ns_name.get(), &nversions)};
+    mozilla::Unused << repo.enumerate_versions(ns_name.get(), &nversions);
     if (nversions > 1 && !version &&
         !repo.is_registered(ns_name.get(), nullptr) &&
         !JS::WarnUTF8(cx,

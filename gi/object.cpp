@@ -301,8 +301,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     }
 
     if (param->flags & G_PARAM_DEPRECATED) {
-        _gjs_warn_deprecated_once_per_callsite(cx, DeprecatedGObjectProperty,
-                                               {format_name(), param->name});
+        gjs_warn_deprecated_once_per_callsite(cx, DeprecatedGObjectProperty,
+                                              {format_name(), param->name});
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
@@ -460,7 +460,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
 
     if (property_info.has_deprecated_param_flag() ||
         property_info.is_deprecated() || getter.is_deprecated()) {
-        _gjs_warn_deprecated_once_per_callsite(
+        gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty,
             {format_name(), property_info.name()});
     }
@@ -557,7 +557,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     }
 
     if (pspec_caller->pspec->flags & G_PARAM_DEPRECATED) {
-        _gjs_warn_deprecated_once_per_callsite(
+        gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty,
             {format_name(), pspec_caller->pspec->name});
     }
@@ -685,7 +685,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         return true;
 
     if (param_spec->flags & G_PARAM_DEPRECATED) {
-        _gjs_warn_deprecated_once_per_callsite(
+        gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty, {format_name(), param_spec->name});
     }
 
@@ -859,7 +859,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
 
     if (property_info.has_deprecated_param_flag() ||
         property_info.is_deprecated() || setter.is_deprecated()) {
-        _gjs_warn_deprecated_once_per_callsite(
+        gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty,
             {format_name(), property_info.name()});
     }
@@ -939,7 +939,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
                      pspec_caller->pspec->name);
 
     if (pspec_caller->pspec->flags & G_PARAM_DEPRECATED) {
-        _gjs_warn_deprecated_once_per_callsite(
+        gjs_warn_deprecated_once_per_callsite(
             cx, DeprecatedGObjectProperty,
             {format_name(), pspec_caller->pspec->name});
     }

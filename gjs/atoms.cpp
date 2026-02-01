@@ -39,7 +39,7 @@ bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
  * tracing has been set up. */
 bool GjsAtoms::init_atoms(JSContext* cx) {
 #define INITIALIZE_ATOM(identifier, str) \
-    if (!identifier.init(cx, str))       \
+    if (!(identifier).init(cx, str))     \
         return false;
     FOR_EACH_ATOM(INITIALIZE_ATOM)
     FOR_EACH_SYMBOL_ATOM(INITIALIZE_ATOM)
@@ -49,7 +49,7 @@ bool GjsAtoms::init_atoms(JSContext* cx) {
 
 void GjsAtoms::trace(JSTracer* trc) {
 #define TRACE_ATOM(identifier, str) \
-    JS::TraceEdge<jsid>(trc, identifier.id(), "Atom " str);
+    JS::TraceEdge<jsid>(trc, (identifier).id(), "Atom " str);
     FOR_EACH_ATOM(TRACE_ATOM)
     FOR_EACH_SYMBOL_ATOM(TRACE_ATOM)
 #undef TRACE_ATOM

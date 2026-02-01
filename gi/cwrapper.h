@@ -56,8 +56,8 @@ struct JSPropertySpec;
  */
 #define GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, thisobj, type, priv) \
     GJS_GET_THIS(cx, argc, vp, args, thisobj);                          \
-    type* priv;                                                         \
-    if (!type::for_js_typecheck(cx, thisobj, &priv, &args))             \
+    type* priv; /* NOLINT(bugprone-macro-parentheses) */                \
+    if (!type::for_js_typecheck(cx, thisobj, &(priv), &(args)))         \
         return false;
 
 GJS_JSAPI_RETURN_CONVENTION

@@ -48,7 +48,7 @@ static void gjs_finalize_callback(JS::GCContext*, JSFinalizeStatus status,
                                   void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     if (gjs->profiler())
-        _gjs_profiler_set_finalize_status(gjs->profiler(), status);
+        gjs_profiler_set_finalize_status(gjs->profiler(), status);
 }
 
 static void on_promise_unhandled_rejection(
@@ -209,7 +209,7 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
 
     // For additional context on these options, see
     // https://searchfox.org/mozilla-esr91/rev/c49725508e97c1e2e2bb3bf9ed0ba14b2016abac/js/public/GCAPI.h#53
-    JS_SetNativeStackQuota(cx, 1024 * 1024);
+    JS_SetNativeStackQuota(cx, 1024UL * 1024UL);
     JS_SetGCParameter(cx, JSGC_MAX_BYTES, -1);
     JS_SetGCParameter(cx, JSGC_INCREMENTAL_GC_ENABLED, 1);
     JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET_MS, 10);

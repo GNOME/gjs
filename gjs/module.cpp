@@ -185,7 +185,7 @@ class GjsScriptModule {
          * be supported according to ES6. For compatibility with earlier GJS, we
          * treat it as if it were a real property, but warn about it. */
 
-        _gjs_warn_deprecated_once_per_callsite(
+        gjs_warn_deprecated_once_per_callsite(
             cx, GjsDeprecationMessageId::ModuleExportedLetOrConst,
             {gjs_debug_id(id), m_name.get()});
 

@@ -77,7 +77,7 @@ struct GCPolicy<GTypeNotUint64> : public IgnoreGCPolicy<GTypeNotUint64> {};
 #define GJS_GET_THIS(cx, argc, vp, args, to)          \
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp); \
     JS::RootedObject to(cx);                          \
-    if (!args.computeThis(cx, &to))                   \
+    if (!(args).computeThis(cx, &(to)))               \
         return false;
 
 void gjs_throw_constructor_error(JSContext*);
@@ -233,11 +233,11 @@ namespace Gjs {
 struct GCReason {
 #define DEFINE_GC_REASON(name, ix)                     \
     static constexpr JS::GCReason name = JS::GCReason( \
-        static_cast<int>(JS::GCReason::FIRST_FIREFOX_REASON) + ix);
+        static_cast<int>(JS::GCReason::FIRST_FIREFOX_REASON) + (ix));
 FOREACH_GC_REASON(DEFINE_GC_REASON);
 #undef DEFINE_GC_REASON
 
-#define COUNT_GC_REASON(name, ix) +1
+#define COUNT_GC_REASON(name, ix) +1  // NOLINT(bugprone-macro-parentheses)
 static constexpr size_t N_REASONS = 0 FOREACH_GC_REASON(COUNT_GC_REASON);
 #undef COUNT_GC_REASON
 };

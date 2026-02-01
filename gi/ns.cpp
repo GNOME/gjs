@@ -51,7 +51,7 @@ void platform_specific_warning_glib(JSContext* cx, const char* prefix,
     const char* base_name = resolved_name + strlen(prefix);
     Gjs::AutoChar old_name{g_strdup_printf("GLib.%s", resolved_name)};
     Gjs::AutoChar new_name{g_strdup_printf("GLib%s.%s", platform, base_name)};
-    _gjs_warn_deprecated_once_per_callsite(
+    gjs_warn_deprecated_once_per_callsite(
         cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
         {old_name.get(), new_name.get()});
 }

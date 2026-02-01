@@ -441,8 +441,6 @@ bool gjs_internal_resolve_relative_resource_or_file(JSContext* cx,
                              "uri", &uri, "relativePath", &relative_path))
         return handle_wrong_args(cx);
 
-    Gjs::AutoUnref<GFile> module_file{g_file_new_for_uri(uri.get())};
-
     Gjs::AutoChar output_uri{g_uri_resolve_relative(
         uri.get(), relative_path.get(), G_URI_FLAGS_NONE, nullptr)};
 

@@ -114,15 +114,16 @@ static void warn_deprecated_unsafe_internal(JSContext* cx,
 /* Note, this can only be called from the JS thread because it uses the full
  * stack dump API and not the "safe" gjs_dumpstack() which can only print to
  * stdout or stderr. Do not use this function during GC, for example. */
-void _gjs_warn_deprecated_once_per_callsite(JSContext* cx,
-                                            const GjsDeprecationMessageId id,
-                                            unsigned max_frames) {
+void gjs_warn_deprecated_once_per_callsite(JSContext* cx,
+                                           const GjsDeprecationMessageId id,
+                                           unsigned max_frames) {
     warn_deprecated_unsafe_internal(cx, id, messages[id], max_frames);
 }
 
-void _gjs_warn_deprecated_once_per_callsite(
-    JSContext* cx, GjsDeprecationMessageId id,
-    const std::vector<std::string>& args, unsigned max_frames) {
+void gjs_warn_deprecated_once_per_callsite(JSContext* cx,
+                                           GjsDeprecationMessageId id,
+                                           const std::vector<std::string>& args,
+                                           unsigned max_frames) {
     // In C++20, use std::format() for this
     std::string_view format_string{messages[id]};
     std::stringstream message;

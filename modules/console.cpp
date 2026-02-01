@@ -180,7 +180,7 @@ static bool gjs_console_readline(std::string* bufp, const char* prompt,
     rl_async_done = false;
 
     Gjs::AutoUnref<GInputStream> stdin_stream{
-        g_unix_input_stream_new(fileno(rl_instream), /* close = */ false)};
+        g_unix_input_stream_new(fileno(rl_instream), /* close_fd = */ false)};
     Gjs::AutoUnref<GSource> stdin_source{g_pollable_input_stream_create_source(
         G_POLLABLE_INPUT_STREAM(stdin_stream.get()), nullptr)};
     g_source_set_callback(stdin_source, G_SOURCE_FUNC(on_stdin_ready), nullptr,

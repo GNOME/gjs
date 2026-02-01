@@ -381,11 +381,14 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
 
         debug_lifecycle("Boxed pointer created from zero-args constructor");
 
-    } else if (proto->can_allocate_directly_without_pointers()) {
-        allocate_directly();
     } else if (Maybe<GI::AutoFunctionInfo> default_ctor_info{
                    proto->default_constructor_info()};
-               default_ctor_info) {
+               proto->can_allocate_directly_without_pointers() ||
+               (!default_ctor_info && proto->can_allocate_directly())) {
+        // has_default_constructor() takes priority over can_allocate_directly()
+        // for historical compatibility reasons
+        allocate_directly();
+    } else if (default_ctor_info) {
         js::ESClass es_class = js::ESClass::Other;
         if (proto->can_allocate_directly() && args.length() == 1 &&
             args[0].isObject()) {
@@ -418,8 +421,6 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
 
             return true;
         }
-    } else if (proto->can_allocate_directly()) {
-        allocate_directly();
     } else {
         gjs_throw(cx,
                   "Unable to construct struct type %s since it has no default "

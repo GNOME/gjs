@@ -89,7 +89,7 @@ static void throw_invalid_argument(JSContext*, JS::HandleValue,
                                    const GI::TypeInfo, const char*,
                                    GjsArgumentType);
 
-bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
+bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
     // Do proper value check for flags with GTypes
     if (gtype != G_TYPE_NONE) {
         Gjs::AutoTypeClass<GFlagsClass> gflags_class{gtype};
@@ -107,8 +107,8 @@ bool _gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool _gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo info,
-                                     int64_t value) {
+static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo info,
+                                    int64_t value) {
     GI::EnumInfo::ValuesIterator values = info.values();
     if (std::none_of(values.begin(), values.end(),
                      [value](GI::AutoValueInfo info) {
@@ -143,9 +143,8 @@ static bool type_needs_release(const GI::TypeInfo& type_info, GITypeTag tag) {
                     interface_info.as<GI::InfoTag::REGISTERED_TYPE>()) {
                 GType gtype = reg_info->gtype();
 
-                if (g_type_is_a(gtype, G_TYPE_CLOSURE))
-                    return true;
-                else if (g_type_is_a(gtype, G_TYPE_VALUE))
+                if (g_type_is_a(gtype, G_TYPE_CLOSURE) ||
+                    g_type_is_a(gtype, G_TYPE_VALUE))
                     return true;
             }
             return false;
@@ -1435,11 +1434,11 @@ bool value_to_interface_gi_argument_internal(
                 return false;
 
             if (interface_info.is_flags()) {
-                if (!_gjs_flags_value_is_valid(cx, gtype, value_int64))
+                if (!gjs_flags_value_is_valid(cx, gtype, value_int64))
                     return false;
             } else {
-                if (!_gjs_enum_value_is_valid(cx, enum_info.value(),
-                                              value_int64))
+                if (!gjs_enum_value_is_valid(cx, enum_info.value(),
+                                             value_int64))
                     return false;
             }
 
@@ -2948,7 +2947,6 @@ bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue value_p,
     value_p.setObject(*obj);
 
     JS::RootedValue keyjs{cx}, valjs{cx};
-    JS::RootedString keystr{cx};
 
     g_hash_table_iter_init(&iter, hash);
     void* key_pointer;
@@ -3284,8 +3282,8 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                         value_int64 &= gflags_class->mask;
                     }
                 } else {
-                    if (!_gjs_enum_value_is_valid(cx, enum_info.value(),
-                                                  value_int64))
+                    if (!gjs_enum_value_is_valid(cx, enum_info.value(),
+                                                 value_int64))
                         return false;
                 }
 

@@ -193,7 +193,7 @@ GType gjs_param_spec_get_owner_type(GParamSpec* pspec) {
     return pspec->owner_type;
 }
 
-#define G_CLOSURE_NOTIFY(func) ((GClosureNotify)(void (*)(void))func)
+#define G_CLOSURE_NOTIFY(func) ((GClosureNotify)(void (*)(void))(func))
 
 GBinding* gjs_g_object_bind_property_full(
     GObject* source, const char* source_property, GObject* target,

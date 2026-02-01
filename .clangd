@@ -3,4 +3,4 @@
 
 Diagnostics:
   ClangTidy:
-    Remove: bugprone-sizeof-expression  # Interferes with g_clear_pointer()
+    Remove: none*

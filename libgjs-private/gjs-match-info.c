@@ -19,7 +19,7 @@
 G_DEFINE_BOXED_TYPE(GjsMatchInfo, gjs_match_info, gjs_match_info_ref,
                     gjs_match_info_unref)
 
-struct _GjsMatchInfo {
+struct GjsMatchInfo_ {
     gatomicrefcount refcount;
     GMatchInfo* base; /* owned */
     char* str;

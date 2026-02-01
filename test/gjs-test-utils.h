@@ -21,9 +21,10 @@
 
 #define g_assert_ok(result)                                                  \
     G_STMT_START {                                                           \
-        if G_UNLIKELY (result.isErr()) {                                     \
+        auto& res_inner = (result);                                          \
+        if G_UNLIKELY (res_inner.isErr()) {                                  \
             std::string message{"'" #result "' should be OK but got " +      \
-                                std::string{result.unwrapErr()}};            \
+                                std::string{res_inner.unwrapErr()}};         \
             g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
                                 message.c_str());                            \
         }                                                                    \
@@ -32,7 +33,7 @@
 
 #define g_assert_err(result)                                                 \
     G_STMT_START {                                                           \
-        if G_UNLIKELY (result.isOk())                                        \
+        if G_UNLIKELY ((result).isOk())                                      \
             g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
                                 "'" #result "' should be Err but got OK");   \
     }                                                                        \
@@ -65,15 +66,12 @@ void add_tests_for_toggle_queue();
 
 template <typename T1, typename T2>
 constexpr bool comparable_types() {
-    if constexpr (std::is_same_v<T1, T2>) {
+    if constexpr (std::is_same_v<T1, T2>)
         return true;
-    } else if constexpr (std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2>) {
+    if constexpr (std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2> ||
+                  std::is_enum_v<T1> == std::is_enum_v<T2>)
         return std::is_signed_v<T1> == std::is_signed_v<T2>;
-    } else if constexpr (std::is_enum_v<T1> == std::is_enum_v<T2>) {
-        return std::is_signed_v<T1> == std::is_signed_v<T2>;
-    } else {
-        return false;
-    }
+    return false;
 }
 
 template <typename T, typename U>
