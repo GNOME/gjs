@@ -3,6 +3,7 @@
 // SPDX-FileCopyrightText: 2023 Philip Chimento <philip.chimento@gmail.com>
 
 const {setMainLoopHook} = imports._promiseNative;
+const {_createWrappersForPlatformSpecificNamespace, _defineDeprecatedWrapper} = imports._common;
 
 let GLib;
 
@@ -387,6 +388,28 @@ function _init() {
             });
         }
     };
+
+    if (GLib.MAJOR_VERSION > 2 ||
+        (GLib.MAJOR_VERSION === 2 &&
+         (GLib.MINOR_VERSION > 87 ||
+            (GLib.MINOR_VERSION === 87 &&
+             GLib.MICRO_VERSION >= 3))))
+        _createWrappersForPlatformSpecificNamespace(GLib);
+
+    try {
+        // We cannot use a specific GLibUnix override file because that
+        // would make the platform-independent wrapper creator to warn
+        // about using a deprecated symbol.
+        const {GLibUnix} = imports.gi;
+
+        if (!Object.hasOwn(GLibUnix, 'signal_add_full')) {
+            _defineDeprecatedWrapper(
+                GLibUnix,
+                GLibUnix,
+                'signal_add_full',
+                'signal_add');
+        }
+    } catch {}
 
     this.VariantDict.prototype.lookup = function (key, variantType = null, deep = false) {
         if (typeof variantType === 'string')

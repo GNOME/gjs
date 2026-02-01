@@ -66,12 +66,17 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     explicit Ns(const char* ns_name)
         : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
         GJS_INC_COUNTER(ns);
+
+#if !GLIB_CHECK_VERSION(2, 87, 3)
         m_is_glib = strcmp(ns_name, "GLib") == 0;
+#endif
     }
 
     ~Ns() { GJS_DEC_COUNTER(ns); }
 
+#if !GLIB_CHECK_VERSION(2, 87, 3)
     bool m_is_glib : 1;
+#endif
 
     // JSClass operations
 
@@ -111,12 +116,14 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                   "Found info type %s for '%s' in namespace '%s'",
                   info->type_string(), info->name(), info->ns());
 
+#if !GLIB_CHECK_VERSION(2, 87, 3)
         if (m_is_glib) {
             platform_specific_warning_glib(cx, "Unix", "Unix", name.get());
             platform_specific_warning_glib(cx, "unix_", "Unix", name.get());
             platform_specific_warning_glib(cx, "Win32", "Win32", name.get());
             platform_specific_warning_glib(cx, "win32_", "Win32", name.get());
         }
+#endif
 
         bool defined;
         if (!gjs_define_info(cx, obj, info.ref(), &defined)) {

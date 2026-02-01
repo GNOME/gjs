@@ -9,6 +9,12 @@ try {
     GLibUnix = (await import('gi://GLibUnix')).default;
 } catch {}
 
+const PLATFORM_DEPENDENT_NS_SPLIT = GLib.MAJOR_VERSION > 2 ||
+        (GLib.MAJOR_VERSION === 2 &&
+         (GLib.MINOR_VERSION > 87 ||
+            (GLib.MINOR_VERSION === 87 &&
+             GLib.MICRO_VERSION >= 3)));
+
 describe('GVariant constructor', function () {
     it('constructs a string variant', function () {
         let strVariant = new GLib.Variant('s', 'mystring');
@@ -454,26 +460,127 @@ describe('GLibUnix compatibility fallback', function () {
     beforeEach(function () {
         if (!GLibUnix)
             pending('Not supported platform');
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
-            '*GLib.* has been moved to a separate platform-specific library. ' +
-            'Please update your code to use GLibUnix.* instead*');
     });
 
+    function expectDeprecationWarning(testFunction, oldName = '*', newName = '*') {
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            `*GLib.${oldName} has been moved to a separate platform-specific library. ` +
+            `Please update your code to use GLibUnix.${newName} instead*`);
+        const ret = testFunction();
+        GLib.test_assert_expected_messages_internal('Gjs', 'testGLib.js', 0,
+            `GLib.${oldName} expected warns on GLib platform-specific fallback`);
+        return ret;
+    }
+
     it('provides structs', function () {
-        new GLib.UnixPipe();
+        expectDeprecationWarning(() => new GLib.UnixPipe());
     });
 
     it('provides functions', function () {
-        GLib.unix_fd_source_new(0, GLib.IOCondition.IN);
+        expectDeprecationWarning(() =>
+            GLib.unix_fd_source_new(0, GLib.IOCondition.IN));
     });
 
-    it('provides enums', function () {
-        expect(GLib.UnixPipeEnd.READ).toBe(0);
-        expect(GLib.UnixPipeEnd.WRITE).toBe(1);
+    it('provides enum value UnixPipeEnd.READ', function () {
+        expectDeprecationWarning(() => {
+            expect(GLib.UnixPipeEnd.READ).toBe(0);
+        });
     });
 
-    afterEach(function () {
+    it('provides enum value UnixPipeEnd.WRITE', function () {
+        if (!PLATFORM_DEPENDENT_NS_SPLIT)
+            pending('Platform-dependent namespace has not been split on this GLib version');
+
+        expectDeprecationWarning(() => {
+            expect(GLib.UnixPipeEnd.WRITE).toBe(1);
+        });
+    });
+
+    describe('provides platform-independent symbol', function () {
+        const symbols = {
+            'UnixPipe': {
+                newName: 'Pipe',
+                needsNewerGLibVersion: true,
+            },
+            'UnixPipeEnd': {
+                newName: 'PipeEnd',
+                needsNewerGLibVersion: true,
+            },
+            'closefrom': {
+                needsNewerGLibVersion: true,
+            },
+            'unix_error_quark': {
+                newName: 'error_quark',
+            },
+            'unix_fd_add_full': {
+                newName: 'fd_add_full',
+            },
+            'unix_fd_query_path': {
+                newName: 'fd_query_path',
+                needsNewerGLibVersion: true,
+            },
+            'unix_fd_source_new': {
+                newName: 'fd_source_new',
+                needsNewerGLibVersion: true,
+            },
+            'fdwalk_set_cloexec': {
+                needsNewerGLibVersion: true,
+            },
+            'unix_get_passwd_entry': {
+                newName: 'get_passwd_entry',
+            },
+            'unix_open_pipe': {
+                newName: 'open_pipe',
+            },
+            'unix_set_fd_nonblocking': {
+                newName: 'set_fd_nonblocking',
+            },
+            'unix_signal_add': {
+                newName: 'signal_add',
+                needsNewerGLibVersion: true,
+            },
+            'unix_signal_source_new': {
+                newName: 'signal_source_new',
+            },
+        };
+
+        Object.entries(symbols).forEach(([name, testData]) => {
+            it(`GLib.${name}`, function () {
+                if (testData.needsNewerGLibVersion && !PLATFORM_DEPENDENT_NS_SPLIT)
+                    pending('Platform-dependent namespace has not been split on this GLib version');
+
+                const newName = testData.newName ?? name;
+
+                // We need to use a named function so that the warning system can
+                // consider this a different call site for each symbol tested.
+                const getterName = `${name}_getter`;
+                const valueGetter = {
+                    [getterName]() {
+                        return GLib[name];
+                    },
+                }[getterName];
+
+                const oldValue = expectDeprecationWarning(valueGetter, name, newName);
+                expect(oldValue).toBeDefined();
+                expect(GLibUnix[newName]).toBeDefined();
+
+                if (PLATFORM_DEPENDENT_NS_SPLIT)
+                    expect(oldValue).toBe(GLibUnix[newName]);
+            });
+        });
+    });
+
+    it('provides signal_add_full wrapper for signal_add', function () {
+        if (!PLATFORM_DEPENDENT_NS_SPLIT)
+            pending('Platform-dependent namespace has not been split on this GLib version');
+
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
+            '*GLibUnix.signal_add_full has been renamed. ' +
+            'Please update your code to use GLibUnix.signal_add instead*');
+        const oldValue = GLibUnix.signal_add_full;
         GLib.test_assert_expected_messages_internal('Gjs', 'testGLib.js', 0,
-            'GLib.Unix expect warning');
+            'GLibUnix signal_add_full rename');
+
+        expect(oldValue).toBe(GLibUnix.signal_add);
     });
 });

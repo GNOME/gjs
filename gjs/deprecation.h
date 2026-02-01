@@ -17,6 +17,7 @@ enum GjsDeprecationMessageId : unsigned {
     DeprecatedGObjectProperty,
     ModuleExportedLetOrConst,
     PlatformSpecificTypelib,
+    Renamed,
     LastValue,  // insert new elements before this one
 };
 
