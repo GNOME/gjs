@@ -77,6 +77,7 @@ FALSE_POSITIVES = (
     ('gi/gtype.cpp', '#include <utility>', 'for forward'),
     # Same underlying problem, false positive due to inlined methods from
     # gi/info.h and gi/auto.h
+    ('gi/enumeration.cpp', '#include <girepository/girepository.h>', 'for gi_enum_info_get_value'),
     ('gi/interface.cpp', '#include <girepository/girepository.h>', 'for gi_base_info_ref'),
     ('gjs/byteArray.cpp', '#include <girepository/girepository.h>', 'for gi_base_info_get_name, gi_bas...'),
     ('modules/console.cpp', '#include <glib-object.h>', 'for g_object_unref'),

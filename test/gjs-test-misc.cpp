@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <string>
-
 #include <glib.h>
 
 #include "test/gjs-test-utils.h"
