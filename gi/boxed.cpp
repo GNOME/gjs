@@ -59,6 +59,10 @@ template <GI::InfoTag TAG>
 [[nodiscard]]
 static bool struct_is_simple(const GI::UnownedInfo<TAG>&);
 
+template <GI::InfoTag TAG>
+[[nodiscard]]
+static bool simple_struct_has_pointers(const GI::UnownedInfo<TAG>&);
+
 template <class Base, class Prototype, class Instance>
 BoxedInstance<Base, Prototype, Instance>::BoxedInstance(Prototype* prototype,
                                                         JS::HandleObject obj)
@@ -472,6 +476,11 @@ BoxedInstance<Base, Prototype, Instance>::~BoxedInstance() {
     g_assert_not_reached();
 }
 
+template <class Base, class Prototype, class Instance>
+void BoxedInstance<Base, Prototype, Instance>::trace_impl(JSTracer* trc) {
+    m_nested_objects.trace(trc);
+}
+
 /**
  * BoxedBase::get_field_info:
  *
@@ -527,6 +536,14 @@ bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
                   format_name().c_str(), field_info.name());
 
         return false;
+    }
+
+    // If we have already set the field from a JS object which we have stashed
+    // because it owns pointers, return that JS object instead of creating one.
+    auto entry = m_nested_objects.lookup(field_info.name());
+    if (entry.found()) {
+        value.setObject(*entry->value().get());
+        return true;
     }
 
     JS::RootedObject obj{
@@ -639,6 +656,10 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
  * method is called from BoxedInstance::field_setter_impl() when any such field
  * is being set. The contents of the BoxedInstance JS object in @value are
  * copied into the correct place in this BoxedInstance's memory.
+ *
+ * If the copied memory contains pointers, they are owned by the nested boxed
+ * type's JS object, so the nested JS object will be prevented from being
+ * garbage collected while the parent JS object is active.
  */
 template <class Base, class Prototype, class Instance>
 template <class FieldBase>
@@ -655,19 +676,20 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
     /* If we can't directly copy from the source object we need to construct a
      * new temporary object. */
     FieldBase* source_priv = nullptr;
+    JS::RootedObject source_object{cx};
     bool field_has_same_info = false;
 
     if constexpr (std::is_same_v<FieldBase, Base>) {
         field_has_same_info = info() == boxed_info;
         if (field_has_same_info) {
-            JS::RootedObject object{cx, &value.toObject()};
-            source_priv = FieldBase::for_js(cx, object);
+            source_object = &value.toObject();
+            source_priv = FieldBase::for_js(cx, source_object);
         }
     }
 
     if (!source_priv && !field_has_same_info) {
-        JS::RootedObject object{cx, &value.toObject()};
-        source_priv = FieldBase::for_js(cx, object);
+        source_object = &value.toObject();
+        source_priv = FieldBase::for_js(cx, source_object);
 
         if (source_priv && source_priv->info() != boxed_info) {
             std::string source_name{source_priv->format_name()};
@@ -685,15 +707,22 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
 
         JS::RootedValueArray<1> args{cx};
         args[0].set(value);
-        JS::RootedObject tmp_object{
-            cx, gjs_construct_object_dynamic(cx, proto, args)};
-        if (!tmp_object ||
-            !FieldBase::for_js_typecheck(cx, tmp_object, &source_priv))
+        source_object = gjs_construct_object_dynamic(cx, proto, args);
+        if (!source_object ||
+            !FieldBase::for_js_typecheck(cx, source_object, &source_priv))
             return false;
     }
 
     if (!source_priv->check_is_instance(cx, "copy"))
         return false;
+
+    // Any pointers in the copied memory are still owned by the source struct.
+    // So we need to tie the lifetime of the source JS object to this one.
+    if (simple_struct_has_pointers(boxed_info) &&
+        !m_nested_objects.put(field_info.name(), source_object)) {
+        JS_ReportOutOfMemory(cx);
+        return false;
+    }
 
     memcpy(raw_ptr() + field_info.offset(), source_priv->to_instance()->ptr(),
            source_priv->info().size());
@@ -863,10 +892,6 @@ static bool type_can_be_allocated_directly(const GI::TypeInfo& type_info) {
         return true;
     return false;
 }
-
-template <GI::InfoTag TAG>
-[[nodiscard]]
-static bool simple_struct_has_pointers(const GI::UnownedInfo<TAG>&);
 
 [[nodiscard]]
 static bool direct_allocation_has_pointers(const GI::TypeInfo& type_info) {
