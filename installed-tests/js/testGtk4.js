@@ -227,6 +227,11 @@ describe('Gtk 4', function () {
         validateTemplate('UI template from file', MyComplexGtkSubclassFromFile);
         validateTemplate('Class inheriting from template class', SubclassSubclass, true);
 
+        it('Gtk.Builder typename', function () {
+            const builder = new Gtk.Builder();
+            expect(builder.toString()).toContain('object instance wrapper GType:GtkJSBuilder');
+        });
+
         describe('Non-template UI file', function () {
             let callbacks;
 

@@ -406,8 +406,8 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
             return &v_proto.toObject();
         }
 
-        // Workaround for bogus warning
-        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=94554
+        // Workaround for ubsan bug
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962
         // Note that the corresponding function pointers in the js::ClassSpec
         // must be initialized as nullptr, not the default initializer! (see
         // e.g. CairoPath::class_spec.finishInit)
