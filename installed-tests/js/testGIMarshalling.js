@@ -11,6 +11,7 @@ import GIMarshallingTests from 'gi://GIMarshallingTests';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
+import System from 'system';
 
 // Some helpers to cut down on repetitive marshalling tests.
 // - options.omit: the test doesn't exist, don't create a test case
@@ -1517,6 +1518,7 @@ describe('Structured union', function () {
         const union = new GIMarshallingTests.StructuredUnion({
             'boxed_struct': member,
         });
+        System.gc();  // test that member.parent is traced
         expect(union.boxed_struct.parent.long_).toBe(42);
         expect(union.boxed_struct.parent.string_).toBe('hello');
         expect(union.boxed_struct.parent.g_strv).toEqual(['0', '1', '2']);

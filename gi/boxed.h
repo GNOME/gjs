@@ -19,6 +19,7 @@
 
 #include <js/AllocPolicy.h>
 #include <js/GCHashTable.h>  // for GCHashMap
+#include <js/GCPolicyAPI.h>
 #include <js/HashTable.h>    // for DefaultHasher
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -173,6 +174,10 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     static const size_t PARENT_OBJECT = 1;
 
  protected:
+    using NestedObjectsMap =
+        JS::GCHashMap<const char*, JS::Heap<JSObject*>,
+                      js::DefaultHasher<const char*>, js::SystemAllocPolicy>;
+    NestedObjectsMap m_nested_objects;
     bool m_allocated_directly : 1;
     bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred
                             // to by m_ptr.
@@ -233,6 +238,10 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
         return nullptr;
     }
 
+    // JSClass operations
+
+    void trace_impl(JSTracer* trc);
+
     // JS property accessors
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -273,3 +282,8 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     using BaseClass::info;
     using BaseClass::name;
 };
+
+namespace JS {
+template <>
+struct GCPolicy<const char*> : public IgnoreGCPolicy<const char*> {};
+}  // namespace JS
