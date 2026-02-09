@@ -287,7 +287,7 @@ using JSValuePackTag = std::conditional_t<
 }  // namespace Tag
 
 template <typename TAG>
-constexpr inline const char* static_type_name() {
+constexpr const char* static_type_name() {
     return MarshallingInfo<TAG>::name;
 }
 

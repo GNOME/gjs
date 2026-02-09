@@ -77,7 +77,7 @@ bool FundamentalInstance::associate_js_instance(JSContext* cx, JSObject* object,
 // Find the first constructor
 [[nodiscard]]
 static Maybe<GI::AutoFunctionInfo> find_fundamental_constructor(
-    const GI::ObjectInfo info) {
+    const GI::ObjectInfo& info) {
     for (GI::AutoFunctionInfo func_info : info.methods()) {
         if (func_info.is_constructor())
             return Some(func_info);
@@ -207,7 +207,7 @@ FundamentalInstance::~FundamentalInstance() {
     GJS_DEC_COUNTER(fundamental_instance);
 }
 
-FundamentalPrototype::FundamentalPrototype(const GI::ObjectInfo info,
+FundamentalPrototype::FundamentalPrototype(const GI::ObjectInfo& info,
                                            GType gtype)
     : GIWrapperPrototype(info, gtype),
       m_ref_function(info.ref_function_pointer()),
@@ -244,7 +244,7 @@ const struct JSClass FundamentalBase::klass = {
 // fundamental types?
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
-                                                  const GI::ObjectInfo info) {
+                                                  const GI::ObjectInfo& info) {
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
     const char* constructor_name = info.name();
 
@@ -335,7 +335,7 @@ unsigned FundamentalPrototype::constructor_nargs() const {
  */
 bool FundamentalPrototype::define_class(JSContext* cx,
                                         JS::HandleObject in_object,
-                                        const GI::ObjectInfo info,
+                                        const GI::ObjectInfo& info,
                                         JS::MutableHandleObject constructor) {
     JS::RootedObject prototype(cx);
     FundamentalPrototype* priv = FundamentalPrototype::create_class(
@@ -448,8 +448,10 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         if (g_value_type_compatible(instance->gtype(), G_VALUE_TYPE(gvalue))) {
             g_value_set_instance(gvalue, instance->m_ptr);
             return true;
-        } else if (g_value_type_transformable(instance->gtype(),
-                                              G_VALUE_TYPE(gvalue))) {
+        }
+
+        if (g_value_type_transformable(instance->gtype(),
+                                       G_VALUE_TYPE(gvalue))) {
             Gjs::AutoGValue instance_value;
             g_value_init(&instance_value, instance->gtype());
             g_value_set_instance(&instance_value, instance->m_ptr);

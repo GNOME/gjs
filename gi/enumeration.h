@@ -13,8 +13,8 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enum_values(JSContext*, JS::HandleObject in_object,
-                            const GI::EnumInfo);
+                            const GI::EnumInfo&);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_enumeration(JSContext*, JS::HandleObject in_object,
-                            const GI::EnumInfo);
+                            const GI::EnumInfo&);

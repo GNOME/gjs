@@ -101,13 +101,9 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
         return false;
 
     JS::RootedValue ignore{cx};
-    if (!gjs_global_registry_set(cx, registry, key, module) ||
-        !JS::ModuleLink(cx, module) ||
-        !JS::ModuleEvaluate(cx, module, &ignore)) {
-        return false;
-    }
-
-    return true;
+    return gjs_global_registry_set(cx, registry, key, module) &&
+           JS::ModuleLink(cx, module) &&
+           JS::ModuleEvaluate(cx, module, &ignore);
 }
 
 static bool handle_wrong_args(JSContext* cx) {
@@ -361,8 +357,8 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
         void* key_ptr;
         void* value_ptr;
         while (g_hash_table_iter_next(&iter, &key_ptr, &value_ptr)) {
-            auto* key = static_cast<const char*>(key_ptr);
-            auto* value = static_cast<const char*>(value_ptr);
+            const auto* key = static_cast<const char*>(key_ptr);
+            const auto* value = static_cast<const char*>(value_ptr);
 
             JS::ConstUTF8CharsZ value_chars{value, strlen(value)};
             JS::RootedString value_str(cx,

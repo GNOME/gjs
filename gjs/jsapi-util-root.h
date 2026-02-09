@@ -63,7 +63,8 @@ class GjsMaybeOwned {
     std::unique_ptr<JS::PersistentRootedObject> m_root;
 
     // No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
-    inline void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+    void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
         gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned %p %s", this,
                             what);
     }
@@ -72,7 +73,7 @@ class GjsMaybeOwned {
         debug("teardown_rooting()");
         g_assert(m_root);
 
-        m_root.reset();
+        m_root = nullptr;
 
         new (&m_heap) JS::Heap<JSObject*>();
     }

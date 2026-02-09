@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <algorithm>
 #include <sstream>
 
 #include <glib-object.h>
@@ -63,7 +64,7 @@ bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
 
 template <GI::InfoTag TAG>
 bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
-                               GType gtype, const GI::UnownedInfo<TAG> info) {
+                               GType gtype, const GI::UnownedInfo<TAG>& info) {
     for (GI::AutoFunctionInfo meth_info : info.methods()) {
         // Anything that isn't a method we put on the constructor. This
         // includes <constructor> introspection methods, as well as static
@@ -86,22 +87,22 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
     if (!type_struct)
         return true;
 
-    for (GI::AutoFunctionInfo meth_info : type_struct->methods()) {
-        if (!gjs_define_function(cx, constructor, gtype, meth_info))
-            return false;
-    }
-
-    return true;
+    auto iter = type_struct->methods();
+    return std::all_of(
+        iter.begin(), iter.end(),
+        [cx, constructor, gtype](const GI::AutoFunctionInfo& meth_info) {
+            return gjs_define_function(cx, constructor, gtype, meth_info);
+        });
 }
 
 // All possible instantiations are needed
 template bool gjs_define_static_methods<GI::InfoTag::ENUM>(
-    JSContext*, JS::HandleObject constructor, GType, const GI::EnumInfo);
+    JSContext*, JS::HandleObject constructor, GType, const GI::EnumInfo&);
 template bool gjs_define_static_methods<GI::InfoTag::INTERFACE>(
-    JSContext*, JS::HandleObject constructor, GType, const GI::InterfaceInfo);
+    JSContext*, JS::HandleObject constructor, GType, const GI::InterfaceInfo&);
 template bool gjs_define_static_methods<GI::InfoTag::OBJECT>(
-    JSContext*, JS::HandleObject constructor, GType, const GI::ObjectInfo);
+    JSContext*, JS::HandleObject constructor, GType, const GI::ObjectInfo&);
 template bool gjs_define_static_methods<GI::InfoTag::STRUCT>(
-    JSContext*, JS::HandleObject constructor, GType, const GI::StructInfo);
+    JSContext*, JS::HandleObject constructor, GType, const GI::StructInfo&);
 template bool gjs_define_static_methods<GI::InfoTag::UNION>(
-    JSContext*, JS::HandleObject constructor, GType, const GI::UnionInfo);
+    JSContext*, JS::HandleObject constructor, GType, const GI::UnionInfo&);

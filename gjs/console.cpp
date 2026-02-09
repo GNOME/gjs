@@ -207,7 +207,7 @@ class TraceFD {
     TraceFD(const TraceFD&) = delete;
     TraceFD& operator=(const TraceFD&) = delete;
 
-    operator bool() { return m_fd != -1; }
+    operator bool() const { return m_fd != -1; }
 
     TraceFD& operator=(int fd) {
         if (m_fd != fd) {

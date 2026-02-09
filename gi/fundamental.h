@@ -69,7 +69,7 @@ class FundamentalPrototype
     GIObjectInfoSetValueFunction m_set_value_function;
     mozilla::Maybe<GI::AutoFunctionInfo> m_constructor_info;
 
-    explicit FundamentalPrototype(const GI::ObjectInfo, GType);
+    explicit FundamentalPrototype(const GI::ObjectInfo&, GType);
     ~FundamentalPrototype();
 
  public:
@@ -132,7 +132,7 @@ class FundamentalPrototype
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext*, JS::HandleObject in_object,
-                             const GI::ObjectInfo,
+                             const GI::ObjectInfo&,
                              JS::MutableHandleObject constructor);
 };
 

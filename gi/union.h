@@ -45,13 +45,13 @@ class UnionPrototype
     friend class GIWrapperPrototype<UnionBase, UnionPrototype, UnionInstance,
                                     GI::AutoUnionInfo, GI::UnionInfo>;
 
-    explicit UnionPrototype(const GI::UnionInfo, GType);
+    explicit UnionPrototype(const GI::UnionInfo&, GType);
     ~UnionPrototype();
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext*, JS::HandleObject in_object,
-                             const GI::UnionInfo);
+                             const GI::UnionInfo&);
 };
 
 class UnionInstance
@@ -63,6 +63,6 @@ class UnionInstance
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* new_for_c_union(JSContext*, const GI::UnionInfo,
+    static JSObject* new_for_c_union(JSContext*, const GI::UnionInfo&,
                                      void* gboxed);
 };

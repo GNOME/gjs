@@ -234,7 +234,9 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
              * the source file */
             test_name = *iter;
             continue;
-        } else if (g_str_has_prefix(*iter, "SF:")) {
+        }
+
+        if (g_str_has_prefix(*iter, "SF:")) {
             const char* filename = *iter + 3;
             if (!filename_has_coverage_prefixes(self, filename)) {
                 ignoring_file = true;

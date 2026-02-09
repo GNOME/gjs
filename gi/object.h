@@ -103,7 +103,7 @@ class ObjectBase
         GIWrapperBase::debug_lifecycle(jsobj_addr(), message);
     }
 
-    [[nodiscard]] bool id_is_never_lazy(jsid name, const GjsAtoms&);
+    [[nodiscard]] static bool id_is_never_lazy(jsid name, const GjsAtoms&);
     [[nodiscard]] bool is_custom_js_class();
 
  public:
@@ -135,7 +135,6 @@ class ObjectBase
 
     // JS property getters/setters
 
- public:
     template <typename TAG = void>
     GJS_JSAPI_RETURN_CONVENTION
     static bool prop_getter(JSContext*, unsigned, JS::Value*);
@@ -239,7 +238,7 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool get_parent_constructor(JSContext*,
                                 JS::MutableHandleObject constructor) const;
-    [[nodiscard]] bool is_vfunc_unchanged(const GI::VFuncInfo) const;
+    [[nodiscard]] bool is_vfunc_unchanged(const GI::VFuncInfo&) const;
     static void vfunc_invalidated_notify(void* data, GClosure*);
 
     GJS_JSAPI_RETURN_CONVENTION
@@ -450,7 +449,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
 
     // JS property getters/setters
 
- private:
     template <typename TAG>
     GJS_JSAPI_RETURN_CONVENTION
     bool prop_getter_impl(JSContext*, GParamSpec*, JS::MutableHandleValue rval);
@@ -480,11 +478,11 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     // JS constructor
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool constructor_impl(JSContext*, JS::HandleObject, const JS::CallArgs&);
+    static bool constructor_impl(JSContext*, JS::HandleObject,
+                                 const JS::CallArgs&);
 
     // JS methods
 
- private:
     GJS_JSAPI_RETURN_CONVENTION
     bool connect_impl(JSContext*, const JS::CallArgs&, bool after,
                       bool object = false);

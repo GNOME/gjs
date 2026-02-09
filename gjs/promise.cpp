@@ -129,13 +129,13 @@ class PromiseJobDispatcher::Source : public GSource {
      */
     void cancel() { g_cancellable_cancel(m_cancellable); }
     /**
-     * Source::reset:
+     * Source::uncancel:
      *
      * Reset the cancellable and prevent the source from stopping, overriding a
      * previous cancel() call. Called by PromiseJobDispatcher::start() to ensure
      * the custom source will start.
      */
-    void reset() {
+    void uncancel() {
         if (!g_cancellable_is_cancelled(m_cancellable))
             return;
 
@@ -179,7 +179,7 @@ bool PromiseJobDispatcher::is_running() { return m_source->is_running(); }
 
 void PromiseJobDispatcher::start() {
     // Reset the cancellable
-    m_source->reset();
+    m_source->uncancel();
 
     // Don't re-attach if the task is already running
     if (is_running())

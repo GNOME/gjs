@@ -45,7 +45,7 @@ const struct JSClass StructBase::klass = {
 };
 // clang-format on
 
-StructPrototype::StructPrototype(const GI::StructInfo info, GType gtype)
+StructPrototype::StructPrototype(const GI::StructInfo& info, GType gtype)
     : BoxedPrototype(info, gtype) {
     GJS_INC_COUNTER(boxed_prototype);
 }
@@ -53,7 +53,7 @@ StructPrototype::StructPrototype(const GI::StructInfo info, GType gtype)
 StructPrototype::~StructPrototype() { GJS_DEC_COUNTER(boxed_prototype); }
 
 bool StructPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
-                                   const GI::StructInfo info) {
+                                   const GI::StructInfo& info) {
     JS::RootedObject prototype{cx};
     if (!BoxedPrototype::define_class_impl(cx, in_object, info, &prototype))
         return false;
@@ -127,7 +127,7 @@ static bool define_extra_error_properties(JSContext* cx, JS::HandleObject obj) {
  * reference, or if the boxed type can be directly allocated, copy the memory.
  */
 JSObject* StructInstance::new_for_c_struct(JSContext* cx,
-                                           const GI::StructInfo info,
+                                           const GI::StructInfo& info,
                                            void* gboxed) {
     JS::RootedObject obj{cx, new_for_c_struct_impl(cx, info, gboxed)};
     if (!obj || !define_extra_error_properties(cx, obj))
@@ -136,7 +136,7 @@ JSObject* StructInstance::new_for_c_struct(JSContext* cx,
 }
 
 JSObject* StructInstance::new_for_c_struct(JSContext* cx,
-                                           const GI::StructInfo info,
+                                           const GI::StructInfo& info,
                                            void* gboxed,
                                            Boxed::NoCopy no_copy) {
     JS::RootedObject obj{

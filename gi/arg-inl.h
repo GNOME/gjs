@@ -49,13 +49,13 @@
 
 template <auto GIArgument::* member>
 [[nodiscard]]
-constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+constexpr decltype(auto) gjs_arg_member(GIArgument* arg) {
     return (arg->*member);
 }
 
 template <typename TAG>
 [[nodiscard]]
-constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
+constexpr decltype(auto) gjs_arg_member(GIArgument* arg) {
     if constexpr (std::is_same_v<TAG, Gjs::Tag::GBoolean>)
         return gjs_arg_member<&GIArgument::v_boolean>(arg);
 
@@ -127,7 +127,7 @@ constexpr inline decltype(auto) gjs_arg_member(GIArgument* arg) {
 
 template <typename TAG, typename = std::enable_if_t<
                             std::is_arithmetic_v<Gjs::Tag::RealT<TAG>>>>
-constexpr inline void gjs_arg_set(GIArgument* arg, Gjs::Tag::RealT<TAG> v) {
+constexpr void gjs_arg_set(GIArgument* arg, Gjs::Tag::RealT<TAG> v) {
     if constexpr (std::is_same_v<TAG, bool> ||
                   std::is_same_v<TAG, Gjs::Tag::GBoolean>)
         v = !!v;
@@ -140,7 +140,7 @@ constexpr inline void gjs_arg_set(GIArgument* arg, Gjs::Tag::RealT<TAG> v) {
 template <typename T,
           typename = std::enable_if_t<std::is_same_v<Gjs::Tag::RealT<T>, T> &&
                                       std::is_arithmetic_v<T>>>
-constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
+constexpr void gjs_arg_set(GIArgument* arg, T v) {
     gjs_arg_set<T>(arg, v);
 }
 
@@ -148,27 +148,27 @@ constexpr inline void gjs_arg_set(GIArgument* arg, T v) {
 // the pointer type explicitly for type deduction, and that takes care of
 // GIArgument not having constness
 template <typename T, typename = std::enable_if_t<!std::is_function_v<T>>>
-constexpr inline void gjs_arg_set(GIArgument* arg, T* v) {
+constexpr void gjs_arg_set(GIArgument* arg, T* v) {
     using NonconstPtrT = std::add_pointer_t<std::remove_const_t<T>>;
     gjs_arg_member<NonconstPtrT>(arg) = const_cast<NonconstPtrT>(v);
 }
 
 // Overload for nullptr since it's not handled by TAG*
-constexpr inline void gjs_arg_set(GIArgument* arg, std::nullptr_t) {
+constexpr void gjs_arg_set(GIArgument* arg, std::nullptr_t) {
     gjs_arg_member<void*>(arg) = nullptr;
 }
 
 // Store function pointers as void*. It is a requirement of GLib that your
 // compiler can do this
 template <typename ReturnT, typename... Args>
-constexpr inline void gjs_arg_set(GIArgument* arg, ReturnT (*v)(Args...)) {
+constexpr void gjs_arg_set(GIArgument* arg, ReturnT (*v)(Args...)) {
     gjs_arg_member<void*>(arg) = reinterpret_cast<void*>(v);
 }
 
 // Specifying an integer-type tag and passing a void pointer, extracts a stuffed
 // integer out of the pointer; otherwise just store the pointer in v_pointer
 template <typename TAG = void*>
-constexpr inline void gjs_arg_set(GIArgument* arg, void* v) {
+constexpr void gjs_arg_set(GIArgument* arg, void* v) {
     using T = Gjs::Tag::RealT<TAG>;
     if constexpr (std::is_integral_v<T>)
         gjs_arg_set<TAG>(arg, gjs_pointer_to_int<T>(v));
@@ -178,7 +178,7 @@ constexpr inline void gjs_arg_set(GIArgument* arg, void* v) {
 
 template <typename TAG>
 [[nodiscard]]
-constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_get(GIArgument* arg) {
+constexpr Gjs::Tag::RealT<TAG> gjs_arg_get(GIArgument* arg) {
     if constexpr (std::is_same_v<TAG, bool> ||
                   std::is_same_v<TAG, Gjs::Tag::GBoolean>)
         return Gjs::Tag::RealT<TAG>(!!gjs_arg_member<TAG>(arg));
@@ -188,11 +188,11 @@ constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_get(GIArgument* arg) {
 
 template <typename TAG>
 [[nodiscard]]
-constexpr inline void* gjs_arg_get_as_pointer(GIArgument* arg) {
+constexpr void* gjs_arg_get_as_pointer(GIArgument* arg) {
     return gjs_int_to_pointer(gjs_arg_get<TAG>(arg));
 }
 
-constexpr inline void gjs_arg_unset(GIArgument* arg) {
+constexpr void gjs_arg_unset(GIArgument* arg) {
     // Clear all bits of the out C value. No one member is guaranteed to span
     // the whole union on all architectures, so use memset() instead of
     // gjs_arg_set<T>(arg, 0) for some type T.
@@ -201,7 +201,7 @@ constexpr inline void gjs_arg_unset(GIArgument* arg) {
 
 template <typename TAG>
 [[nodiscard]]
-constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_steal(GIArgument* arg) {
+constexpr Gjs::Tag::RealT<TAG> gjs_arg_steal(GIArgument* arg) {
     auto val = gjs_arg_get<TAG>(arg);
     gjs_arg_unset(arg);
     return val;
@@ -211,7 +211,7 @@ constexpr inline Gjs::Tag::RealT<TAG> gjs_arg_steal(GIArgument* arg) {
 
 template <typename BigTag>
 [[nodiscard]]
-inline constexpr std::enable_if_t<
+constexpr std::enable_if_t<
     std::is_integral_v<Gjs::Tag::RealT<BigTag>> &&
         (std::numeric_limits<Gjs::Tag::RealT<BigTag>>::max() >
          std::numeric_limits<int32_t>::max()),

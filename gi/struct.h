@@ -49,13 +49,13 @@ class StructPrototype
     friend class GIWrapperPrototype<StructBase, StructPrototype, StructInstance,
                                     GI::AutoStructInfo, GI::StructInfo>;
 
-    StructPrototype(const GI::StructInfo, GType);
+    StructPrototype(const GI::StructInfo&, GType);
     ~StructPrototype();
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext* cx, JS::HandleObject in_object,
-                             const GI::StructInfo);
+                             const GI::StructInfo&);
 };
 
 class StructInstance
@@ -78,9 +78,9 @@ class StructInstance
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo,
+    static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo&,
                                       void* gboxed);
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo,
+    static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo&,
                                       void* gboxed, Boxed::NoCopy);
 };

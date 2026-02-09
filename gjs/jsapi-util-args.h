@@ -57,7 +57,7 @@ class ParseArgsErr {
 };
 
 template <typename... Args>
-inline constexpr auto Err(Args... args) {
+constexpr auto Err(Args... args) {
     return mozilla::GenericErrorResult{
         ParseArgsErr{std::forward<Args>(args)...}};
 }

@@ -68,7 +68,7 @@ void gjs_struct_foreign_register(const char* gi_namespace,
 
 GJS_JSAPI_RETURN_CONVENTION
 static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
-                                                 const GI::StructInfo info) {
+                                                 const GI::StructInfo& info) {
     StructID key{info.ns(), info.name()};
     auto entry = foreign_structs_table.find(key);
     if (entry == foreign_structs_table.end()) {
@@ -86,7 +86,7 @@ static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
 }
 
 bool gjs_struct_foreign_convert_to_gi_argument(
-    JSContext* cx, JS::Value value, const GI::StructInfo info,
+    JSContext* cx, JS::Value value, const GI::StructInfo& info,
     const char* arg_name, GjsArgumentType argument_type, GITransfer transfer,
     GjsArgumentFlags flags, GIArgument* arg) {
     GjsForeignInfo* foreign = gjs_struct_foreign_lookup(cx, info);
@@ -102,7 +102,7 @@ bool gjs_struct_foreign_convert_to_gi_argument(
 
 bool gjs_struct_foreign_convert_from_gi_argument(JSContext* cx,
                                                  JS::MutableHandleValue value_p,
-                                                 const GI::StructInfo info,
+                                                 const GI::StructInfo& info,
                                                  GIArgument* arg) {
     GjsForeignInfo* foreign = gjs_struct_foreign_lookup(cx, info);
     if (!foreign)
@@ -115,7 +115,7 @@ bool gjs_struct_foreign_convert_from_gi_argument(JSContext* cx,
 }
 
 bool gjs_struct_foreign_release_gi_argument(JSContext* cx, GITransfer transfer,
-                                            const GI::StructInfo info,
+                                            const GI::StructInfo& info,
                                             GIArgument* arg) {
     GjsForeignInfo* foreign = gjs_struct_foreign_lookup(cx, info);
     if (!foreign)

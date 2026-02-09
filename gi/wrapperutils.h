@@ -58,7 +58,7 @@ bool gjs_wrapper_to_string_func(JSContext*, JSObject* this_obj,
 GJS_JSAPI_RETURN_CONVENTION
 static inline bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                               const char* objtype,
-                                              const GI::BaseInfo info,
+                                              const GI::BaseInfo& info,
                                               GType gtype,
                                               const void* native_address,
                                               JS::MutableHandleValue ret) {
@@ -98,7 +98,7 @@ struct is_maybe<mozilla::Maybe<T>> : std::true_type {};
 template <GI::InfoTag TAG>
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_static_methods(JSContext*, JS::HandleObject constructor, GType,
-                               const GI::UnownedInfo<TAG>);
+                               const GI::UnownedInfo<TAG>&);
 
 template <GI::InfoTag TAG>
 GJS_JSAPI_RETURN_CONVENTION
@@ -679,7 +679,7 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
      */
     GJS_JSAPI_RETURN_CONVENTION
     static bool typecheck(JSContext* cx, JS::HandleObject object,
-                          const GI::BaseInfo expected_info) {
+                          const GI::BaseInfo& expected_info) {
         Base* priv;
         if (!Base::for_js_typecheck(cx, object, &priv) ||
             !priv->check_is_instance(cx, "convert to pointer"))
@@ -755,7 +755,7 @@ class GIWrapperPrototype : public Base {
     OwnedInfo m_info;
     GType m_gtype;
 
-    explicit GIWrapperPrototype(const UnownedInfo info, GType gtype)
+    explicit GIWrapperPrototype(const UnownedInfo& info, GType gtype)
         : Base(), m_info(info), m_gtype(gtype) {
         Base::debug_lifecycle("Prototype constructor");
     }
@@ -788,7 +788,7 @@ class GIWrapperPrototype : public Base {
      * inherit in JS.
      */
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) const {
+    static bool get_parent_proto(JSContext*, JS::MutableHandleObject proto) {
         proto.set(nullptr);
         return true;
     }
@@ -910,7 +910,7 @@ class GIWrapperPrototype : public Base {
     }
 
     GJS_JSAPI_RETURN_CONVENTION
-    static Prototype* create_prototype(const UnownedInfo info, GType gtype) {
+    static Prototype* create_prototype(const UnownedInfo& info, GType gtype) {
         g_assert(gtype != G_TYPE_INVALID);
 
         // We have to keep the Prototype in an arcbox because some of its
@@ -951,7 +951,7 @@ class GIWrapperPrototype : public Base {
      */
     GJS_JSAPI_RETURN_CONVENTION
     static Prototype* create_class(JSContext* cx, JS::HandleObject in_object,
-                                   const UnownedInfo info, GType gtype,
+                                   const UnownedInfo& info, GType gtype,
                                    JS::MutableHandleObject constructor,
                                    JS::MutableHandleObject prototype) {
         g_assert(in_object);
@@ -993,7 +993,7 @@ class GIWrapperPrototype : public Base {
 
     GJS_JSAPI_RETURN_CONVENTION
     static Prototype* wrap_class(JSContext* cx, JS::HandleObject in_object,
-                                 const UnownedInfo info, GType gtype,
+                                 const UnownedInfo& info, GType gtype,
                                  JS::HandleObject constructor,
                                  JS::MutableHandleObject prototype) {
         g_assert(in_object);
@@ -1062,7 +1062,7 @@ class GIWrapperPrototype : public Base {
     // Accessors
 
     static constexpr bool may_not_have_info = is_maybe<UnownedInfo>::value;
-    [[nodiscard]] const UnownedInfo info() const { return m_info; }
+    [[nodiscard]] UnownedInfo info() const { return m_info; }
     [[nodiscard]] GType gtype() const { return m_gtype; }
 
     // Helper methods
@@ -1202,7 +1202,7 @@ class GIWrapperInstance : public Base {
      * the check.
      */
     [[nodiscard]]
-    bool typecheck_impl(const GI::BaseInfo expected_info) const {
+    bool typecheck_impl(const GI::BaseInfo& expected_info) const {
         if constexpr (Prototype::may_not_have_info) {
             if (Base::info())
                 return Base::info().ref() == expected_info;

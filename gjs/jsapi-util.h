@@ -111,7 +111,7 @@ void gjs_log_exception_full(JSContext*, JS::HandleValue exc,
 void gjs_warning_reporter(JSContext*, JSErrorReport*);
 
 GJS_JSAPI_RETURN_CONVENTION
-JS::UniqueChars gjs_string_to_utf8(JSContext*, const JS::Value string_val);
+JS::UniqueChars gjs_string_to_utf8(JSContext*, JS::Value string_val);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_to_utf8_n(JSContext*, JS::HandleString str,
                           JS::UniqueChars* output, size_t* output_len);
@@ -128,7 +128,7 @@ bool gjs_string_from_utf8_n(JSContext*, const char* utf8_chars, size_t len,
                             JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_to_filename(JSContext*, const JS::Value,
+bool gjs_string_to_filename(JSContext*, JS::Value,
                             Gjs::AutoChar* filename_string);
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -202,7 +202,7 @@ bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
 
 [[nodiscard]] std::string gjs_debug_bigint(JS::BigInt*);
 [[nodiscard]] std::string gjs_debug_string(JSString*);
-[[nodiscard]] std::string gjs_debug_symbol(JS::Symbol* const);
+[[nodiscard]] std::string gjs_debug_symbol(JS::Symbol*);
 [[nodiscard]] std::string gjs_debug_object(JSObject*);
 [[nodiscard]] std::string gjs_debug_callable(JSObject* callable);
 [[nodiscard]] std::string gjs_debug_value(JS::Value);

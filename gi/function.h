@@ -44,7 +44,7 @@ enum GjsParamType {
 struct GjsCallbackTrampoline : public Gjs::Closure {
     GJS_JSAPI_RETURN_CONVENTION
     static GjsCallbackTrampoline* create(JSContext*, JS::HandleObject callable,
-                                         const GI::CallableInfo, GIScopeType,
+                                         const GI::CallableInfo&, GIScopeType,
                                          bool has_scope_object, bool is_vfunc);
 
     ~GjsCallbackTrampoline();
@@ -64,14 +64,14 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     ffi_closure* create_closure();
     GJS_JSAPI_RETURN_CONVENTION bool initialize();
     GjsCallbackTrampoline(JSContext*, JS::HandleObject callable,
-                          const GI::CallableInfo, GIScopeType,
+                          const GI::CallableInfo&, GIScopeType,
                           bool has_scope_object, bool is_vfunc);
 
     void callback_closure(GIArgument** args, void* result);
     GJS_JSAPI_RETURN_CONVENTION
     bool callback_closure_inner(JSContext* cx, JS::HandleObject this_object,
                                 GObject* gobject, JS::MutableHandleValue rval,
-                                GIArgument** args, const GI::TypeInfo ret_type,
+                                GIArgument** args, const GI::TypeInfo& ret_type,
                                 unsigned n_args, unsigned c_args_offset,
                                 void* result);
     void warn_about_illegal_js_callback(const char* when, const char* reason,
@@ -106,7 +106,7 @@ class GjsFunctionCallState {
     bool can_throw_gerror : 1;
     bool is_method : 1;
 
-    GjsFunctionCallState(JSContext* cx, const GI::CallableInfo callable)
+    GjsFunctionCallState(JSContext* cx, const GI::CallableInfo& callable)
         : instance_object(cx),
           return_values(cx),
           info(callable),
@@ -148,9 +148,11 @@ class GjsFunctionCallState {
         return can_throw_gerror && local_error;
     }
 
-    constexpr bool call_completed() { return !failed && !did_throw_gerror(); }
+    constexpr bool call_completed() const {
+        return !failed && !did_throw_gerror();
+    }
 
-    constexpr unsigned last_processed_index() {
+    constexpr unsigned last_processed_index() const {
         return first_arg_offset() + processed_c_args;
     }
 
@@ -167,9 +169,9 @@ class GjsFunctionCallState {
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_define_function(JSContext*, JS::HandleObject in_object, GType,
-                              const GI::CallableInfo);
+                              const GI::CallableInfo&);
 
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_invoke_constructor_from_c(JSContext*, const GI::FunctionInfo,
+bool gjs_invoke_constructor_from_c(JSContext*, const GI::FunctionInfo&,
                                    JS::HandleObject this_obj,
                                    const JS::CallArgs&, GIArgument* rvalue);

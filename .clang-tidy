@@ -43,6 +43,35 @@ Checks:
   - -modernize-avoid-c-arrays  # churn; possibly unavoidable in marshalling
   - -modernize-deprecated-headers  # churn; stylistic; awkward with C/C++ mix
   - -modernize-use-trailing-return-type  # churn; stylistic
+
+  - readability-*
+
+  # readability checks that we will definitely not deal with:
+  - -readability-implicit-bool-conversion
+  - -readability-named-parameter
+    # The above checks enforce styles that we intentionally avoid
+  - -readability-identifier-length
+    # Too many false positives; we use short names when they are obvious and
+    # often repeated, like "cx". Use good judgement instead.
+  - -readability-magic-numbers
+    # Too many false positives; incentivizes constants just for their own sake,
+    # like const int TEN = 10; Use good judgement instead.
+
+  # readability checks that may be enabled in the future:
+  - -readability-braces-around-statements
+    # For now, we intentionally avoid this style; low priority and too much
+    # churn to switch.
+  - -readability-function-cognitive-complexity
+    # It would be a good practice to enable this check locally from time to time
+    # and use it as a suggestion for refactoring, but it's too much churn to
+    # do all at once.
+  - -readability-isolate-declaration
+    # False positives on g_assert_ macros. May consider enabling if it gains a
+    # configuration option to ignore macros.
+  - -readability-math-missing-parentheses
+    # Too many false positives. Parentheses are nice on lesser-used operators
+    # but are not needed for basic PEMDAS. May consider enabling if this is made
+    # configurable.
 CheckOptions:
   bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
@@ -61,6 +90,11 @@ CheckOptions:
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
   modernize-use-emplace.SmartPointers: Gjs::AutoPointer;JS::UniqueChars
   modernize-use-using.IgnoreExternC: true
+  readability-ambiguous-smartptr-reset-call.SmartPointers: "Gjs::AutoPointer;\
+    JS::PersistentRooted;JS::UniqueChars;mozilla::UniquePtr"
+  readability-simplify-boolean-expr.IgnoreMacros: true  # GLib macros trigger
+  readability-uppercase-literal-suffix.NewSuffixes: L;LL
+    # we only care about confusion between 1 and l
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true

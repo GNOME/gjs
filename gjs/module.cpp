@@ -77,7 +77,7 @@ class GjsScriptModule {
     // Private data accessors
 
     [[nodiscard]]
-    static inline GjsScriptModule* priv(JSObject* module) {
+    static GjsScriptModule* priv(JSObject* module) {
         return JS::GetMaybePtrFromReservedSlot<GjsScriptModule>(
             module, GjsScriptModule::POINTER);
     }
@@ -288,9 +288,6 @@ JSObject* gjs_module_import(JSContext* cx, JS::HandleObject importer,
                             JS::HandleId id, const char* name, GFile* file) {
     return GjsScriptModule::import(cx, importer, id, name, file);
 }
-
-decltype(GjsScriptModule::klass) constexpr GjsScriptModule::klass;
-decltype(GjsScriptModule::class_ops) constexpr GjsScriptModule::class_ops;
 
 /**
  * gjs_get_native_registry:

@@ -7,6 +7,8 @@
 #include <stddef.h>  // for size_t
 #include <inttypes.h>
 
+#include <algorithm>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -26,7 +28,7 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
-                                  const GI::ValueInfo info) {
+                                  const GI::ValueInfo& info) {
     const char* value_name = info.name();
     int64_t value_val = info.value();
 
@@ -37,8 +39,7 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
     Gjs::AutoChar fixed_name{g_ascii_strup(value_name, -1)};
     for (size_t i = 0; fixed_name[i]; ++i) {
         char c = fixed_name[i];
-        if (!(('A' <= c && c <= 'Z') ||
-              ('0' <= c && c <= '9')))
+        if (!(g_ascii_isupper(c) || g_ascii_isdigit(c)))
             fixed_name[i] = '_';
     }
 
@@ -60,19 +61,20 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
 }
 
 bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
-                            const GI::EnumInfo info) {
+                            const GI::EnumInfo& info) {
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
      */
-    for (GI::AutoValueInfo value_info : info.values()) {
-        if (!gjs_define_enum_value(cx, in_object, value_info))
-            return false;
-    }
-    return true;
+    auto iter = info.values();
+    return std::all_of(iter.begin(), iter.end(),
+                       [cx, in_object](const GI::AutoValueInfo& value_info) {
+                           return gjs_define_enum_value(cx, in_object,
+                                                        value_info);
+                       });
 }
 
 bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
-                            const GI::EnumInfo info) {
+                            const GI::EnumInfo& info) {
     /* An enumeration is simply an object containing integer attributes for each
      * enum value. It does not have a special JSClass.
      *

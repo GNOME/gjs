@@ -27,18 +27,18 @@
 
 class AutoProfilerLabel {
  public:
-    explicit inline AutoProfilerLabel(JSContext* cx, const char* label,
-                                      const std::string& dynamicString,
-                                      JS::ProfilingCategoryPair categoryPair =
-                                          JS::ProfilingCategoryPair::OTHER,
-                                      uint32_t flags = 0)
+    explicit AutoProfilerLabel(JSContext* cx, const char* label,
+                               const std::string& dynamicString,
+                               JS::ProfilingCategoryPair categoryPair =
+                                   JS::ProfilingCategoryPair::OTHER,
+                               uint32_t flags = 0)
         : m_stack(js::GetContextProfilingStackIfEnabled(cx)) {
         if (m_stack)
             m_stack->pushLabelFrame(label, dynamicString.c_str(), this,
                                     categoryPair, flags);
     }
 
-    inline ~AutoProfilerLabel() {
+    ~AutoProfilerLabel() {
         if (m_stack)
             m_stack->pop();
     }
@@ -64,7 +64,7 @@ void gjs_profiler_add_mark(GjsProfiler*, ProfilerTimePoint, ProfilerDuration,
 
 [[nodiscard]]
 bool gjs_profiler_sample_gc_memory_info(
-    GjsProfiler*, int64_t gc_counters[Gjs::GCCounters::N_COUNTERS]);
+    GjsProfiler*, const int64_t gc_counters[Gjs::GCCounters::N_COUNTERS]);
 
 [[nodiscard]] bool gjs_profiler_is_running(GjsProfiler*);
 

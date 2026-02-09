@@ -595,15 +595,3 @@ void detail::set_global_slot(JSObject* global, uint32_t slot, JS::Value value) {
 JS::Value detail::get_global_slot(JSObject* global, uint32_t slot) {
     return JS::GetReservedSlot(global, JSCLASS_GLOBAL_SLOT_COUNT + slot);
 }
-
-decltype(GjsGlobal::klass) constexpr GjsGlobal::klass;
-decltype(GjsGlobal::static_funcs) constexpr GjsGlobal::static_funcs;
-decltype(GjsGlobal::static_props) constexpr GjsGlobal::static_props;
-
-decltype(GjsDebuggerGlobal::klass) constexpr GjsDebuggerGlobal::klass;
-decltype(
-    GjsDebuggerGlobal::static_funcs) constexpr GjsDebuggerGlobal::static_funcs;
-
-decltype(GjsInternalGlobal::klass) constexpr GjsInternalGlobal::klass;
-decltype(
-    GjsInternalGlobal::static_funcs) constexpr GjsInternalGlobal::static_funcs;
