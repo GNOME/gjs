@@ -111,7 +111,7 @@ template <class Base, class Prototype, class Instance>
 bool BoxedPrototype<Base, Prototype, Instance>::new_enumerate_impl(
     JSContext* cx, JS::HandleObject, JS::MutableHandleIdVector properties,
     bool only_enumerable [[maybe_unused]]) {
-    for (GI::AutoFunctionInfo meth_info : info().methods()) {
+    for (const GI::AutoFunctionInfo& meth_info : info().methods()) {
         if (meth_info.is_method()) {
             jsid id = gjs_intern_string_to_id(cx, meth_info.name());
             if (id.isVoid())
@@ -839,7 +839,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
     //
     // At this point methods have already been defined on the prototype, so we
     // may get name conflicts which we need to check for.
-    for (GI::AutoFieldInfo field : info().fields()) {
+    for (const GI::AutoFieldInfo& field : info().fields()) {
         const std::string property_name =
             find_unique_js_field_name(info(), field.name());
         JS::RootedValue private_id{cx, JS::PrivateUint32Value(count++)};
@@ -943,7 +943,7 @@ static bool simple_struct_has_pointers(const GI::UnownedInfo<TAG>& info) {
 
     typename GI::UnownedInfo<TAG>::FieldsIterator fields = info.fields();
     return std::any_of(
-        fields.begin(), fields.end(), [](GI::AutoFieldInfo field) {
+        fields.begin(), fields.end(), [](const GI::AutoFieldInfo& field) {
             return direct_allocation_has_pointers(field.type_info());
         });
 }
@@ -970,7 +970,7 @@ BoxedPrototype<Base, Prototype, Instance>::BoxedPrototype(const BoxedInfo& info,
      * really make sense for non-boxed types, since there is no memory
      * management for the return value.
      */
-    for (GI::AutoFunctionInfo func_info : info.methods()) {
+    for (const GI::AutoFunctionInfo& func_info : info.methods()) {
         if (func_info.is_constructor()) {
             if (!first_constructor)
                 first_constructor = Some(i);
@@ -1014,7 +1014,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_class_impl(
 template <class Base, class Prototype, class Instance>
 template <typename... Args>
 JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
-    JSContext* cx, const BoxedInfo& info, void* gboxed, Args&&... args) {
+    JSContext* cx, const BoxedInfo& info, void* gboxed, Args... args) {
     if (gboxed == nullptr)
         return nullptr;
 
@@ -1083,7 +1083,7 @@ template class BoxedInstance<StructBase, StructPrototype, StructInstance>;
 template JSObject* StructInstance::new_for_c_struct_impl<>(
     JSContext*, const GI::StructInfo&, void*);
 template JSObject* StructInstance::new_for_c_struct_impl<Boxed::NoCopy>(
-    JSContext*, const GI::StructInfo&, void*, Boxed::NoCopy&&);
+    JSContext*, const GI::StructInfo&, void*, Boxed::NoCopy);
 template class BoxedBase<UnionBase, UnionPrototype, UnionInstance>;
 template class BoxedPrototype<UnionBase, UnionPrototype, UnionInstance>;
 template class BoxedInstance<UnionBase, UnionPrototype, UnionInstance>;

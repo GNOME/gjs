@@ -21,7 +21,7 @@
 
 // Different roles for a GIArgument; currently used only in exception and debug
 // messages.
-enum GjsArgumentType {
+enum GjsArgumentType : uint8_t {
     GJS_ARGUMENT_ARGUMENT,
     GJS_ARGUMENT_RETURN_VALUE,
     GJS_ARGUMENT_FIELD,

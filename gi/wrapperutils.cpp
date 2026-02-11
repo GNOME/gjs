@@ -65,7 +65,7 @@ bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
 template <GI::InfoTag TAG>
 bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
                                GType gtype, const GI::UnownedInfo<TAG>& info) {
-    for (GI::AutoFunctionInfo meth_info : info.methods()) {
+    for (const GI::AutoFunctionInfo& meth_info : info.methods()) {
         // Anything that isn't a method we put on the constructor. This
         // includes <constructor> introspection methods, as well as static
         // methods. We may want to change this to use

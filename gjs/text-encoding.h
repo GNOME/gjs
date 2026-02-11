@@ -6,11 +6,13 @@
 
 #include <config.h>
 
+#include <stdint.h>
+
 #include <js/TypeDecls.h>
 
 #include "gjs/macros.h"
 
-enum class GjsStringTermination {
+enum class GjsStringTermination : uint8_t {
     ZERO_TERMINATED,
     EXPLICIT_LENGTH,
 };

@@ -42,7 +42,7 @@ namespace Gjs {
 // PackType, on the other hand, means storing it in the C type that is exactly
 // equivalent to how JSValue stores it, so no implicit conversion is performed
 // unless the JSValue contains a pointer to a GC-thing, like BigInt.
-enum HolderMode { ContainingType, PackType };
+enum HolderMode : uint8_t { ContainingType, PackType };
 
 template <typename TAG, HolderMode MODE = HolderMode::PackType>
 constexpr bool type_has_js_getter() {

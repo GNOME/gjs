@@ -225,7 +225,7 @@ class ObjectPrototype
     // by gjs_add_interface
     std::vector<GType> m_interface_gtypes;
 
-    ObjectPrototype(mozilla::Maybe<GI::ObjectInfo>, GType);
+    ObjectPrototype(const mozilla::Maybe<GI::ObjectInfo>&, GType);
     ~ObjectPrototype();
 
  public:
@@ -244,9 +244,13 @@ class ObjectPrototype
     GJS_JSAPI_RETURN_CONVENTION
     bool lazy_define_gobject_property(
         JSContext*, JS::HandleObject, JS::HandleId, GParamSpec*, bool* resolved,
-        const char* name, mozilla::Maybe<const GI::AutoPropertyInfo> = {});
+        const char* name,
+        const mozilla::Maybe<const GI::AutoPropertyInfo>& = {});
 
-    enum ResolveWhat { ConsiderOnlyMethods, ConsiderMethodsAndProperties };
+    enum ResolveWhat : uint8_t {
+        ConsiderOnlyMethods,
+        ConsiderMethodsAndProperties
+    };
     GJS_JSAPI_RETURN_CONVENTION
     bool resolve_no_info(JSContext*, JS::HandleObject, JS::HandleId,
                          bool* resolved, const char* name, ResolveWhat);
@@ -270,7 +274,7 @@ class ObjectPrototype
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_class(JSContext*, JS::HandleObject in_object,
-                             mozilla::Maybe<const GI::ObjectInfo>, GType,
+                             const mozilla::Maybe<const GI::ObjectInfo>&, GType,
                              GType* interface_gtypes,
                              uint32_t n_interface_gtypes,
                              JS::MutableHandleObject constructor,

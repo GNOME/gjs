@@ -58,7 +58,7 @@
 
 using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 
-enum ExpectedType {
+enum ExpectedType : uint8_t {
     OBJECT,
     FUNCTION,
     STRING,

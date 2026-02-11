@@ -111,7 +111,7 @@ static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo& info,
                                     int64_t value) {
     GI::EnumInfo::ValuesIterator values = info.values();
     if (std::none_of(values.begin(), values.end(),
-                     [value](GI::AutoValueInfo info) {
+                     [value](const GI::AutoValueInfo& info) {
                          return info.value() == value;
                      })) {
         gjs_throw(cx, "%" PRId64 " is not a valid value for enumeration %s",
@@ -3546,7 +3546,7 @@ static bool gjs_g_arg_release_g_list(JSContext* cx, GITransfer transfer,
     return true;
 }
 
-enum class ArrayReleaseType {
+enum class ArrayReleaseType : uint8_t {
     EXPLICIT_LENGTH,
     ZERO_TERMINATED,
 };

@@ -57,7 +57,7 @@ using BoolResult = mozilla::Result<mozilla::Ok, mozilla::Nothing>;
 
 namespace GI {
 
-enum class InfoTag : unsigned {
+enum class InfoTag : uint8_t {
     ARG,
     BASE,
     CALLABLE,
@@ -1807,7 +1807,7 @@ constexpr GITypeInfo* Pointer::get_from(const StackTypeInfo& stack) {
     return const_cast<GITypeInfo*>(&stack.m_info);
 }
 inline void Pointer::to_stack(GITypeInfo* ptr, StackTypeInfo* stack) {
-    stack->m_info = std::move(*ptr);
+    stack->m_info = *ptr;
     // Hacky: Reproduce gi_info_init() and mark the copied GITypeInfo as
     // stack-allocated. Unfortunately, GI_TYPE_TYPE_INFO makes this function
     // unable to be constexpr.

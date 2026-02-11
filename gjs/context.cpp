@@ -149,7 +149,7 @@ GjsContextPrivate* GjsContextPrivate::from_current_context() {
     return from_object(gjs_context_get_current());
 }
 
-enum {
+enum : uint8_t {
     PROP_CONTEXT_0,
     PROP_PROGRAM_PATH,
     PROP_SEARCH_PATH,

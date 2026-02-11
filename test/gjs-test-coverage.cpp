@@ -6,6 +6,7 @@
 #include <config.h>
 
 #include <errno.h>   // for errno
+#include <stdint.h>
 #include <stdio.h>   // for sscanf, size_t
 #include <stdlib.h>  // for strtol, atoi, mkdtemp
 #include <string.h>  // for strlen, strstr, strncmp, strcspn
@@ -374,7 +375,7 @@ static void test_expected_entry_not_written_for_nonexistent_file(
     g_free(coverage_data_contents);
 }
 
-enum BranchTaken { NOT_EXECUTED, NOT_TAKEN, TAKEN };
+enum BranchTaken : uint8_t { NOT_EXECUTED, NOT_TAKEN, TAKEN };
 
 struct BranchLineData {
     int expected_branch_line;

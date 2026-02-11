@@ -1205,7 +1205,7 @@ static JSNative get_setter_for_type(const GI::TypeInfo& type_info,
 template <typename T, typename... Ts>
 GJS_JSAPI_RETURN_CONVENTION
 static inline JSObject* new_object_with_stashed_pointer(JSContext* cx,
-                                                        Ts... args) {
+                                                        const Ts&... args) {
     std::unique_ptr<T> data = std::make_unique<T>(args...);
     JSObject* obj = JS::NewObjectWithStashedPointer(
         cx, data.get(), [](T* data) { delete data; });
@@ -1501,7 +1501,7 @@ static JSNative get_setter_for_property(
 bool ObjectPrototype::lazy_define_gobject_property(
     JSContext* cx, JS::HandleObject obj, JS::HandleId id, GParamSpec* pspec,
     bool* resolved, const char* name,
-    Maybe<const GI::AutoPropertyInfo> property_info) {
+    const Maybe<const GI::AutoPropertyInfo>& property_info) {
     JS::RootedId canonical_id{cx};
     JS::Rooted<JS::PropertyDescriptor> canonical_desc{cx};
 
@@ -2439,7 +2439,7 @@ ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
     GJS_INC_COUNTER(object_instance);
 }
 
-ObjectPrototype::ObjectPrototype(Maybe<GI::ObjectInfo> info, GType gtype)
+ObjectPrototype::ObjectPrototype(const Maybe<GI::ObjectInfo>& info, GType gtype)
     : GIWrapperPrototype(info, gtype) {
     g_type_class_ref(gtype);
 
@@ -3478,7 +3478,7 @@ void ObjectPrototype::set_interfaces(GType* interface_gtypes,
  * and prototype objects as out parameters, for convenience elsewhere.
  */
 bool ObjectPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
-                                   Maybe<const GI::ObjectInfo> info,
+                                   const Maybe<const GI::ObjectInfo>& info,
                                    GType gtype, GType* interface_gtypes,
                                    uint32_t n_interface_gtypes,
                                    JS::MutableHandleObject constructor,

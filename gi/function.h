@@ -33,7 +33,7 @@ namespace JS {
 class CallArgs;
 }
 
-enum GjsParamType {
+enum GjsParamType : uint8_t {
     PARAM_NORMAL,
     PARAM_SKIPPED,
     PARAM_ARRAY,

@@ -48,7 +48,7 @@ class AutoProfilerLabel {
 };
 
 namespace Gjs {
-enum GCCounters { GC_HEAP_BYTES, MALLOC_HEAP_BYTES, N_COUNTERS };
+enum GCCounters : uint8_t { GC_HEAP_BYTES, MALLOC_HEAP_BYTES, N_COUNTERS };
 }  // namespace Gjs
 
 GjsProfiler* gjs_profiler_new(GjsContext*);
