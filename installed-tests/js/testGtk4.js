@@ -238,8 +238,10 @@ describe('Gtk 4', function () {
             beforeEach(function () {
                 callbacks = {
                     onButtonClicked() {},
+                    onButtonClickedBound() {},
                 };
                 spyOn(callbacks, 'onButtonClicked');
+                spyOn(callbacks, 'onButtonClickedBound');
             });
 
             it('from resource', function () {
@@ -247,9 +249,13 @@ describe('Gtk 4', function () {
                     resource: '/org/gjs/jsunit/builder-nontemplate.ui',
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
             });
 
             it('from filename', function () {
@@ -265,9 +271,13 @@ describe('Gtk 4', function () {
                     filename: ntFile.get_path(),
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
 
                 ntFile.delete(null);
             });
@@ -281,9 +291,13 @@ describe('Gtk 4', function () {
                     data: string,
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
             });
 
             it('from bytes', function () {
@@ -293,9 +307,13 @@ describe('Gtk 4', function () {
                     data,
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
             });
         });
 
