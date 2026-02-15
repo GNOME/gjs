@@ -102,10 +102,14 @@ function _init() {
 
         vfunc_create_closure(builder, handlerName, flags, connectObject) {
             const swapped = flags & Gtk.BuilderClosureFlags.SWAPPED;
-            return Gi.associateClosure(
-                connectObject ?? builder.get_current_object() ?? this,
-                _createClosure(builder, this.#callbacks, handlerName, swapped, connectObject)
-            );
+            const builderCurrentObject = builder.get_current_object();
+            if (connectObject || builderCurrentObject || this.#callbacks instanceof GObject.Object) {
+                const lifetimeObject = connectObject ?? builderCurrentObject ?? this.#callbacks;
+                return Gi.associateClosure(lifetimeObject,
+                    _createClosure(builder, this.#callbacks, handlerName,
+                        swapped, connectObject ?? builderCurrentObject));
+            }
+            return _createClosure(builder, this.#callbacks, handlerName, swapped);
         }
     });
 
