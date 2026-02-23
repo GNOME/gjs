@@ -16,6 +16,7 @@
 
 #include "gjs/jsapi-util-args.h"
 #include "gjs/macros.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-private.h"
 
 JSObject* CairoSolidPattern::new_proto(JSContext* cx, JSProtoKey) {
@@ -28,6 +29,11 @@ const JSPropertySpec CairoSolidPattern::proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "SolidPattern", JSPROP_READONLY),
     JS_PS_END};
 // clang-format on
+
+void CairoSolidPattern::add_associated_memory(JSObject* obj,
+                                              cairo_pattern_t* pattern) {
+    add_associated_memory_for_pattern(obj, pattern);
+}
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool createRGB_func(JSContext* cx, unsigned argc, JS::Value* vp) {

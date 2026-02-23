@@ -147,6 +147,8 @@ class CWrapperPointerOps {
  protected:
     // The first reserved slot always stores the private pointer.
     static const size_t POINTER = 0;
+    // The second reserved slot stores the size (only used by some subclasses.)
+    static const size_t MEMORY_SIZE = 1;
 
     /**
      * CWrapperPointerOps::has_private:
@@ -181,6 +183,9 @@ class CWrapperPointerOps {
      */
     static void unset_private(JSObject* wrapper) {
         JS::SetReservedSlot(wrapper, POINTER, JS::UndefinedValue());
+        // By default, the memory usage is 0.
+        if (JSCLASS_RESERVED_SLOTS(JS::GetClass(wrapper)) > 1)
+            JS::SetReservedSlot(wrapper, MEMORY_SIZE, JS::Int32Value(0));
     }
 };
 
@@ -261,6 +266,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
             return false;
         CWrapperPointerOps<Base, Wrapped>::init_private(object, priv);
 
+        Base::add_associated_memory(object, priv);
         args.rval().setObject(*object);
         return true;
     }
@@ -301,6 +307,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         // we don't want to deal with a read barrier.
         CWrapper::debug_lifecycle(priv, obj, "Finalize");
 
+        Base::remove_associated_memory(obj, priv);
         Base::finalize_impl(gcx, priv);
 
         CWrapperPointerOps<Base, Wrapped>::unset_private(obj);
@@ -521,6 +528,12 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         return proto;
     }
 
+    static void add_associated_memory(JSObject*, Wrapped*) {
+    }
+
+    static void remove_associated_memory(JSObject*, Wrapped*) {
+    }
+
     /**
      * CWrapper::from_c_ptr():
      *
@@ -539,8 +552,10 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         if (!wrapper)
             return nullptr;
 
-        CWrapperPointerOps<Base, Wrapped>::init_private(wrapper,
-                                                        Base::copy_ptr(ptr));
+        Wrapped* copied = Base::copy_ptr(ptr);
+        CWrapperPointerOps<Base, Wrapped>::init_private(wrapper, copied);
+
+        Base::add_associated_memory(wrapper, copied);
 
         debug_lifecycle(ptr, wrapper, "from_c_ptr");
 

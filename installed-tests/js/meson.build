@@ -27,6 +27,7 @@ jasmine_tests = [
     'ESModules',
     'Exceptions',
     'Fundamental',
+    'GdkPixbuf',
     'Gettext',
     'GIMarshalling',
     'Gio',

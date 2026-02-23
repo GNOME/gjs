@@ -455,6 +455,7 @@ libgjs_sources = [
     'modules/system.cpp', 'modules/system.h',
     'modules/cairo-private.h',
     'modules/cairo-module.h',
+    'modules/cairo-memory.cpp',
     'modules/cairo-region.cpp',
     'modules/cairo-context.cpp',
     'modules/cairo-path.cpp',
