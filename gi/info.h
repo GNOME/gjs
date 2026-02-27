@@ -746,8 +746,6 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
 
     // Methods not present in GIRepository
 
-    [[nodiscard]] bool can_be_allocated_directly() const;
-    [[nodiscard]] bool direct_allocation_has_pointers() const;
     [[nodiscard]]
     const char* display_string() const {
         GITypeTag type_tag = tag();
