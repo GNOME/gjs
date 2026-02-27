@@ -411,6 +411,7 @@ libgjs_sources = [
     'gi/fundamental.cpp', 'gi/fundamental.h',
     'gi/function.cpp', 'gi/function.h',
     'gi/gerror.cpp', 'gi/gerror.h',
+    'gi/gi-utils.h',
     'gi/gjs_gi_trace.h',
     'gi/gobject.cpp', 'gi/gobject.h',
     'gi/gtype.cpp', 'gi/gtype.h',

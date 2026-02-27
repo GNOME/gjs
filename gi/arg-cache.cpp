@@ -40,6 +40,7 @@
 #include "gi/function.h"
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
+#include "gi/gi-utils.h"
 #include "gi/gtype.h"
 #include "gi/info.h"
 #include "gi/js-value-inl.h"
@@ -3044,7 +3045,7 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
     }
 
     if (auto reg_info = interface_info.as<GI::InfoTag::REGISTERED_TYPE>()) {
-        if (reg_info->is_gdk_atom()) {
+        if (GI::is_gdk_atom(*reg_info)) {
             if constexpr (ArgKind != Arg::Kind::INSTANCE) {
                 set_argument<ArgKind>(new Arg::GdkAtomIn(), base_args);
                 return;

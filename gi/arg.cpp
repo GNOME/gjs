@@ -49,6 +49,7 @@
 #include "gi/foreign.h"
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
+#include "gi/gi-utils.h"
 #include "gi/gtype.h"
 #include "gi/info.h"
 #include "gi/interface.h"
@@ -794,7 +795,7 @@ static bool gjs_array_to_array(JSContext* cx, JS::HandleValue array_value,
                 GI::AutoBaseInfo interface_info{param_info.interface()};
                 if (auto reg_info =
                         interface_info.as<GI::InfoTag::REGISTERED_TYPE>();
-                    reg_info && reg_info->is_g_value()) {
+                    reg_info && GI::is_g_value(*reg_info)) {
                     // Special case for GValue "flat arrays", this could also
                     // using the generic case, but if we do so we're leaking
                     // atm.
@@ -1211,7 +1212,7 @@ bool value_to_interface_gi_argument_internal(
     GITransfer transfer, GIArgument* arg, const char* arg_name,
     GjsArgumentType arg_type, GjsArgumentFlags flags) {
     auto reg_type = interface_info.as<GI::InfoTag::REGISTERED_TYPE>();
-    if (reg_type && reg_type->is_gdk_atom()) {
+    if (reg_type && GI::is_gdk_atom(*reg_type)) {
         return value_to_gdk_atom_gi_argument_internal(cx, value, arg, arg_name,
                                                       arg_type);
     }
@@ -1426,8 +1427,7 @@ bool value_to_interface_gi_argument_internal(
                     return false;
             }
 
-            gjs_arg_set<Gjs::Tag::Enum>(arg,
-                                        enum_info->enum_to_int(value_int64));
+            gjs_arg_set<Gjs::Tag::Enum>(arg, GI::enum_to_int(value_int64));
             return true;
         }
 
@@ -1670,7 +1670,7 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                                         GjsArgumentType arg_type,
                                         GjsArgumentFlags flags) {
     if (auto reg_info = interface_info.as<GI::InfoTag::REGISTERED_TYPE>();
-        reg_info && reg_info->is_gdk_atom()) {
+        reg_info && GI::is_gdk_atom(*reg_info)) {
         return gjs_value_to_gdk_atom_gi_argument(cx, value, arg, arg_name,
                                                  arg_type);
     }
@@ -3269,8 +3269,8 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
             // Enum/Flags are aren't pointer types, unlike the other interface
             // subtypes
             if (auto enum_info = interface_info.as<GI::InfoTag::ENUM>()) {
-                int64_t value_int64 =
-                    enum_info->enum_from_int(gjs_arg_get<Gjs::Tag::Enum>(arg));
+                int64_t value_int64 = GI::enum_from_int(
+                    *enum_info, gjs_arg_get<Gjs::Tag::Enum>(arg));
 
                 if (interface_info.is_flags()) {
                     GType gtype = enum_info->gtype();
@@ -3350,7 +3350,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
             }
 
             if (auto struct_info = interface_info.as<GI::InfoTag::STRUCT>()) {
-                if (struct_info->is_gdk_atom()) {
+                if (GI::is_gdk_atom(*struct_info)) {
                     GI::AutoFunctionInfo atom_name_fun{
                         struct_info->method("name").value()};
 

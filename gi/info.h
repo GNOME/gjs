@@ -744,7 +744,7 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
         gi_type_info_extract_ffi_return_value(ptr(), ffi_value, arg);
     }
 
-    // Methods not present in GIRepository
+    // Convenience methods not present in GIRepository
 
     [[nodiscard]]
     const char* display_string() const {
@@ -1001,18 +1001,6 @@ class InfoOperations<Wrapper, InfoTag::REGISTERED_TYPE>
         return gi_registered_type_info_get_g_type(ptr());
     }
 
-    // Methods not in GIRepository
-
-    [[nodiscard]]
-    bool is_gdk_atom() const {
-        return strcmp("Atom", this->name()) == 0 &&
-               strcmp("Gdk", this->ns()) == 0;
-    }
-    [[nodiscard]]
-    bool is_g_value() const {
-        return g_type_is_a(gtype(), G_TYPE_VALUE);
-    }
-
     operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
     }
@@ -1113,7 +1101,7 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
     [[nodiscard]]
     mozilla::Maybe<GI::AutoPropertyInfo> property() const;
 
-    // Methods not in GIRepository
+    // Flag reading methods
 
     [[nodiscard]]
     bool is_method() const {
@@ -1168,42 +1156,8 @@ class InfoOperations<Wrapper, InfoTag::ENUM>
         return gi_enum_info_get_error_domain(ptr());
     }
     [[nodiscard]]
-    GITypeTag storage_type() const {
+    constexpr GITypeTag storage_type() const {
         return gi_enum_info_get_storage_type(ptr());
-    }
-
-    // Methods not in GIRepository
-
-    [[nodiscard]]
-    bool uses_signed_type() const {
-        switch (storage_type()) {
-            case GI_TYPE_TAG_INT8:
-            case GI_TYPE_TAG_INT16:
-            case GI_TYPE_TAG_INT32:
-            case GI_TYPE_TAG_INT64:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    // This is hacky - gi_function_info_invoke() and
-    // gi_field_info_get/set_field() expect the enum value in
-    // gjs_arg_member<int>(arg) and depend on all flags and enumerations being
-    // passed on the stack in a 32-bit field. See FIXME comment in
-    // gi_field_info_get_field(). The same assumption of enums cast to 32-bit
-    // signed integers is found in g_value_set_enum() / g_value_set_flags().
-    [[nodiscard]]
-    int64_t enum_from_int(int int_value) const {
-        if (uses_signed_type())
-            return int64_t{int_value};
-        return int64_t{static_cast<uint32_t>(int_value)};
-    }
-
-    // Here for symmetry, but result is the same for the two cases
-    [[nodiscard]]
-    int enum_to_int(int64_t value) const {
-        return static_cast<int>(value);
     }
 };
 
@@ -1252,7 +1206,7 @@ class InfoOperations<Wrapper, InfoTag::FIELD>
             gi_field_info_set_field(ptr(), blob, value));
     }
 
-    // Methods not in GIRepository
+    // Flag reading methods
 
     [[nodiscard]]
     bool is_readable() const {
@@ -1319,6 +1273,11 @@ class InfoOperations<Wrapper, InfoTag::STRUCT>
 
     operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
+    }
+
+    operator RegisteredTypeInfo() const {
+        return detail::Pointer::to_unowned<InfoTag::REGISTERED_TYPE>(
+            GI_REGISTERED_TYPE_INFO(ptr()));
     }
 };
 
@@ -1601,7 +1560,7 @@ class InfoOperations<Wrapper, InfoTag::PROPERTY>
             gi_property_info_get_type_info(ptr()));
     }
 
-    // Methods not in GIRepository
+    // Flag reading methods
 
     [[nodiscard]]
     bool has_deprecated_param_flag() const {
