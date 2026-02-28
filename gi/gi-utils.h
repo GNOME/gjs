@@ -57,4 +57,12 @@ inline bool is_g_value(const RegisteredTypeInfo& rt) {
     return g_type_is_a(rt.gtype(), G_TYPE_VALUE);
 }
 
+template <InfoTag TAG>
+[[nodiscard]]
+bool struct_is_simple(const UnownedInfo<TAG>&);
+
+template <InfoTag TAG>
+[[nodiscard]]
+bool simple_struct_has_pointers(const UnownedInfo<TAG>&);
+
 }  // namespace GI
