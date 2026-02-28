@@ -9,6 +9,7 @@
 #include <string.h>  // for memcpy, size_t, strcmp
 
 #include <string>
+#include <tuple>  // for tie
 #include <type_traits>
 #include <utility>  // for move, forward
 
@@ -874,35 +875,8 @@ BoxedPrototype<Base, Prototype, Instance>::BoxedPrototype(const BoxedInfo& info,
             !GI::simple_struct_has_pointers(info);
     }
 
-    if (gtype == G_TYPE_NONE)
-        return;
-
-    ConstructorIndex i = 0;
-    Maybe<ConstructorIndex> first_constructor;
-
-    /* If the structure is registered as a boxed, we can create a new instance
-     * by looking for a zero-args constructor and calling it; constructors don't
-     * really make sense for non-boxed types, since there is no memory
-     * management for the return value.
-     */
-    for (const GI::AutoFunctionInfo& func_info : info.methods()) {
-        if (func_info.is_constructor()) {
-            if (!first_constructor)
-                first_constructor = Some(i);
-
-            if (!m_zero_args_constructor && func_info.n_args() == 0)
-                m_zero_args_constructor = Some(i);
-
-            if (!m_default_constructor && strcmp(func_info.name(), "new") == 0)
-                m_default_constructor = Some(i);
-        }
-        i++;
-    }
-
-    if (!m_default_constructor && m_zero_args_constructor)
-        m_default_constructor = m_zero_args_constructor;
-    if (!m_default_constructor && first_constructor)
-        m_default_constructor = first_constructor;
+    std::tie(m_zero_args_constructor, m_default_constructor) =
+        GI::find_boxed_constructor_indices(info);
 }
 
 /**

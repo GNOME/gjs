@@ -25,6 +25,7 @@
 #include <js/TypeDecls.h>
 #include <mozilla/Maybe.h>
 
+#include "gi/gi-utils.h"
 #include "gi/info.h"
 #include "gi/wrapperutils.h"
 #include "gjs/jsapi-util.h"
@@ -87,9 +88,8 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
                                          GI::OwnedInfo<Base::TAG>, BoxedInfo>;
     friend class GIWrapperBase<Base, Prototype, Instance>;
 
-    using ConstructorIndex = unsigned;
-    mozilla::Maybe<ConstructorIndex> m_zero_args_constructor;
-    mozilla::Maybe<ConstructorIndex> m_default_constructor;
+    mozilla::Maybe<GI::ConstructorIndex> m_zero_args_constructor;
+    mozilla::Maybe<GI::ConstructorIndex> m_default_constructor;
     std::unique_ptr<Boxed::FieldMap> m_field_map;
     bool m_can_allocate_directly_without_pointers : 1;
     bool m_can_allocate_directly : 1;
@@ -115,12 +115,12 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
     [[nodiscard]]
     mozilla::Maybe<GI::AutoFunctionInfo> zero_args_constructor_info() const {
         return m_zero_args_constructor.map(
-            [this](ConstructorIndex ix) { return *info().methods()[ix]; });
+            [this](GI::ConstructorIndex ix) { return *info().methods()[ix]; });
     }
     [[nodiscard]]
     mozilla::Maybe<GI::AutoFunctionInfo> default_constructor_info() const {
         return m_default_constructor.map(
-            [this](ConstructorIndex ix) { return *info().methods()[ix]; });
+            [this](GI::ConstructorIndex ix) { return *info().methods()[ix]; });
     }
 
     using BaseClass::format_name;

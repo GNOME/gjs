@@ -9,8 +9,12 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <utility>  // for pair
+
 #include <glib-object.h>
 #include <girepository/girepository.h>
+
+#include <mozilla/Maybe.h>
 
 #include "gi/info.h"
 
@@ -64,5 +68,12 @@ bool struct_is_simple(const UnownedInfo<TAG>&);
 template <InfoTag TAG>
 [[nodiscard]]
 bool simple_struct_has_pointers(const UnownedInfo<TAG>&);
+
+using ConstructorIndex = unsigned;
+
+template <InfoTag TAG>
+[[nodiscard]]
+std::pair<mozilla::Maybe<ConstructorIndex>, mozilla::Maybe<ConstructorIndex>>
+find_boxed_constructor_indices(const UnownedInfo<TAG>&);
 
 }  // namespace GI

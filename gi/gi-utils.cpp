@@ -11,6 +11,8 @@
 #include "gi/gi-utils.h"
 #include "gi/info.h"
 
+using mozilla::Maybe, mozilla::Some;
+
 namespace GI {
 
 [[nodiscard]]
@@ -94,10 +96,54 @@ bool simple_struct_has_pointers(const UnownedInfo<TAG>& info) {
         });
 }
 
+template <InfoTag TAG>
+std::pair<Maybe<ConstructorIndex>, Maybe<ConstructorIndex>>
+find_boxed_constructor_indices(const UnownedInfo<TAG>& info) {
+    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
+
+    if (info.gtype() == G_TYPE_NONE)
+        return {};
+
+    ConstructorIndex i = 0;
+    Maybe<ConstructorIndex> first_constructor;
+    Maybe<ConstructorIndex> zero_args_constructor;
+    Maybe<ConstructorIndex> default_constructor;
+
+    /* If the structure is registered as a boxed, we can create a new instance
+     * by looking for a zero-args constructor and calling it; constructors don't
+     * really make sense for non-boxed types, since there is no memory
+     * management for the return value.
+     */
+    for (const GI::AutoFunctionInfo& func_info : info.methods()) {
+        if (func_info.is_constructor()) {
+            if (!first_constructor)
+                first_constructor = Some(i);
+
+            if (!zero_args_constructor && func_info.n_args() == 0)
+                zero_args_constructor = Some(i);
+
+            if (!default_constructor && strcmp(func_info.name(), "new") == 0)
+                default_constructor = Some(i);
+        }
+        i++;
+    }
+
+    if (!default_constructor && zero_args_constructor)
+        default_constructor = zero_args_constructor;
+    if (!default_constructor && first_constructor)
+        default_constructor = first_constructor;
+
+    return {zero_args_constructor, default_constructor};
+}
+
 template bool struct_is_simple(const StructInfo&);
 template bool simple_struct_has_pointers(const StructInfo&);
+template std::pair<Maybe<ConstructorIndex>, Maybe<ConstructorIndex>>
+find_boxed_constructor_indices(const StructInfo&);
 
 template bool struct_is_simple(const UnionInfo&);
 template bool simple_struct_has_pointers(const UnionInfo&);
+template std::pair<Maybe<ConstructorIndex>, Maybe<ConstructorIndex>>
+find_boxed_constructor_indices(const UnionInfo&);
 
 }  // namespace GI
