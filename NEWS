@@ -1,3 +1,17 @@
+Version 1.87.90
+---------------
+
+- Closed bugs and merge requests:
+  * Enabling various clang-tidy checks [!1066, !1070, Philip Chimento]
+  * Various maintenance [!1067, Philip Chimento]
+  * Error when importing Gio after manipulating Object.prototype [#728, !1068,
+    Philip Chimento]
+  * Investigate union fields being garbage collected [#726, !1069,
+    Philip Chimento]
+  * Follow-up from "Gtk: Builder constructor overrides in GTK4" [#727, !1071,
+    Philip Chimento]
+  * Tweaks to examples [!1074, Justin Donnelly]
+
 Version 1.87.2
 --------------
 
@@ -7,7 +21,7 @@ Version 1.87.2
 - Known defects: The new Gtk.Builder convenience API does not work correctly in
   some cases when connecting signals without a widget template, which may lead
   to the signals being disconnected after a garbage collection. This is planned
-  to be addressed in 1.87.3 (https://gitlab.gnome.org/GNOME/gjs/-/issues/727).
+  to be addressed in 1.87.90 (https://gitlab.gnome.org/GNOME/gjs/-/issues/727).
 
 - Closed bugs and merge requests:
   * overrides/GLib: Add wrappers for GLib platform-depedent namespace split
