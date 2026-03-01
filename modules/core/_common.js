@@ -97,7 +97,7 @@ function _checkAccessors(proto, pspec, GObject) {
     }
 }
 
-function _createClosure(builder, thisArg, handlerName, swapped, connectObject) {
+function _createClosure(thisArg, handlerName, swapped, connectObject) {
     connectObject ??= thisArg;
 
     if (swapped) {
@@ -116,8 +116,7 @@ function _createBuilderConnectFunc(klass) {
         const objects = builder.get_objects();
         const thisObj = objects.find(o => o instanceof klass);
         const swapped = flags & GObject.ConnectFlags.SWAPPED;
-        const closure = _createClosure(builder, thisObj, handlerName, swapped,
-            connectObj);
+        const closure = _createClosure(thisObj, handlerName, swapped, connectObj);
 
         if (flags & GObject.ConnectFlags.AFTER)
             obj.connect_after(signalName, closure);

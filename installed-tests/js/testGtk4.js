@@ -238,8 +238,10 @@ describe('Gtk 4', function () {
             beforeEach(function () {
                 callbacks = {
                     onButtonClicked() {},
+                    onButtonClickedBound() {},
                 };
                 spyOn(callbacks, 'onButtonClicked');
+                spyOn(callbacks, 'onButtonClickedBound');
             });
 
             it('from resource', function () {
@@ -247,9 +249,13 @@ describe('Gtk 4', function () {
                     resource: '/org/gjs/jsunit/builder-nontemplate.ui',
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
             });
 
             it('from filename', function () {
@@ -265,9 +271,13 @@ describe('Gtk 4', function () {
                     filename: ntFile.get_path(),
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
 
                 ntFile.delete(null);
             });
@@ -281,9 +291,13 @@ describe('Gtk 4', function () {
                     data: string,
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
             });
 
             it('from bytes', function () {
@@ -293,9 +307,92 @@ describe('Gtk 4', function () {
                     data,
                     callbacks,
                 });
+                const win = builder.get_object('win');
                 const button = builder.get_object('button');
                 button.emit('clicked');
                 expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+                expect(callbacks.onButtonClickedBound).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClickedBound.calls.mostRecent().object).toBe(win);
+            });
+
+            it('lifetime of signal connection is not tied to builder scope', function () {
+                let ref;
+                const button = (function () {
+                    const builder = new Gtk.Builder({
+                        resource: '/org/gjs/jsunit/builder-nontemplate.ui',
+                        callbacks,
+                    });
+                    ref = new WeakRef(builder);
+                    return builder.get_object('button');
+                })();
+                expect(button).toEqual(jasmine.any(Gtk.Button));
+                PromiseInternal.drainMicrotaskQueue();  // let WeakRef lapse
+                System.gc();
+                expect(ref.deref()).not.toBeDefined();
+                // The builder scope is now orphaned. If it was the signal
+                // connection's associated GObject, the signal will be
+                // disconnected in the next GC
+                System.gc();
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(callbacks);
+            });
+
+            it('lifetime of signal connection is tied to builder current object', function () {
+                // Normally you wouldn't use currentObject like this - it'd be
+                // a widget that contains the widgets you're building, not a
+                // separate object that is discarded.
+                let builder, ref;
+                (function () {
+                    const currentObject = new GObject.Object();
+                    builder = new Gtk.Builder({
+                        resource: '/org/gjs/jsunit/builder-nontemplate.ui',
+                        callbacks,
+                        currentObject,
+                    });
+                    ref = new WeakRef(currentObject);
+                    builder.currentObject = null;
+                })();
+                const button = builder.get_object('button');
+                expect(button).toEqual(jasmine.any(Gtk.Button));
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).toHaveBeenCalledOnceWith(button);
+                expect(callbacks.onButtonClicked.calls.mostRecent().object).toBe(ref.deref());
+                callbacks.onButtonClicked.calls.reset();
+
+                PromiseInternal.drainMicrotaskQueue();  // let WeakRef lapse
+                System.gc();
+                expect(ref.deref()).not.toBeDefined();
+
+                button.emit('clicked');
+                expect(callbacks.onButtonClicked).not.toHaveBeenCalled();
+            });
+
+            it('signal connection is not leaked after widget goes away', function () {
+                let ref;
+                (function () {
+                    const disappearingCallbacks = {
+                        onButtonClicked() {},
+                        onButtonClickedBound() {},
+                    };
+                    const builder = new Gtk.Builder({
+                        resource: '/org/gjs/jsunit/builder-nontemplate.ui',
+                        callbacks: disappearingCallbacks,
+                    });
+                    const win = builder.get_object('win');
+                    win.destroy();
+                    ref = new WeakRef(disappearingCallbacks);
+                })();
+
+                expect(ref.deref()).toBeDefined();
+                PromiseInternal.drainMicrotaskQueue();  // let WeakRef lapse
+                System.gc();  // widgets go away
+                System.gc();  // GClosure goes away
+                System.gc();  // callbacks object and handler can be collected
+                expect(ref.deref()).not.toBeDefined();
             });
         });
 
