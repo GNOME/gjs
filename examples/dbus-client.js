@@ -121,7 +121,7 @@ let loop = GLib.MainLoop.new(null, false);
 loop.run();
 
 // Unwatching names works just like disconnecting signal handlers.
-Gio.bus_unown_name(busWatchId);
+Gio.bus_unwatch_name(busWatchId);
 
 /* Asynchronous Usage
  *
