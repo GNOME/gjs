@@ -21,3 +21,4 @@ leak:gdk_x11_selection_input_stream_new_async
 # Data created as part of opening X display
 leak:glx_screen_init
 leak:eglCreateContext
+leak:eglInitialize
