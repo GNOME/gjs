@@ -67,6 +67,8 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
                           const GI::CallableInfo&, GIScopeType,
                           bool has_scope_object, bool is_vfunc);
 
+    static void invoke_callback_closure(ffi_cif*, void* result, void** ffi_args,
+                                        void* data);
     void callback_closure(GIArgument** args, void* result);
     GJS_JSAPI_RETURN_CONVENTION
     bool callback_closure_inner(JSContext* cx, JS::HandleObject this_object,

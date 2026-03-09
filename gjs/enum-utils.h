@@ -59,6 +59,13 @@ constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator|(
 }
 
 template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator|(
+    Wrapped const& first, EnumType const& second) {
+    return static_cast<Wrapped>(static_cast<Wrapped>(first) |
+                                static_cast<Wrapped>(second));
+}
+
+template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
 constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator^(
     EnumType const& first, EnumType const& second) {
     return static_cast<Wrapped>(static_cast<Wrapped>(first) ^

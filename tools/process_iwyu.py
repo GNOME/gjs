@@ -89,6 +89,7 @@ FALSE_POSITIVES = (
 
     # IWYU is not sure whether <utility> or <iterator> is for pair
     # https://github.com/include-what-you-use/include-what-you-use/issues/1616
+    ('gi/gi-utils.h', '#include <iterator>', 'for pair'),
     ('gi/object.cpp', '#include <iterator>', 'for pair'),
     ('gi/toggle.h', '#include <iterator>', 'for pair'),
     ('test/gjs-test-utils.h', '#include <iterator>', 'for pair'),

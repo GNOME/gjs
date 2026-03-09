@@ -8,8 +8,8 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
-#include <algorithm>  // for one_of, any_of
 #include <string>
+#include <tuple>  // for tie
 #include <type_traits>
 #include <utility>  // for move, forward
 
@@ -42,6 +42,7 @@
 #include "gi/boxed.h"
 #include "gi/cwrapper.h"
 #include "gi/function.h"
+#include "gi/gi-utils.h"
 #include "gi/info.h"
 #include "gi/repo.h"
 #include "gi/struct.h"
@@ -54,14 +55,6 @@
 #include "util/log.h"
 
 using mozilla::Maybe, mozilla::Some;
-
-template <GI::InfoTag TAG>
-[[nodiscard]]
-static bool struct_is_simple(const GI::UnownedInfo<TAG>&);
-
-template <GI::InfoTag TAG>
-[[nodiscard]]
-static bool simple_struct_has_pointers(const GI::UnownedInfo<TAG>&);
 
 template <class Base, class Prototype, class Instance>
 BoxedInstance<Base, Prototype, Instance>::BoxedInstance(Prototype* prototype,
@@ -531,7 +524,7 @@ bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
     JSContext* cx, JSObject* parent_obj, const GI::FieldInfo& field_info,
     const GI::UnownedInfo<FieldInstance::TAG>& struct_info,
     JS::MutableHandleValue value) const {
-    if (!struct_is_simple(struct_info)) {
+    if (!GI::struct_is_simple(struct_info)) {
         gjs_throw(cx, "Reading field %s.%s is not supported",
                   format_name().c_str(), field_info.name());
 
@@ -666,7 +659,7 @@ template <class FieldBase>
 bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
     JSContext* cx, const GI::FieldInfo& field_info,
     const GI::UnownedInfo<FieldBase::TAG>& boxed_info, JS::HandleValue value) {
-    if (!struct_is_simple(boxed_info)) {
+    if (!GI::struct_is_simple(boxed_info)) {
         gjs_throw(cx, "Writing field %s.%s is not supported",
                   format_name().c_str(), field_info.name());
 
@@ -718,7 +711,7 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
 
     // Any pointers in the copied memory are still owned by the source struct.
     // So we need to tie the lifetime of the source JS object to this one.
-    if (simple_struct_has_pointers(boxed_info) &&
+    if (GI::simple_struct_has_pointers(boxed_info) &&
         !m_nested_objects.put(field_info.name(), source_object)) {
         JS_ReportOutOfMemory(cx);
         return false;
@@ -870,124 +863,20 @@ void BoxedPrototype<Base, Prototype, Instance>::trace_impl(JSTracer* trc) {
         m_field_map->trace(trc);
 }
 
-[[nodiscard]]
-static bool type_can_be_allocated_directly(const GI::TypeInfo& type_info) {
-    if (type_info.is_pointer()) {
-        if (type_info.tag() == GI_TYPE_TAG_ARRAY &&
-            type_info.array_type() == GI_ARRAY_TYPE_C)
-            return type_can_be_allocated_directly(type_info.element_type());
-
-        return true;
-    }
-
-    if (type_info.tag() != GI_TYPE_TAG_INTERFACE)
-        return true;
-
-    GI::AutoBaseInfo interface_info{type_info.interface()};
-    if (auto struct_info = interface_info.as<GI::InfoTag::STRUCT>())
-        return struct_is_simple(struct_info.value());
-    if (auto union_info = interface_info.as<GI::InfoTag::UNION>())
-        return struct_is_simple(union_info.value());
-    if (interface_info.is_enum_or_flags())
-        return true;
-    return false;
-}
-
-[[nodiscard]]
-static bool direct_allocation_has_pointers(const GI::TypeInfo& type_info) {
-    if (type_info.is_pointer()) {
-        if (type_info.tag() == GI_TYPE_TAG_ARRAY &&
-            type_info.array_type() == GI_ARRAY_TYPE_C) {
-            return direct_allocation_has_pointers(type_info.element_type());
-        }
-
-        return type_info.tag() != GI_TYPE_TAG_VOID;
-    }
-
-    if (type_info.tag() != GI_TYPE_TAG_INTERFACE)
-        return false;
-
-    GI::AutoBaseInfo interface{type_info.interface()};
-    if (auto struct_info = interface.as<GI::InfoTag::STRUCT>())
-        return simple_struct_has_pointers(struct_info.value());
-    if (auto union_info = interface.as<GI::InfoTag::UNION>())
-        return simple_struct_has_pointers(union_info.value());
-
-    return false;
-}
-
-/* Check if the type of the boxed is "simple" - every field is a non-pointer
- * type that we know how to assign to. If so, then we can allocate and free
- * instances without needing a constructor.
- */
-template <GI::InfoTag TAG>
-[[nodiscard]]
-bool struct_is_simple(const GI::UnownedInfo<TAG>& info) {
-    typename GI::UnownedInfo<TAG>::FieldsIterator iter = info.fields();
-
-    // If it's opaque, it's not simple
-    if (iter.size() == 0)
-        return false;
-
-    return std::all_of(
-        iter.begin(), iter.end(), [](const GI::AutoFieldInfo& field_info) {
-            return type_can_be_allocated_directly(field_info.type_info());
-        });
-}
-
-template <GI::InfoTag TAG>
-[[nodiscard]]
-static bool simple_struct_has_pointers(const GI::UnownedInfo<TAG>& info) {
-    g_assert(struct_is_simple(info) &&
-             "Don't call simple_struct_has_pointers() on a non-simple struct");
-
-    typename GI::UnownedInfo<TAG>::FieldsIterator fields = info.fields();
-    return std::any_of(
-        fields.begin(), fields.end(), [](const GI::AutoFieldInfo& field) {
-            return direct_allocation_has_pointers(field.type_info());
-        });
-}
-
 template <class Base, class Prototype, class Instance>
 BoxedPrototype<Base, Prototype, Instance>::BoxedPrototype(const BoxedInfo& info,
                                                           GType gtype)
-    : BaseClass(info, gtype), m_can_allocate_directly(struct_is_simple(info)) {
+    : BaseClass(info, gtype),
+      m_can_allocate_directly(GI::struct_is_simple(info)) {
     if (!m_can_allocate_directly) {
         m_can_allocate_directly_without_pointers = false;
     } else {
         m_can_allocate_directly_without_pointers =
-            !simple_struct_has_pointers(info);
+            !GI::simple_struct_has_pointers(info);
     }
 
-    if (gtype == G_TYPE_NONE)
-        return;
-
-    ConstructorIndex i = 0;
-    Maybe<ConstructorIndex> first_constructor;
-
-    /* If the structure is registered as a boxed, we can create a new instance
-     * by looking for a zero-args constructor and calling it; constructors don't
-     * really make sense for non-boxed types, since there is no memory
-     * management for the return value.
-     */
-    for (const GI::AutoFunctionInfo& func_info : info.methods()) {
-        if (func_info.is_constructor()) {
-            if (!first_constructor)
-                first_constructor = Some(i);
-
-            if (!m_zero_args_constructor && func_info.n_args() == 0)
-                m_zero_args_constructor = Some(i);
-
-            if (!m_default_constructor && strcmp(func_info.name(), "new") == 0)
-                m_default_constructor = Some(i);
-        }
-        i++;
-    }
-
-    if (!m_default_constructor && m_zero_args_constructor)
-        m_default_constructor = m_zero_args_constructor;
-    if (!m_default_constructor && first_constructor)
-        m_default_constructor = first_constructor;
+    std::tie(m_zero_args_constructor, m_default_constructor) =
+        GI::find_boxed_constructor_indices(info);
 }
 
 /**

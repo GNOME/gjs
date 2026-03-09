@@ -38,6 +38,7 @@
 #include "gi/foreign.h"
 #include "gi/fundamental.h"
 #include "gi/gerror.h"
+#include "gi/gi-utils.h"
 #include "gi/gtype.h"
 #include "gi/info.h"
 #include "gi/js-value-inl.h"
@@ -993,7 +994,7 @@ static JS::Value convert_int_to_enum(const GI::Repository& repo, GType gtype,
         if (!info) {
             v_double = v;
         } else {
-            v_double = info->enum_from_int(v);
+            v_double = GI::enum_from_int(*info, v);
         }
     }
 
