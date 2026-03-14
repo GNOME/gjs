@@ -751,6 +751,34 @@ static bool textExtents_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool fontExtents_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, args, this_obj);
+
+    cairo_font_extents_t extents;
+    cairo_font_extents(cr, &extents);
+    if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
+        return false;
+
+    JS::RootedObject extents_obj{cx, JS_NewPlainObject(cx)};
+    if (!extents_obj)
+        return false;
+
+    JSPropertySpec properties[] = {
+        JS_DOUBLE_PS("ascent", extents.ascent, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("descent", extents.descent, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("height", extents.height, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("maxXAdvance", extents.max_x_advance, JSPROP_ENUMERATE),
+        JS_DOUBLE_PS("maxYAdvance", extents.max_y_advance, JSPROP_ENUMERATE),
+        JS_PS_END};
+
+    if (!JS_DefineProperties(cx, extents_obj, properties))
+        return false;
+
+    args.rval().setObject(*extents_obj);
+    return true;
+}
+
 // clang-format off
 const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("$dispose", &CairoContext::dispose, 0, 0),
@@ -770,7 +798,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("fill", fill_func, 0, 0),
     JS_FN("fillPreserve", fillPreserve_func, 0, 0),
     JS_FN("fillExtents", fillExtents_func, 0, 0),
-    // fontExtents
+    JS_FN("fontExtents", fontExtents_func, 0, 0),
     JS_FN("getAntialias", getAntialias_func, 0, 0),
     JS_FN("getCurrentPoint", getCurrentPoint_func, 0, 0),
     // getDash
