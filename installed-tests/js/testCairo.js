@@ -128,7 +128,6 @@ describe('Cairo', function () {
         });
 
         it('computes font extents', function () {
-
             // Cairo default font is "Sans": cr.selectFontFace("Sans", null, null);
             // font size is in user space units. Cairo default is 10.0: cr.setFontSize(10);
 
