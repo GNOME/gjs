@@ -68,6 +68,12 @@ static void on_promise_unhandled_rejection(
     gjs->register_unhandled_promise_rejection(id, std::move(stack));
 }
 
+static bool gjs_dispatch_wasm_to_event_loop(void* closure,
+                                            WasmJobQueueStorage&& d) {
+    auto* gjs = static_cast<GjsContextPrivate*>(closure);
+    return gjs->dispatch_wasm_job(std::move(d));
+}
+
 static void on_cleanup_finalization_registry(JSFunction* cleanup_task,
                                              JSObject* incumbent_global
                                              [[maybe_unused]],
@@ -220,6 +226,8 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     JS_AddFinalizeCallback(cx, gjs_finalize_callback, uninitialized_gjs);
     JS::SetWarningReporter(cx, gjs_warning_reporter);
     JS::SetJobQueue(cx, dynamic_cast<JS::JobQueue*>(uninitialized_gjs));
+    JS::InitDispatchsToEventLoop(cx, gjs_dispatch_wasm_to_event_loop, nullptr,
+                                 uninitialized_gjs);
     JS::SetPromiseRejectionTrackerCallback(cx, on_promise_unhandled_rejection,
                                            uninitialized_gjs);
     JS::SetHostCleanupFinalizationRegistryCallback(

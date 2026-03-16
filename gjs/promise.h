@@ -58,6 +58,14 @@ class PromiseJobDispatcher {
      * Returns: Whether the dispatcher is currently running.
      */
     bool is_running();
+
+    /**
+     * PromiseJobDispatcher::wakeup:
+     *
+     * Thread-safe wakeup that causes the source to dispatch on the next main
+     * loop iteration even when the job queue is empty
+     */
+    void wakeup();
 };
 
 };  // namespace Gjs

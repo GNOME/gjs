@@ -51,6 +51,7 @@ class JSTracer;
 
 using JobQueueStorage =
     JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
+using WasmJobQueueStorage = js::UniquePtr<JS::Dispatchable>;
 using ObjectInitList =
     JS::GCVector<JS::Heap<JSObject*>, 0, js::SystemAllocPolicy>;
 using FundamentalTable =
@@ -93,6 +94,7 @@ class GjsContextPrivate : public JS::JobQueue {
     std::vector<std::string> m_args;
 
     JobQueueStorage m_job_queue;
+    std::vector<WasmJobQueueStorage> m_wasm_job_queue;
     Gjs::PromiseJobDispatcher m_dispatcher;
     Gjs::MainLoop m_main_loop;
     Gjs::AutoUnref<GMemoryMonitor> m_memory_monitor;
@@ -146,6 +148,9 @@ class GjsContextPrivate : public JS::JobQueue {
     class SavedQueue;
     void start_draining_job_queue();
     void stop_draining_job_queue();
+    void stop_draining_wasm_job_queue();
+    [[nodiscard]]
+    bool run_single_job(JS::HandleObject job, size_t ix);
 
     void warn_about_unhandled_promise_rejections();
 
@@ -289,6 +294,8 @@ class GjsContextPrivate : public JS::JobQueue {
         JSContext*) override;
 
     GJS_JSAPI_RETURN_CONVENTION bool run_jobs_fallible();
+    [[nodiscard]]
+    bool dispatch_wasm_job(WasmJobQueueStorage d);
     void register_unhandled_promise_rejection(uint64_t id,
                                               JS::UniqueChars&& stack);
     void unregister_unhandled_promise_rejection(uint64_t id);
