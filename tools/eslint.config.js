@@ -9,6 +9,14 @@ export default defineConfig([
     gnome.configs.recommended,
     gnome.configs.jsdoc,
     {
+        languageOptions: {
+            // Needed until eslint-config-gnome gains WebAssembly
+            globals: {
+                WebAssembly: 'readonly',
+            },
+        },
+    },
+    {
         ignores: [
             'installed-tests/js/jasmine.js',
             'installed-tests/js/modules/badOverrides/WarnLib.js',

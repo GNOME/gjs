@@ -50,6 +50,7 @@ jasmine_tests = [
     'Utility',
     'WarnLib',
     'WeakRef',
+    'WebAssembly',
 ]
 
 if not get_option('skip_gtk_tests')
@@ -64,6 +65,8 @@ if not get_option('skip_gtk_tests')
 endif
 
 installed_js_tests_dir = installed_tests_execdir / 'js'
+
+subdir('wasm')
 
 gschemas_compiled = gnome.compile_schemas(
     depend_files: 'org.gnome.GjsTest.gschema.xml')
@@ -83,8 +86,13 @@ tests_dependencies = [
 foreach test : jasmine_tests
     test_file = files('test@0@.js'.format(test))
 
+    test_dependencies = tests_dependencies
+    if test == 'WebAssembly'
+        test_dependencies += wasm_add
+    endif
+
     test(test, minijasmine, args: [test_file, '-m'],
-        depends: tests_dependencies, env: tests_environment, protocol: 'tap',
+        depends: test_dependencies, env: tests_environment, protocol: 'tap',
         suite: 'JS')
 
     test_description_subst = {

@@ -98,7 +98,7 @@ CheckOptions:
   bugprone-unused-local-non-trivial-variable.ExcludeTypes: "AutoProfilerLabel;\
     AutoReportException;AutoResetExit;Gjs::AutoInternalRealm;\
     Gjs::AutoMainRealm;JSAutoRealm;JS::AutoSaveExceptionState;\
-    mozilla::ScopeExit;ToggleQueue::Locked"
+    mozilla::ScopeExit;std::scoped_lock;ToggleQueue::Locked"
   bugprone-use-after-move.InvalidationFunctions: g_steal_pointer
   modernize-type-traits.IgnoreMacros: true  # triggers on glib_typeof
   modernize-use-auto.MinTypeNameLength: 10  # consider shrinking later?
