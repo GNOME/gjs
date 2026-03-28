@@ -973,7 +973,7 @@ introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
         // case TYPE_POINTER omitted
         default:
             if (GObject.type_is_a(v.g_type, GObject.TYPE_FLAGS))
-                v.set_flag(val);
+                v.set_flags(val);
             else if (GObject.type_is_a(v.g_type, GObject.TYPE_ENUM))
                 v.set_enum(val);
             else if (GObject.type_is_a(v.g_type, GObject.TYPE_BOXED))
