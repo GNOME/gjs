@@ -2432,9 +2432,9 @@ ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
       m_uses_toggle_ref(false) {
     GTypeQuery query;
     g_type_query(gtype(), &query);
-    if (G_LIKELY(query.type))
-        JS::AddAssociatedMemory(object, query.instance_size,
-                                MemoryUse::GObjectInstanceStruct);
+    g_assert(query.type);
+    JS::AddAssociatedMemory(object, query.instance_size,
+                            MemoryUse::GObjectInstanceStruct);
 
     GJS_INC_COUNTER(object_instance);
 }
@@ -2763,9 +2763,9 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
 void ObjectInstance::finalize_impl(JS::GCContext* gcx, JSObject* obj) {
     GTypeQuery query;
     g_type_query(gtype(), &query);
-    if (G_LIKELY(query.type))
-        JS::RemoveAssociatedMemory(obj, query.instance_size,
-                                   MemoryUse::GObjectInstanceStruct);
+    g_assert(query.type);
+    JS::RemoveAssociatedMemory(obj, query.instance_size,
+                               MemoryUse::GObjectInstanceStruct);
 
     GIWrapperInstance::finalize_impl(gcx, obj);
 }
