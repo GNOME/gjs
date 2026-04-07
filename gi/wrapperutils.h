@@ -74,6 +74,7 @@ bool gjs_wrapper_throw_readonly_field(JSContext*, GType,
 
 namespace MemoryUse {
 constexpr JS::MemoryUse GObjectInstanceStruct = JS::MemoryUse::Embedding1;
+constexpr JS::MemoryUse GObjectClassStruct = JS::MemoryUse::Embedding2;
 }
 
 struct GjsTypecheckNoThrow {};
@@ -88,6 +89,36 @@ template <typename>
 struct is_maybe : std::false_type {};
 template <typename T>
 struct is_maybe<mozilla::Maybe<T>> : std::true_type {};
+
+// Add associated memory for `prototype` according to the `class_size`
+// associated with `gtype`.
+static inline void add_prototype_associated_memory(GType gtype, JS::MutableHandleObject prototype) {
+    if (!G_TYPE_IS_CLASSED(gtype))
+        return;
+
+    GTypeQuery query;
+    g_type_query(gtype, &query);
+    g_assert(query.type);
+
+    // Associate the size of the class structure with the prototype
+    JS::AddAssociatedMemory(prototype, query.class_size,
+                            MemoryUse::GObjectClassStruct);
+}
+
+// Remove associated memory for `prototype` according to the `class_size`
+// associated with `gtype`.
+static inline void remove_prototype_associated_memory(GType gtype, JSObject* obj) {
+    if (!G_TYPE_IS_CLASSED(gtype))
+        return;
+
+    GTypeQuery query;
+    g_type_query(gtype, &query);
+    g_assert(query.type);
+
+    // Remove the memory associated with the prototype
+    JS::RemoveAssociatedMemory(obj, query.class_size,
+                               MemoryUse::GObjectClassStruct);
+}
 
 /**
  * gjs_define_static_methods:
@@ -460,10 +491,13 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         // e.g., we don't want to deal with a read barrier in ObjectInstance.
         static_cast<GIWrapperBase*>(priv)->debug_lifecycle(obj, "Finalize");
 
-        if (priv->is_prototype())
+        if (priv->is_prototype()) {
+            GType gtype = priv->to_prototype()->gtype();
+            remove_prototype_associated_memory(gtype, obj);
             priv->to_prototype()->finalize_impl(gcx, obj);
-        else
+        } else {
             priv->to_instance()->finalize_impl(gcx, obj);
+        }
 
         Base::unset_private(obj);
     }
@@ -988,6 +1022,8 @@ class GIWrapperPrototype : public Base {
         if (!proto->define_static_methods(cx, constructor))
             return nullptr;
 
+        add_prototype_associated_memory(gtype, prototype);
+
         return proto;
     }
 
@@ -1026,6 +1062,8 @@ class GIWrapperPrototype : public Base {
         if (!JS_DefineProperty(cx, in_object, class_name, constructor,
                                GJS_MODULE_PROP_FLAGS))
             return nullptr;
+
+        add_prototype_associated_memory(gtype, prototype);
 
         return proto;
     }
