@@ -49,6 +49,7 @@ jasmine_tests = [
     'Utility',
     'WarnLib',
     'WeakRef',
+    'WebAssembly',
 ]
 
 if not get_option('skip_gtk_tests')
@@ -103,6 +104,7 @@ endforeach
 
 if get_option('installed_tests')
     install_subdir('modules', install_dir: installed_js_tests_dir)
+    install_subdir('wasm', install_dir: installed_js_tests_dir)
 endif
 
 # testGDBus.js is separate, because it can be skipped, and
