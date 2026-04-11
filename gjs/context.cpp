@@ -5,7 +5,7 @@
 #include <config.h>
 
 #include <inttypes.h>  // for PRIu64
-#include <signal.h>  // for sigaction, SIGUSR1, sa_handler
+#include <signal.h>    // for sigaction, SIGUSR1, sa_handler
 #include <stdint.h>
 #include <stdio.h>   // for FILE, fclose, size_t
 #include <stdlib.h>  // for exit
@@ -25,8 +25,8 @@
 #endif
 
 #include <new>
-#include <string>       // for u16string
-#include <thread>       // for get_id
+#include <string>  // for u16string
+#include <thread>  // for get_id
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>  // for move
@@ -66,8 +66,8 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/friend/DumpFunctions.h>
-#include <jsapi.h>              // for JS_GetFunctionObject, JS_Ge...
-#include <jsfriendapi.h>        // for ScriptEnvironmentPreparer
+#include <jsapi.h>        // for JS_GetFunctionObject, JS_Ge...
+#include <jsfriendapi.h>  // for ScriptEnvironmentPreparer
 #include <mozilla/Result.h>
 #include <mozilla/UniquePtr.h>  // for UniquePtr::get
 
@@ -181,7 +181,7 @@ static void gjs_context_dump_heaps() {
                                            intmax_t(getpid()), counter)};
     ++counter;
 
-    FILE *fp = fopen(filename, "w");
+    FILE* fp = fopen(filename, "w");
     if (!fp)
         return;
 
@@ -254,9 +254,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
         "Path where modules to import should reside", G_TYPE_STRV,
         (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class,
-                                    PROP_SEARCH_PATH,
-                                    pspec);
+    g_object_class_install_property(object_class, PROP_SEARCH_PATH, pspec);
     g_param_spec_unref(pspec);
 
     pspec = g_param_spec_string(
@@ -264,9 +262,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
         "The filename of the launched JS program", "",
         (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class,
-                                    PROP_PROGRAM_NAME,
-                                    pspec);
+    g_object_class_install_property(object_class, PROP_PROGRAM_NAME, pspec);
     g_param_spec_unref(pspec);
 
     pspec = g_param_spec_string(
@@ -444,8 +440,7 @@ void GjsContextPrivate::dispose() {
         for (auto const& destroy_notify : m_destroy_notifications)
             destroy_notify.first(m_cx, destroy_notify.second);
 
-        gjs_debug(GJS_DEBUG_CONTEXT,
-                  "Checking unhandled promise rejections");
+        gjs_debug(GJS_DEBUG_CONTEXT, "Checking unhandled promise rejections");
         warn_about_unhandled_promise_rejections();
 
         gjs_debug(GJS_DEBUG_CONTEXT, "Releasing cached JS wrappers");
@@ -898,9 +893,8 @@ void GjsContextPrivate::schedule_gc_internal(bool force_gc) {
     if (force_gc)
         gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "Big Hammer scheduled");
 
-    m_auto_gc_id = g_timeout_add_seconds_full(G_PRIORITY_LOW, 10,
-                                              trigger_gc_if_needed, this,
-                                              nullptr);
+    m_auto_gc_id = g_timeout_add_seconds_full(
+        G_PRIORITY_LOW, 10, trigger_gc_if_needed, this, nullptr);
 
     if (force_gc)
         g_source_set_name_by_id(m_auto_gc_id,
@@ -1098,8 +1092,6 @@ bool GjsContextPrivate::run_jobs_fallible() {
     m_draining_job_queue = true;  // Ignore reentrant calls
 
     JS::RootedObject job(m_cx);
-    JS::HandleValueArray args(JS::HandleValueArray::empty());
-    JS::RootedValue rval(m_cx);
 
     if (m_job_queue.empty()) {
         // Check FinalizationRegistry cleanup tasks at least once if there are
@@ -1154,8 +1146,10 @@ bool GjsContextPrivate::run_jobs_fallible() {
             break;
 
         for (auto& d : pending) {
-            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable %p", d.get());
-            JS::Dispatchable::Run(m_cx, std::move(d), JS::Dispatchable::NotShuttingDown);
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable %p",
+                      d.get());
+            JS::Dispatchable::Run(m_cx, std::move(d),
+                                  JS::Dispatchable::NotShuttingDown);
             gjs_debug(GJS_DEBUG_MAINLOOP, "Completed Wasm Dispatchable");
 
             // Drain promise jobs after each individual WASM job
@@ -1590,8 +1584,8 @@ GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
     if (exit_status_p) {
         if (result.isOk() && retval.isInt32()) {
             int code = retval.toInt32();
-            gjs_debug(GJS_DEBUG_CONTEXT,
-                      "Script returned integer code %d", code);
+            gjs_debug(GJS_DEBUG_CONTEXT, "Script returned integer code %d",
+                      code);
             *exit_status_p = code;
         } else {
             *exit_status_p = out_code;
@@ -1853,9 +1847,7 @@ bool gjs_context_define_string_array(GjsContext* self, const char* array_name,
     if (!gjs_define_string_array(gjs->context(), global_root, array_name,
                                  strings, JSPROP_READONLY | JSPROP_PERMANENT)) {
         gjs_log_exception(gjs->context());
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
+        g_set_error(error, GJS_ERROR, GJS_ERROR_FAILED,
                     "gjs_define_string_array() failed");
         return false;
     }
