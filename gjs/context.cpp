@@ -1157,25 +1157,24 @@ bool GjsContextPrivate::run_jobs_fallible() {
             gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable %p", d.get());
             JS::Dispatchable::Run(m_cx, std::move(d), JS::Dispatchable::NotShuttingDown);
             gjs_debug(GJS_DEBUG_MAINLOOP, "Completed Wasm Dispatchable");
-        }
 
-        // check the JS promise jobs again to see if more were added by WASM processing
-        // [TODO]: maybe run this after all jobs have been processed
-        for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
-            job = m_job_queue[ix];
-            if (!job)
-                continue;
+            // Drain promise jobs after each individual WASM job
+            for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
+                job = m_job_queue[ix];
+                if (!job)
+                    continue;
 
-            m_job_queue[ix] = nullptr;
-            if (!run_single_job(job, ix)) {
-                retval = false;
-                continue;
+                m_job_queue[ix] = nullptr;
+                if (!run_single_job(job, ix)) {
+                    retval = false;
+                    continue;
+                }
+
+                if (!run_finalization_registry_cleanup())
+                    retval = false;
             }
-
-            if (!run_finalization_registry_cleanup())
-                retval = false;
+            m_job_queue.clear();
         }
-        m_job_queue.clear();
     }
 
     m_draining_job_queue = false;
