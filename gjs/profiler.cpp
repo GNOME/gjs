@@ -686,6 +686,25 @@ void gjs_profiler_stop(GjsProfiler* self) {
 
 #ifdef ENABLE_PROFILER
 
+    // Write last value of memory counters, to avoid gaps in sysprof graph
+    ProfilerTimePoint now = profiler_timestamp();
+    std::array<unsigned, GJS_N_COUNTERS> ids;
+    std::array<SysprofCaptureCounterValue, GJS_N_COUNTERS> values;
+
+#    define FETCH_COUNTERS(name, ix)                \
+        {                                           \
+            uint64_t count = GJS_GET_COUNTER(name); \
+            ids[ix] = self->counter_base + (ix);    \
+            values[ix].v64 = count;                 \
+        }
+    GJS_FOR_EACH_COUNTER(FETCH_COUNTERS);
+#    undef FETCH_COUNTERS
+
+    if (!sysprof_capture_writer_set_counters(
+            self->capture, now.time_since_epoch().count(), -1, self->pid,
+            ids.data(), values.data(), GJS_N_COUNTERS))
+        g_warning("Failed to write last value of memory counters");
+
     struct itimerspec its = {{0}};
     timer_settime(self->timer, 0, &its, nullptr);
     timer_delete(self->timer);
