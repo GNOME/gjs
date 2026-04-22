@@ -1282,7 +1282,8 @@ void* gjs_context_get_native_context(GjsContext* self) {
 static inline bool result_to_c(GErrorResult<> result, GError** error_out) {
     if (result.isOk())
         return true;
-    *error_out = result.unwrapErr().release();
+    if (error_out)
+        *error_out = result.unwrapErr().release();
     return false;
 }
 
