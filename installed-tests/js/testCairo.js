@@ -127,6 +127,16 @@ describe('Cairo', function () {
             });
         });
 
+        it('adds text outline to the current path with textPath', function () {
+            // textPath calls cairo_text_path() which appends glyph outlines
+            // as a path. After the call the context should have a current point
+            // (i.e. the path is non-empty).
+            cr.newPath();
+            expect(cr.hasCurrentPoint()).toBe(false);
+            cr.textPath('Hello');
+            expect(cr.hasCurrentPoint()).toBe(true);
+        });
+
         it('computes font extents', function () {
             // Cairo default font is "Sans": cr.selectFontFace("Sans", null, null);
             // font size is in user space units. Cairo default is 10.0: cr.setFontSize(10);
