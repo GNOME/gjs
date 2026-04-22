@@ -599,6 +599,25 @@ static bool showText_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 GJS_JSAPI_RETURN_CONVENTION
+static bool textPath_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj);
+
+    JS::UniqueChars utf8;
+
+    if (!gjs_parse_call_args(cx, "textPath", argv, "s", "utf8", &utf8))
+        return false;
+
+    cairo_text_path(cr, utf8.get());
+
+    if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
+        return false;
+
+    argv.rval().setUndefined();
+
+    return true;
+}
+
+GJS_JSAPI_RETURN_CONVENTION
 static bool selectFontFace_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj);
 
@@ -873,7 +892,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("stroke", stroke_func, 0, 0),
     JS_FN("strokeExtents", strokeExtents_func, 0, 0),
     JS_FN("strokePreserve", strokePreserve_func, 0, 0),
-    // textPath
+    JS_FN("textPath", textPath_func, 1, 0),
     JS_FN("textExtents", textExtents_func, 1, 0),
     // transform
     JS_FN("translate", translate_func, 0, 0),
