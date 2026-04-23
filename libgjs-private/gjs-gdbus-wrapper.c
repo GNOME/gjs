@@ -41,8 +41,8 @@ struct _GjsDBusImplementation {
     unsigned idle_id;
 };
 
-G_DEFINE_TYPE(GjsDBusImplementation, gjs_dbus_implementation,
-              G_TYPE_DBUS_INTERFACE_SKELETON);
+G_DEFINE_FINAL_TYPE(GjsDBusImplementation, gjs_dbus_implementation,
+                    G_TYPE_DBUS_INTERFACE_SKELETON);
 
 static inline GVariant* gjs_gvariant_ref_sink0(void* value) {
     if (value)
