@@ -111,7 +111,7 @@ static void gjs_dbus_implementation_method_call(
     if (!gjs_dbus_implementation_check_interface(self, connection, object_path,
                                                  interface_name, &error)) {
         g_dbus_method_invocation_take_error(g_steal_pointer(&invocation),
-                                            error);
+                                            g_steal_pointer(&error));
         return;
     }
     if (!G_UNLIKELY(g_dbus_method_invocation_get_method_info(invocation)) ||
