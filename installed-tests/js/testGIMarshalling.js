@@ -516,6 +516,7 @@ describe('C array with length', function () {
 
     describe('of boxed structs', function () {
         testInParameter('array_struct', createStructArray());
+        testInParameter('array_struct_full', createStructArray());
 
         describe('passed by value', function () {
             testInParameter('array_struct_value', createStructArray(), {
@@ -681,7 +682,10 @@ describe('Exhaustive test of UTF-8 sequences', function () {
                 if (transfer === 'container')
                     pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
 
-                expect(() => func(['🅰', 'β', 'c', 'd'])).not.toThrow();
+                const args = [['🅰', 'β', 'c', 'd']];
+                if (arrayKind === 'zero_terminated')
+                    args.push(null);  // extra cleanup parameter
+                expect(() => func(...args)).not.toThrow();
             });
 
             it(`${arrayKind} inout transfer ${transfer}`, function () {
@@ -692,6 +696,20 @@ describe('Exhaustive test of UTF-8 sequences', function () {
                 expect(func(['🅰', 'β', 'c', 'd'])).toEqual(['a', 'b', '¢', '🔠']);
             });
         }));
+});
+
+describe('Cleanup of array in-parameter followed by marshalling error', function () {
+    ['none', 'container', 'full'].forEach(transfer => {
+        it(`transfer ${transfer}`, function () {
+            if (transfer === 'container')
+                pending('https://gitlab.gnome.org/GNOME/gjs/-/issues/44');
+
+            expect(() =>
+                GIMarshallingTests[`zero_terminated_array_utf8_${transfer}_in`](
+                    ['🅰', 'β', 'c', 'd'], Symbol('throw me')))
+                .toThrow();
+        });
+    });
 });
 
 describe('GArray', function () {
@@ -1222,6 +1240,18 @@ describe('Callback', function () {
             box.long_ = 52;
         })).toEqual(52);
     });
+
+    it('marshals a callback with user data parameter after it', function () {
+        const callback = jasmine.createSpy('callback');
+        GIMarshallingTests.callback_user_data_after_callback(53, 54, callback);
+        expect(callback).toHaveBeenCalledOnceWith(53, 54);
+    });
+
+    xit('marshals a callback with user data parameter before it', function () {
+        const callback = jasmine.createSpy('callback');
+        GIMarshallingTests.callback_user_data_before_callback(55, 56, callback);
+        expect(callback).toHaveBeenCalledOnceWith(55, 56);
+    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/work_items/748');
 });
 
 describe('Raw pointers', function () {
@@ -1342,6 +1372,13 @@ describe('Boxed struct', function () {
         expect(GIMarshallingTests.boxed_struct_inout(struct)).toEqual(jasmine.objectContaining({
             long_: 0,
         }));
+    });
+});
+
+describe('Boxed struct with an untyped container member', function () {
+    it('marshals as a return value', function () {
+        const struct = GIMarshallingTests.pointer_array_struct_with_uint8_array();
+        expect(() => struct.array).toThrow();  // intentionally no type information
     });
 });
 
@@ -2635,6 +2672,8 @@ describe('GObject properties', function () {
     testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
         new TextEncoder().encode('👾'));
     testPropertyGetSet('byte_array', Uint8Array.of(3, 2, 1), null);
+    // testPropertyGetSet('hash_table', {1: 'foo', 47: 'fum'}, {0: 'baz', 1: 'bar', 2: 'birb'});
+    // testPropertyGetSet('hash_table', {}, null);
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);
@@ -2861,6 +2900,8 @@ describe('GObject properties accessors', function () {
         GIMarshallingTests.GEnum.VALUE3);
     testPropertyGetSet('byte_array', Uint8Array.of(1, 2, 3),
         new TextEncoder().encode('👾'));
+    testPropertyGetSet('hash_table', {1: 'foo', 47: 'fum'}, {0: 'baz', 1: 'bar', 2: 'birb'});
+    testPropertyGetSet('hash_table', {}, null);
 
     it('gets a read-only property', function () {
         expect(obj.some_readonly).toEqual(42);
