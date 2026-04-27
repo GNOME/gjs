@@ -607,14 +607,13 @@ fedora.mozjs140:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
-    ARGS: --build-arg MOZJS_BUILDDEPS=mozjs128
     IMAGE_NAME: fedora.mozjs140
 
 .fedora.mozjs140-debug: &fedora_mozjs140_debug
   <<: *create_docker_image
   variables:
     <<: *docker_variables
-    ARGS: --build-arg BUILD_OPTS=--enable-debug --build-arg MOZJS_BUILDDEPS=mozjs128
+    ARGS: --build-arg BUILD_OPTS=--enable-debug
     IMAGE_NAME: fedora.mozjs140-debug
 
 fedora.mozjs140-debug_x86_64:
