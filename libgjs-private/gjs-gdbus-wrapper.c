@@ -124,7 +124,7 @@ static void gjs_dbus_implementation_method_call(
     }
 
     g_signal_emit(self, signals[SIGNAL_HANDLE_METHOD], 0, method_name,
-                  g_steal_pointer(&invocation), parameters);
+                  parameters, g_steal_pointer(&invocation));
 }
 
 static GVariant* gjs_dbus_implementation_property_get(
@@ -328,18 +328,17 @@ void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
      * GjsDBusImplementation::handle-method-call:
      * @self:
      * @method_name:
-     * @invocation: (transfer full):
      * @parameters:
+     * @invocation: (transfer full):
      */
     signals[SIGNAL_HANDLE_METHOD] = g_signal_new(
         "handle-method-call", G_TYPE_FROM_CLASS(klass),
-        (GSignalFlags)0,               /* flags */
-        0,                             /* closure */
-        NULL,                          /* accumulator */
-        NULL,                          /* accumulator data */
-        NULL,                          /* C marshal */
-        G_TYPE_NONE, 3, G_TYPE_STRING, /* method name */
-        G_TYPE_DBUS_METHOD_INVOCATION, G_TYPE_VARIANT /* parameters */);
+        /* signal_flags = */ (GSignalFlags)0,
+        /* class_offset = */ 0,
+        /* accumulator = */ NULL, /* accu_data = */ NULL,
+        /* c_marshaller = */ NULL, /* return_type = */ G_TYPE_NONE,
+        /* n_params = */ 3, /* method name */ G_TYPE_STRING,
+        /* parameters */ G_TYPE_VARIANT, G_TYPE_DBUS_METHOD_INVOCATION);
 
     /**
      * GjsDBusImplementation::handle-property-get:

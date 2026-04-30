@@ -368,7 +368,7 @@ function _handleDBusError(invocation, e) {
     invocation.return_dbus_error(name, e.message);
 }
 
-function _handleMethodCall(methodName, invocation, parameters) {
+function _handleMethodCall(methodName, parameters, invocation) {
     // prefer a sync version if available
     const method = this[methodName];
     if (method) {
