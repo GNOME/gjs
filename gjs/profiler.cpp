@@ -186,7 +186,8 @@ static bool gjs_profiler_extract_maps(GjsProfiler* self) {
 
     g_assert(self && "Profiler must be set up before extracting maps");
 
-    Gjs::AutoChar path{g_strdup_printf("/proc/%jd/maps", intmax_t(self->pid))};
+    Gjs::AutoChar path{
+        g_strdup_printf("/proc/%jd/maps", static_cast<intmax_t>(self->pid))};
 
     Gjs::AutoChar content;
     size_t len;
@@ -469,7 +470,8 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
             addrs[flipped] =
                 sysprof_capture_writer_add_jitmap(self->capture, final_string);
         else
-            addrs[flipped] = SysprofCaptureAddress(entry.stackAddress());
+            addrs[flipped] =
+                reinterpret_cast<SysprofCaptureAddress>(entry.stackAddress());
     }
 
     if (!sysprof_capture_writer_add_sample(self->capture,
@@ -552,7 +554,8 @@ void gjs_profiler_start(GjsProfiler* self) {
     } else {
         Gjs::AutoChar path{g_strdup(self->filename)};
         if (!path)
-            path = g_strdup_printf("gjs-%jd.syscap", intmax_t(self->pid));
+            path = g_strdup_printf("gjs-%jd.syscap",
+                                   static_cast<intmax_t>(self->pid));
 
         self->capture = sysprof_capture_writer_new(path, 0);
     }
@@ -570,7 +573,7 @@ void gjs_profiler_start(GjsProfiler* self) {
                           "[sysprof-capture-writer-flush]");
         g_source_set_priority(self->periodic_flush, G_PRIORITY_LOW + 100);
         g_source_set_callback(self->periodic_flush,
-                              (GSourceFunc)profiler_auto_flush_cb, self,
+                              G_SOURCE_FUNC(profiler_auto_flush_cb), self,
                               nullptr);
         g_source_attach(self->periodic_flush,
                         g_main_context_get_thread_default());

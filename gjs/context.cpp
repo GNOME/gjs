@@ -176,7 +176,8 @@ static void gjs_context_dump_heaps() {
 
     // dump to sequential files to allow easier comparisons
     Gjs::AutoChar filename{g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
-                                           intmax_t(getpid()), counter)};
+                                           static_cast<intmax_t>(getpid()),
+                                           counter)};
     ++counter;
 
     FILE *fp = fopen(filename, "w");
@@ -250,7 +251,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     GParamSpec* pspec = g_param_spec_boxed(
         "search-path", "Search path",
         "Path where modules to import should reside", G_TYPE_STRV,
-        (GParamFlags)(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
+        GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_SEARCH_PATH,
@@ -260,7 +261,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     pspec = g_param_spec_string(
         "program-name", "Program Name",
         "The filename of the launched JS program", "",
-        (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+        GParamFlags(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class,
                                     PROP_PROGRAM_NAME,
@@ -271,7 +272,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
         "program-path", "Executed File Path",
         "The full path of the launched file or NULL if GJS was launched from "
         "the C API or interactive console.",
-        nullptr, (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
+        nullptr, GParamFlags(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
     g_object_class_install_property(object_class, PROP_PROGRAM_PATH, pspec);
     g_param_spec_unref(pspec);
@@ -325,8 +326,8 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     pspec = g_param_spec_string(
         "repl-history-path", "REPL History Path",
         "The writable path to persist repl history", nullptr,
-        (GParamFlags)(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY |
-                      G_PARAM_STATIC_STRINGS));
+        GParamFlags(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY |
+                    G_PARAM_STATIC_STRINGS));
     g_object_class_install_property(object_class, PROP_REPL_HISTORY_PATH,
                                     pspec);
     g_param_spec_unref(pspec);

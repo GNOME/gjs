@@ -309,7 +309,7 @@ constexpr GTypeInfo gjs_gobject_class_info = {
     gjs_object_base_finalize,
 
     gjs_object_class_init,
-    GClassFinalizeFunc(nullptr),
+    nullptr,  // class_finalize_func
     nullptr,  // class_data
 
     0,  // instance_size
@@ -320,11 +320,11 @@ constexpr GTypeInfo gjs_gobject_class_info = {
 constexpr GTypeInfo gjs_gobject_interface_info = {
     sizeof(GTypeInterface),  // class_size
 
-    GBaseInitFunc(nullptr),
-    GBaseFinalizeFunc(nullptr),
+    nullptr,  // base_init_func
+    nullptr,  // base_finalize_func
 
     gjs_interface_init,
-    GClassFinalizeFunc(nullptr),
+    nullptr,  // class_finalize_func
     nullptr,  // class_data
 
     0,        // instance_size

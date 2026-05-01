@@ -182,7 +182,9 @@ static constexpr const GTypeFunc gtype_funcs[] = {
     gi_vfunc_info_get_type,
 };
 
-constexpr GTypeFunc gtype_func(InfoTag tag) { return gtype_funcs[size_t(tag)]; }
+constexpr GTypeFunc gtype_func(InfoTag tag) {
+    return gtype_funcs[static_cast<size_t>(tag)];
+}
 
 }  // namespace detail
 
