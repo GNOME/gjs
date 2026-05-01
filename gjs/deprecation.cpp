@@ -51,11 +51,14 @@ const char* messages[] = {
     "code anyway.",
 
     // PlatformSpecificTypelib:
+    // -Wstring-concatentation sees this as suspicious because there are only
+    // two strings
+    // NOLINTNEXTLINE(readability-redundant-parentheses)
     ("{} has been moved to a separate platform-specific library. Please update "
      "your code to use {} instead."),
 
     // Renamed:
-    ("{} has been renamed. Please update your code to use {} instead."),
+    "{} has been renamed. Please update your code to use {} instead.",
 };
 
 static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
