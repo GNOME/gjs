@@ -324,7 +324,7 @@ GjsProfiler* gjs_profiler_new(GjsContext* gjs_context) {
         return nullptr;
     }
 
-    GjsProfiler* self = g_new0(GjsProfiler, 1);
+    auto* self = g_new0(GjsProfiler, 1);
 
 #ifdef ENABLE_PROFILER
     self->cx =
