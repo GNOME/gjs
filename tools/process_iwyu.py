@@ -56,6 +56,26 @@ FWD_DECLS_IN_HEADER = (
     'namespace JS { struct Runtime; }',
     'namespace JS { class Zone; }',
 )
+TYPE_DECLS_IN_HEADER = {
+    'BigInt',
+    'GCContext',
+    'JSAtom',
+    'JSContext',
+    'JSClass',
+    'JSFunction',
+    'JSObject',
+    'JSRuntime',
+    'JSScript',
+    'JSString',
+    'JSPrincipals',
+    'PropertyKey',
+    'Realm',
+    'Runtime',
+    'Symbol',
+    'TempAllocPolicy',
+    'Value',
+    'Zone',
+}
 add_fwd_header = False
 
 CPP20_VERSION = '#include <version>'
@@ -97,6 +117,10 @@ FALSE_POSITIVES = (
 
     # https://github.com/include-what-you-use/include-what-you-use/issues/1808
     ('gi/value.h', 'class ObjectBox;', ''),
+
+    # IWYU flip-flops between wanting this and not wanting it
+    # TODO(ptomato): Investigate and file a bug
+    ('gjs/profiler.cpp', 'namespace mozilla { namespace detail { template <typename T, bool TriviallyDestructibleAndCopyable = IsTriviallyDestructibleAndCopyable<T>> struct MaybeStorage; } }', ''),
 )
 
 
@@ -177,6 +201,11 @@ for line in sys.stdin:
         if line in FWD_DECLS_IN_HEADER:
             add_fwd_header = True
             continue
+        if why.startswith("for "):
+            reasons = why[4:].split(', ')
+            if set(reasons) & TYPE_DECLS_IN_HEADER:
+                add_fwd_header = True
+                continue
         if (file, line, why) in FALSE_POSITIVES:
             continue
         add[line] = why

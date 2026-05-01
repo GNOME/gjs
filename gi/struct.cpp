@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <girepository/girepository.h>
+
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/PropertyAndElement.h>  // for JS_DefineFunction

@@ -12,6 +12,7 @@
 #include <limits>    // for numeric_limits
 #include <string>
 #include <type_traits>  // for is_same
+#include <utility>      // for pair
 
 #include <glib.h>  // for g_assert_...
 

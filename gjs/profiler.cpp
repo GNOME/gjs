@@ -50,11 +50,6 @@
 #include "gjs/profiler.h"
 #include "util/misc.h"
 
-namespace mozilla::detail {
-template <typename T, bool TriviallyDestructibleAndCopyable>
-struct MaybeStorage;
-}
-
 using mozilla::Maybe, mozilla::Nothing, mozilla::Some,
     std::chrono_literals::operator""s, std::chrono_literals::operator""ms;
 
