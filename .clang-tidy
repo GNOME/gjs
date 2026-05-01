@@ -4,10 +4,8 @@
 Checks:
   - -*
   - bugprone-argument-comment
-  - bugprone-assert-side-effect
   - bugprone-branch-clone
   - bugprone-dangling-handle
-  - bugprone-derived-method-shadowing-base-method
   - bugprone-implicit-widening-of-multiplication-result
   - bugprone-macro-parentheses
   - bugprone-macro-repeated-side-effects
@@ -31,9 +29,13 @@ Checks:
     # marshalling code.
 
   # To do list for bugprone checks:
+  # - bugprone-assert-side-effect - Has started producing false positives in
+  #   Clang 22 for g_assert(). Figure out why and file a bug.
   # - bugprone-assignment-in-if-condition - False positives on every use of
   #   g_str_has_prefix/suffix. Consider enabling in C++20 and switch to using
   #   string/string_view::starts_with/ends_with. (COMPAT)
+  # - bugprone-derived-method-shadowing-base-method - We use the CRTP pattern
+  #   extensively. Since Clang 22 this check produces too many false positives.
   # - bugprone-multi-level-implicit-pointer-conversion - Many false postives on
   #   GLib macros (e.g. g_free, g_steal_pointer) but on the other hand it has
   #   caught several real bugs. GLib might be able to fix this.
@@ -68,6 +70,10 @@ Checks:
     # It would be a good practice to enable this check locally from time to time
     # and use it as a suggestion for refactoring, but it's too much churn to
     # do all at once.
+  - -readability-inconsistent-ifelse-braces
+    # False positives on every use of g_str_has_prefix/suffix. Consider enabling
+    # in C++20 and switch to using string/string_view::starts_with/ends_with.
+    # (COMPAT)
   - -readability-isolate-declaration
     # False positives on g_assert_ macros. May consider enabling if it gains a
     # configuration option to ignore macros.
@@ -76,7 +82,6 @@ Checks:
     # but are not needed for basic PEMDAS. May consider enabling if this is made
     # configurable.
 CheckOptions:
-  bugprone-assert-side-effect.AssertMacros: assert,g_assert
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
     mozilla::Span"
   bugprone-reserved-identifier.AllowedIdentifiers: _GNU_SOURCE

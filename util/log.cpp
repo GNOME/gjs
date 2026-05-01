@@ -180,6 +180,8 @@ static void write_to_stream(FILE* logfp, const char* prefix, const char* s) {
     fflush(logfp);
 }
 
+// COMPAT: Replace with a format string in C++20.
+// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
 void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
     va_list args;
 
