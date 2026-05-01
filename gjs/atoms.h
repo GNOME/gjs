@@ -85,7 +85,8 @@ class JSTracer;
 // clang-format on
 
 struct GjsAtom {
-    GJS_JSAPI_RETURN_CONVENTION bool init(JSContext*, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION bool init_string(JSContext*, const char* str);
+    GJS_JSAPI_RETURN_CONVENTION bool init_symbol(JSContext*, const char* str);
 
     /* It's OK to return JS::HandleId here, to avoid an extra root, with the
      * caveat that you should not use this value after the GjsContext has been
@@ -101,11 +102,6 @@ struct GjsAtom {
     JS::Heap<jsid> m_jsid;
 };
 
-struct GjsSymbolAtom : GjsAtom {
-    GJS_JSAPI_RETURN_CONVENTION
-    bool init(JSContext*, const char* str);
-};
-
 class GjsAtoms {
  public:
     GjsAtoms() = default;
@@ -115,11 +111,9 @@ class GjsAtoms {
     void trace(JSTracer*);
 
 #define DECLARE_ATOM_MEMBER(identifier, str) GjsAtom identifier;
-#define DECLARE_SYMBOL_ATOM_MEMBER(identifier, str) GjsSymbolAtom identifier;
     FOR_EACH_ATOM(DECLARE_ATOM_MEMBER)
-    FOR_EACH_SYMBOL_ATOM(DECLARE_SYMBOL_ATOM_MEMBER)
+    FOR_EACH_SYMBOL_ATOM(DECLARE_ATOM_MEMBER)
 #undef DECLARE_ATOM_MEMBER
-#undef DECLARE_SYMBOL_ATOM_MEMBER
 };
 
 #if !defined(GJS_USE_ATOM_FOREACH) && !defined(USE_UNITY_BUILD)

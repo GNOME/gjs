@@ -85,7 +85,6 @@ FALSE_POSITIVES = (
     # The bodies of these structs already come before their usage,
     # we don't need to have forward declarations of them as well
     ('gjs/atoms.h', 'class GjsAtoms;', ''),
-    ('gjs/atoms.h', 'struct GjsSymbolAtom;', ''),
     ('gjs/mem-private.h', 'namespace Gjs { namespace Memory { struct Counter; } }', ''),
 
     # https://github.com/include-what-you-use/include-what-you-use/issues/1685

@@ -16,7 +16,7 @@
 
 #include "gjs/atoms.h"
 
-bool GjsAtom::init(JSContext* cx, const char* str) {
+bool GjsAtom::init_string(JSContext* cx, const char* str) {
     JSString* s = JS_AtomizeAndPinString(cx, str);
     if (!s)
         return false;
@@ -24,7 +24,7 @@ bool GjsAtom::init(JSContext* cx, const char* str) {
     return true;
 }
 
-bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
+bool GjsAtom::init_symbol(JSContext* cx, const char* str) {
     JS::RootedString descr(cx, JS_AtomizeAndPinString(cx, str));
     if (!descr)
         return false;
@@ -38,13 +38,19 @@ bool GjsSymbolAtom::init(JSContext* cx, const char* str) {
 /* Requires a current realm. This can GC, so it needs to be done after the
  * tracing has been set up. */
 bool GjsAtoms::init_atoms(JSContext* cx) {
-#define INITIALIZE_ATOM(identifier, str) \
-    if (!(identifier).init(cx, str))     \
+#define INITIALIZE_STRING_ATOM(identifier, str) \
+    if (!(identifier).init_string(cx, str))     \
         return false;
-    FOR_EACH_ATOM(INITIALIZE_ATOM)
-    FOR_EACH_SYMBOL_ATOM(INITIALIZE_ATOM)
+    FOR_EACH_ATOM(INITIALIZE_STRING_ATOM)
+#undef INITIALIZE_STRING_ATOM
+
+#define INITIALIZE_SYMBOL_ATOM(identifier, str) \
+    if (!(identifier).init_symbol(cx, str))     \
+        return false;
+    FOR_EACH_SYMBOL_ATOM(INITIALIZE_SYMBOL_ATOM)
+#undef INITIALIZE_SYMBOL_ATOM
+
     return true;
-#undef INITIALIZE_ATOM
 }
 
 void GjsAtoms::trace(JSTracer* trc) {
