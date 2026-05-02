@@ -36,6 +36,7 @@
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
+#include <js/Object.h>
 #include <js/ObjectWithStashedPointer.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_PERMANENT, JSPROP_READONLY
@@ -81,6 +82,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
+#include "gjs/mem.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
 
@@ -2436,7 +2438,7 @@ ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
     g_assert(query.type);
     JS::AddAssociatedMemory(object, query.instance_size,
                             MemoryUse::GObjectInstanceStruct);
-
+    JS::SetReservedSlot(object, MEMORY_SIZE, JS::Int32Value(query.instance_size));
     GJS_INC_COUNTER(object_instance);
 }
 
@@ -2762,12 +2764,17 @@ void ObjectPrototype::trace_impl(JSTracer* tracer) {
 }
 
 void ObjectInstance::finalize_impl(JS::GCContext* gcx, JSObject* obj) {
+    JS::Value memory_size_value = JS::GetReservedSlot(obj, MEMORY_SIZE);
+    g_assert(memory_size_value.isInt32());
+    int32_t memory_size = memory_size_value.toInt32();
+
     GTypeQuery query;
     g_type_query(gtype(), &query);
     g_assert(query.type);
     JS::RemoveAssociatedMemory(obj, query.instance_size,
                                MemoryUse::GObjectInstanceStruct);
-
+    if (memory_size != 0 && strcmp(query.type_name, "GdkPixbuf") == 0)
+        JS::RemoveAssociatedMemory(obj, memory_size, MemoryUse::GdkPixbuf);
     GIWrapperInstance::finalize_impl(gcx, obj);
 }
 
@@ -3408,7 +3415,7 @@ const struct JSClassOps ObjectBase::class_ops = {
 
 const struct JSClass ObjectBase::klass = {
     "GObject_Object",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
     &ObjectBase::class_ops};
 
 JSFunctionSpec ObjectBase::proto_methods[] = {
@@ -3602,6 +3609,14 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     g_assert(priv->wrapper() == obj.get());
 
+    GTypeQuery query;
+    g_type_query(gtype, &query);
+    g_assert(query.type);
+    if (strcmp(query.type_name, "GdkPixbuf") == 0) {
+       int32_t total_memory = estimate_size_of_gdkpixbuf(gobj);
+       JS::AddAssociatedMemory(obj, total_memory, MemoryUse::GdkPixbuf);
+       JS::SetReservedSlot(obj, MEMORY_SIZE, JS::Int32Value(total_memory));
+    }
     return priv;
 }
 

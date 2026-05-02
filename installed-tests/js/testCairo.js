@@ -231,6 +231,10 @@ describe('Cairo', function () {
             expect(cr.save).toBeDefined();
             expect(cr.getTarget()).toBeDefined();
         });
+
+        it('can be disposed', function () {
+            cr.$dispose();
+        });
     });
 
     describe('pattern', function () {
@@ -254,6 +258,10 @@ describe('Cairo', function () {
             cr.setSource(p2);
             expect(_ts(cr.getSource())).toEqual('SolidPattern');
         });
+
+        it('can fail creation', function () {
+            expect(() => Cairo.SolidPattern.createRGB('too', 'few')).toThrow();
+        });
     });
 
     describe('surface pattern', function () {
@@ -262,6 +270,10 @@ describe('Cairo', function () {
             expect(_ts(p1)).toEqual('SurfacePattern');
             cr.setSource(p1);
             expect(_ts(cr.getSource())).toEqual('SurfacePattern');
+        });
+
+        it('can fail creation', function () {
+            expect(() => new Cairo.SurfacePattern({})).toThrow();
         });
     });
 
@@ -272,6 +284,10 @@ describe('Cairo', function () {
             cr.setSource(p1);
             expect(_ts(cr.getSource())).toEqual('LinearGradient');
         });
+
+        it('can fail creation', function () {
+            expect(() => new Cairo.LinearGradient('too', 'few')).toThrow();
+        });
     });
 
     describe('radial gradient', function () {
@@ -281,6 +297,10 @@ describe('Cairo', function () {
             cr.setSource(p1);
             expect(_ts(cr.getSource())).toEqual('RadialGradient');
         });
+
+        it('can fail creation', function () {
+            expect(() => new Cairo.RadialGradient('too', 'few')).toThrow();
+        });
     });
 
     describe('path', function () {
@@ -288,6 +308,12 @@ describe('Cairo', function () {
             expect(() => cr.appendPath({})).toThrow();
             expect(() => cr.appendPath(surface)).toThrow();
         });
+    });
+
+    describe('image surface', function () {
+        it('can fail creation', function () {
+            expect(() => new Cairo.ImageSurface('too', 'few')).toThrow();
+        })
     });
 
     describe('surface', function () {

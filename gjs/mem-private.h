@@ -11,6 +11,8 @@
 
 #include <atomic>
 
+#include <js/MemoryFunctions.h>
+
 // clang-format off
 #define GJS_FOR_EACH_COUNTER(macro) \
     macro(boxed_instance, 0)        \
@@ -91,3 +93,10 @@ static constexpr const char GJS_COUNTER_DESCRIPTIONS[GJS_N_COUNTERS][52] = {
     (Gjs::Memory::Counters::dec<&Gjs::Memory::Counters::name>());
 
 #define GJS_GET_COUNTER(name) (Gjs::Memory::Counters::name.value.load())
+
+namespace MemoryUse {
+    constexpr JS::MemoryUse GObjectInstanceStruct = JS::MemoryUse::Embedding1;
+    constexpr JS::MemoryUse GObjectClassStruct = JS::MemoryUse::Embedding2;
+    constexpr JS::MemoryUse GdkPixbuf = JS::MemoryUse::Embedding3;
+    constexpr JS::MemoryUse Cairo = JS::MemoryUse::Embedding4;
+}

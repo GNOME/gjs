@@ -11,10 +11,13 @@
 
 #include <cairo.h>
 #include <girepository/girepository.h>
+#include <glib.h>  // for g_assert
 
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
+#include <js/MemoryFunctions.h> // for RemoveAssociatedMemory
+#include <js/Object.h> // for GetReservedSlot, SetReservedSlot
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
@@ -32,6 +35,8 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/mem-private.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-private.h"
 
 #define GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj) \
@@ -235,6 +240,25 @@
     argv.rval().setUndefined();                                                \
     GJS_CAIRO_CONTEXT_DEFINE_FUNC_END
 
+void CairoContext::add_associated_memory(JSObject* obj, cairo_t* cr) {
+    size_t memory_size =
+        add_associated_memory_for_surface(obj, cairo_get_target(cr));
+    JS::SetReservedSlot(obj, MEMORY_SIZE, JS::Int32Value(memory_size));
+}
+
+void CairoContext::remove_associated_memory(JSObject* obj, cairo_t* cr) {
+    if (!cr)
+        return;
+
+    JS::Value memory_size_value = JS::GetReservedSlot(obj, MEMORY_SIZE);
+    g_assert(memory_size_value.isInt32());
+    int32_t memory_size = memory_size_value.toInt32();
+    if (memory_size > 0) {
+        JS::RemoveAssociatedMemory(obj, memory_size, MemoryUse::Cairo);
+        JS::SetReservedSlot(obj, MEMORY_SIZE, JS::Int32Value(0));
+    }
+}
+
 GJS_JSAPI_RETURN_CONVENTION
 cairo_t* CairoContext::constructor_impl(JSContext* cx,
                                         const JS::CallArgs& args) {
@@ -373,6 +397,7 @@ GJS_CAIRO_CONTEXT_DEFINE_FUNC2FFAFF(userToDeviceDistance,
 bool CairoContext::dispose(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, rec, obj);
 
+    CairoContext::remove_associated_memory(obj, cr);
     cairo_destroy(cr);
     CairoContext::unset_private(obj);
 

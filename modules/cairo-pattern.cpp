@@ -25,6 +25,7 @@
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-private.h"
 
 // Properties
@@ -64,6 +65,17 @@ const JSFunctionSpec CairoPattern::proto_funcs[] = {
     JS_FN("getType", getType_func, 0, 0),
     // setMatrix
     JS_FS_END};
+
+void CairoPattern::add_associated_memory(JSObject* obj, cairo_pattern_t* pattern) {
+    add_associated_memory_for_pattern(obj, pattern);
+}
+
+void CairoPattern::remove_associated_memory(JSObject* obj, cairo_pattern_t* pattern) {
+    if (!pattern)
+        return;
+
+    remove_associated_memory_for_pattern(obj, pattern);
+}
 
 // Public API
 

@@ -39,6 +39,7 @@
 #include "gjs/jsapi-class.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
 
@@ -70,11 +71,6 @@ bool gjs_wrapper_throw_nonexistent_field(JSContext*, GType,
 
 bool gjs_wrapper_throw_readonly_field(JSContext*, GType,
                                       const char* field_name);
-
-namespace MemoryUse {
-constexpr JS::MemoryUse GObjectInstanceStruct = JS::MemoryUse::Embedding1;
-constexpr JS::MemoryUse GObjectClassStruct = JS::MemoryUse::Embedding2;
-}
 
 struct GjsTypecheckNoThrow {};
 

@@ -14,6 +14,7 @@
 #include <jspubtd.h>  // for JSProtoKey
 
 #include "gjs/jsapi-util-args.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-private.h"
 
 namespace JS {
@@ -23,6 +24,11 @@ class CallArgs;
 JSObject* CairoRadialGradient::new_proto(JSContext* cx, JSProtoKey) {
     JS::RootedObject parent_proto(cx, CairoGradient::prototype(cx));
     return JS_NewObjectWithGivenProto(cx, nullptr, parent_proto);
+}
+
+void CairoRadialGradient::add_associated_memory(JSObject* obj,
+                                                cairo_pattern_t* pattern) {
+    add_associated_memory_for_pattern(obj, pattern);
 }
 
 cairo_pattern_t* CairoRadialGradient::constructor_impl(

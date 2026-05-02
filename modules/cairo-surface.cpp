@@ -29,6 +29,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-private.h"
 
 // Properties
@@ -242,6 +243,17 @@ const JSFunctionSpec CairoSurface::proto_funcs[] = {
     // showPage
     // hasShowTextGlyphs
     JS_FN("writeToPNG", writeToPNG_func, 0, 0), JS_FS_END};
+
+void CairoSurface::add_associated_memory(JSObject* obj, cairo_surface_t* surface) {
+    add_associated_memory_for_surface(obj, surface);
+}
+
+void CairoSurface::remove_associated_memory(JSObject* obj, cairo_surface_t* surface) {
+    if (!surface)
+        return;
+
+    remove_associated_memory_for_surface(obj, surface);
+}
 
 // Public API
 

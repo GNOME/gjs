@@ -18,6 +18,7 @@
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-private.h"
 
 JSObject* CairoImageSurface::new_proto(JSContext* cx, JSProtoKey) {
@@ -158,6 +159,11 @@ static bool getStride_func(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     rec.rval().setInt32(stride);
     return true;
+}
+
+void CairoImageSurface::add_associated_memory(JSObject* obj,
+                                              cairo_surface_t* surface) {
+    add_associated_memory_for_surface(obj, surface);
 }
 
 const JSFunctionSpec CairoImageSurface::proto_funcs[] = {
