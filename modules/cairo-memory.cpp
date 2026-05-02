@@ -14,6 +14,7 @@
 #include <mozilla/CheckedInt.h>
 
 #include "gjs/mem-private.h"
+#include "modules/cairo-memory.h"
 #include "modules/cairo-xlib-facade.h"
 
 #ifdef CAIRO_HAS_IMAGE_SURFACE

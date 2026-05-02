@@ -80,15 +80,18 @@ int32_t estimate_size_of_gdkpixbuf(GObject* wrapped) {
     GIArgument width, height, bits_per_sample;
     auto result_width = get_width_func.invoke({{args}}, {}, &width);
     auto result_height = get_height_func.invoke({{args}}, {}, &height);
-    auto result_bits_per_sample = get_bits_per_sample_func.invoke({{args}}, {}, &bits_per_sample);
-    if (result_width.isErr() || result_height.isErr() || result_bits_per_sample.isErr()) {
+    auto result_bits_per_sample =
+        get_bits_per_sample_func.invoke({{args}}, {}, &bits_per_sample);
+    if (result_width.isErr() || result_height.isErr() ||
+        result_bits_per_sample.isErr()) {
         gjs_debug(GJS_DEBUG_MEMORY, "Failed to estimate GdkPixbuf size");
         return 0;
     }
     int width_int = gjs_arg_get<int>(&width);
     int height_int = gjs_arg_get<int>(&height);
     int bits_per_sample_int = gjs_arg_get<int>(&bits_per_sample);
-    mozilla::CheckedInt32 estimated_size = mozilla::CheckedInt32{width_int} * height_int * bits_per_sample_int;
+    mozilla::CheckedInt32 estimated_size =
+        mozilla::CheckedInt32{width_int} * height_int * bits_per_sample_int;
     if (!estimated_size.isValid())
         return INT32_MAX;
     return estimated_size.value();

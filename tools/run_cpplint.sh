@@ -12,6 +12,10 @@ filters=(
       # https://github.com/cpplint/cpplint/issues/406
     readability/nolint  # https://github.com/cpplint/cpplint/issues/298
     runtime/int  # In many places required by GLib APIs
+    whitespace/braces:gjs/mem.cpp
+      # https://github.com/cpplint/cpplint/issues/373
+    whitespace/braces:modules/cairo-memory.cpp
+      # https://github.com/cpplint/cpplint/issues/373
     whitespace/indent_namespace  # https://github.com/cpplint/cpplint/issues/372
 )
 filter_arg=$(printf ",-%s" "${filters[@]}")

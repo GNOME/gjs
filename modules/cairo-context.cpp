@@ -16,8 +16,8 @@
 #include <js/Array.h>  // for JS::NewArrayObject
 #include <js/CallArgs.h>
 #include <js/Conversions.h>
-#include <js/MemoryFunctions.h> // for RemoveAssociatedMemory
-#include <js/Object.h> // for GetReservedSlot, SetReservedSlot
+#include <js/MemoryFunctions.h>  // for RemoveAssociatedMemory
+#include <js/Object.h>           // for GetReservedSlot, SetReservedSlot
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>

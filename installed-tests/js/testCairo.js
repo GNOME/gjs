@@ -313,7 +313,7 @@ describe('Cairo', function () {
     describe('image surface', function () {
         it('can fail creation', function () {
             expect(() => new Cairo.ImageSurface('too', 'few')).toThrow();
-        })
+        });
     });
 
     describe('surface', function () {

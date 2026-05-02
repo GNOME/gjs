@@ -8,10 +8,7 @@ describe('GdkPixbuf', function () {
     describe('pixbuf', function () {
         it('can be created', function () {
             expect(GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB,
-                                        false,
-                                        8,
-                                        1024,
-                                        1024)).toBeDefined();
+                false, 8, 1024, 1024)).toBeDefined();
         });
     });
 });
