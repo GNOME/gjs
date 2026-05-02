@@ -316,7 +316,8 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         // Start at argument 1, skip the instance parameter
         for (unsigned i = 1; i < n_param_values; ++i) {
             ArgumentDetails& arg_details = args_details[i];
-            arg_details.info.emplace();
+            arg_details.info.emplace(
+                std::pair{GI::StackArgInfo{}, GI::StackTypeInfo{}});
             signal_info->load_arg(i - 1, &arg_details.arg_info());
             arg_details.info->first.load_type(&arg_details.type_info());
 
