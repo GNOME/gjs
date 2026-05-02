@@ -1665,8 +1665,9 @@ static bool resolve_on_interface_prototype(JSContext* cx,
                                            JS::HandleObject class_prototype,
                                            bool* found) {
     JS::RootedObject interface_prototype(
-        cx, gjs_lookup_object_prototype_from_info(cx, Some(iface_info),
-                                                  iface_info.gtype()));
+        cx,
+        gjs_lookup_object_prototype_from_info(
+            cx, Some(GI::RegisteredTypeInfo{iface_info}), iface_info.gtype()));
     if (!interface_prototype)
         return false;
 
@@ -3352,8 +3353,10 @@ bool ObjectBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     const char* kind = ObjectBase::DEBUG_TAG;
     if (!priv->is_prototype())
         kind = priv->to_instance()->to_string_kind();
+    Maybe<const GI::BaseInfo> info{priv->info().map(
+        [](const GI::ObjectInfo& i) { return GI::BaseInfo{i}; })};
     return gjs_wrapper_to_string_func(
-        cx, obj, kind, priv->info(), priv->gtype(),
+        cx, obj, kind, info, priv->gtype(),
         priv->is_prototype() ? nullptr : priv->to_instance()->ptr(),
         args.rval());
 }

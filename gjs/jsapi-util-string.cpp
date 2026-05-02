@@ -494,9 +494,11 @@ static std::string gjs_debug_linear_string(JSLinearString* str, Quotes quotes) {
         else if (c >= 32 && c < 127)
             out << c;
         else if (c <= 255)
-            out << "\\x" << std::setfill('0') << std::setw(2) << unsigned(c);
+            out << "\\x" << std::setfill('0') << std::setw(2)
+                << static_cast<unsigned>(c);
         else
-            out << "\\x" << std::setfill('0') << std::setw(4) << unsigned(c);
+            out << "\\x" << std::setfill('0') << std::setw(4)
+                << static_cast<unsigned>(c);
     }
     if (quotes == DoubleQuotes)
         out << '"';
@@ -526,7 +528,7 @@ std::string gjs_debug_symbol(JS::Symbol* const sym) {
     JS::SymbolCode code = JS::GetSymbolCode(handle);
     JSString* descr = JS::GetSymbolDescription(handle);
 
-    if (size_t(code) < JS::WellKnownSymbolLimit)
+    if (static_cast<size_t>(code) < JS::WellKnownSymbolLimit)
         return gjs_debug_string(descr);
 
     std::ostringstream out;
@@ -547,7 +549,7 @@ std::string gjs_debug_symbol(JS::Symbol* const sym) {
         return out.str();
     }
 
-    out << "<unexpected symbol code " << uint32_t(code) << ">";
+    out << "<unexpected symbol code " << static_cast<uint32_t>(code) << ">";
     return out.str();
 }
 

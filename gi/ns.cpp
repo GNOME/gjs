@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 
+#include <girepository/girepository.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>

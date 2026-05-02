@@ -158,12 +158,14 @@ static void gjs_throw_valist(JSContext* cx, JSExnType error_kind,
     fallback.release();
 }
 
+// COMPAT: Replace with a format string in C++20.
 /* Throws an exception, like "throw new Error(message)"
  *
  * If an exception is already set in the context, this will NOT overwrite it.
  * That's an important semantic since we want the "root cause" exception. To
  * overwrite, use JS_ClearPendingException() first.
  */
+// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
 void gjs_throw(JSContext* cx, const char* format, ...) {
     va_list args;
 
@@ -172,9 +174,11 @@ void gjs_throw(JSContext* cx, const char* format, ...) {
     va_end(args);
 }
 
+// COMPAT: Replace with a format string in C++20.
 /* Like gjs_throw, but allows to customize the error class and 'name' property.
  * Mainly used for throwing TypeError instead of error.
  */
+// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
 void gjs_throw_custom(JSContext* cx, JSExnType kind, const char* error_name,
                       const char* format, ...) {
     va_list args;

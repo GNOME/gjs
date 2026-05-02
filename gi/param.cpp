@@ -6,6 +6,7 @@
 
 #include <stddef.h>  // for size_t
 
+#include <girepository/girepository.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>

@@ -396,7 +396,7 @@ clang-tidy:
 clang-static-analyzer:
   when: on_success
   stage: source_check
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:
@@ -494,7 +494,7 @@ clang-tidy-full:
 clang-static-analyzer-full:
   when: manual
   stage: manual
-  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-amd64
+  image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
   variables:
     GIT_SUBMODULE_STRATEGY: normal
   script:

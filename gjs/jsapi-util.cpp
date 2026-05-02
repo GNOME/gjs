@@ -674,9 +674,10 @@ const char* gjs_explain_gc_reason(JS::GCReason reason) {
     static_assert(G_N_ELEMENTS(reason_strings) == Gjs::GCReason::N_REASONS,
                   "Explanations must match the values in Gjs::GCReason");
 
-    g_assert(size_t(reason) < size_t(JS::GCReason::FIRST_FIREFOX_REASON) +
-                                  Gjs::GCReason::N_REASONS &&
+    auto reason_ix = static_cast<size_t>(reason);
+    auto first_firefox_ix =
+        static_cast<size_t>(JS::GCReason::FIRST_FIREFOX_REASON);
+    g_assert(reason_ix < first_firefox_ix + Gjs::GCReason::N_REASONS &&
              "Bad Gjs::GCReason");
-    return reason_strings[size_t(reason) -
-                          size_t(JS::GCReason::FIRST_FIREFOX_REASON)];
+    return reason_strings[reason_ix - first_firefox_ix];
 }
