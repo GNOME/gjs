@@ -3,3 +3,4 @@
 /tools/node_modules
 # artifact from ci-templates:
 /container-build-report.xml
+/subprojects/.wraplock
