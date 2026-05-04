@@ -9,6 +9,7 @@
 #    include <windows.h>
 #endif
 
+#include <algorithm>  // for min
 #include <chrono>  // for duration, operator""us
 #include <sstream>
 #include <string>
@@ -640,7 +641,7 @@ void gjs_gc_if_needed(JSContext* cx) {
     // swapped out, since we may be overzealous in GC, but on the other hand, if
     // swapping is going on, better to GC.
     if (rss > linux_rss_trigger) {
-        linux_rss_trigger = MIN(UINT32_MAX, rss * 1.25);
+        linux_rss_trigger = std::min(UINT64_C(0xffff'ffff), rss + (rss / 4));
         JS::NonIncrementalGC(cx, JS::GCOptions::Shrink,
                              Gjs::GCReason::LINUX_RSS_TRIGGER);
     } else if (rss < (0.75 * linux_rss_trigger)) {

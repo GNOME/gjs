@@ -6,6 +6,7 @@
 
 #include <stdio.h>  // for stderr
 
+#include <algorithm>  // for max
 #include <sstream>
 #include <string>
 
@@ -59,7 +60,8 @@ std::string gjs_dumpstack_string() {
                    << trace.get() << "\n";
     }
     std::string out = all_traces.str();
-    out.resize(MAX(out.size() - 2, 0));
+    // COMPAT: 0zu in C++23
+    out.resize(std::max(out.size() - 2, size_t{0}));
 
     return out;
 }
