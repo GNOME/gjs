@@ -89,7 +89,7 @@ JS::RootedObject obj(cx, JS_NewPlainObject(cx));
 
 ### JSFunctionSpec and extra local roots
 
-When SpiderMonkey is calling a native function, it will pass in an argv of `JS::Value`. It already has to add all the argv values as GC roots. The "extra local roots" feature tells SpiderMonkey to stick some extra slots on the end of argv that are also GC roots. You can then assign to `argv[MAX(min_args, actual_argc)]` and whatever you put in there won't get garbage collected.
+When SpiderMonkey is calling a native function, it will pass in an argv of `JS::Value`. It already has to add all the argv values as GC roots. The "extra local roots" feature tells SpiderMonkey to stick some extra slots on the end of argv that are also GC roots. You can then assign to `argv[std::max(min_args, actual_argc)]` and whatever you put in there won't get garbage collected.
 
 This is kind of a confusing and unreadable hack IMO, though it is probably efficient and thus justified in certain cases. I don't know really.
 

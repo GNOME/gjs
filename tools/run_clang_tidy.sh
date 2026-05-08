@@ -35,12 +35,13 @@ fi
 popd > /dev/null || exit 1
 
 if [ $# -eq 0 ]; then
-    run-clang-tidy -p "${BUILD}" "${CHECKS_OVERRIDE[@]}" gi/*.cpp gjs/*.cpp \
-        installed-tests/*.cpp installed-tests/js/libgjstesttools/*.cpp \
-        libgjs-private/*.c modules/*.cpp test/*.cpp util/*.cpp
+    run-clang-tidy -clang-tidy-binary tools/ctx.sh -p "${BUILD}" \
+        "${CHECKS_OVERRIDE[@]}" gi/*.cpp gjs/*.cpp installed-tests/*.cpp \
+        installed-tests/js/libgjstesttools/*.cpp libgjs-private/*.c \
+        modules/*.cpp test/*.cpp util/*.cpp
 else
     git diff --stat "$1"
     git diff -U0 --no-color "$1" | \
-        /usr/share/clang/clang-tidy-diff.py -p1 -path "${BUILD}" \
-            "${CHECKS_OVERRIDE[@]}"
+        /usr/share/clang/clang-tidy-diff.py -clang-tidy-binary tools/ctx.sh \
+            -p1 -path "${BUILD}" "${CHECKS_OVERRIDE[@]}"
 fi

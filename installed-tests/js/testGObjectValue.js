@@ -10,12 +10,20 @@ const SIGNED_TYPES = ['schar', 'int', 'int64', 'long'];
 const UNSIGNED_TYPES = ['char', 'uchar', 'uint', 'uint64', 'ulong'];
 const FLOATING_TYPES = ['double', 'float'];
 const NUMERIC_TYPES = [...SIGNED_TYPES, ...UNSIGNED_TYPES, ...FLOATING_TYPES];
-const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed', 'gvalue', 'enum'];
+const SPECIFIC_TYPES = ['gtype', 'boolean', 'string', 'param', 'variant', 'boxed', 'gvalue', 'enum', 'flags'];
 const INSTANCED_TYPES = ['object', 'instance'];
 const ALL_TYPES = [...NUMERIC_TYPES, ...SPECIFIC_TYPES, ...INSTANCED_TYPES];
 
 // Test that constructors can be used in place of GType arguments and corresponds to specified type
-const CONSTRUCTORS = [[String, 'string'], [Number, 'double'], [Boolean, 'boolean'], [Object, 'boxed'], [GIMarshallingTests.PropertiesObject, 'object'], [Regress.TestEnum, 'enum']];
+const CONSTRUCTORS = [
+    [String, 'string'],
+    [Number, 'double'],
+    [Boolean, 'boolean'],
+    [Object, 'boxed'],
+    [GIMarshallingTests.PropertiesObject, 'object'],
+    [Regress.TestEnum, 'enum'],
+    [Regress.TestFlags, 'flags'],
+];
 describe('GObject value (GValue)', function () {
     let v, overrideV;
     beforeEach(function () {
@@ -38,7 +46,8 @@ describe('GObject value (GValue)', function () {
 
         if (type === 'enum')
             return Regress.TestEnum[`VALUE${(Math.random() * 5 | 0) + 1}`];
-
+        if (type === 'flags')
+            return Regress.TestFlags[`FLAG${(Math.random() * 3 | 0) + 1}`];
 
         if (type === 'boxed' || type === 'boxed-struct') {
             return new GIMarshallingTests.BoxedStruct({

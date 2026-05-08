@@ -62,14 +62,6 @@ class Closure : public GClosure {
     }
 
     [[nodiscard]]
-    static Closure* create(JSContext* cx, JSObject* callable,
-                           const char* description, bool root) {
-        auto* self = new Closure(cx, callable, root, description);
-        self->add_finalize_notifier<Closure>();
-        return self;
-    }
-
-    [[nodiscard]]
     static Closure* create_marshaled(JSContext* cx, JSObject* callable,
                                      const char* description,
                                      bool root = true) {

@@ -26,6 +26,10 @@
 
 #include <chrono>
 
+#ifdef ENABLE_PROFILER
+#    include <algorithm>  // for min
+#endif
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -430,7 +434,7 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
         size_t available_length = sizeof (final_string) - 1;
 
         if (label_length > 0) {
-            label_length = MIN(label_length, available_length);
+            label_length = std::min(label_length, available_length);
 
             // Start copying the label to the final string
             memcpy(position, label, label_length);
@@ -454,7 +458,7 @@ static void gjs_profiler_sigprof(int signum [[maybe_unused]], siginfo_t* info,
 
             if (dynamic_string_length > 0) {
                 size_t remaining_length =
-                    MIN(available_length, dynamic_string_length);
+                    std::min(available_length, dynamic_string_length);
                 memcpy(position, dynamic_string, remaining_length);
                 position += remaining_length;
             }
