@@ -62,6 +62,7 @@
 #include "gi/closure.h"
 #include "gi/cwrapper.h"
 #include "gi/function.h"
+#include "gi/gi-utils.h"
 #include "gi/gjs_gi_trace.h"
 #include "gi/info.h"
 #include "gi/js-value-inl.h"  // for Relaxed, c_value_to_js_checked
@@ -626,21 +627,12 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
                      field.name());
 
     GI::AutoTypeInfo type{field.type_info()};
-    switch (type.tag()) {
-        case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_ERROR:
-        case GI_TYPE_TAG_GHASH:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_INTERFACE:
-            gjs_throw(cx,
-                      "Can't get field %s; GObject introspection supports only "
-                      "fields with simple types, not %s",
-                      field.name(), type.display_string());
-            return false;
-
-        default:
-            break;
+    if (!GI::is_supported_gobject_field_type(type)) {
+        gjs_throw(cx,
+                  "Can't get field %s; GObject introspection supports only "
+                  "fields with simple types, not %s",
+                  field.name(), type.display_string());
+        return false;
     }
 
     if (field.read(m_ptr, &arg).isErr()) {

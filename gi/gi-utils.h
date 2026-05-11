@@ -11,8 +11,9 @@
 
 #include <utility>  // for pair
 
-#include <glib-object.h>
 #include <girepository/girepository.h>
+#include <glib-object.h>
+#include <glib.h>
 
 #include <mozilla/Maybe.h>
 
@@ -59,6 +60,37 @@ inline bool is_gdk_atom(const RegisteredTypeInfo& rt) {
 [[nodiscard]]
 inline bool is_g_value(const RegisteredTypeInfo& rt) {
     return g_type_is_a(rt.gtype(), G_TYPE_VALUE);
+}
+
+[[nodiscard]]
+inline bool is_supported_gobject_field_type(const TypeInfo& type) {
+    switch (type.tag()) {
+        case GI_TYPE_TAG_VOID:
+        case GI_TYPE_TAG_BOOLEAN:
+        case GI_TYPE_TAG_INT8:
+        case GI_TYPE_TAG_UINT8:
+        case GI_TYPE_TAG_INT16:
+        case GI_TYPE_TAG_UINT16:
+        case GI_TYPE_TAG_INT32:
+        case GI_TYPE_TAG_UINT32:
+        case GI_TYPE_TAG_INT64:
+        case GI_TYPE_TAG_UINT64:
+        case GI_TYPE_TAG_FLOAT:
+        case GI_TYPE_TAG_DOUBLE:
+        case GI_TYPE_TAG_GTYPE:
+        case GI_TYPE_TAG_UTF8:
+        case GI_TYPE_TAG_FILENAME:
+        case GI_TYPE_TAG_UNICHAR:
+            return true;
+        case GI_TYPE_TAG_ARRAY:
+        case GI_TYPE_TAG_ERROR:
+        case GI_TYPE_TAG_GHASH:
+        case GI_TYPE_TAG_GLIST:
+        case GI_TYPE_TAG_GSLIST:
+        case GI_TYPE_TAG_INTERFACE:
+            return false;
+    }
+    g_assert_not_reached();
 }
 
 template <InfoTag TAG>
