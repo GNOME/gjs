@@ -57,16 +57,13 @@ G_DEFINE_TYPE_WITH_PRIVATE(GjsCoverage,
                            gjs_coverage,
                            G_TYPE_OBJECT)
 
-enum : uint8_t {
-    PROP_COVERAGE_0,
-    PROP_PREFIXES,
+enum GjsCoverageProps : uint8_t {
+    PROP_PREFIXES = 1,
     PROP_CONTEXT,
     PROP_CACHE,
     PROP_OUTPUT_DIRECTORY,
-    PROP_N
 };
-
-static GParamSpec* properties[PROP_N];
+static GParamSpec* gjs_coverage_props[PROP_OUTPUT_DIRECTORY + 1];
 
 [[nodiscard]]
 static char* get_file_identifier(GFile* source_file) {
@@ -369,11 +366,12 @@ static void gjs_coverage_constructed(GObject* object) {
 }
 
 static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
-                                      const GValue* value, GParamSpec* pspec) {
+                                      const GValue* value,
+                                      GParamSpec* pspec [[maybe_unused]]) {
     GjsCoverage* self = GJS_COVERAGE(object);
     auto* priv = static_cast<GjsCoveragePrivate*>(
         gjs_coverage_get_instance_private(self));
-    switch (prop_id) {
+    switch (static_cast<GjsCoverageProps>(prop_id)) {
         case PROP_PREFIXES:
             g_assert(priv->prefixes == nullptr);
             priv->prefixes = static_cast<char**>(g_value_dup_boxed(value));
@@ -385,9 +383,6 @@ static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
             break;
         case PROP_OUTPUT_DIRECTORY:
             priv->output_dir = G_FILE(g_value_dup_object(value));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;
     }
 }
@@ -429,27 +424,26 @@ static void gjs_coverage_class_init(GjsCoverageClass* klass) {
     object_class->finalize = gjs_coverage_finalize;
     object_class->set_property = gjs_coverage_set_property;
 
-    properties[PROP_PREFIXES] = g_param_spec_boxed(
+    gjs_coverage_props[PROP_PREFIXES] = g_param_spec_boxed(
         "prefixes", "Prefixes",
         "Prefixes of files on which to perform coverage analysis", G_TYPE_STRV,
         GParamFlags(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
-    properties[PROP_CONTEXT] = g_param_spec_object(
+    gjs_coverage_props[PROP_CONTEXT] = g_param_spec_object(
         "context", "Context", "A context to gather coverage stats for",
         GJS_TYPE_CONTEXT,
         GParamFlags(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE));
-    properties[PROP_CACHE] = g_param_spec_object(
+    gjs_coverage_props[PROP_CACHE] = g_param_spec_object(
         "cache", "Deprecated property", "Has no effect", G_TYPE_FILE,
         GParamFlags(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE |
                     G_PARAM_DEPRECATED));
-    properties[PROP_OUTPUT_DIRECTORY] = g_param_spec_object(
+    gjs_coverage_props[PROP_OUTPUT_DIRECTORY] = g_param_spec_object(
         "output-directory", "Output directory",
         "Directory handle at which to output coverage statistics", G_TYPE_FILE,
         GParamFlags(G_PARAM_CONSTRUCT_ONLY | G_PARAM_WRITABLE |
                     G_PARAM_STATIC_STRINGS));
 
-    g_object_class_install_properties(object_class,
-                                      PROP_N,
-                                      properties);
+    g_object_class_install_properties(
+        object_class, G_N_ELEMENTS(gjs_coverage_props), gjs_coverage_props);
 }
 
 /**

@@ -149,9 +149,8 @@ GjsContextPrivate* GjsContextPrivate::from_current_context() {
     return from_object(gjs_context_get_current());
 }
 
-enum : uint8_t {
-    PROP_CONTEXT_0,
-    PROP_PROGRAM_PATH,
+enum GjsContextProps : uint8_t {
+    PROP_PROGRAM_PATH = 1,
     PROP_SEARCH_PATH,
     PROP_PROGRAM_NAME,
     PROP_PROFILER_ENABLED,
@@ -159,6 +158,7 @@ enum : uint8_t {
     PROP_EXEC_AS_MODULE,
     PROP_REPL_HISTORY_PATH
 };
+static GParamSpec* gjs_context_props[PROP_REPL_HISTORY_PATH + 1];
 
 static GMutex contexts_lock;
 static GList* all_contexts = nullptr;
@@ -248,34 +248,21 @@ static void gjs_context_class_init(GjsContextClass* klass) {
     object_class->get_property = gjs_context_get_property;
     object_class->set_property = gjs_context_set_property;
 
-    GParamSpec* pspec = g_param_spec_boxed(
+    gjs_context_props[PROP_SEARCH_PATH] = g_param_spec_boxed(
         "search-path", "Search path",
         "Path where modules to import should reside", G_TYPE_STRV,
         GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class,
-                                    PROP_SEARCH_PATH,
-                                    pspec);
-    g_param_spec_unref(pspec);
-
-    pspec = g_param_spec_string(
+    gjs_context_props[PROP_PROGRAM_NAME] = g_param_spec_string(
         "program-name", "Program Name",
         "The filename of the launched JS program", "",
         GParamFlags(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
 
-    g_object_class_install_property(object_class,
-                                    PROP_PROGRAM_NAME,
-                                    pspec);
-    g_param_spec_unref(pspec);
-
-    pspec = g_param_spec_string(
+    gjs_context_props[PROP_PROGRAM_PATH] = g_param_spec_string(
         "program-path", "Executed File Path",
         "The full path of the launched file or NULL if GJS was launched from "
         "the C API or interactive console.",
         nullptr, GParamFlags(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY));
-
-    g_object_class_install_property(object_class, PROP_PROGRAM_PATH, pspec);
-    g_param_spec_unref(pspec);
 
     /**
      * GjsContext:profiler-enabled:
@@ -289,12 +276,10 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      *
      * You may only have one context with the profiler enabled at a time.
      */
-    pspec = g_param_spec_boolean(
+    gjs_context_props[PROP_PROFILER_ENABLED] = g_param_spec_boolean(
         "profiler-enabled", "Profiler enabled",
         "Whether to profile JS code run by this context", FALSE,
         GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
-    g_object_class_install_property(object_class, PROP_PROFILER_ENABLED, pspec);
-    g_param_spec_unref(pspec);
 
     /**
      * GjsContext:profiler-sigusr2:
@@ -303,19 +288,15 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      * stops the profiler. This property also implies that
      * #GjsContext:profiler-enabled is set.
      */
-    pspec = g_param_spec_boolean(
+    gjs_context_props[PROP_PROFILER_SIGUSR2] = g_param_spec_boolean(
         "profiler-sigusr2", "Profiler SIGUSR2",
         "Whether to activate the profiler on SIGUSR2", FALSE,
         GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
-    g_object_class_install_property(object_class, PROP_PROFILER_SIGUSR2, pspec);
-    g_param_spec_unref(pspec);
 
-    pspec = g_param_spec_boolean(
+    gjs_context_props[PROP_EXEC_AS_MODULE] = g_param_spec_boolean(
         "exec-as-module", "Execute as module",
         "Whether to execute the file as a module", FALSE,
         GParamFlags(G_PARAM_WRITABLE | G_PARAM_CONSTRUCT_ONLY));
-    g_object_class_install_property(object_class, PROP_EXEC_AS_MODULE, pspec);
-    g_param_spec_unref(pspec);
 
     /**
      * GjsContext:repl-history-path:
@@ -323,14 +304,14 @@ static void gjs_context_class_init(GjsContextClass* klass) {
      * Set this property to persist repl command history in the console or
      * debugger. If NULL, then command history will not be persisted.
      */
-    pspec = g_param_spec_string(
+    gjs_context_props[PROP_REPL_HISTORY_PATH] = g_param_spec_string(
         "repl-history-path", "REPL History Path",
         "The writable path to persist repl history", nullptr,
         GParamFlags(G_PARAM_READWRITE | G_PARAM_CONSTRUCT_ONLY |
                     G_PARAM_STATIC_STRINGS));
-    g_object_class_install_property(object_class, PROP_REPL_HISTORY_PATH,
-                                    pspec);
-    g_param_spec_unref(pspec);
+
+    g_object_class_install_properties(
+        object_class, G_N_ELEMENTS(gjs_context_props), gjs_context_props);
 
     // For GjsPrivate
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {
@@ -814,7 +795,7 @@ static void gjs_context_get_property(GObject* object, unsigned prop_id,
                                      GValue* value, GParamSpec* pspec) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
-    switch (prop_id) {
+    switch (static_cast<GjsContextProps>(prop_id)) {
         case PROP_PROGRAM_NAME:
             g_value_set_string(value, gjs->program_name());
             break;
@@ -824,17 +805,21 @@ static void gjs_context_get_property(GObject* object, unsigned prop_id,
         case PROP_REPL_HISTORY_PATH:
             g_value_set_string(value, gjs->repl_history_path());
             break;
-        default:
+        case PROP_SEARCH_PATH:
+        case PROP_EXEC_AS_MODULE:
+        case PROP_PROFILER_ENABLED:
+        case PROP_PROFILER_SIGUSR2:
             G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;
     }
 }
 
 static void gjs_context_set_property(GObject* object, unsigned prop_id,
-                                     const GValue* value, GParamSpec* pspec) {
+                                     const GValue* value,
+                                     GParamSpec* pspec [[maybe_unused]]) {
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(object);
 
-    switch (prop_id) {
+    switch (static_cast<GjsContextProps>(prop_id)) {
         case PROP_SEARCH_PATH:
             gjs->set_search_path(static_cast<char**>(g_value_dup_boxed(value)));
             break;
@@ -855,9 +840,6 @@ static void gjs_context_set_property(GObject* object, unsigned prop_id,
             break;
         case PROP_REPL_HISTORY_PATH:
             gjs->set_repl_history_path(g_value_dup_string(value));
-            break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, prop_id, pspec);
             break;
     }
 }
