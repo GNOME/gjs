@@ -169,6 +169,28 @@ describe('Cairo', function () {
             });
         });
 
+        it('sets the font matrix', function () {
+            // A scaled matrix round-trips correctly
+            cr.setFontMatrix({xx: 20, yx: 0, xy: 0, yy: 20, x0: 0, y0: 0});
+            const result = cr.getFontMatrix();
+            expect(result.xx).toBeCloseTo(20);
+            expect(result.yy).toBeCloseTo(20);
+            expect(result.yx).toBeCloseTo(0);
+            expect(result.xy).toBeCloseTo(0);
+            expect(result.x0).toBeCloseTo(0);
+            expect(result.y0).toBeCloseTo(0);
+
+            // A sheared/rotated font matrix round-trips correctly
+            cr.setFontMatrix({xx: 10, yx: 5, xy: -3, yy: 10, x0: 1, y0: 2});
+            const sheared = cr.getFontMatrix();
+            expect(sheared.xx).toBeCloseTo(10);
+            expect(sheared.yx).toBeCloseTo(5);
+            expect(sheared.xy).toBeCloseTo(-3);
+            expect(sheared.yy).toBeCloseTo(10);
+            expect(sheared.x0).toBeCloseTo(1);
+            expect(sheared.y0).toBeCloseTo(2);
+        });
+
         it('can call various, otherwise untested, methods without crashing', function () {
             expect(() => {
                 cr.save();
