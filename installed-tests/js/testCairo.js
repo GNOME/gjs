@@ -157,6 +157,18 @@ describe('Cairo', function () {
             });
         });
 
+        it('gets the font matrix', function () {
+            // Default font matrix is a scale by the font size (10.0)
+            expect(cr.getFontMatrix()).toEqual({
+                xx: jasmine.any(Number),
+                yx: jasmine.any(Number),
+                xy: jasmine.any(Number),
+                yy: jasmine.any(Number),
+                x0: jasmine.any(Number),
+                y0: jasmine.any(Number),
+            });
+        });
+
         it('can call various, otherwise untested, methods without crashing', function () {
             expect(() => {
                 cr.save();
