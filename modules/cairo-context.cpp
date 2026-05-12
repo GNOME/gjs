@@ -852,6 +852,41 @@ static bool getFontMatrix_func(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool setFontMatrix_func(JSContext* cx, unsigned argc, JS::Value* vp) {
+    GJS_CAIRO_CONTEXT_GET_PRIV_CR_CHECKED(cx, argc, vp, argv, obj);
+
+    JS::RootedObject matrix_obj{cx};
+    if (!gjs_parse_call_args(cx, "setFontMatrix", argv, "o", "matrix",
+                             &matrix_obj))
+        return false;
+
+    cairo_matrix_t matrix;
+    JS::RootedValue val{cx};
+
+#define GET_MATRIX_FIELD(field)                                  \
+    if (!JS_GetProperty(cx, matrix_obj, #field, &val))           \
+        return false;                                            \
+    if (!JS::ToNumber(cx, val, &matrix.field))                   \
+        return false;
+
+    GET_MATRIX_FIELD(xx)
+    GET_MATRIX_FIELD(yx)
+    GET_MATRIX_FIELD(xy)
+    GET_MATRIX_FIELD(yy)
+    GET_MATRIX_FIELD(x0)
+    GET_MATRIX_FIELD(y0)
+#undef GET_MATRIX_FIELD
+
+    cairo_set_font_matrix(cr, &matrix);
+
+    if (!gjs_cairo_check_status(cx, cairo_status(cr), "context"))
+        return false;
+
+    argv.rval().setUndefined();
+    return true;
+}
+
 // clang-format off
 const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("$dispose", &CairoContext::dispose, 0, 0),
@@ -923,7 +958,7 @@ const JSFunctionSpec CairoContext::proto_funcs[] = {
     JS_FN("setAntialias", setAntialias_func, 0, 0),
     JS_FN("setDash", setDash_func, 0, 0),
     // setFontFace
-    // setFontMatrix
+    JS_FN("setFontMatrix", setFontMatrix_func, 1, 0),
     // setFontOptions
     JS_FN("setFontSize", setFontSize_func, 0, 0),
     JS_FN("setFillRule", setFillRule_func, 0, 0),
