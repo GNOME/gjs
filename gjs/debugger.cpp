@@ -150,3 +150,34 @@ void gjs_context_setup_debugger_console(GjsContext* self) {
                                       "debugger"))
         gjs_log_exception(cx);
 }
+
+static JSFunctionSpec inspector_funcs[] = {
+    JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("getSourceMapRegistry", get_source_map_registry, 0,
+          GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
+
+void gjs_context_setup_inspector(GjsContext* self) {
+    auto* gjs = GjsContextPrivate::from_object(self);
+    JSContext* cx = gjs->context();
+
+    JS::RootedObject inspector_global(
+        cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER));
+
+    // Enter realm of the inspector and initialize it with the debuggee
+    JSAutoRealm ar(cx, inspector_global);
+    JS::RootedObject debuggee{cx, gjs->global()};
+    if (!JS_WrapObject(cx, &debuggee)) {
+        gjs_log_exception(cx);
+        return;
+    }
+
+    JS::RootedValue v_debuggee(cx, JS::ObjectValue(*debuggee));
+    if (!JS_SetPropertyById(cx, inspector_global, gjs->atoms().debuggee(),
+                            v_debuggee) ||
+        !JS_DefineFunctions(cx, inspector_global, inspector_funcs) ||
+        !gjs_define_global_properties(cx, inspector_global,
+                                      GjsGlobalType::DEBUGGER, "GJS inspector",
+                                      "inspector"))
+        gjs_log_exception(cx);
+}

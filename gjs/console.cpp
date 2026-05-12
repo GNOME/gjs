@@ -31,6 +31,7 @@ static Gjs::AutoChar command;
 static gboolean print_version = false;
 static gboolean print_js_version = false;
 static gboolean debugging = false;
+static gboolean inspecting = false;
 static gboolean exec_as_module = false;
 static bool enable_profiler = false;
 
@@ -92,6 +93,11 @@ static GOptionEntry entries[] = {
      .arg = G_OPTION_ARG_NONE,
      .arg_data = &debugging,
      .description = "Start in debug mode"},
+    {.long_name = "inspect",
+     .short_name = 'i',
+     .arg = G_OPTION_ARG_NONE,
+     .arg_data = &inspecting,
+     .description = "Start in DAP inspector mode"},
     {}};
 
 [[nodiscard]]
@@ -305,6 +311,7 @@ int main(int argc, char** argv) {
     print_version = false;
     print_js_version = false;
     debugging = false;
+    inspecting = false;
     exec_as_module = false;
     g_option_context_set_ignore_unknown_options(context, false);
     g_option_context_set_help_enabled(context, true);
@@ -446,10 +453,18 @@ int main(int argc, char** argv) {
 
     tracefd.close();
 
+    if (debugging && inspecting) {
+        g_printerr("Cannot enable both --debugger and --inspect\n");
+        return EXIT_FAILURE;
+    }
+
     /* If we're debugging, set up the debugger. It will break on the first
      * frame. */
     if (debugging)
         gjs_context_setup_debugger_console(gjs_context);
+
+    if (inspecting)
+        gjs_context_setup_inspector(gjs_context);
 
     int code = define_argv_and_eval_script(gjs_context, script_argc,
                                            script_argv, script, len, filename);
