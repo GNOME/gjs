@@ -775,7 +775,6 @@ describe('GObject class with custom constructor', function () {
         let myInstance2 = new MyObjectWithCustomConstructor({readwrite: 'baz', construct: 'asdf'});
         expect(myInstance2.readwrite).toEqual('baz');
         expect(myInstance2.readonly).toEqual('bar');
-        console.log(Object.getOwnPropertyDescriptor(myInstance2, 'construct'));
         expect(myInstance2.construct).toEqual('asdf');
     });
 

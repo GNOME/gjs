@@ -2674,7 +2674,6 @@ describe('Class with action signals', function () {
 
 describe('Bitmask fundamental type', function () {
     xit('can be created', function () {
-        const bitmask = new Regress.Bitmask(2);
-        console.log(bitmask);
+        new Regress.Bitmask(2);
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection-tests/-/issues/7');
 });
