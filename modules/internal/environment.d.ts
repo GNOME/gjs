@@ -15,8 +15,8 @@ declare var parseURI: (uri: string) => Uri;
 declare var resolveRelativeResourceOrFile:
     (uri: string, relativePath: string) => Uri;
 declare var setGlobalModuleLoader:
-    (global: Global, loader: InternalModuleLoader) => void;
-declare var setModulePrivate: (module: Module, private: ModulePrivate) => void;
+    (global: Global, loader: ModuleLoaderInterface) => void;
+declare var setModulePrivate: (module: Module, private: object) => void;
 declare var uriExists: (uri: string) => boolean;
 
 /**
@@ -29,10 +29,17 @@ declare type SchemeHandler = {
     load(uri: Uri): string;
     loadAsync(uri: Uri): Promise<string>;
 };
+declare interface ModuleLoaderInterface {
+    moduleLoadHook(id: string, uri: string): Module;
+    moduleResolveHook(priv: object | null, specifier: string): Module;
+    moduleResolveAsyncHook?(priv: object | null, specifier: string): Promise<Module>;
+}
 
 declare type Query = { [key: string]: string | undefined };
 declare type CompileFunc = (uri: string, source: string) => Module;
 declare type ResolvedModule = [Module, string, string];
+declare type SourceMapConsumer =
+    import('./source-map/source-map-consumer.js').SourceMapConsumer;
 
 declare type Uri = {
     uri: string;

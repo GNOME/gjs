@@ -9,7 +9,6 @@
     "noEmit": true,  // don't generate files, just typecheck them
     "allowJs": true,
     "checkJs": true,
-    "skipLibCheck": true,  // don't check environment.d.ts
 
     "target": "es2023",
     "lib": ["es2023"],
