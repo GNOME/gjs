@@ -516,10 +516,13 @@ if cairo_xlib.found()
     pkg_dependencies += cairo_xlib
 endif
 
+if host_machine.system() != 'windows'
+    libgjs_dependencies += dependency('gio-unix-2.0',
+        version: glib_required_version, fallback: ['glib', 'libgiounix_dep'])
+endif
+
 if build_readline
-    gio_unix = dependency('gio-unix-2.0', version: glib_required_version,
-        fallback: ['glib', 'libgiounix_dep'])
-    libgjs_dependencies += [readline_deps, gio_unix]
+    libgjs_dependencies += readline_deps
 endif
 
 libgjs_cpp_args = ['-DGJS_COMPILATION'] + directory_defines
