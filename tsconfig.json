@@ -2,10 +2,12 @@
 // SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 {
   "files": [
+    "installed-tests/js/testGlobal.js",
     "installed-tests/js/testself.js",
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
   ],
+  "include": ["./types/gjs.d.ts"],
   "compilerOptions": {
     "noEmit": true,  // don't generate files, just typecheck them
     "allowJs": true,

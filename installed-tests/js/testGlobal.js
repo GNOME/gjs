@@ -2,6 +2,10 @@
 // SPDX-FileCopyrightText: 2022 Evan Welsh <contact@evanwelsh.com>
 
 describe('globalThis', () => {
+    /**
+     * @param {any} value
+     * @param {string} [message]
+     */
     function itIsDefined(value, message) {
         it(`${message ? `${message} ` : ''}is defined`, function () {
             expect(value).toBeDefined();
