@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 {
   "files": [
+    "installed-tests/js/testself.js",
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
   ],
@@ -12,6 +13,12 @@
 
     "target": "es2023",
     "lib": ["es2023"],
+    // Consider splitting this into a separate tsconfig project for only the
+    // test files, so that Jasmine types don't get pulled in globally.
+    "types": ["jasmine"],
+
+    // Path options
+    "typeRoots": ["./tools/node_modules/@types"],
 
     // Type checking options
     "strict": true

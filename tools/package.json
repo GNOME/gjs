@@ -11,6 +11,7 @@
     "typecheck": "tsc"
   },
   "devDependencies": {
+    "@types/jasmine": "^3.10.19",
     "eslint": "^9.36.0",
     "eslint-config-gnome": "git+https://gitlab.gnome.org/World/javascript/eslint-config-gnome.git#c479d059e8d9ea99c3b53c2ea43abf7fdb05eb51",
     "typescript": "^5.9"
