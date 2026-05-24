@@ -221,6 +221,7 @@ declare var imports: {
     lang: typeof import('../modules/script/lang.js');
     /** @deprecated */
     mainloop: typeof import('../modules/script/mainloop.js');
+    package: typeof import('../modules/script/package.js');
 };
 
 declare function log(arg: any): void;
