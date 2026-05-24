@@ -44,8 +44,11 @@ describe('Lang module', function () {
 
         Lang.copyProperties(foo, bar);
 
-        expect(bar.__lookupGetter__('c')).not.toBeNull();
-        expect(bar.__lookupSetter__('c')).not.toBeNull();
+        const propDescr = Object.getOwnPropertyDescriptor(bar, 'c');
+        expect(propDescr).toEqual(jasmine.objectContaining({
+            get: jasmine.any(Function),
+            set: jasmine.any(Function),
+        }));
 
         // this should return the value of 'a'
         expect(bar.c).toEqual(10);
