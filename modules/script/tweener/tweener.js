@@ -27,7 +27,6 @@ const GLib = imports.gi.GLib;
 const TweenList = imports.tweener.tweenList;
 const Signals = imports.signals;
 
-var _inited = false;
 var _engineExists = false;
 var _tweenList = null;
 
@@ -52,15 +51,10 @@ var _ticker = null;
 var _prepareFrameId = 0;
 
 /* default frame ticker */
-function FrameTicker() {
-    this._init();
-}
+function FrameTicker() {}
 
 FrameTicker.prototype = {
     FRAME_RATE: 65,
-
-    _init() {
-    },
 
     start() {
         this._currentTime = 0;
@@ -93,14 +87,6 @@ FrameTicker.prototype = {
 Signals.addSignalMethods(FrameTicker.prototype);
 
 _ticker = new FrameTicker();
-
-/* This is a bit pointless now, but let's keep it anyway... */
-function _init() {
-    if (_inited)
-        return;
-
-    _inited = true;
-}
 
 function setFrameTicker(ticker) {
     _ticker = ticker;
@@ -481,8 +467,6 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
     }
 
     // Creates the main engine if it isn't active
-    if (!_inited)
-        _init();
     if (!_engineExists)
         _startEngine();
 
