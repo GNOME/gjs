@@ -210,9 +210,16 @@ interface TextEncoderEncodeIntoResult {
     written: number;
 }
 
+type TimerHandler = string | Function;
+
 // Declarations of global GJS objects
 
 declare var ARGV: string[];
+
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/clearInterval) */
+declare function clearInterval(id: number | undefined): void;
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/clearTimeout) */
+declare function clearTimeout(id: number | undefined): void;
 
 declare var console: Console;
 
@@ -222,12 +229,23 @@ declare var imports: {
     /** @deprecated */
     mainloop: typeof import('../modules/script/mainloop.js');
     package: typeof import('../modules/script/package.js');
+    /** @deprecated */
+    signals: typeof import('../modules/script/signals.js');
+    /** @deprecated */
+    tweener: {
+        tweener: typeof import('../modules/script/tweener/tweener.js');
+    }
 };
 
 declare function log(arg: any): void;
 declare function logError(error: Error, message?: string): void;
 declare function print(...args: any[]): void;
 declare function printerr(...args: any[]): void;
+
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/setInterval) */
+declare function setInterval(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
+/** [MDN Reference](https://developer.mozilla.org/docs/Web/API/Window/setTimeout) */
+declare function setTimeout(handler: TimerHandler, timeout?: number, ...arguments: any[]): number;
 
 declare var TextDecoder: {
     prototype: TextDecoder;

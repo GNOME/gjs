@@ -7,6 +7,7 @@
     "installed-tests/js/testMainloop.js",
     "installed-tests/js/testPackage.js",
     "installed-tests/js/testself.js",
+    "installed-tests/js/testTweener.js",
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
   ],

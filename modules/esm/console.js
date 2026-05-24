@@ -630,7 +630,6 @@ const globalConsole = Object.create({});
 
 const propertyNames =
     /** @type {['constructor', ...Array<string & keyof Console>]} */
-    // eslint-disable-next-line no-extra-parens
     (Object.getOwnPropertyNames(Console.prototype));
 const propertyDescriptors = Object.getOwnPropertyDescriptors(Console.prototype);
 for (const key of propertyNames) {
