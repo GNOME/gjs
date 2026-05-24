@@ -10,9 +10,6 @@ function installFrameTicker() {
     let ticker = {
         FRAME_RATE: 50,
 
-        _init() {
-        },
-
         start() {
             this._currentTime = 0;
 
@@ -171,7 +168,7 @@ describe('Tweener', function () {
         Tweener.addTween(objectB, {bar: 100, time: 0.1});
         Tweener.addTween(objectB, {bar: 150, time: 0.1, delay: 0.1});
 
-        jasmine.clock(0).tick(201);
+        jasmine.clock().tick(201);
 
         expect(objectB.bar).toEqual(150);
     });
