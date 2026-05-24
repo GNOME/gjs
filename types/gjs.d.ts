@@ -219,6 +219,8 @@ declare var console: Console;
 declare var imports: {
     /** @deprecated */
     lang: typeof import('../modules/script/lang.js');
+    /** @deprecated */
+    mainloop: typeof import('../modules/script/mainloop.js');
 };
 
 declare function log(arg: any): void;

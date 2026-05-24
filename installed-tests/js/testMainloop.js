@@ -4,7 +4,10 @@
 const Mainloop = imports.mainloop;
 
 describe('Mainloop.timeout_add()', function () {
-    let runTenTimes, runOnlyOnce, neverRun, neverRunSource;
+    let /** @type jasmine.Spy */ runTenTimes,
+        /** @type jasmine.Spy */ runOnlyOnce,
+        /** @type jasmine.Spy */ neverRun,
+        /** @type number */ neverRunSource;
     beforeAll(function (done) {
         let count = 0;
         runTenTimes = jasmine.createSpy('runTenTimes').and.callFake(() => {
@@ -16,7 +19,7 @@ describe('Mainloop.timeout_add()', function () {
             return true;
         });
         runOnlyOnce = jasmine.createSpy('runOnlyOnce').and.returnValue(false);
-        neverRun = jasmine.createSpy('neverRun').and.throwError();
+        neverRun = jasmine.createSpy('neverRun').and.throwError('Should not be reached');
 
         Mainloop.timeout_add(10, runTenTimes);
         Mainloop.timeout_add(10, runOnlyOnce);
@@ -41,11 +44,14 @@ describe('Mainloop.timeout_add()', function () {
 });
 
 describe('Mainloop.idle_add()', function () {
-    let runOnce, runTwice, neverRuns, quitAfterManyRuns;
+    let /** @type jasmine.Spy */ runOnce,
+        /** @type jasmine.Spy */ runTwice,
+        /** @type jasmine.Spy */ neverRuns,
+        /** @type jasmine.Spy */ quitAfterManyRuns;
     beforeAll(function (done) {
         runOnce = jasmine.createSpy('runOnce').and.returnValue(false);
         runTwice = jasmine.createSpy('runTwice').and.returnValues([true, false]);
-        neverRuns = jasmine.createSpy('neverRuns').and.throwError();
+        neverRuns = jasmine.createSpy('neverRuns').and.throwError('Should not be reached');
         let count = 0;
         quitAfterManyRuns = jasmine.createSpy('quitAfterManyRuns').and.callFake(() => {
             count += 1;

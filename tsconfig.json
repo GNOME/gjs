@@ -4,6 +4,7 @@
   "files": [
     "installed-tests/js/testGlobal.js",
     "installed-tests/js/testLang.js",
+    "installed-tests/js/testMainloop.js",
     "installed-tests/js/testself.js",
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
