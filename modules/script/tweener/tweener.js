@@ -94,24 +94,6 @@ Signals.addSignalMethods(FrameTicker.prototype);
 
 _ticker = new FrameTicker();
 
-/* TODOs:
- *
- * Special properties:
- *
- * Special properties are 'proxy' properties used in Tweener to tween
- * (animate) things that are not proper properties per se. One example
- * given is the 'frame' of an object in ActionScript, which is not an
- * object property. Using the special property '_frame' you could animate
- * it like this:
- *
- * Tweener.addTween(myMovieClip, {_frame:20, time:1});
- *
- * which would be equivalent to applying a fast-forward to it.
- *
- * This properties need a special support in the code, and I've removed it
- * for now until we see the need for it in our clutter based stuff.
- */
-
 /* This is a bit pointless now, but let's keep it anyway... */
 function _init() {
     if (_inited)
