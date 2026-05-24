@@ -216,6 +216,11 @@ declare var ARGV: string[];
 
 declare var console: Console;
 
+declare var imports: {
+    /** @deprecated */
+    lang: typeof import('../modules/script/lang.js');
+};
+
 declare function log(arg: any): void;
 declare function logError(error: Error, message?: string): void;
 declare function print(...args: any[]): void;
