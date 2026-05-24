@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 {
   "files": [
+    "installed-tests/js/matchers.js",
     "installed-tests/js/testGlobal.js",
     "installed-tests/js/testLang.js",
     "installed-tests/js/testMainloop.js",
