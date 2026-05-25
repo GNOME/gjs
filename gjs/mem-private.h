@@ -8,8 +8,11 @@
 #include <config.h>
 
 #include <stddef.h>  // for size_t
+#include <stdint.h>
 
 #include <atomic>
+
+#include <glib-object.h>
 
 #include <js/MemoryFunctions.h>
 
@@ -100,3 +103,5 @@ namespace MemoryUse {
     constexpr JS::MemoryUse GdkPixbuf = JS::MemoryUse::Embedding3;
     constexpr JS::MemoryUse Cairo = JS::MemoryUse::Embedding4;
 }
+
+int32_t estimate_size_of_gdkpixbuf(GObject* wrapped);

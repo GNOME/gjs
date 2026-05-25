@@ -11,9 +11,7 @@
 #endif
 
 #include <stdbool.h> /* IWYU pragma: keep */
-#include <stdint.h>
 
-#include <glib-object.h>
 #include <glib.h>
 
 #include "gjs/macros.h"
@@ -23,5 +21,4 @@ G_BEGIN_DECLS
 GJS_EXPORT
 void gjs_memory_report(const char* where, bool die_if_leaks);
 
-int32_t estimate_size_of_gdkpixbuf(GObject* wrapped);
 G_END_DECLS
