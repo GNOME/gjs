@@ -147,6 +147,33 @@ class CustomActionWidget extends Gtk.Widget {
     }
 });
 
+class CustomBindingWidget extends Gtk.Widget {
+    [GObject.signals] = {
+        'custom-signal': {},
+    };
+
+    static {
+        GObject.registerClass(this);
+
+        this.install_action(
+            'custom.action',
+            'd',
+            (widget, v) => (widget.action = v.deepUnpack()));
+
+        this.add_binding(
+            Gdk.KEY_b, Gdk.ModifierType.CONTROL_MASK,
+            widget => (widget.binding_called = true));
+
+        this.add_binding_action(
+            Gdk.KEY_a, Gdk.ModifierType.CONTROL_MASK,
+            'custom.action', 'd', 42);
+
+        this.add_binding_signal(
+            Gdk.KEY_s, Gdk.ModifierType.CONTROL_MASK,
+            'custom-signal');
+    }
+}
+
 function validateTemplate(description, ClassName, pending = false) {
     let suite = pending ? xdescribe : describe;
     suite(description, function () {
@@ -641,6 +668,24 @@ describe('Gtk 4', function () {
             sortFunc.calls.reset();
             sorter.set_sort_func(null);
             expect(sortFunc).not.toHaveBeenCalled();
+        });
+
+        it('can add bindings from class initialization', function () {
+            const widget = new CustomBindingWidget();
+            const shortcuts = widget.observe_controllers().get_item(0);
+
+            expect(shortcuts).not.toBeNull();
+            expect(shortcuts.get_n_items()).toEqual(3);
+
+            let action;
+            action = shortcuts.get_item(0).get_action();
+            expect(action instanceof Gtk.CallbackAction).toBeTrue();
+
+            action = shortcuts.get_item(1).get_action();
+            expect(action instanceof Gtk.NamedAction).toBeTrue();
+
+            action = shortcuts.get_item(2).get_action();
+            expect(action instanceof Gtk.SignalAction).toBeTrue();
         });
     });
 
