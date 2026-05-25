@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2017 Chun-wei Fan
  */
 
-#ifndef GJS_MACROS_H_
-#define GJS_MACROS_H_
+#pragma once
 
 #include <glib.h>
 
@@ -57,5 +56,3 @@
 #else
 #    define GJS_ALWAYS_INLINE
 #endif
-
-#endif /* GJS_MACROS_H_ */

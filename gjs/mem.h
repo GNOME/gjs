@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2008 litl, LLC
  */
 
-#ifndef GJS_MEM_H_
-#define GJS_MEM_H_
+#pragma once
 
 #if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
 #    error "Only <gjs/gjs.h> can be included directly."
@@ -26,5 +25,3 @@ void gjs_memory_report(const char* where, bool die_if_leaks);
 
 int32_t estimate_size_of_gdkpixbuf(GObject* wrapped);
 G_END_DECLS
-
-#endif  // GJS_MEM_H_

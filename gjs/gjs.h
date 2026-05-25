@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2008 litl, LLC
  */
 
-#ifndef GJS_GJS_H_
-#define GJS_GJS_H_
+#pragma once
 
 #define INSIDE_GJS_H
 
@@ -17,5 +16,3 @@
 #include <gjs/profiler.h>
 
 #undef INSIDE_GJS_H
-
-#endif /* GJS_GJS_H_ */

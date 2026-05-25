@@ -5,8 +5,7 @@
  * SPDX-FileContributor: Authored By: Sam Spilsbury <sam@endlessm.com>
  */
 
-#ifndef GJS_COVERAGE_H_
-#define GJS_COVERAGE_H_
+#pragma once
 
 #if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
 #    error "Only <gjs/gjs.h> can be included directly."
@@ -35,5 +34,3 @@ GjsCoverage* gjs_coverage_new(const char* const* coverage_prefixes,
                               GjsContext* coverage_context, GFile* output_dir);
 
 G_END_DECLS
-
-#endif /* GJS_COVERAGE_H_ */

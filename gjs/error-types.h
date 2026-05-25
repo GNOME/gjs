@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2008 litl, LLC
  */
 
-#ifndef GJS_ERROR_TYPES_H_
-#define GJS_ERROR_TYPES_H_
+#pragma once
 
 #if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
 #    error "Only <gjs/gjs.h> can be included directly."
@@ -48,5 +47,3 @@ typedef enum GjsJSError {
 } GjsJSError;
 
 G_END_DECLS
-
-#endif /* GJS_ERROR_TYPES_H_ */

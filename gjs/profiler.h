@@ -3,8 +3,7 @@
  * SPDX-FileCopyrightText: 2016 Christian Hergert <christian@hergert.me>
  */
 
-#ifndef GJS_PROFILER_H_
-#define GJS_PROFILER_H_
+#pragma once
 
 #if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
 #    error "Only <gjs/gjs.h> can be included directly."
@@ -37,5 +36,3 @@ GJS_EXPORT
 void gjs_profiler_stop(GjsProfiler* self);
 
 G_END_DECLS
-
-#endif  // GJS_PROFILER_H_
