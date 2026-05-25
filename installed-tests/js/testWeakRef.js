@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2023 Philip Chimento <philip.chimento@gmail.com>
 
+import GObject from 'gi://GObject';
 import System from 'system';
 
 const PromiseInternal = imports._promiseNative;
@@ -15,6 +16,18 @@ describe('WeakRef', function () {
         // Do not use this in real code to process microtasks. This is only for
         // making the test execute synchronously. Instead, in real code, return
         // control to the event loop, e.g. with setTimeout().
+        PromiseInternal.drainMicrotaskQueue();
+        System.gc();
+
+        expect(weakRef.deref()).not.toBeDefined();
+    });
+
+    it('works for GObjects', function () {
+        let obj = new GObject.Object();
+        const weakRef = new WeakRef(obj);
+        expect(weakRef.deref()).toBe(obj);
+        obj = null;
+
         PromiseInternal.drainMicrotaskQueue();
         System.gc();
 
