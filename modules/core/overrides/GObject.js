@@ -661,6 +661,7 @@ function _init() {
     // Expose GObject static properties for ES6 classes
 
     GObject.GTypeName = GTypeName;
+    GObject.GTypeFlags = GTypeFlags;
     GObject.requires = requires;
     GObject.interfaces = interfaces;
     GObject.properties = properties;

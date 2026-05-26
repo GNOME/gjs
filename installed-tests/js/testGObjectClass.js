@@ -238,9 +238,8 @@ const MyAbstractObject = GObject.registerClass({
 }, class MyAbstractObject extends GObject.Object {
 });
 
-const MyFinalObject = GObject.registerClass({
-    GTypeFlags: GObject.TypeFlags.FINAL,
-}, class extends GObject.Object {
+const MyFinalObject = GObject.registerClass(class extends GObject.Object {
+    static [GObject.GTypeFlags] = GObject.TypeFlags.FINAL;
 });
 
 const MyApplication = GObject.registerClass({
@@ -302,12 +301,8 @@ describe('GObject class with decorator', function () {
     });
 
     it('throws if final class is inherited from', function () {
-        try {
-            GObject.registerClass(class extends MyFinalObject {});
-            fail();
-        } catch (e) {
-            expect(e.message).toEqual('Cannot inherit from a final type');
-        }
+        expect(() => GObject.registerClass(class extends MyFinalObject {}))
+            .toThrowError('Cannot inherit from a final type');
     });
 
     it('constructs with default values for properties', function () {
