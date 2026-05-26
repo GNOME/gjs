@@ -1,4 +1,4 @@
-/* exported _init, interfaces, properties, registerClass, requires, signals */
+/* exported _init, registerClass */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2011 Jasper St. Pierre
 // SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>, <philip@endlessm.com>
@@ -9,19 +9,6 @@ const {_checkAccessors, _registerType} = imports._common;
 const Legacy = imports._legacy;
 
 let GObject;
-
-var GTypeName = Symbol('GType name');
-var GTypeFlags = Symbol('GType flags');
-var interfaces = Symbol('GObject interfaces');
-var properties = Symbol('GObject properties');
-var requires = Symbol('GObject interface requires');
-var signals = Symbol('GObject signals');
-
-// These four will be aliased to GTK
-var _gtkChildren = Symbol('GTK widget template children');
-var _gtkCssName = Symbol('GTK widget CSS name');
-var _gtkInternalChildren = Symbol('GTK widget template internal children');
-var _gtkTemplate = Symbol('GTK widget template');
 
 function registerClass(...args) {
     let klass = args[0];
@@ -43,25 +30,25 @@ function registerClass(...args) {
         let metaInfo = args[0];
         klass = args[1];
         if ('GTypeName' in metaInfo)
-            klass[GTypeName] = metaInfo.GTypeName;
+            klass[GObject.GTypeName] = metaInfo.GTypeName;
         if ('GTypeFlags' in metaInfo)
-            klass[GTypeFlags] = metaInfo.GTypeFlags;
+            klass[GObject.GTypeFlags] = metaInfo.GTypeFlags;
         if ('Implements' in metaInfo)
-            klass[interfaces] = metaInfo.Implements;
+            klass[GObject.interfaces] = metaInfo.Implements;
         if ('Properties' in metaInfo)
-            klass[properties] = metaInfo.Properties;
+            klass[GObject.properties] = metaInfo.Properties;
         if ('Signals' in metaInfo)
-            klass[signals] = metaInfo.Signals;
+            klass[GObject.signals] = metaInfo.Signals;
         if ('Requires' in metaInfo)
-            klass[requires] = metaInfo.Requires;
+            klass[GObject.requires] = metaInfo.Requires;
         if ('CssName' in metaInfo)
-            klass[_gtkCssName] = metaInfo.CssName;
+            klass[GObject.__gtkCssName__] = metaInfo.CssName;
         if ('Template' in metaInfo)
-            klass[_gtkTemplate] = metaInfo.Template;
+            klass[GObject.__gtkTemplate__] = metaInfo.Template;
         if ('Children' in metaInfo)
-            klass[_gtkChildren] = metaInfo.Children;
+            klass[GObject.__gtkChildren__] = metaInfo.Children;
         if ('InternalChildren' in metaInfo)
-            klass[_gtkInternalChildren] = metaInfo.InternalChildren;
+            klass[GObject.__gtkInternalChildren__] = metaInfo.InternalChildren;
     }
 
     if (!(klass.prototype instanceof GObject.Object) &&
@@ -179,11 +166,12 @@ function _getCallerBasename() {
 function _createGTypeName(klass) {
     const sanitizeGType = s => s.replace(/[^a-z0-9+_-]/gi, '_');
 
-    if (Object.hasOwn(klass, GTypeName)) {
-        let sanitized = sanitizeGType(klass[GTypeName]);
-        if (sanitized !== klass[GTypeName]) {
-            logError(new RangeError(`Provided GType name '${klass[GTypeName]}' ` +
-                `is not valid; automatically sanitized to '${sanitized}'`));
+    if (Object.hasOwn(klass, GObject.GTypeName)) {
+        let sanitized = sanitizeGType(klass[GObject.GTypeName]);
+        if (sanitized !== klass[GObject.GTypeName]) {
+            logError(new RangeError('Provided GType name ' +
+                `'${klass[GObject.GTypeName]}' is not valid; automatically ` +
+                `sanitized to '${sanitized}'`));
         }
         return sanitized;
     }
@@ -203,9 +191,9 @@ function _createGTypeName(klass) {
 
 function _propertiesAsArray(klass) {
     let propertiesArray = [];
-    if (Object.hasOwn(klass, properties)) {
-        for (let prop in klass[properties])
-            propertiesArray.push(klass[properties][prop]);
+    if (Object.hasOwn(klass, GObject.properties)) {
+        for (let prop in klass[GObject.properties])
+            propertiesArray.push(klass[GObject.properties][prop]);
     }
     return propertiesArray;
 }
@@ -228,9 +216,9 @@ function _copyInterfacePrototypeDescriptors(targetPrototype, sourceInterface) {
 }
 
 function _interfacePresent(required, klass) {
-    if (!klass[interfaces])
+    if (!klass[GObject.interfaces])
         return false;
-    if (klass[interfaces].includes(required))
+    if (klass[GObject.interfaces].includes(required))
         return true;  // implemented here
     // Might be implemented on a parent class
     return _interfacePresent(required, Object.getPrototypeOf(klass));
@@ -250,15 +238,15 @@ function _checkInterface(iface, proto) {
     // "proto" refers to the object's prototype (which implements the interface)
     // whereas "iface.prototype" is the interface's prototype (which may still
     // contain unimplemented methods.)
-    if (typeof iface[requires] === 'undefined')
+    if (typeof iface[GObject.requires] === 'undefined')
         return;
 
-    let unfulfilledReqs = iface[requires].filter(required => {
+    let unfulfilledReqs = iface[GObject.requires].filter(required => {
         // Either the interface is not present or it is not listed before the
         // interface that requires it or the class does not inherit it. This is
         // so that required interfaces don't copy over properties from other
         // interfaces that require them.
-        let ifaces = proto.constructor[interfaces];
+        let ifaces = proto.constructor[GObject.interfaces];
         return (!_interfacePresent(required, proto.constructor) ||
             ifaces.indexOf(required) > ifaces.indexOf(iface)) &&
             !(proto instanceof required);
@@ -275,11 +263,11 @@ function _checkInterface(iface, proto) {
 
 function _registerGObjectType(klass) {
     const gtypename = _createGTypeName(klass);
-    const gflags = Object.hasOwn(klass, GTypeFlags) ? klass[GTypeFlags] : 0;
-    const gobjectInterfaces = Object.hasOwn(klass, interfaces) ? klass[interfaces] : [];
+    const gflags = Object.hasOwn(klass, GObject.GTypeFlags) ? klass[GObject.GTypeFlags] : 0;
+    const gobjectInterfaces = Object.hasOwn(klass, GObject.interfaces) ? klass[GObject.interfaces] : [];
     const propertiesArray = _propertiesAsArray(klass);
     const parent = Object.getPrototypeOf(klass);
-    const gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
+    const gobjectSignals = Object.hasOwn(klass, GObject.signals) ? klass[GObject.signals] : [];
 
     // Default to the GObject-specific prototype, fallback on the JS prototype
     // for GI native classes.
@@ -350,9 +338,9 @@ function _interfaceInstanceOf(instance) {
 
 function _registerInterfaceType(klass) {
     const gtypename = _createGTypeName(klass);
-    const gobjectInterfaces = Object.hasOwn(klass, requires) ? klass[requires] : [];
+    const gobjectInterfaces = Object.hasOwn(klass, GObject.requires) ? klass[GObject.requires] : [];
     const props = _propertiesAsArray(klass);
-    const gobjectSignals = Object.hasOwn(klass, signals) ? klass[signals] : [];
+    const gobjectSignals = Object.hasOwn(klass, GObject.signals) ? klass[GObject.signals] : [];
 
     const [giPrototype, registeredType] = Gi.register_interface_with_class(
         klass, gtypename, gobjectInterfaces, props);
@@ -366,10 +354,10 @@ function _registerInterfaceType(klass) {
 }
 
 function _checkProperties(klass) {
-    if (!Object.hasOwn(klass, properties))
+    if (!Object.hasOwn(klass, GObject.properties))
         return;
 
-    for (let pspec of Object.values(klass[properties]))
+    for (let pspec of Object.values(klass[GObject.properties]))
         _checkAccessors(klass.prototype, pspec, GObject);
 }
 
@@ -653,19 +641,19 @@ function _init() {
     // These will be copied in the Gtk overrides
     // Use __X__ syntax to indicate these variables should not be used publicly.
 
-    GObject.__gtkCssName__ = _gtkCssName;
-    GObject.__gtkTemplate__ = _gtkTemplate;
-    GObject.__gtkChildren__ = _gtkChildren;
-    GObject.__gtkInternalChildren__ = _gtkInternalChildren;
+    GObject.__gtkCssName__ = Symbol('GTK widget CSS name');
+    GObject.__gtkTemplate__ = Symbol('GTK widget template');
+    GObject.__gtkChildren__ = Symbol('GTK widget template children');
+    GObject.__gtkInternalChildren__ = Symbol('GTK widget template internal children');
 
     // Expose GObject static properties for ES6 classes
 
-    GObject.GTypeName = GTypeName;
-    GObject.GTypeFlags = GTypeFlags;
-    GObject.requires = requires;
-    GObject.interfaces = interfaces;
-    GObject.properties = properties;
-    GObject.signals = signals;
+    GObject.GTypeName = Symbol('GType name');
+    GObject.GTypeFlags = Symbol('GType flags');
+    GObject.requires = Symbol('GObject interface requires');
+    GObject.interfaces = Symbol('GObject interfaces');
+    GObject.properties = Symbol('GObject properties');
+    GObject.signals = Symbol('GObject signals');
 
     // Replacement for non-introspectable g_object_set()
     GObject.Object.prototype.set = function (params) {
