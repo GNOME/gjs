@@ -48,12 +48,26 @@ describe('GVariant constructor', function () {
         expect(unpacked[4].length).toEqual(2);
     });
 
+    it('fails to construct an incomplete struct variant', function () {
+        expect(() => new GLib.Variant('(sogvau', [
+            'a string',
+            '/a/object/path',
+            'asig', // nature
+            new GLib.Variant('s', 'variant'),
+            [7, 3],
+        ])).toThrowError(/GVariant signature/);
+    });
+
     it('constructs a maybe variant', function () {
         let maybeVariant = new GLib.Variant('ms', null);
         expect(maybeVariant.deepUnpack()).toBeNull();
 
         maybeVariant = new GLib.Variant('ms', 'string');
         expect(maybeVariant.deepUnpack()).toEqual('string');
+    });
+
+    it('fails to construct an incomplete maybe variant', function () {
+        expect(() => new GLib.Variant('m', null)).toThrowError(/GVariant signature/);
     });
 
     it('constructs a byte array variant', function () {
@@ -82,6 +96,10 @@ describe('GVariant constructor', function () {
         const a = byteArrayVariant.deepUnpack();
         [112, 105, 122, 122, 97].forEach((val, ix) =>
             expect(a[ix]).toEqual(val));
+    });
+
+    it('fails to construct an incomplete array variant', function () {
+        expect(() => new GLib.Variant('a', [])).toThrowError(/GVariant signature/);
     });
 });
 

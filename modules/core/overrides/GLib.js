@@ -11,6 +11,8 @@ const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o'
 
 function _readSingleType(signature, forceSimple) {
     let char = signature.shift();
+    if (!char)
+        throw new Error('Invalid GVariant signature (reached end while expecting a type)');
     let isSimple = false;
 
     if (!SIMPLE_TYPES.includes(char)) {
