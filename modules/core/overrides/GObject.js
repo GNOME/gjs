@@ -874,9 +874,9 @@ introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
     GObject.Object.prototype.ref_sink = unsupportedRefcountingMethod;
     GObject.Object.prototype.unref = unsupportedRefcountingMethod;
 
-    const gValConstructor = GObject.Value;
-    GObject.Value = function (...args) {
-        const v = new gValConstructor();
+    const realGValueClass = GObject.Value;
+    function gValueConstructorFunc(...args) {
+        const v = new realGValueClass();
         if (args.length !== 2)
             return v;
 
@@ -950,10 +950,10 @@ introspectable. Use GObject.signal_handlers_disconnect_by_func() instead.');
 
         return v;
     };
-    GObject.Value.prototype = gValConstructor.prototype;
-    GObject.Value.prototype.constructor = GObject.Value;
-    GObject.Value.$gtype = gValConstructor.$gtype;
-    Object.entries(gValConstructor).forEach(([k, v]) => {
-        GObject.Value[k] = v;
-    });
+    const gValueClass = Object.assign(gValueConstructorFunc, realGValueClass);
+    // Copy non-enumerable properties
+    gValueClass.prototype = realGValueClass.prototype;
+    gValueClass.prototype.constructor = gValueClass;
+    gValueClass.$gtype = realGValueClass.$gtype;
+    this.Value = gValueClass;
 }
