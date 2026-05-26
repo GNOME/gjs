@@ -466,6 +466,7 @@ function _init() {
     this.strstr_len = function (haystack, len, needle) {
         _warnNotIntrospectable('GLib.strstr_len()', 'String.indexOf()');
         let searchString = haystack;
+        len = Number(len);
         if (len !== -1)
             searchString = searchString.slice(0, len);
         const index = searchString.indexOf(needle);
@@ -485,6 +486,7 @@ function _init() {
     this.strrstr_len = function (haystack, len, needle) {
         _warnNotIntrospectable('GLib.strrstr_len()', 'String.lastIndexOf()');
         let searchString = haystack;
+        len = Number(len);
         if (len !== -1)
             searchString = searchString.slice(0, len);
         const index = searchString.lastIndexOf(needle);

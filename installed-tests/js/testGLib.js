@@ -238,11 +238,12 @@ describe('GLib string function overrides', function () {
     });
 
     it('GLib.strstr_len', function () {
-        expectWarnings(4);
+        expectWarnings(5);
         expect(GLib.strstr_len('haystack', -1, 'needle')).toBeNull();
         expect(GLib.strstr_len('haystacks', -1, 'stack')).toEqual('stacks');
         expect(GLib.strstr_len('haystacks', 4, 'stack')).toBeNull();
         expect(GLib.strstr_len('haystack', 4, 'ays')).toEqual('aystack');
+        expect(GLib.strstr_len('haystack', 4n, 'ays')).toEqual('aystack');
         assertWarnings('strstr_len');
     });
 
@@ -254,10 +255,11 @@ describe('GLib string function overrides', function () {
     });
 
     it('GLib.strrstr_len', function () {
-        expectWarnings(3);
+        expectWarnings(4);
         expect(GLib.strrstr_len('haystack', -1, 'needle')).toBeNull();
         expect(GLib.strrstr_len('hackstacks', -1, 'ack')).toEqual('acks');
         expect(GLib.strrstr_len('hackstacks', 4, 'ack')).toEqual('ackstacks');
+        expect(GLib.strrstr_len('hackstacks', 4n, 'ack')).toEqual('ackstacks');
         assertWarnings('strrstr_len');
     });
 
