@@ -559,7 +559,7 @@ describe('Life, the Universe and Everything', function () {
     it('unregistered enum works', function () {
         expect(Regress.TestEnumNoGEnum.EVALUE1).toEqual(0);
         expect(Regress.TestEnumNoGEnum.EVALUE2).toEqual(42);
-        expect(Regress.TestEnumNoGEnum.EVALUE3).toEqual('0'.charCodeAt());
+        expect(Regress.TestEnumNoGEnum.EVALUE3).toEqual('0'.charCodeAt(0));
     });
 
     it('value is not added to enum with #define', function () {

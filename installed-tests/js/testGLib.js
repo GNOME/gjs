@@ -327,8 +327,8 @@ describe('GLib string function overrides', function () {
 
     it('GLib.strdelimit', function () {
         expectWarnings(4);
-        expect(GLib.strdelimit('1a2b3c4', 'abc', '_'.charCodeAt())).toEqual('1_2_3_4');
-        expect(GLib.strdelimit('1-2_3<4', null, '|'.charCodeAt())).toEqual('1|2|3|4');
+        expect(GLib.strdelimit('1a2b3c4', 'abc', '_'.charCodeAt(0))).toEqual('1_2_3_4');
+        expect(GLib.strdelimit('1-2_3<4', null, '|'.charCodeAt(0))).toEqual('1|2|3|4');
         expect(GLib.strdelimit('1a2b3c4', 'abc', '_')).toEqual('1_2_3_4');
         expect(GLib.strdelimit('1-2_3<4', null, '|')).toEqual('1|2|3|4');
         assertWarnings('strdelimit');
@@ -336,7 +336,7 @@ describe('GLib string function overrides', function () {
 
     it('GLib.strcanon', function () {
         expectWarnings(2);
-        expect(GLib.strcanon('1a2b3c4', 'abc', '?'.charCodeAt())).toEqual('?a?b?c?');
+        expect(GLib.strcanon('1a2b3c4', 'abc', '?'.charCodeAt(0))).toEqual('?a?b?c?');
         expect(GLib.strcanon('1a2b3c4', 'abc', '?')).toEqual('?a?b?c?');
         assertWarnings('strcanon');
     });
