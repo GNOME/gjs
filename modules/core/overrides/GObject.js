@@ -287,24 +287,20 @@ function _registerGObjectType(klass) {
     requiredInterfaces.forEach(iface =>
         _copyInterfacePrototypeDescriptors(klass.prototype, iface.prototype));
 
-    Object.getOwnPropertyNames(klass)
-    .filter(name => name.startsWith('vfunc_'))
-    .forEach(name => {
-        const prop = Object.getOwnPropertyDescriptor(klass, name);
-        if (!(prop.value instanceof Function))
+    Object.entries(Object.getOwnPropertyDescriptors(klass))
+    .forEach(([name, descr]) => {
+        if (!name.startsWith('vfunc_') || typeof descr.value !== 'function')
             return;
 
-        giPrototype[Gi.hook_up_vfunc_symbol](name.slice(6), klass[name], true);
+        giPrototype[Gi.hook_up_vfunc_symbol](name.slice(6), descr.value, true);
     });
 
-    Object.getOwnPropertyNames(klass.prototype)
-    .filter(name => name.startsWith('vfunc_') || name.startsWith('on_'))
-    .forEach(name => {
-        let descr = Object.getOwnPropertyDescriptor(klass.prototype, name);
+    Object.entries(Object.getOwnPropertyDescriptors(klass.prototype))
+    .forEach(([name, descr]) => {
         if (typeof descr.value !== 'function')
             return;
 
-        let func = klass.prototype[name];
+        let func = descr.value;
 
         if (name.startsWith('vfunc_')) {
             giPrototype[Gi.hook_up_vfunc_symbol](name.slice(6), func);
