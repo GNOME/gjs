@@ -183,12 +183,10 @@ function _addDBusConvenience() {
     if (info.signals.length > 0)
         this.connect('g-signal', _convertToNativeSignal);
 
-    let i, methods = info.methods;
-    for (i = 0; i < methods.length; i++) {
-        var method = methods[i];
-        let remoteMethod = _makeProxyMethod(methods[i], false);
+    for (const method of info.methods) {
+        const remoteMethod = _makeProxyMethod(method, false);
         this[`${method.name}Remote`] = remoteMethod;
-        this[`${method.name}Sync`] = _makeProxyMethod(methods[i], true);
+        this[`${method.name}Sync`] = _makeProxyMethod(method, true);
         this[`${method.name}Async`] = function (...args) {
             return new Promise((resolve, reject) => {
                 args.push((result, error, fdList) => {
@@ -204,11 +202,7 @@ function _addDBusConvenience() {
         };
     }
 
-    let properties = info.properties;
-    for (i = 0; i < properties.length; i++) {
-        let name = properties[i].name;
-        let signature = properties[i].signature;
-        let flags = properties[i].flags;
+    for (const {name, signature, flags} of info.properties) {
         let getter = () => {
             throw new Error(`Property ${name} is not readable`);
         };
