@@ -157,6 +157,8 @@ sysprof_capture = dependency('sysprof-capture-4',
         'help=false',
     ])
 
+tracy = dependency('tracy')
+
 readline = cxx.find_library('readline', required: get_option('readline'))
 # On some systems we need to link readline to a termcap compatible library
 readline_code = '''
@@ -505,6 +507,7 @@ internal_build_dep = declare_dependency(
     dependencies: [
         base_build_dep,
         build_profiler ? profiler_deps : [],
+        tracy,
     ])
 
 libgjs_jsapi = static_library(meson.project_name() + '-jsapi',
