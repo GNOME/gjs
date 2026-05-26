@@ -12,6 +12,7 @@
 #include <array>
 #include <functional>  // for mem_fn
 #include <limits>
+#include <sstream>
 #include <string>
 #include <tuple>  // for tie
 #include <unordered_set>
@@ -22,6 +23,8 @@
 #include <girffi.h>
 #include <glib-object.h>
 #include <glib.h>
+
+#include <tracy/TracyC.h>
 
 #include <js/CallAndConstruct.h>  // for IsCallable, JS_CallFunctionValue
 #include <js/CallArgs.h>
@@ -771,7 +774,23 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         }
     }
 
+    TracyCZone(ctx, 0);
+    if (TracyCIsStarted && TracyCIsConnected) {
+        std::ostringstream out;
+        out << ns();
+        if (out.tellp() != 0)
+            out << "::";
+        out << this->name() << "::" << "set[" << param_spec->name << ']';
+
+        auto name = out.str();
+        auto srcloc = ___tracy_alloc_srcloc(TracyLine, TracyFile, strlen(TracyFile), name.c_str(), name.length(), 0);
+        ctx = ___tracy_emit_zone_begin_alloc(srcloc, 1);
+        ___tracy_emit_zone_color(ctx, 0x551a8b);
+    }
+
     g_object_set_property(m_ptr, param_spec->name, &gvalue);
+
+    TracyCZoneEnd(ctx);
 
     return true;
 }
