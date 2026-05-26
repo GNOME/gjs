@@ -259,11 +259,11 @@ function _init() {
 
     GLib = this;
 
-    GLib.MainLoop.prototype.runAsync = function (...args) {
+    GLib.MainLoop.prototype.runAsync = function () {
         return new Promise((resolve, reject) => {
             setMainLoopHook(() => {
                 try {
-                    resolve(this.run(...args));
+                    resolve(this.run());
                 } catch (error) {
                     reject(error);
                 }
