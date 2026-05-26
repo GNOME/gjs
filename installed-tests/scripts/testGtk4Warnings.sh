@@ -98,9 +98,8 @@ const loop = GLib.MainLoop.new(null, false);
 const win = new Window({model: Gtk.StringList.new(['test'])});
 let weak = new WeakRef(win);
 win.connect('close-request', () => loop.quit());
-GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
+GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => {
     weak.deref()?.close();
-    return false;
 });
 win.present();
 loop.run();

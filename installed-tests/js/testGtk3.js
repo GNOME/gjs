@@ -324,10 +324,7 @@ describe('Gtk overrides', function () {
 
     function asyncIdle() {
         return new Promise(resolve => {
-            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                resolve();
-                return GLib.SOURCE_REMOVE;
-            });
+            GLib.idle_add_once(GLib.PRIORITY_DEFAULT, resolve);
         });
     }
 

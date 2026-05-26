@@ -256,18 +256,14 @@ class Test {
     // This one is implemented asynchronously. Returns the input arguments
     echoAsync(parameters, invocation) {
         var [someString, someInt] = parameters;
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, function () {
             invocation.return_value(new GLib.Variant('(si)', [someString, someInt]));
-            return false;
         });
     }
 
     async asynchronouslyEchoSync(someString, someInt) {
         const ret = await new Promise(resolve => {
-            GLib.idle_add(GLib.PRIORITY_LOW, () => {
-                resolve([someString, someInt]);
-                return GLib.SOURCE_REMOVE;
-            });
+            GLib.idle_add_once(GLib.PRIORITY_LOW, () => resolve([someString, someInt]));
         });
         return ret;
     }
@@ -325,12 +321,11 @@ class Test {
     }
 
     fdOut2Async([bytes], invocation) {
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, function () {
             const fd = GjsTestTools.open_bytes(bytes);
             const fdList = Gio.UnixFDList.new_from_array([fd]);
             invocation.return_value_with_unix_fd_list(new GLib.Variant('(h)', [0]),
                 fdList);
-            return GLib.SOURCE_REMOVE;
         });
     }
 }
@@ -345,7 +340,7 @@ describe('Exported DBus object', function () {
     const expectedBytes = new TextEncoder().encode('some bytes');
 
     function waitForServerProperty(property, value = undefined, timeout = 500) {
-        let waitId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, timeout, () => {
+        let waitId = GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, timeout, () => {
             waitId = 0;
             throw new Error(`Timeout waiting for property ${property} expired`);
         });

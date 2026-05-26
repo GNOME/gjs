@@ -233,10 +233,7 @@ describe('GObject interface', function () {
         let classSignalSpy = jasmine.createSpy('classSignalSpy')
             .and.callFake(quitLoop);
         obj.connect('class-signal', classSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('class-signal');
-            return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => obj.emit('class-signal'));
     });
 
     it('can connect interface signals on the implementing class', function (done) {
@@ -248,10 +245,7 @@ describe('GObject interface', function () {
         let interfaceSignalSpy = jasmine.createSpy('interfaceSignalSpy')
             .and.callFake(quitLoop);
         obj.connect('interface-signal', interfaceSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('interface-signal');
-            return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => obj.emit('interface-signal'));
     });
 
     it('can define properties on the implementing class', function () {

@@ -420,7 +420,7 @@ describe('Disposed or finalized GObject', function () {
         file.run_dispose();
 
         let done = false;
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => (done = true));
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, () => (done = true));
         while (!done)
             loop.get_context().iteration(true);
 
@@ -471,7 +471,7 @@ describe('Disposed or finalized GObject', function () {
         System.gc();
 
         const loop = new GLib.MainLoop(null, false);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
         loop.run();
 
         expect(disposedFile).toMatch(
@@ -537,7 +537,7 @@ describe('GObject with toggle references', function () {
         System.gc();
 
         const loop = new GLib.MainLoop(null, false);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
         loop.run();
 
         // We need to cleanup the extra ref we added before now.
@@ -568,7 +568,7 @@ describe('GObject with toggle references', function () {
         System.gc();
 
         const loop = new GLib.MainLoop(null, false);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
         loop.run();
 
         file = GjsTestTools.get_saved();
@@ -584,7 +584,7 @@ describe('GObject with toggle references', function () {
         System.gc();
 
         const loop = new GLib.MainLoop(null, false);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, () => loop.quit());
         loop.run();
     });
 
@@ -722,7 +722,7 @@ describe('GObject with toggle references', function () {
         }));
 
         // We must not timeout due to deadlock #404 and finally not crash per #297
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 3000, () => loop.quit());
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 3000, () => loop.quit());
         loop.run();
         ids.forEach(id => GLib.source_remove(id));
 

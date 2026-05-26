@@ -81,7 +81,7 @@ describe('Promise', function () {
         promise().then(thenHandler).catch();
         expect(thenHandler).not.toHaveBeenCalled();
 
-        GLib.idle_add(GLib.PRIORITY_DEFAULT_IDLE, () => loop.quit());
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT_IDLE, () => loop.quit());
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             'Unhandled promise rejection.*');
         loop.run();
@@ -91,10 +91,7 @@ describe('Promise', function () {
 
     it('do not lead to high-priority IDLE starvation', function () {
         const promise = new Promise(resolve => {
-            const id = GLib.idle_add(GLib.PRIORITY_HIGH, () => {
-                resolve();
-                return GLib.SOURCE_REMOVE;
-            });
+            const id = GLib.idle_add_once(GLib.PRIORITY_HIGH, resolve);
             GLib.Source.set_name_by_id(id, `Test Idle source ${id}`);
         });
 
