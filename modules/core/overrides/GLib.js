@@ -114,13 +114,13 @@ function _packVariant(signature, value) {
         if (arrayType[0] === '{') {
             // special case for dictionaries
             for (let key in value) {
-                let copy = [].concat(arrayType);
+                let copy = arrayType.slice();
                 let child = _packVariant(copy, [key, value[key]]);
                 arrayValue.push(child);
             }
         } else {
             for (let i = 0; i < value.length; i++) {
-                let copy = [].concat(arrayType);
+                let copy = arrayType.slice();
                 let child = _packVariant(copy, value[i]);
                 arrayValue.push(child);
             }
