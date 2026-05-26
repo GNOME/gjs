@@ -44,7 +44,7 @@ describe('FinalizationRegistry', function () {
         callback.and.callFake(function () {
             return Promise.resolve().then(secondCallback);
         });
-        registry.register(obj);
+        registry.register(obj, 'marker');
         obj = null;
         System.gc();
         PromiseInternal.drainMicrotaskQueue();
