@@ -230,8 +230,7 @@ function _checkInterface(iface, proto) {
     // Default vfunc_async_init() will run vfunc_init() in a thread and crash.
     // Change error message when https://gitlab.gnome.org/GNOME/gjs/issues/72
     // has been solved.
-    if (iface.$gtype.name === 'GAsyncInitable' &&
-        !Object.getOwnPropertyNames(proto).includes('vfunc_init_async'))
+    if (iface.$gtype.name === 'GAsyncInitable' && !Object.hasOwn(proto, 'vfunc_init_async'))
         throw new Error("It's not currently possible to implement Gio.AsyncInitable.");
 
     // Check that proto implements all of this interface's required interfaces.
@@ -320,7 +319,7 @@ function _registerGObjectType(klass) {
     gobjectInterfaces.forEach(iface => _checkInterface(iface, klass.prototype));
 
     // Lang.Class parent classes don't support static inheritance
-    if (!('implements' in klass))
+    if (!Object.hasOwn(klass, 'implements'))
         klass.implements = GObject.Object.implements;
 }
 
