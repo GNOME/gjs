@@ -67,7 +67,7 @@ FrameTicker.prototype = {
             function () {
                 me._currentTime += 1000 / me.FRAME_RATE;
                 me.emit('prepare-frame');
-                return true;
+                return GLib.SOURCE_CONTINUE;
             });
     },
 

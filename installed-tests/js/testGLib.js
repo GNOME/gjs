@@ -182,21 +182,30 @@ describe('GLib source function overrides', function () {
 
     it('GLib.idle_add_once', function () {
         GLib.idle_add_once(GLib.PRIORITY_DEFAULT, spy);
-        GLib.idle_add(GLib.PRIORITY_LOW, () => loop.quit());
+        GLib.idle_add(GLib.PRIORITY_LOW, () => {
+            loop.quit();
+            return GLib.SOURCE_REMOVE;
+        });
         loop.run();
         expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it('GLib.timeout_add_once', function () {
         GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, spy);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => loop.quit());
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            loop.quit();
+            return GLib.SOURCE_REMOVE;
+        });
         loop.run();
         expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it('GLib.timeout_add_seconds_once', function () {
         GLib.timeout_add_seconds_once(GLib.PRIORITY_DEFAULT, 1, spy);
-        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => loop.quit());
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
+            loop.quit();
+            return GLib.SOURCE_REMOVE;
+        });
         loop.run();
         expect(spy).toHaveBeenCalledTimes(1);
     });
