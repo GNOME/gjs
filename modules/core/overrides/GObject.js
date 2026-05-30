@@ -637,26 +637,6 @@ function _init() {
             klass[_registerType](klass);
         else
             _resolveLegacyClassFunction(klass, _registerType)(klass);
-
-        Object.getOwnPropertyNames(klass.prototype)
-        .filter(key => key !== 'constructor')
-        .concat(Object.getOwnPropertySymbols(klass.prototype))
-        .forEach(key => {
-            let descr = Object.getOwnPropertyDescriptor(klass.prototype, key);
-
-            // Create wrappers on the interface object so that generics work (e.g.
-            // SomeInterface.some_function(this, blah) instead of
-            // SomeInterface.prototype.some_function.call(this, blah)
-            if (typeof descr.value === 'function') {
-                let interfaceProto = klass.prototype;  // capture in closure
-                klass[key] = function (thisObj, ...args) {
-                    return interfaceProto[key].call(thisObj, ...args);
-                };
-            }
-
-            Object.defineProperty(klass.prototype, key, descr);
-        });
-
         return klass;
     };
 

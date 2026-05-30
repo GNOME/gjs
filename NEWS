@@ -1,3 +1,26 @@
+NEXT
+----
+
+- Backwards-incompatible change: Creating a GObject.Interface no longer installs
+  its methods as unbound static methods on the constructor. This was based on an
+  old, nonstandard custom of "generic methods" from the old Mozilla days and
+  modern JS doesn't work like that.
+  Additionally, this never worked as you might expect: `Interface.method(obj)`
+  would not call obj's implementation of the interface method, but Interface's
+  default implementation, which might do nothing or throw NotImplementedError.
+  The only thing it was good for was slightly shorter syntax when chaining up to
+  the default implementation. If you were using it that way, here's how to
+  migrate your code:
+
+      class MyClass extends GObject.Object {
+          static [GObject.Implements] = [MyInterface];
+          static { GObject.registerClass(MyClass); }
+          myMethod() {
+              return MyInterface.myMethod(this);  // OLD
+              return MyInterface.prototype.myMethod.call(this);  // NEW
+          }
+      }
+
 Version 1.88.0
 --------------
 

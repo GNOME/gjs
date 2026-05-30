@@ -32,7 +32,7 @@ const InterfaceRequiringGObjectInterface = GObject.registerClass({
 }, class InterfaceRequiringGObjectInterface extends GObject.Interface {
     optionalG() {
         return `InterfaceRequiringGObjectInterface.optionalG()\n${
-            AGObjectInterface.optionalG(this)}`;
+            AGObjectInterface.prototype.optionalG.call(this)}`;
     }
 });
 
@@ -60,7 +60,7 @@ const GObjectImplementingGObjectInterface = GObject.registerClass({
     requiredG() {}
 
     optionalG() {
-        return AGObjectInterface.optionalG(this);
+        return AGObjectInterface.prototype.optionalG.call(this);
     }
 });
 
@@ -84,7 +84,7 @@ const ImplementationOfTwoInterfaces = GObject.registerClass({
     requiredG() {}
 
     optionalG() {
-        return InterfaceRequiringGObjectInterface.optionalG(this);
+        return InterfaceRequiringGObjectInterface.prototype.optionalG.call(this);
     }
 });
 
@@ -334,6 +334,11 @@ describe('GObject interface', function () {
         expect(54321n).not.toBeInstanceOf(Gio.File);
         expect('no way!').not.toBeInstanceOf(Gio.File);
         expect(new Date()).not.toBeInstanceOf(Gio.File);
+    });
+
+    it('does not define legacy generic functions on the interface constructor object', function () {
+        expect(AGObjectInterface.requiredG).not.toBeDefined();
+        expect(AGObjectInterface.optionalG).not.toBeDefined();
     });
 
     describe('prototype', function () {
