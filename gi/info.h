@@ -570,8 +570,8 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
 template <typename Wrapper>
 using BaseInfoOperations = InfoOperations<Wrapper, InfoTag::BASE>;
 
-// The following InfoIterator class is a C++ iterator implementation that's used
-// to implement the C iteration pattern:
+// The following InfoIterator and InfoIterable classes form a C++ iterator
+// implementation that's used to implement the C iteration pattern:
 //
 // unsigned n_bars = gi_foo_info_get_n_bars(info);
 // for (unsigned ix = 0; ix < n_bars; ix++) {
@@ -582,7 +582,7 @@ using BaseInfoOperations = InfoOperations<Wrapper, InfoTag::BASE>;
 //
 // as a more idiomatic C++ pattern:
 //
-// for (AutoBarInfo bar : info.bars())
+// for (const AutoBarInfo& bar : info.bars())
 //   do_stuff(bar);
 
 template <typename T>
@@ -595,9 +595,7 @@ template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
           GetInfoFunc<T, TAG> get_info>
 class InfoIterator {
     T m_obj;
-    int m_ix;
-
-    InfoIterator(T obj, int ix) : m_obj(obj), m_ix(ix) {}
+    unsigned m_ix = 0;
 
  public:
     using iterator_category = std::forward_iterator_tag;
@@ -606,7 +604,8 @@ class InfoIterator {
     using pointer = value_type*;
     using reference = value_type&;
 
-    explicit InfoIterator(T info) : InfoIterator(info, 0) {}
+    InfoIterator() = default;
+    explicit InfoIterator(T obj, unsigned ix) : m_obj(obj), m_ix(ix) {}
 
     OwnedInfo<TAG> operator*() const {
         return detail::Pointer::to_owned<TAG>(get_info(m_obj, m_ix));
@@ -626,17 +625,28 @@ class InfoIterator {
     bool operator!=(const InfoIterator& other) const {
         return m_obj != other.m_obj || m_ix != other.m_ix;
     }
+};
+
+template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
+          GetInfoFunc<T, TAG> get_info>
+class InfoIterable {
+    T m_obj;
+
+ public:
+    explicit InfoIterable(T info) : m_obj(info) {}
+
+    using Iterator = InfoIterator<T, TAG, get_n_infos, get_info>;
 
     [[nodiscard]]
     mozilla::Maybe<OwnedInfo<TAG>> operator[](size_t ix) const {
         return detail::Pointer::nullable<TAG>(get_info(m_obj, ix));
     }
 
-    [[nodiscard]] InfoIterator begin() const { return InfoIterator{m_obj, 0}; }
+    [[nodiscard]] Iterator begin() const { return Iterator{m_obj, 0}; }
     [[nodiscard]]
-    InfoIterator end() const {
-        int n_fields = get_n_infos(m_obj);
-        return InfoIterator{m_obj, n_fields};
+    Iterator end() const {
+        unsigned n_fields = get_n_infos(m_obj);
+        return Iterator{m_obj, n_fields};
     }
     [[nodiscard]] size_t size() const { return get_n_infos(m_obj); }
 };
@@ -867,12 +877,12 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
     }
 
  public:
-    using ArgsIterator =
-        InfoIterator<GICallableInfo*, InfoTag::ARG, gi_callable_info_get_n_args,
+    using ArgsIterable =
+        InfoIterable<GICallableInfo*, InfoTag::ARG, gi_callable_info_get_n_args,
                      gi_callable_info_get_arg>;
     [[nodiscard]]
-    ArgsIterator args() const {
-        return ArgsIterator{ptr()};
+    ArgsIterable args() const {
+        return ArgsIterable{ptr()};
     }
     [[nodiscard]]
     AutoArgInfo arg(unsigned n) const {
@@ -957,7 +967,7 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
             << TRANSFER_STRING(caller_owns()) << ", .n_args = " << n_args()
             << ", .args = { ";
 
-        ArgsIterator iter = args();
+        ArgsIterable iter = args();
         std::for_each(iter.begin(), iter.end(), [&out](AutoArgInfo arg_info) {
             out << "{ GI_DIRECTION_" << DIRECTION_STRING(arg_info.direction())
                 << ", GI_TRANSFER_"
@@ -1057,7 +1067,7 @@ class InfoOperations<Wrapper, InfoTag::CONSTANT>
     }
 };
 
-// Must come before any use of MethodsIterator
+// Must come before any use of MethodsIterable
 template <class Wrapper>
 class InfoOperations<Wrapper, InfoTag::FUNCTION>
     : public CallableInfoOperations<Wrapper> {
@@ -1132,20 +1142,20 @@ class InfoOperations<Wrapper, InfoTag::ENUM>
     }
 
  public:
-    using ValuesIterator =
-        InfoIterator<GIEnumInfo*, InfoTag::VALUE, gi_enum_info_get_n_values,
+    using ValuesIterable =
+        InfoIterable<GIEnumInfo*, InfoTag::VALUE, gi_enum_info_get_n_values,
                      gi_enum_info_get_value>;
     [[nodiscard]]
-    ValuesIterator values() const {
-        return ValuesIterator{ptr()};
+    ValuesIterable values() const {
+        return ValuesIterable{ptr()};
     }
 
-    using MethodsIterator =
-        InfoIterator<GIEnumInfo*, InfoTag::FUNCTION, gi_enum_info_get_n_methods,
+    using MethodsIterable =
+        InfoIterable<GIEnumInfo*, InfoTag::FUNCTION, gi_enum_info_get_n_methods,
                      gi_enum_info_get_method>;
     [[nodiscard]]
-    MethodsIterator methods() const {
-        return MethodsIterator{ptr()};
+    MethodsIterable methods() const {
+        return MethodsIterable{ptr()};
     }
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
@@ -1242,20 +1252,20 @@ class InfoOperations<Wrapper, InfoTag::STRUCT>
     }
 
  public:
-    using FieldsIterator =
-        InfoIterator<GIStructInfo*, InfoTag::FIELD, gi_struct_info_get_n_fields,
+    using FieldsIterable =
+    InfoIterable<GIStructInfo*, InfoTag::FIELD, gi_struct_info_get_n_fields,
                      gi_struct_info_get_field>;
     [[nodiscard]]
-    FieldsIterator fields() const {
-        return FieldsIterator{ptr()};
+    FieldsIterable fields() const {
+        return FieldsIterable{ptr()};
     }
 
-    using MethodsIterator =
-        InfoIterator<GIStructInfo*, InfoTag::FUNCTION,
+    using MethodsIterable =
+        InfoIterable<GIStructInfo*, InfoTag::FUNCTION,
                      gi_struct_info_get_n_methods, gi_struct_info_get_method>;
     [[nodiscard]]
-    MethodsIterator methods() const {
-        return MethodsIterator{ptr()};
+    MethodsIterable methods() const {
+        return MethodsIterable{ptr()};
     }
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
@@ -1294,20 +1304,20 @@ class InfoOperations<Wrapper, InfoTag::UNION>
     }
 
  public:
-    using FieldsIterator =
-        InfoIterator<GIUnionInfo*, InfoTag::FIELD, gi_union_info_get_n_fields,
+    using FieldsIterable =
+    InfoIterable<GIUnionInfo*, InfoTag::FIELD, gi_union_info_get_n_fields,
                      gi_union_info_get_field>;
     [[nodiscard]]
-    FieldsIterator fields() const {
-        return FieldsIterator{ptr()};
+    FieldsIterable fields() const {
+        return FieldsIterable{ptr()};
     }
 
-    using MethodsIterator =
-        InfoIterator<GIUnionInfo*, InfoTag::FUNCTION,
+    using MethodsIterable =
+        InfoIterable<GIUnionInfo*, InfoTag::FUNCTION,
                      gi_union_info_get_n_methods, gi_union_info_get_method>;
     [[nodiscard]]
-    MethodsIterator methods() const {
-        return MethodsIterator{ptr()};
+    MethodsIterable methods() const {
+        return MethodsIterable{ptr()};
     }
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
@@ -1356,12 +1366,12 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
     }
 
  public:
-    using MethodsIterator = InfoIterator<GIInterfaceInfo*, InfoTag::FUNCTION,
+    using MethodsIterable = InfoIterable<GIInterfaceInfo*, InfoTag::FUNCTION,
                                          gi_interface_info_get_n_methods,
                                          gi_interface_info_get_method>;
     [[nodiscard]]
-    MethodsIterator methods() const {
-        return MethodsIterator{ptr()};
+    MethodsIterable methods() const {
+        return MethodsIterable{ptr()};
     }
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
@@ -1369,12 +1379,12 @@ class InfoOperations<Wrapper, InfoTag::INTERFACE>
             gi_interface_info_find_method(ptr(), name));
     }
 
-    using PropertiesIterator = InfoIterator<GIInterfaceInfo*, InfoTag::PROPERTY,
+    using PropertiesIterable = InfoIterable<GIInterfaceInfo*, InfoTag::PROPERTY,
                                             gi_interface_info_get_n_properties,
                                             gi_interface_info_get_property>;
     [[nodiscard]]
-    PropertiesIterator properties() const {
-        return PropertiesIterator{ptr()};
+    PropertiesIterable properties() const {
+        return PropertiesIterable{ptr()};
     }
 
     [[nodiscard]]
@@ -1410,28 +1420,28 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
     }
 
  public:
-    using FieldsIterator =
-        InfoIterator<GIObjectInfo*, InfoTag::FIELD, gi_object_info_get_n_fields,
+    using FieldsIterable =
+    InfoIterable<GIObjectInfo*, InfoTag::FIELD, gi_object_info_get_n_fields,
                      gi_object_info_get_field>;
     [[nodiscard]]
-    FieldsIterator fields() const {
-        return FieldsIterator{ptr()};
+    FieldsIterable fields() const {
+        return FieldsIterable{ptr()};
     }
 
-    using InterfacesIterator = InfoIterator<GIObjectInfo*, InfoTag::INTERFACE,
+    using InterfacesIterable = InfoIterable<GIObjectInfo*, InfoTag::INTERFACE,
                                             gi_object_info_get_n_interfaces,
                                             gi_object_info_get_interface>;
     [[nodiscard]]
-    InterfacesIterator interfaces() const {
-        return InterfacesIterator{ptr()};
+    InterfacesIterable interfaces() const {
+        return InterfacesIterable{ptr()};
     }
 
-    using MethodsIterator =
-        InfoIterator<GIObjectInfo*, InfoTag::FUNCTION,
+    using MethodsIterable =
+        InfoIterable<GIObjectInfo*, InfoTag::FUNCTION,
                      gi_object_info_get_n_methods, gi_object_info_get_method>;
     [[nodiscard]]
-    MethodsIterator methods() const {
-        return MethodsIterator{ptr()};
+    MethodsIterable methods() const {
+        return MethodsIterable{ptr()};
     }
     [[nodiscard]]
     mozilla::Maybe<AutoFunctionInfo> method(const char* name) const {
@@ -1439,12 +1449,12 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
             gi_object_info_find_method(ptr(), name));
     }
 
-    using PropertiesIterator = InfoIterator<GIObjectInfo*, InfoTag::PROPERTY,
+    using PropertiesIterable = InfoIterable<GIObjectInfo*, InfoTag::PROPERTY,
                                             gi_object_info_get_n_properties,
                                             gi_object_info_get_property>;
     [[nodiscard]]
-    PropertiesIterator properties() const {
-        return PropertiesIterator{ptr()};
+    PropertiesIterable properties() const {
+        return PropertiesIterable{ptr()};
     }
 
     [[nodiscard]]
@@ -1631,12 +1641,12 @@ class Repository {
     };
 
  public:
-    using Iterator = InfoIterator<IterableNamespace, InfoTag::BASE,
+    using Iterable = InfoIterable<IterableNamespace, InfoTag::BASE,
                                   &IterableNamespace::get_n_infos,
                                   &IterableNamespace::get_info>;
     [[nodiscard]]
-    Iterator infos(const char* ns) const {
-        return Iterator{{m_ptr, ns}};
+    Iterable infos(const char* ns) const {
+        return Iterable{{m_ptr, ns}};
     }
 
     [[nodiscard]]

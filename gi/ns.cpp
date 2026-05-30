@@ -143,7 +143,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                             JS::HandleObject obj [[maybe_unused]],
                             JS::MutableHandleIdVector properties,
                             bool only_enumerable [[maybe_unused]]) {
-        GI::Repository::Iterator infos{GI::Repository{}.infos(get())};
+        GI::Repository::Iterable infos{GI::Repository{}.infos(get())};
         if (!properties.reserve(properties.length() + infos.size())) {
             JS_ReportOutOfMemory(cx);
             return false;
