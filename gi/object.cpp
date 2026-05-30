@@ -2908,7 +2908,7 @@ static JSObject* gjs_lookup_object_prototype(JSContext* cx, GType gtype) {
                                                  gtype);
 }
 
-bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
+void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
@@ -2921,8 +2921,6 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     m_closures.push_back(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
-
-    return true;
 }
 
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
@@ -3029,11 +3027,9 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
         ObjectInstance* obj = ObjectInstance::for_js(cx, associate_obj);
         if (!obj)
             return false;
-
-        if (!obj->associate_closure(cx, closure))
-            return false;
-    } else if (!associate_closure(cx, closure)) {
-        return false;
+        obj->associate_closure(cx, closure);
+    } else {
+        associate_closure(cx, closure);
     }
 
     unsigned long id = g_signal_connect_closure_by_id(

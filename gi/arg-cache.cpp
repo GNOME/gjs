@@ -1902,9 +1902,7 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
                 gjs_throw(cx, "Signal connected to wrong type of object");
                 return false;
             }
-
-            if (!priv->associate_closure(cx, trampoline))
-                return false;
+            priv->associate_closure(cx, trampoline);
         }
         callback = trampoline->get_func_ptr();
         m_ffi_closure = trampoline->get_ffi_closure();
