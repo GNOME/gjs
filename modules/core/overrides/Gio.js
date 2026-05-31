@@ -643,6 +643,8 @@ function _init() {
     Gio._LocalFilePrototype = Gio.File.new_for_path('/').constructor.prototype;
 
     Gio.File.prototype.replace_contents_async = function replace_contents_async(contents, etag, make_backup, flags, cancellable, callback) {
+        if (typeof contents === 'string')
+            contents = new TextEncoder().encode(contents);
         return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
     };
 

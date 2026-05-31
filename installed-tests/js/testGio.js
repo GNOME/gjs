@@ -736,3 +736,48 @@ describe('GioUnix compatibility fallback', function () {
         });
     });
 });
+
+describe('Gio.File.replace_contents_async override', function () {
+    beforeAll(function () {
+        // Check that it works with promisify as well
+        Gio._promisify(Gio.File.prototype, 'replace_contents_async');
+    });
+
+    const expectedContents = new TextEncoder().encode('replace_contents_async');
+    let file;
+    beforeEach(function () {
+        [file] = Gio.File.new_tmp(null);
+        expect(file).not.toBeNull();
+    });
+
+    describe('callback version', function () {
+        it('accepts a string', function (done) {
+            file.replace_contents_async('replace_contents_async', null, false, Gio.FileCreateFlags.NONE, null, (obj, res) => {
+                obj.replace_contents_finish(res);
+                done();
+            });
+        });
+
+        it('accepts a Uint8Array', function (done) {
+            file.replace_contents_async(expectedContents, null, false, Gio.FileCreateFlags.NONE, null, (obj, res) => {
+                obj.replace_contents_finish(res);
+                done();
+            });
+        });
+    });
+
+    describe('promise version', function () {
+        it('accepts a string', async function () {
+            await file.replace_contents_async('replace_contents_async', null, false, Gio.FileCreateFlags.NONE, null);
+        });
+
+        it('accepts a Uint8Array', async function () {
+            await file.replace_contents_async(expectedContents, null, false, Gio.FileCreateFlags.NONE, null);
+        });
+    });
+
+    afterEach(function () {
+        const [, contents] = file.load_contents(null);
+        expect(contents).toEqual(expectedContents);
+    });
+});
