@@ -12,5 +12,5 @@ message = {
 }
 
 body = json.dumps(message, separators=(",", ":")).encode()
-sys.stdout.buffer.write(f"Content-Length: {len(body)}\r\n\r\n".encode())
+sys.stdout.buffer.write(f"Content-Length: {len(body) + 4}\r\n\r\n".encode())
 sys.stdout.buffer.write(body)
