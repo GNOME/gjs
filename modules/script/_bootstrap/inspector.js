@@ -54,29 +54,80 @@ function sendMessage(message) {
     output.flush(null);
 }
 
-function reply(request, success, body) {
+function sendResponse(command, body) {
     sendMessage({
         type: "response",
-        request_set: request.request_seq,
-        success,
-        command: request.command,
+        request_set: REQUEST_SEQ,
+        success: true,
+        command,
         body,
     });
 }
 
-function ensureRequest(request, command) {
-    if (request?.type !== "request" || request?.command !== command) quit(1);
+function sendEvent(type, body = {}) {
+    sendMessage({
+        type: "event",
+        event: type,
+        body,
+    });
 }
 
-const request = readMessage();
-ensureRequest(request, "initialize");
+const handlers = {
+    initialize() {
+        // TODO: fill in our capabilities one by one
+        sendResponse("initialize", {
+            supportsConfigurationDoneRequest: false,
+        });
+    },
+    launch() {
+        /* TODO: currently, we don't really open the correct debuggee
 
-reply(request, true, {
-    supportsConfigurationDoneRequest: false,
-});
+        Request args are like this:
 
-const launchRequest = readMessage();
-ensureRequest(launchRequest, "launch");
+        {
+          "type": "pwa-node",
+          "request": "launch",
+          "program": "test.js",
+          "stopOnEntry": true,
+          "cwd": "/home/alien/sites/gjs",
+          "console": "externalTerminal",
+          "sourceMaps": true,
+          "pauseForSourceMap": true,
+          "sourceMapRenames": true
+        }
+
+        */
+        sendEvent("initialized");
+        sendResponse("launch");
+    },
+    setExceptionBreakpoints(args) {
+        /**
+        TODO: Currently no-op
+
+        {
+          "filters": [],
+          "filterOptions": []
+        }
+        */
+        sendResponse("setExceptionBreakpoints");
+    },
+    configurationDone() {
+        sendResponse("configurationDone");
+    },
+};
+
+for (;;) {
+    const request = readMessage();
+    if (request === null) break;
+
+    const handler = handlers[request.command];
+    if (handler === undefined) {
+        // TODO: use the error message
+        throw new Error(`Unknown request command: ${request.command}`);
+    }
+
+    handler(request.arguments);
+}
 
 // State
 
@@ -93,14 +144,4 @@ const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
 
 dbg.onEnterFrame = onEnterFrame;
 
-// const reportDO = debuggeeGlobalWrapper.getOwnPropertyDescriptor("report").value;
-
-// reportDO.script.setBreakpoint(0, {
-//     hit: function (frame) {
-//         print("hit breakpoint in " + frame.callee.name);
-//         print("what = " + frame.eval("what").return);
-//     },
-// });
-
-// keep this
 quit(0);
