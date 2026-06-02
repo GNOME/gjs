@@ -17,61 +17,90 @@ function decode(bytes) {
     return decoder.decode(bytes);
 }
 
-function readMessage() {
-    const input = Gio.DataInputStream.new(GioUnix.InputStream.new(0, false));
+const input = Gio.DataInputStream.new(GioUnix.InputStream.new(0, false));
+const output = GioUnix.OutputStream.new(1, false);
 
+function readMessage() {
     let contentLength = null;
 
     while (true) {
         const [lineBytes] = input.read_line(null);
-
-        if (lineBytes === null) {
-            return null;
-        }
+        if (lineBytes === null) return null;
 
         const line = decode(lineBytes);
-
-        if (line == "") {
-            break;
-        }
+        if (line == "" || line == "\r") break;
 
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
-
         if (match !== null) {
             contentLength = parseInt(match[1]);
-            break;
+            // break;
         }
     }
 
     const bytes = input.read_bytes(contentLength, null);
-    print("decoded bytes:", decode(bytes));
     return JSON.parse(decode(bytes));
 }
 
+let REQUEST_SEQ = 0;
+
 function sendMessage(message) {
-    const body = encode(JSON.stringify(message));
-    const header = `Content-Length: ${body.length}\r\n\r\n`;
+    const body = encode(
+        JSON.stringify({ request_seq: REQUEST_SEQ++, message }),
+    );
+    const header = encode(`Content-Length: ${body.length}\r\n\r\n`);
 
-    const output = GioUnix.OutputStream.new(1, false);
-
-    output.write_all(encode(header), null);
+    output.write_all(header, null);
     output.write_all(body, null);
     output.flush(null);
 }
 
-const request = readMessage();
-
-if (request && request.type === "request" && request.command === "initialize") {
+function reply(request, success, body) {
     sendMessage({
-        seq: 1,
         type: "response",
-        request_set: request.seq,
-        success: true,
-        command: "initialize",
-        body: {
-            supportsConfigurationDoneRequest: false,
-        },
+        request_set: request.request_seq,
+        success,
+        command: request.command,
+        body,
     });
 }
 
+function ensureRequest(request, command) {
+    if (request?.type !== "request" || request?.command !== command) quit(1);
+}
+
+const request = readMessage();
+ensureRequest(request, "initialize");
+
+reply(request, true, {
+    supportsConfigurationDoneRequest: false,
+});
+
+const launchRequest = readMessage();
+ensureRequest(launchRequest, "launch");
+
+// State
+
+function onEnterFrame(frame) {
+    print("entered frame", frame?.callee.name);
+    return;
+}
+
+// Debugger
+
+const dbg = new Debugger();
+
+const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
+
+dbg.onEnterFrame = onEnterFrame;
+
+// const reportDO = debuggeeGlobalWrapper.getOwnPropertyDescriptor("report").value;
+
+// reportDO.script.setBreakpoint(0, {
+//     hit: function (frame) {
+//         print("hit breakpoint in " + frame.callee.name);
+//         print("what = " + frame.eval("what").return);
+//     },
+// });
+
+// keep this
 quit(0);
