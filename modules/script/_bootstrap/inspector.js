@@ -3,17 +3,17 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Angelo Verlain
 
-"use strict";
+const { print } = loadNative("_print");
 
-const { Gio, GLib, GioUnix } = debuggee.imports.gi;
+const { Gio, GioUnix } = debuggee.imports.gi;
 
 function encode(str) {
-    const encoder = new TextEncoder();
+    const encoder = new debuggee.TextEncoder();
     return encoder.encode(str);
 }
 
 function decode(bytes) {
-    const decoder = new TextDecoder();
+    const decoder = new debuggee.TextDecoder();
     return decoder.decode(bytes);
 }
 
@@ -29,15 +29,13 @@ function readMessage() {
             return null;
         }
 
-        const line = decode(lineBytes)
-            // handle carriage returns
-            .replace(/\r$/, "");
+        const line = decode(lineBytes);
 
         if (line == "") {
             break;
         }
 
-        const match = /^Content-Length: (\d+)$/i.exec(line);
+        const match = /^Content-Length: (\d+)\r$/i.exec(line);
 
         if (match !== null) {
             contentLength = parseInt(match[1]);
@@ -46,6 +44,7 @@ function readMessage() {
     }
 
     const bytes = input.read_bytes(contentLength, null);
+    print("decoded bytes:", decode(bytes));
     return JSON.parse(decode(bytes));
 }
 
