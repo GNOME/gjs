@@ -572,6 +572,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
                 return false;
         }
 
+        priv->debug_lifecycle("Adding associated memory (GIWrapperBase constructor)");
+        priv->add_associated_memory(obj);
+
         static_cast<GIWrapperBase*>(priv)->debug_lifecycle(obj,
                                                            "JSObject created");
         gjs_debug_lifecycle(Base::DEBUG_TOPIC, "m_proto is %p",
@@ -1215,9 +1218,13 @@ class GIWrapperInstance : public Base {
     // JSClass operations
 
  protected:
-    void finalize_impl(JS::GCContext*, JSObject*) {
+    void finalize_impl(JS::GCContext*, JSObject* obj) {
+        static_cast<Instance*>(this)->remove_associated_memory(obj);
         delete static_cast<Instance*>(this);
     }
+
+    void add_associated_memory(JSObject*) { }
+    void remove_associated_memory(JSObject*) { }
 
     // Override if necessary
     void trace_impl(JSTracer*) {}
