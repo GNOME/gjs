@@ -26,6 +26,8 @@
 #include "gjs/auto.h"
 #include "gjs/macros.h"
 
+using namespace std::string_literals;
+
 namespace Gjs {
 struct AutoGValue : GValue {
     AutoGValue() : GValue(G_VALUE_INIT) {
