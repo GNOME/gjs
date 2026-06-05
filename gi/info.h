@@ -34,6 +34,10 @@
 #include "gjs/gerror-result.h"
 #include "util/log.h"
 
+#ifdef G_OS_WIN32
+# undef CALLBACK /* Avoid collisions here with the Windows API */
+#endif
+
 // This file is a C++ wrapper for libgirepository that attempts to be more
 // null-safe and type-safe.
 // Each introspection info type has the methods of the C API's GIFooInfo, but
