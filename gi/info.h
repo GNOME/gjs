@@ -38,6 +38,13 @@
 # undef CALLBACK /* Avoid collisions here with the Windows API */
 #endif
 
+/* `constexpr` cannot be used on functions marked with __declspec(dllimport)*/
+#if (defined(_WIN32) || defined(__CYGWIN__)) && !defined(GI_STATIC_COMPILATION)
+# define GJS_INFO_CONSTEXPR const
+#else
+# define GJS_INFO_CONSTEXPR constexpr const
+#endif
+
 // This file is a C++ wrapper for libgirepository that attempts to be more
 // null-safe and type-safe.
 // Each introspection info type has the methods of the C API's GIFooInfo, but
@@ -164,7 +171,7 @@ struct InfoTraits<InfoTag::VFUNC> {
 };
 
 using GTypeFunc = GType (*)();
-static constexpr const GTypeFunc gtype_funcs[] = {
+static GJS_INFO_CONSTEXPR GTypeFunc gtype_funcs[] = {
     gi_arg_info_get_type,
     gi_base_info_get_type,
     gi_callable_info_get_type,
