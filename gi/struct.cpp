@@ -4,10 +4,15 @@
 
 #include <config.h>
 
+#include <stddef.h>                     // for size_t
+
 #include <girepository/girepository.h>
+#include <glib-object.h>
+#include <glib.h>
 
 #include <js/CallArgs.h>
 #include <js/Class.h>
+#include <js/MemoryFunctions.h>  // for AddAssociatedMemory, RemoveAs...
 #include <js/PropertyAndElement.h>  // for JS_DefineFunction
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -143,4 +148,18 @@ JSObject* StructInstance::new_for_c_struct(JSContext* cx,
     if (!obj || !define_extra_error_properties(cx, obj))
         return nullptr;
     return obj;
+}
+
+void StructInstance::add_associated_memory(JSObject* obj) {
+    if (gtype() == G_TYPE_BYTES && m_ptr) {
+        size_t size = g_bytes_get_size(m_ptr.as<GBytes>());
+        JS::AddAssociatedMemory(obj, size, MemoryUse::GObjectInstanceStruct);
+    }
+}
+
+void StructInstance::remove_associated_memory(JSObject* obj) {
+    if (gtype() == G_TYPE_BYTES && m_ptr) {
+        size_t size = g_bytes_get_size(m_ptr.as<GBytes>());
+        JS::RemoveAssociatedMemory(obj, size, MemoryUse::GObjectInstanceStruct);
+    }
 }

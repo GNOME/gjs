@@ -921,6 +921,8 @@ JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
     if (!priv->init_from_c_struct(cx, gboxed, std::forward<Args>(args)...))
         return nullptr;
 
+    priv->debug_lifecycle("Adding associated memory (new_for_c_struct_impl)");
+    priv->to_instance()->add_associated_memory(obj);
     return obj;
 }
 

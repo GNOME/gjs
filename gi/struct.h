@@ -83,4 +83,7 @@ class StructInstance
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* new_for_c_struct(JSContext*, const GI::StructInfo&,
                                       void* gboxed, Boxed::NoCopy);
+
+    void add_associated_memory(JSObject* obj);
+    void remove_associated_memory(JSObject* obj);
 };
