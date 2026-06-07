@@ -196,12 +196,12 @@ Class.prototype._init = function (params) {
 
     let interfaces = params.Implements || [];
     interfaces.forEach(iface => {
-        Object.getOwnPropertyNames(iface.prototype)
-        .filter(name => !name.startsWith('__') && name !== 'constructor')
-        .filter(name => !(name in this.prototype))
-        .forEach(name => {
-            let descriptor = Object.getOwnPropertyDescriptor(iface.prototype,
-                name);
+        Object.entries(Object.getOwnPropertyDescriptors(iface.prototype))
+        .forEach(([name, descriptor]) => {
+            if (name.startsWith('__') || name === 'constructor')
+                return;
+            if (name in this.prototype)
+                return; // don't overwrite something that's already there
             // writable and enumerable are inherited, see note above
             descriptor.configurable = false;
             propertyObj[name] = descriptor;
@@ -371,10 +371,10 @@ Interface.prototype._init = function (params) {
     let ifaceName = params.Name;
 
     let propertyObj = {};
-    Object.getOwnPropertyNames(params)
-    .filter(name => ['Name', 'Requires'].indexOf(name) === -1)
-    .forEach(name => {
-        let descriptor = Object.getOwnPropertyDescriptor(params, name);
+    Object.entries(Object.getOwnPropertyDescriptors(params))
+    .forEach(([name, descriptor]) => {
+        if (name === 'Name' || name === 'Requires')
+            return;
 
         // Create wrappers on the interface object so that generics work (e.g.
         // SomeInterface.some_function(this, blah) instead of
@@ -467,27 +467,24 @@ function defineGObjectLegacyObjects(GObject) {
             if (signals)
                 _createSignals(this.$gtype, signals);
 
-            Object.getOwnPropertyNames(params).forEach(name => {
-                if (['Name', 'Extends', 'Abstract'].includes(name))
+            Object.entries(Object.getOwnPropertyDescriptors(params))
+            .forEach(([name, descriptor]) => {
+                if (typeof descriptor.value !== 'function' ||
+                    ['Name', 'Extends', 'Abstract'].includes(name))
                     return;
 
-                let descriptor = Object.getOwnPropertyDescriptor(params, name);
+                let wrapped = this.prototype[name];
 
-                if (typeof descriptor.value === 'function') {
-                    let wrapped = this.prototype[name];
+                if (name.startsWith('vfunc_')) {
+                    this.prototype[Gi.hook_up_vfunc_symbol](name.slice(6), wrapped);
+                } else if (name.startsWith('on_')) {
+                    let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
+                    if (id !== 0) {
+                        GObject.signal_override_class_closure(id, this.$gtype, function (...argArray) {
+                            let emitter = argArray.shift();
 
-                    if (name.startsWith('vfunc_')) {
-                        this.prototype[Gi.hook_up_vfunc_symbol](name.slice(6),
-                            wrapped);
-                    } else if (name.startsWith('on_')) {
-                        let id = GObject.signal_lookup(name.slice(3).replace('_', '-'), this.$gtype);
-                        if (id !== 0) {
-                            GObject.signal_override_class_closure(id, this.$gtype, function (...argArray) {
-                                let emitter = argArray.shift();
-
-                                return wrapped.apply(emitter, argArray);
-                            });
-                        }
+                            return wrapped.apply(emitter, argArray);
+                        });
                     }
                 }
             });

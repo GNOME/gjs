@@ -587,9 +587,7 @@ static bool gjs_associate_closure(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     Gjs::Closure::Ptr closure =
         Gjs::Closure::create_marshaled(cx, func_obj, "wrapped", false);
-
-    if (!obj->associate_closure(cx, closure))
-        return false;
+    obj->associate_closure(cx, closure);
 
     g_value_set_boxed(&value, closure);
     return gjs_value_from_g_value(cx, args.rval(), &value);

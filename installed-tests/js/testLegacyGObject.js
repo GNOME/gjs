@@ -716,15 +716,9 @@ describe('GObject interface', function () {
             .and.callFake(quitLoop);
         obj.connect('interface-signal', interfaceSignalSpy);
         obj.connect('class-signal', classSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('interface-signal');
-            return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => obj.emit('interface-signal'));
         Mainloop.run('signal');
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('class-signal');
-            return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => obj.emit('class-signal'));
         Mainloop.run('signal');
         expect(interfaceSignalSpy).toHaveBeenCalled();
         expect(classSignalSpy).toHaveBeenCalled();

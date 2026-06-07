@@ -27,6 +27,20 @@ export default defineConfig([
             sourceType: 'script',
         },
         rules: {
+            // Override eslint-config-gnome no-extra-parens
+            // Cannot merge into the existing rule:
+            // https://github.com/eslint/eslint/issues/17389
+            'no-extra-parens': [
+                'error',
+                'all',
+                {
+                    // for JSDOC /** @type */() casts
+                    allowParensAfterCommentPattern: '@type',
+                    conditionalAssign: false,
+                    nestedBinaryExpressions: false,
+                    returnAssign: false,
+                },
+            ],
             'no-prototype-builtins': 'error',
             // Override eslint-config-gnome no-restricted-properties
             // Cannot merge into the existing rule:
@@ -141,6 +155,7 @@ export default defineConfig([
         ],
         rules: {
             'jsdoc/require-jsdoc': 'off',
+            'jsdoc/require-param-description': 'off',
         },
     },
     {

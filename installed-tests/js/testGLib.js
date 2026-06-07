@@ -48,12 +48,26 @@ describe('GVariant constructor', function () {
         expect(unpacked[4].length).toEqual(2);
     });
 
+    it('fails to construct an incomplete struct variant', function () {
+        expect(() => new GLib.Variant('(sogvau', [
+            'a string',
+            '/a/object/path',
+            'asig', // nature
+            new GLib.Variant('s', 'variant'),
+            [7, 3],
+        ])).toThrowError(/GVariant signature/);
+    });
+
     it('constructs a maybe variant', function () {
         let maybeVariant = new GLib.Variant('ms', null);
         expect(maybeVariant.deepUnpack()).toBeNull();
 
         maybeVariant = new GLib.Variant('ms', 'string');
         expect(maybeVariant.deepUnpack()).toEqual('string');
+    });
+
+    it('fails to construct an incomplete maybe variant', function () {
+        expect(() => new GLib.Variant('m', null)).toThrowError(/GVariant signature/);
     });
 
     it('constructs a byte array variant', function () {
@@ -82,6 +96,10 @@ describe('GVariant constructor', function () {
         const a = byteArrayVariant.deepUnpack();
         [112, 105, 122, 122, 97].forEach((val, ix) =>
             expect(a[ix]).toEqual(val));
+    });
+
+    it('fails to construct an incomplete array variant', function () {
+        expect(() => new GLib.Variant('a', [])).toThrowError(/GVariant signature/);
     });
 });
 
@@ -164,21 +182,30 @@ describe('GLib source function overrides', function () {
 
     it('GLib.idle_add_once', function () {
         GLib.idle_add_once(GLib.PRIORITY_DEFAULT, spy);
-        GLib.idle_add(GLib.PRIORITY_LOW, () => loop.quit());
+        GLib.idle_add(GLib.PRIORITY_LOW, () => {
+            loop.quit();
+            return GLib.SOURCE_REMOVE;
+        });
         loop.run();
         expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it('GLib.timeout_add_once', function () {
         GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, spy);
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => loop.quit());
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 150, () => {
+            loop.quit();
+            return GLib.SOURCE_REMOVE;
+        });
         loop.run();
         expect(spy).toHaveBeenCalledTimes(1);
     });
 
     it('GLib.timeout_add_seconds_once', function () {
         GLib.timeout_add_seconds_once(GLib.PRIORITY_DEFAULT, 1, spy);
-        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => loop.quit());
+        GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, 3, () => {
+            loop.quit();
+            return GLib.SOURCE_REMOVE;
+        });
         loop.run();
         expect(spy).toHaveBeenCalledTimes(1);
     });
@@ -220,11 +247,12 @@ describe('GLib string function overrides', function () {
     });
 
     it('GLib.strstr_len', function () {
-        expectWarnings(4);
+        expectWarnings(5);
         expect(GLib.strstr_len('haystack', -1, 'needle')).toBeNull();
         expect(GLib.strstr_len('haystacks', -1, 'stack')).toEqual('stacks');
         expect(GLib.strstr_len('haystacks', 4, 'stack')).toBeNull();
         expect(GLib.strstr_len('haystack', 4, 'ays')).toEqual('aystack');
+        expect(GLib.strstr_len('haystack', 4n, 'ays')).toEqual('aystack');
         assertWarnings('strstr_len');
     });
 
@@ -236,10 +264,11 @@ describe('GLib string function overrides', function () {
     });
 
     it('GLib.strrstr_len', function () {
-        expectWarnings(3);
+        expectWarnings(4);
         expect(GLib.strrstr_len('haystack', -1, 'needle')).toBeNull();
         expect(GLib.strrstr_len('hackstacks', -1, 'ack')).toEqual('acks');
         expect(GLib.strrstr_len('hackstacks', 4, 'ack')).toEqual('ackstacks');
+        expect(GLib.strrstr_len('hackstacks', 4n, 'ack')).toEqual('ackstacks');
         assertWarnings('strrstr_len');
     });
 
@@ -298,8 +327,8 @@ describe('GLib string function overrides', function () {
 
     it('GLib.strdelimit', function () {
         expectWarnings(4);
-        expect(GLib.strdelimit('1a2b3c4', 'abc', '_'.charCodeAt())).toEqual('1_2_3_4');
-        expect(GLib.strdelimit('1-2_3<4', null, '|'.charCodeAt())).toEqual('1|2|3|4');
+        expect(GLib.strdelimit('1a2b3c4', 'abc', '_'.charCodeAt(0))).toEqual('1_2_3_4');
+        expect(GLib.strdelimit('1-2_3<4', null, '|'.charCodeAt(0))).toEqual('1|2|3|4');
         expect(GLib.strdelimit('1a2b3c4', 'abc', '_')).toEqual('1_2_3_4');
         expect(GLib.strdelimit('1-2_3<4', null, '|')).toEqual('1|2|3|4');
         assertWarnings('strdelimit');
@@ -307,7 +336,7 @@ describe('GLib string function overrides', function () {
 
     it('GLib.strcanon', function () {
         expectWarnings(2);
-        expect(GLib.strcanon('1a2b3c4', 'abc', '?'.charCodeAt())).toEqual('?a?b?c?');
+        expect(GLib.strcanon('1a2b3c4', 'abc', '?'.charCodeAt(0))).toEqual('?a?b?c?');
         expect(GLib.strcanon('1a2b3c4', 'abc', '?')).toEqual('?a?b?c?');
         assertWarnings('strcanon');
     });

@@ -20,8 +20,8 @@ OLD_G_DEBUG="$G_DEBUG"
 cat <<EOF >exit.js
 const GLib = imports.gi.GLib;
 let loop = GLib.MainLoop.new(null, false);
-GLib.idle_add(GLib.PRIORITY_LOW, () => imports.system.exit(42));
-GLib.timeout_add_seconds(GLib.PRIORITY_HIGH, 3, () => loop.quit());
+GLib.idle_add_once(GLib.PRIORITY_LOW, () => imports.system.exit(42));
+GLib.timeout_add_seconds_once(GLib.PRIORITY_HIGH, 3, () => loop.quit());
 loop.run();
 EOF
 
@@ -109,8 +109,8 @@ const {GLib} = imports.gi;
 const System = imports.system;
 const loop = GLib.MainLoop.new(null, false);
 Promise.reject();
-GLib.idle_add(GLib.PRIORITY_LOW, () => System.exit(42));
-GLib.timeout_add_seconds(GLib.PRIORITY_HIGH, 3, () => loop.quit());
+GLib.idle_add_once(GLib.PRIORITY_LOW, () => System.exit(42));
+GLib.timeout_add_seconds_once(GLib.PRIORITY_HIGH, 3, () => loop.quit());
 loop.run();
 EOF
 

@@ -32,7 +32,7 @@ const InterfaceRequiringGObjectInterface = GObject.registerClass({
 }, class InterfaceRequiringGObjectInterface extends GObject.Interface {
     optionalG() {
         return `InterfaceRequiringGObjectInterface.optionalG()\n${
-            AGObjectInterface.optionalG(this)}`;
+            AGObjectInterface.prototype.optionalG.call(this)}`;
     }
 });
 
@@ -60,7 +60,7 @@ const GObjectImplementingGObjectInterface = GObject.registerClass({
     requiredG() {}
 
     optionalG() {
-        return AGObjectInterface.optionalG(this);
+        return AGObjectInterface.prototype.optionalG.call(this);
     }
 });
 
@@ -84,7 +84,7 @@ const ImplementationOfTwoInterfaces = GObject.registerClass({
     requiredG() {}
 
     optionalG() {
-        return InterfaceRequiringGObjectInterface.optionalG(this);
+        return InterfaceRequiringGObjectInterface.prototype.optionalG.call(this);
     }
 });
 
@@ -233,10 +233,7 @@ describe('GObject interface', function () {
         let classSignalSpy = jasmine.createSpy('classSignalSpy')
             .and.callFake(quitLoop);
         obj.connect('class-signal', classSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('class-signal');
-            return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => obj.emit('class-signal'));
     });
 
     it('can connect interface signals on the implementing class', function (done) {
@@ -248,10 +245,7 @@ describe('GObject interface', function () {
         let interfaceSignalSpy = jasmine.createSpy('interfaceSignalSpy')
             .and.callFake(quitLoop);
         obj.connect('interface-signal', interfaceSignalSpy);
-        GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            obj.emit('interface-signal');
-            return GLib.SOURCE_REMOVE;
-        });
+        GLib.idle_add_once(GLib.PRIORITY_DEFAULT, () => obj.emit('interface-signal'));
     });
 
     it('can define properties on the implementing class', function () {
@@ -334,6 +328,11 @@ describe('GObject interface', function () {
         expect(54321n).not.toBeInstanceOf(Gio.File);
         expect('no way!').not.toBeInstanceOf(Gio.File);
         expect(new Date()).not.toBeInstanceOf(Gio.File);
+    });
+
+    it('does not define legacy generic functions on the interface constructor object', function () {
+        expect(AGObjectInterface.requiredG).not.toBeDefined();
+        expect(AGObjectInterface.optionalG).not.toBeDefined();
     });
 
     describe('prototype', function () {

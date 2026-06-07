@@ -2,16 +2,21 @@
 // SPDX-FileCopyrightText: 2008 litl, LLC
 // SPDX-FileCopyrightText: 2009 Red Hat, Inc.
 
+/** @import { FrameTickerInterface } from '../../modules/script/tweener/tweener.js' */
+
 const Tweener = imports.tweener.tweener;
 
 function installFrameTicker() {
     // Set up Tweener to have a "frame pulse" that the Jasmine clock functions
     // can influence
-    let ticker = {
+    /**
+     * @typedef {object} Ticker
+     * @property {number} _currentTime
+     * @property {number} [_timeoutID]
+     */
+    let ticker = /** @type Ticker & FrameTickerInterface */({
         FRAME_RATE: 50,
-
-        _init() {
-        },
+        _currentTime: 0,
 
         start() {
             this._currentTime = 0;
@@ -34,7 +39,7 @@ function installFrameTicker() {
         getTime() {
             return this._currentTime;
         },
-    };
+    });
     imports.signals.addSignalMethods(ticker);
 
     Tweener.setFrameTicker(ticker);
@@ -50,7 +55,10 @@ describe('Tweener', function () {
         jasmine.clock().uninstall();
     });
 
-    let start, update, overwrite, complete;
+    let /** @type jasmine.Spy */ start,
+        /** @type jasmine.Spy */ update,
+        /** @type jasmine.Spy */ overwrite,
+        /** @type jasmine.Spy */ complete;
     beforeEach(function () {
         start = jasmine.createSpy('start');
         update = jasmine.createSpy('update');
@@ -171,7 +179,7 @@ describe('Tweener', function () {
         Tweener.addTween(objectB, {bar: 100, time: 0.1});
         Tweener.addTween(objectB, {bar: 150, time: 0.1, delay: 0.1});
 
-        jasmine.clock(0).tick(201);
+        jasmine.clock().tick(201);
 
         expect(objectB.bar).toEqual(150);
     });
@@ -280,8 +288,14 @@ describe('Tweener', function () {
     });
 
     it('can register special properties', function () {
+        /**
+         * @typedef {object} ObjectA
+         * @property {number} x
+         * @property {number} y
+         */
         Tweener.registerSpecialProperty(
             'negative_x',
+            /** @param {ObjectA} obj */
             function (obj) {
                 return -obj.x;
             },
@@ -290,6 +304,7 @@ describe('Tweener', function () {
             }
         );
 
+        /** @type ObjectA */
         var objectA = {
             x: 0,
             y: 0,
@@ -306,11 +321,17 @@ describe('Tweener', function () {
     it('can register special modifiers for properties', function () {
         Tweener.registerSpecialPropertyModifier('discrete', discreteModifier,
             discreteGet);
+        /** @param {string[]} props */
         function discreteModifier(props) {
             return props.map(function (prop) {
                 return {name: prop, parameters: null};
             });
         }
+        /**
+         * @param {number} begin
+         * @param {number} end
+         * @param {number} time
+         */
         function discreteGet(begin, end, time) {
             return Math.floor(begin + time * (end - begin));
         }

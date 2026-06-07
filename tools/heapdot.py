@@ -59,8 +59,8 @@ def output_dot_file(args, graph, targs, fname):
         shape = 'rect'
         priv = ''
 
-        if label.endswith('<no private>'):
-            label = label[:-13]
+        if label.endswith(' <unknown object>'):
+            label = label[:-17]
 
         # Lookup the edge label for this node
         elabel = ''

@@ -40,12 +40,16 @@ describe('Lang module', function () {
                 this.a = n;
             },
         };
+        /** @type Partial<typeof foo> */
         var bar = {};
 
         Lang.copyProperties(foo, bar);
 
-        expect(bar.__lookupGetter__('c')).not.toBeNull();
-        expect(bar.__lookupSetter__('c')).not.toBeNull();
+        const propDescr = Object.getOwnPropertyDescriptor(bar, 'c');
+        expect(propDescr).toEqual(jasmine.objectContaining({
+            get: jasmine.any(Function),
+            set: jasmine.any(Function),
+        }));
 
         // this should return the value of 'a'
         expect(bar.c).toEqual(10);
@@ -57,7 +61,10 @@ describe('Lang module', function () {
 
 
     describe('bind()', function () {
+        /** @type {{ callback: (...args: number[]) => true; }} */
         let o;
+        /** @type jasmine.Spy<typeof o.callback> */
+        let spy;
 
         beforeEach(function () {
             o = {
@@ -65,13 +72,13 @@ describe('Lang module', function () {
                     return true;
                 },
             };
-            spyOn(o, 'callback').and.callThrough();
+            spy = spyOn(o, 'callback').and.callThrough();
         });
 
         it('calls the bound function with the supplied this-object', function () {
             let callback = Lang.bind(o, o.callback);
             callback();
-            expect(o.callback.calls.mostRecent()).toEqual(jasmine.objectContaining({
+            expect(spy.calls.mostRecent()).toEqual(jasmine.objectContaining({
                 object: o,
                 args: [],
                 returnValue: true,
@@ -79,10 +86,12 @@ describe('Lang module', function () {
         });
 
         it('throws an error when no function supplied', function () {
+            // @ts-expect-error Intentionally testing bad call
             expect(() => Lang.bind(o, undefined)).toThrow();
         });
 
         it('throws an error when this-object undefined', function () {
+            // @ts-expect-error Intentionally testing bad call
             expect(() => Lang.bind(undefined, function () {})).toThrow();
         });
 

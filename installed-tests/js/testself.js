@@ -61,6 +61,8 @@ describe('SpiderMonkey features check', function () {
 
     it('class static blocks are enabled', function () {
         class Test {
+            /** @type number */
+            static x;
             static {
                 Test.x = 4;
             }

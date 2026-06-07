@@ -4,8 +4,7 @@
  * SPDX-FileCopyrightText: 2008 litl, LLC
  */
 
-#ifndef GJS_CONTEXT_H_
-#define GJS_CONTEXT_H_
+#pragma once
 
 #if !defined(INSIDE_GJS_H) && !defined(GJS_COMPILATION)
 #    error "Only <gjs/gjs.h> can be included directly."
@@ -115,5 +114,3 @@ void gjs_context_setup_debugger_console(GjsContext* self);
 GJS_EXPORT GJS_USE
 const char* gjs_context_get_repl_history_path(GjsContext* self);
 G_END_DECLS
-
-#endif /* GJS_CONTEXT_H_ */

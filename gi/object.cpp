@@ -62,6 +62,7 @@
 #include "gi/closure.h"
 #include "gi/cwrapper.h"
 #include "gi/function.h"
+#include "gi/gi-utils.h"
 #include "gi/gjs_gi_trace.h"
 #include "gi/info.h"
 #include "gi/js-value-inl.h"  // for Relaxed, c_value_to_js_checked
@@ -82,7 +83,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
-#include "gjs/mem.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
 
@@ -626,21 +626,12 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
                      field.name());
 
     GI::AutoTypeInfo type{field.type_info()};
-    switch (type.tag()) {
-        case GI_TYPE_TAG_ARRAY:
-        case GI_TYPE_TAG_ERROR:
-        case GI_TYPE_TAG_GHASH:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_INTERFACE:
-            gjs_throw(cx,
-                      "Can't get field %s; GObject introspection supports only "
-                      "fields with simple types, not %s",
-                      field.name(), type.display_string());
-            return false;
-
-        default:
-            break;
+    if (!GI::is_supported_gobject_field_type(type)) {
+        gjs_throw(cx,
+                  "Can't get field %s; GObject introspection supports only "
+                  "fields with simple types, not %s",
+                  field.name(), type.display_string());
+        return false;
     }
 
     if (field.read(m_ptr, &arg).isErr()) {
@@ -2917,7 +2908,7 @@ static JSObject* gjs_lookup_object_prototype(JSContext* cx, GType gtype) {
                                                  gtype);
 }
 
-bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
+void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
@@ -2930,8 +2921,6 @@ bool ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     m_closures.push_back(closure);
     g_closure_add_invalidate_notifier(
         closure, this, &ObjectInstance::closure_invalidated_notify);
-
-    return true;
 }
 
 void ObjectInstance::closure_invalidated_notify(void* data, GClosure* closure) {
@@ -3038,11 +3027,9 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
         ObjectInstance* obj = ObjectInstance::for_js(cx, associate_obj);
         if (!obj)
             return false;
-
-        if (!obj->associate_closure(cx, closure))
-            return false;
-    } else if (!associate_closure(cx, closure)) {
-        return false;
+        obj->associate_closure(cx, closure);
+    } else {
+        associate_closure(cx, closure);
     }
 
     unsigned long id = g_signal_connect_closure_by_id(

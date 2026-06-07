@@ -559,7 +559,7 @@ describe('Life, the Universe and Everything', function () {
     it('unregistered enum works', function () {
         expect(Regress.TestEnumNoGEnum.EVALUE1).toEqual(0);
         expect(Regress.TestEnumNoGEnum.EVALUE2).toEqual(42);
-        expect(Regress.TestEnumNoGEnum.EVALUE3).toEqual('0'.charCodeAt());
+        expect(Regress.TestEnumNoGEnum.EVALUE3).toEqual('0'.charCodeAt(0));
     });
 
     it('value is not added to enum with #define', function () {
@@ -2674,7 +2674,6 @@ describe('Class with action signals', function () {
 
 describe('Bitmask fundamental type', function () {
     xit('can be created', function () {
-        const bitmask = new Regress.Bitmask(2);
-        console.log(bitmask);
+        new Regress.Bitmask(2);
     }).pend('https://gitlab.gnome.org/GNOME/gobject-introspection-tests/-/issues/7');
 });

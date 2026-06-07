@@ -18,7 +18,7 @@ import {
 // we will hit the main loop only after several tests have already run. For
 // consistency we should guarantee that there is a main loop running during
 // all tests.
-GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
+GLib.idle_add_once(GLib.PRIORITY_DEFAULT, function () {
     try {
         environment.execute();
     } catch (e) {
@@ -28,8 +28,6 @@ GLib.idle_add(GLib.PRIORITY_DEFAULT, function () {
 
         system.exit(1);
     }
-
-    return GLib.SOURCE_REMOVE;
 });
 
 // Keep running the main loop while mainloopLock is not null and resolves true.

@@ -628,12 +628,8 @@ function getConsoleLogDomain() {
  */
 const globalConsole = Object.create({});
 
-const propertyNames =
-    /** @type {['constructor', ...Array<string & keyof Console>]} */
-    // eslint-disable-next-line no-extra-parens
-    (Object.getOwnPropertyNames(Console.prototype));
-const propertyDescriptors = Object.getOwnPropertyDescriptors(Console.prototype);
-for (const key of propertyNames) {
+const entries = Object.entries(Object.getOwnPropertyDescriptors(Console.prototype));
+for (const [key, descriptor] of entries) {
     if (key === 'constructor')
         continue;
 
@@ -641,7 +637,6 @@ for (const key of propertyNames) {
     if (key === 'setLogDomain')
         continue;
 
-    const descriptor = propertyDescriptors[key];
     if (typeof descriptor.value !== 'function')
         continue;
 

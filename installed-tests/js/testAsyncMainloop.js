@@ -9,16 +9,13 @@ describe('Async mainloop', function () {
 
     beforeEach(function () {
         loop = new GLib.MainLoop(null, false);
-        quit = jasmine.createSpy('quit').and.callFake(() => {
-            loop.quit();
-            return GLib.SOURCE_REMOVE;
-        });
+        quit = jasmine.createSpy('quit').and.callFake(() => loop.quit());
     });
 
     it('resolves when main loop exits', async function () {
         const release = acquireMainloop();
 
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 50, quit);
+        GLib.timeout_add_once(GLib.PRIORITY_DEFAULT, 50, quit);
 
         await loop.runAsync();
 

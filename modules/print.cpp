@@ -174,7 +174,7 @@ static bool get_pretty_print_function(JSContext*, unsigned argc,
                                       JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    g_assert(args.length() == 1 && "getPrettyPrintFunction takes 1 arguments");
+    g_assert(args.length() == 1 && "getPrettyPrintFunction takes 1 argument");
 
     JS::Value v_global = args[0];
 

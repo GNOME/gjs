@@ -6,30 +6,6 @@
 
 import GLib from 'gi://GLib';
 
-function deferred() {
-    let resolve_;
-    let reject_;
-
-    function resolve() {
-        resolve_();
-    }
-
-    function reject() {
-        reject_();
-    }
-
-    const promise = new Promise((res, rej) => {
-        resolve_ = res;
-        reject_ = rej;
-    });
-
-    return {
-        promise,
-        resolve,
-        reject,
-    };
-}
-
 /**
  * @param {number} ms the number of milliseconds to wait
  * @returns {Promise<void>}
@@ -132,7 +108,7 @@ describe('Timers', () => {
 
     it('cancels invalid silent fail', async function () {
         // Expect no panic
-        const {promise, resolve} = deferred();
+        const {promise, resolve} = Promise.withResolvers();
         let count = 0;
         const id = setTimeout(() => {
             count++;
@@ -148,7 +124,7 @@ describe('Timers', () => {
     });
 
     it('interval success', async function () {
-        const {promise, resolve} = deferred();
+        const {promise, resolve} = Promise.withResolvers();
         let count = 0;
         const id = setInterval(() => {
             count++;
@@ -193,7 +169,7 @@ describe('Timers', () => {
     });
 
     it('callback this', async function () {
-        const {promise, resolve} = deferred();
+        const {promise, resolve} = Promise.withResolvers();
         const obj = {
             foo() {
                 expect(this).toBe(window);

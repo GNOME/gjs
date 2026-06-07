@@ -326,6 +326,12 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
                       "Converting JS::Value to GHashTable key %s",
                       gi_type_tag_to_string(type_tag));
 
+    if (!GI::is_supported_ghash_key_type(type_tag)) {
+        gjs_throw(cx, "Type %s not supported for hash table keys",
+                  gi_type_tag_to_string(type_tag));
+        return false;
+    }
+
     switch (type_tag) {
         case GI_TYPE_TAG_BOOLEAN:
             // This doesn't seem particularly useful, but it's easy
@@ -389,34 +395,10 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
             return true;
         }
 
-        case GI_TYPE_TAG_FLOAT:
-        case GI_TYPE_TAG_DOUBLE:
-        case GI_TYPE_TAG_INT64:
-        case GI_TYPE_TAG_UINT64:
-        // FIXME: The above four could be supported, but are currently not. The
-        // ones below cannot be key types in a regular JS object; we would need
-        // to allow marshalling Map objects into GHashTables to support those,
-        // as well as refactoring this function to take GITypeInfo* and
-        // splitting out the marshalling for basic types into a different
-        // function.
-        case GI_TYPE_TAG_VOID:
-        case GI_TYPE_TAG_GTYPE:
-        case GI_TYPE_TAG_ERROR:
-        case GI_TYPE_TAG_INTERFACE:
-        case GI_TYPE_TAG_GLIST:
-        case GI_TYPE_TAG_GSLIST:
-        case GI_TYPE_TAG_GHASH:
-        case GI_TYPE_TAG_ARRAY:
-            break;
-
         default:
             g_assert_not_reached();
-            break;
+            return true;
     }
-
-    gjs_throw(cx, "Type %s not supported for hash table keys",
-              gi_type_tag_to_string(type_tag));
-    return false;
 }
 
 template <typename TAG>

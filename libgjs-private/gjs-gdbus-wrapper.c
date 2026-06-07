@@ -15,11 +15,11 @@
 
 #include "libgjs-private/gjs-gdbus-wrapper.h"
 
-enum {
-    PROP_0,
-    PROP_G_INTERFACE_INFO,
-    PROP_LAST
-};
+typedef enum {
+    PROP_G_INTERFACE_INFO = 1,
+} GjsDBusImplementationProps;
+
+static GParamSpec* gjs_dbus_implementation_props[PROP_G_INTERFACE_INFO + 1];
 
 enum {
     SIGNAL_HANDLE_METHOD,
@@ -70,8 +70,7 @@ static bool gjs_dbus_implementation_check_interface(GjsDBusImplementation* self,
     const char* exported_object_path =
         g_dbus_interface_skeleton_get_object_path(
             G_DBUS_INTERFACE_SKELETON(self));
-    if (!exported_object_path ||
-        strcmp(object_path, exported_object_path) != 0) {
+    if (g_strcmp0(object_path, exported_object_path) != 0) {
         g_set_error(
             error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_OBJECT,
             "Wrong object path %s for %s", object_path,
@@ -203,13 +202,13 @@ static void gjs_dbus_implementation_set_property(GObject* object,
                                                  GParamSpec* pspec) {
     GjsDBusImplementation* self = GJS_DBUS_IMPLEMENTATION(object);
 
-    switch (property_id) {
+    switch ((GjsDBusImplementationProps)property_id) {
         case PROP_G_INTERFACE_INFO:
             self->ifaceinfo = (GDBusInterfaceInfo*)g_value_dup_boxed(value);
             break;
-        default:
-            G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
     }
+
+    (void)pspec;
 }
 
 static GDBusInterfaceInfo* gjs_dbus_implementation_get_info(
@@ -315,15 +314,16 @@ void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
     skeleton_class->get_properties = gjs_dbus_implementation_get_properties;
     skeleton_class->flush = gjs_dbus_implementation_flush;
 
-    g_object_class_install_property(
-        gobject_class, PROP_G_INTERFACE_INFO,
-        g_param_spec_boxed(
-            "g-interface-info", "Interface Info",
-            "A DBusInterfaceInfo representing the exported object",
-            G_TYPE_DBUS_INTERFACE_INFO,
-            (GParamFlags)(G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE |
-                          G_PARAM_CONSTRUCT_ONLY)));
+    gjs_dbus_implementation_props[PROP_G_INTERFACE_INFO] = g_param_spec_boxed(
+        "g-interface-info", "Interface Info",
+        "A DBusInterfaceInfo representing the exported object",
+        G_TYPE_DBUS_INTERFACE_INFO,
+        (GParamFlags)(G_PARAM_STATIC_STRINGS | G_PARAM_WRITABLE |
+                      G_PARAM_CONSTRUCT_ONLY));
 
+    g_object_class_install_properties(
+        gobject_class, G_N_ELEMENTS(gjs_dbus_implementation_props),
+        gjs_dbus_implementation_props);
     /**
      * GjsDBusImplementation::handle-method-call:
      * @self:

@@ -11,6 +11,8 @@ const SIMPLE_TYPES = ['b', 'y', 'n', 'q', 'i', 'u', 'x', 't', 'h', 'd', 's', 'o'
 
 function _readSingleType(signature, forceSimple) {
     let char = signature.shift();
+    if (!char)
+        throw new Error('Invalid GVariant signature (reached end while expecting a type)');
     let isSimple = false;
 
     if (!SIMPLE_TYPES.includes(char)) {
@@ -112,13 +114,13 @@ function _packVariant(signature, value) {
         if (arrayType[0] === '{') {
             // special case for dictionaries
             for (let key in value) {
-                let copy = [].concat(arrayType);
+                let copy = arrayType.slice();
                 let child = _packVariant(copy, [key, value[key]]);
                 arrayValue.push(child);
             }
         } else {
             for (let i = 0; i < value.length; i++) {
-                let copy = [].concat(arrayType);
+                let copy = arrayType.slice();
                 let child = _packVariant(copy, value[i]);
                 arrayValue.push(child);
             }
@@ -257,11 +259,11 @@ function _init() {
 
     GLib = this;
 
-    GLib.MainLoop.prototype.runAsync = function (...args) {
+    GLib.MainLoop.prototype.runAsync = function () {
         return new Promise((resolve, reject) => {
             setMainLoopHook(() => {
                 try {
-                    resolve(this.run(...args));
+                    resolve(this.run());
                 } catch (error) {
                     reject(error);
                 }
@@ -464,6 +466,7 @@ function _init() {
     this.strstr_len = function (haystack, len, needle) {
         _warnNotIntrospectable('GLib.strstr_len()', 'String.indexOf()');
         let searchString = haystack;
+        len = Number(len);
         if (len !== -1)
             searchString = searchString.slice(0, len);
         const index = searchString.indexOf(needle);
@@ -483,6 +486,7 @@ function _init() {
     this.strrstr_len = function (haystack, len, needle) {
         _warnNotIntrospectable('GLib.strrstr_len()', 'String.lastIndexOf()');
         let searchString = haystack;
+        len = Number(len);
         if (len !== -1)
             searchString = searchString.slice(0, len);
         const index = searchString.lastIndexOf(needle);

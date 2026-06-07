@@ -6,7 +6,7 @@ SOURCEDIR=$(pwd)
 BUILDDIR="$(pwd)/_coverage_build"
 LCOV_ARGS=(--config-file "$SOURCEDIR/tools/lcovrc")
 GENHTML_ARGS=(--legend --show-details --branch-coverage)
-IGNORE=(*/gjs/test/* *-resources.c *minijasmine.cpp
+IGNORE=(*/gjs/test/* gjs-enums.c *-resources.c *minijasmine.cpp
     */gjs/installed-tests/js/libgjstesttools/* */gjs/subprojects/glib/*
     */gjs/_coverage_build/subprojects/glib/*
     */gjs/subprojects/gobject-introspection/*)
@@ -31,7 +31,7 @@ lcov_outputs=(
 )
 
 lcov_js_prefix=lcov/org/gnome/gjs
-genhtml --prefix "$BUILDDIR/$lcov_js_prefix" --prefix "$BUILDDIR" --prefix "$SOURCEDIR" \
+genhtml --prefix "$BUILDDIR/$lcov_js_prefix" --prefix "$SOURCEDIR" \
     --output-directory _coverage/html \
     --title "gjs-$VERSION Code Coverage" \
     "${GENHTML_ARGS[@]}" "${lcov_outputs[@]}"

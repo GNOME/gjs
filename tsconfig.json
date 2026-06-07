@@ -2,17 +2,30 @@
 // SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 {
   "files": [
+    "installed-tests/js/matchers.js",
+    "installed-tests/js/testGlobal.js",
+    "installed-tests/js/testLang.js",
+    "installed-tests/js/testMainloop.js",
+    "installed-tests/js/testPackage.js",
+    "installed-tests/js/testself.js",
+    "installed-tests/js/testTweener.js",
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
   ],
+  "include": ["./types/gjs.d.ts"],
   "compilerOptions": {
     "noEmit": true,  // don't generate files, just typecheck them
     "allowJs": true,
     "checkJs": true,
-    "skipLibCheck": true,  // don't check environment.d.ts
 
     "target": "es2023",
     "lib": ["es2023"],
+    // Consider splitting this into a separate tsconfig project for only the
+    // test files, so that Jasmine types don't get pulled in globally.
+    "types": ["jasmine"],
+
+    // Path options
+    "typeRoots": ["./tools/node_modules/@types"],
 
     // Type checking options
     "strict": true

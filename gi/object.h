@@ -393,8 +393,7 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     static void closure_invalidated_notify(void* data, GClosure*);
 
  public:
-    GJS_JSAPI_RETURN_CONVENTION
-    bool associate_closure(JSContext*, GClosure*);
+    void associate_closure(JSContext*, GClosure*);
 
     // Helper methods
 

@@ -370,8 +370,8 @@ def get_edge_label(graph, origin, destination):
 def get_node_label(graph, addr):
     label = graph.node_labels[addr]
 
-    if label.endswith(' <no private>'):
-        label = label[:-13]
+    if label.endswith(' <unknown object>'):
+        label = label[:-17]
 
     if label.startswith('Function '):
         fm = func_regex.match(label)

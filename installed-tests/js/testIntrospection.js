@@ -145,7 +145,7 @@ describe('Garbage collection of introspected objects', function () {
 
         orphanObject();
         System.gc();
-        GLib.idle_add(GLib.PRIORITY_LOW, () => done());
+        GLib.idle_add_once(GLib.PRIORITY_LOW, done);
     });
 
     // This tests a race condition that would crash; it should warn instead
@@ -171,7 +171,7 @@ describe('Garbage collection of introspected objects', function () {
         const handler = settings.connect('changed::fullscreen', () => {
             obj.run_dispose();
             settings.disconnect(handler);
-            GLib.idle_add(GLib.PRIORITY_LOW, () => {
+            GLib.idle_add_once(GLib.PRIORITY_LOW, () => {
                 GLib.test_assert_expected_messages_internal('Gjs',
                     'testIntrospection.js', 0,
                     'Warn about setting property on disposed JS object');

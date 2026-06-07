@@ -27,7 +27,6 @@ const GLib = imports.gi.GLib;
 const TweenList = imports.tweener.tweenList;
 const Signals = imports.signals;
 
-var _inited = false;
 var _engineExists = false;
 var _tweenList = null;
 
@@ -52,15 +51,10 @@ var _ticker = null;
 var _prepareFrameId = 0;
 
 /* default frame ticker */
-function FrameTicker() {
-    this._init();
-}
+function FrameTicker() {}
 
 FrameTicker.prototype = {
     FRAME_RATE: 65,
-
-    _init() {
-    },
 
     start() {
         this._currentTime = 0;
@@ -73,7 +67,7 @@ FrameTicker.prototype = {
             function () {
                 me._currentTime += 1000 / me.FRAME_RATE;
                 me.emit('prepare-frame');
-                return true;
+                return GLib.SOURCE_CONTINUE;
             });
     },
 
@@ -93,32 +87,6 @@ FrameTicker.prototype = {
 Signals.addSignalMethods(FrameTicker.prototype);
 
 _ticker = new FrameTicker();
-
-/* TODOs:
- *
- * Special properties:
- *
- * Special properties are 'proxy' properties used in Tweener to tween
- * (animate) things that are not proper properties per se. One example
- * given is the 'frame' of an object in ActionScript, which is not an
- * object property. Using the special property '_frame' you could animate
- * it like this:
- *
- * Tweener.addTween(myMovieClip, {_frame:20, time:1});
- *
- * which would be equivalent to applying a fast-forward to it.
- *
- * This properties need a special support in the code, and I've removed it
- * for now until we see the need for it in our clutter based stuff.
- */
-
-/* This is a bit pointless now, but let's keep it anyway... */
-function _init() {
-    if (_inited)
-        return;
-
-    _inited = true;
-}
 
 function setFrameTicker(ticker) {
     _ticker = ticker;
@@ -499,8 +467,6 @@ function _addTweenOrCaller(target, tweeningParameters, isCaller) {
     }
 
     // Creates the main engine if it isn't active
-    if (!_inited)
-        _init();
     if (!_engineExists)
         _startEngine();
 

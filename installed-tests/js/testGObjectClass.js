@@ -238,9 +238,8 @@ const MyAbstractObject = GObject.registerClass({
 }, class MyAbstractObject extends GObject.Object {
 });
 
-const MyFinalObject = GObject.registerClass({
-    GTypeFlags: GObject.TypeFlags.FINAL,
-}, class extends GObject.Object {
+const MyFinalObject = GObject.registerClass(class extends GObject.Object {
+    static [GObject.GTypeFlags] = GObject.TypeFlags.FINAL;
 });
 
 const MyApplication = GObject.registerClass({
@@ -302,12 +301,8 @@ describe('GObject class with decorator', function () {
     });
 
     it('throws if final class is inherited from', function () {
-        try {
-            GObject.registerClass(class extends MyFinalObject {});
-            fail();
-        } catch (e) {
-            expect(e.message).toEqual('Cannot inherit from a final type');
-        }
+        expect(() => GObject.registerClass(class extends MyFinalObject {}))
+            .toThrowError('Cannot inherit from a final type');
     });
 
     it('constructs with default values for properties', function () {
@@ -384,10 +379,7 @@ describe('GObject class with decorator', function () {
 
     function asyncIdle() {
         return new Promise(resolve => {
-            GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-                resolve();
-                return GLib.SOURCE_REMOVE;
-            });
+            GLib.idle_add_once(GLib.PRIORITY_DEFAULT, resolve);
         });
     }
 
@@ -775,7 +767,6 @@ describe('GObject class with custom constructor', function () {
         let myInstance2 = new MyObjectWithCustomConstructor({readwrite: 'baz', construct: 'asdf'});
         expect(myInstance2.readwrite).toEqual('baz');
         expect(myInstance2.readonly).toEqual('bar');
-        console.log(Object.getOwnPropertyDescriptor(myInstance2, 'construct'));
         expect(myInstance2.construct).toEqual('asdf');
     });
 
