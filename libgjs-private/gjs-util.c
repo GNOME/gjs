@@ -19,6 +19,7 @@
 #include "libgjs-private/gjs-util.h"
 #include "util/console.h"
 
+#ifndef G_OS_WIN32
 typedef struct {
     locale_t id;
     char* name;
@@ -105,6 +106,8 @@ static GjsLocale* gjs_locales_new(void) {
 static GPrivate gjs_private_locale_key =
     G_PRIVATE_INIT((GDestroyNotify)gjs_locales_free);
 
+#endif /* !G_OS_WIN32 */
+
 /**
  * gjs_set_thread_locale:
  * @category:
@@ -114,6 +117,12 @@ static GPrivate gjs_private_locale_key =
  */
 const char* gjs_set_thread_locale(GjsLocaleCategory category,
                                   const char* locale_name) {
+#ifdef G_OS_WIN32
+    /* we only want setlocale() to affect the current thread */
+    _configthreadlocale(_ENABLE_PER_THREAD_LOCALE);
+
+    return (const char *) setlocale(category, locale_name);
+#else
     locale_t new_locale_id = UNSET_LOCALE_ID, old_locale_id = UNSET_LOCALE_ID;
     char* prior_name = NULL;
     bool success = false;
@@ -173,6 +182,7 @@ out:
         return NULL;
 
     return locale->prior_name;
+#endif /* !G_OS_WIN32 */
 }
 
 void gjs_textdomain(const char* domain) { textdomain(domain); }
