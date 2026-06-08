@@ -58,6 +58,7 @@
 #include "gi/function.h"
 #include "gi/gerror.h"
 #include "gi/info.h"
+#include "gi/inline-array.h"
 #include "gi/object.h"
 #include "gi/utils-inl.h"
 #include "gjs/auto.h"
@@ -910,7 +911,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     // ffi_arg_pointers, on the other hand, represents the actual C arguments,
     // in the way ffi expects them.
 
-    auto ffi_arg_pointers = std::make_unique<void*[]>(ffi_argc);
+    Gjs::InlineArray<void*, 8> ffi_arg_pointers;
+    ffi_arg_pointers.allocate(ffi_argc);
 
     int gi_arg_pos = 0;        // index into GIArgument array
     unsigned ffi_arg_pos = 0;  // index into ffi_arg_pointers

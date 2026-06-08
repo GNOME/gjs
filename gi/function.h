@@ -25,6 +25,7 @@
 
 #include "gi/closure.h"
 #include "gi/info.h"
+#include "gi/inline-array.h"
 #include "gjs/auto.h"
 #include "gjs/gerror-result.h"
 #include "gjs/macros.h"
@@ -92,9 +93,9 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
 // Stack allocation only!
 class GjsFunctionCallState {
-    Gjs::AutoCppPointer<GIArgument[]> m_in_cvalues;
-    Gjs::AutoCppPointer<GIArgument[]> m_out_cvalues;
-    Gjs::AutoCppPointer<GIArgument[]> m_inout_original_cvalues;
+    Gjs::InlineArray<GIArgument, 8> m_in_cvalues;
+    Gjs::InlineArray<GIArgument, 8> m_out_cvalues;
+    Gjs::InlineArray<GIArgument, 8> m_inout_original_cvalues;
 
  public:
     std::unordered_set<GIArgument*> ignore_release;
@@ -117,9 +118,9 @@ class GjsFunctionCallState {
           can_throw_gerror(callable.can_throw_gerror()),
           is_method(callable.is_method()) {
         int size = gi_argc + first_arg_offset();
-        m_in_cvalues = new GIArgument[size];
-        m_out_cvalues = new GIArgument[size];
-        m_inout_original_cvalues = new GIArgument[size];
+        m_in_cvalues.allocate(size);
+        m_out_cvalues.allocate(size);
+        m_inout_original_cvalues.allocate(size);
     }
 
     GjsFunctionCallState(const GjsFunctionCallState&) = delete;
