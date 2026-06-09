@@ -1,24 +1,28 @@
-Instructions for building GJS on Visual Studio or clang-cl
-==========================================================
+Instructions for building GJS on Visual Studio using clang-cl
+=============================================================
 Building the GJS on Windows is now supported using Visual Studio
-versions 2019 16.5.x or later with or without clang-cl in both 32-bit
+versions 2019 16.5.x or later with clang-cl in both 32-bit
 and 64-bit (x64) flavors, via Meson.  It should be noted that a
-recent-enough Windows SDK from Microsoft is still required if using
-clang-cl, as we will still use items from the Windows SDK.
+recent-enough Windows SDK from Microsoft is still required,
+as we will still use items from the Windows SDK.
+
+Please note that for builds of GJS against the SpiderMonkey 140.x headers,
+currently clang-cl must be used.
 
 Recent official binary installers of CLang (which contains clang-cl)
 from the LLVM website are known to work to build SpiderMonkey 140 and
-GJS.
+GJS, or one may be able to install it with the Visual Studio iInstaller,
+albeit possibly not being the latest version.
 
 You will need the following items to build GJS using Visual Studio
 or clang-cl (they can be built with Visual Studio 2015 or later,
-unless otherwise noted):
+unless otherwise noted, although 2019 or later is highly recommended):
 - SpiderMonkey 140.x (mozjs-140). This must be built with clang-cl as
   the Visual Studio  compiler is no longer supported for building this.
   Please see the below section carefully on this...
 - GObject-Introspection (G-I) 1.66.x or later
-- GLib 2.66.x or later, (which includes GIO, GObject, and the
-  associated tools)
+- GLib 2.86.x or later, (which includes GIO, GObject, libgirepository-2.x
+  and the associated tools)
 - Cairo including Cairo-GObject support (Optional)
 - GTK+-4.x or later (Optional)
 - and anything that the above items depend on.
@@ -27,7 +31,7 @@ Note again that SpiderMonkey must be built using Visual Studio with
 clang-cl, and the rest should preferably be built with Visual Studio
 or clang-cl as well.  The Visual Studio version used for building the
 other dependencies should preferably be the same across the board, or,
-if using Visual Studio 2015 or later, Visual Studio 2015 through 2022.
+if using Visual Studio 2015 or later, Visual Studio 2015 through 2026.
 
 Please also be aware that the Rust MSVC toolchains that correspond to
 the platform you are building for must also be present to build
@@ -143,7 +147,7 @@ can be defined, which is used if using the cross-compilation capabilities of CLa
 In this case, you need to ensure that 'clang-cl.exe' and 'lld-link.exe' (i.e. your
 LLVM bindir) are present in your PATH.
 
-You need to install Python 3.6.x or later, as well as the
+You need to install Python 3.7.x or later, as well as the
 pkg-config tool, Meson (via pip) and Ninja.  Perform a build by doing the
 following, in an appropriate Visual Studio command prompt
 in an empty build directory:
@@ -152,8 +156,9 @@ in an empty build directory:
 meson <path_to_gjs_sources> --buildtype=... --prefix=<some_prefix> -Dskip_dbus_tests=true -Dprofiler=disabled
 ```
 
-(Note that -Dskip_dbus_tests=true is required for MSVC/clang-cl builds; please
-see the Meson documentation for the values accepted by buildtype)
+(Note that -Dskip_dbus_tests=true and -Dprofiler=disabled are required for both
+MSVC/clang-cl builds; please see the Meson documentation for the values accepted
+by buildtype)
 
 You may want to view the build options after the configuration succeeds
 by using 'meson configure'.  You may need to set the envvar:
