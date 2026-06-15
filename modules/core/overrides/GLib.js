@@ -263,7 +263,8 @@ function _init() {
         return new Promise((resolve, reject) => {
             setMainLoopHook(() => {
                 try {
-                    resolve(this.run());
+                    this.run();
+                    resolve();
                 } catch (error) {
                     reject(error);
                 }
