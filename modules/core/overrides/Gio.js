@@ -5,6 +5,7 @@ var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
 var Signals = imports.signals;
 const {_createWrappersForPlatformSpecificNamespace} = imports._common;
+const {setMainLoopHook} = imports._promiseNative;
 var Gio;
 
 // Ensures that a Gio.UnixFDList being passed into or out of a DBus method with
@@ -516,7 +517,17 @@ const _methodInvocations = new WeakMap();
 function _init() {
     Gio = this;
 
-    Gio.Application.prototype.runAsync = GLib.MainLoop.prototype.runAsync;
+    Gio.Application.prototype.runAsync = function (...args) {
+        return new Promise((resolve, reject) => {
+            setMainLoopHook(() => {
+                try {
+                    resolve(this.run(...args));
+                } catch (error) {
+                    reject(error);
+                }
+            });
+        });
+    };
 
     _createWrappersForPlatformSpecificNamespace(Gio);
 
