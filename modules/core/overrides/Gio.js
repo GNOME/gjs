@@ -729,7 +729,7 @@ function _init() {
 
         while (true) {
             // eslint-disable-next-line no-await-in-loop
-            const bytes = await next(count);
+            const bytes = await next();
             if (bytes.get_size() === 0)
                 return;
             yield bytes;
