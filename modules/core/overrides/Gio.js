@@ -3,7 +3,7 @@
 
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
-var Signals = imports.signals;
+const Signals = imports._signals;
 const {_createWrappersForPlatformSpecificNamespace} = imports._common;
 const {setMainLoopHook} = imports._promiseNative;
 var Gio;
