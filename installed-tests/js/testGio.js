@@ -729,8 +729,8 @@ describe('GioUnix compatibility fallback', function () {
                 }[getterName];
 
                 const oldValue = expectDeprecationWarning(valueGetter, name, newName);
-                expect(oldValue).not.toBeUndefined();
-                expect(GioUnix[newName]).not.toBeUndefined();
+                expect(oldValue).toBeDefined();
+                expect(GioUnix[newName]).toBeDefined();
                 expect(oldValue).toBe(GioUnix[newName]);
             });
         });
