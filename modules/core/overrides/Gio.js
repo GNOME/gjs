@@ -176,19 +176,19 @@ function _propertySetter(name, signature, value) {
         });
 }
 
-function _addDBusConvenience() {
-    let info = this.g_interface_info;
+function _addDBusConvenience(proxyInstance) {
+    const info = proxyInstance.g_interface_info;
     if (!info)
         return;
 
     if (info.signals.length > 0)
-        this.connect('g-signal', _convertToNativeSignal);
+        proxyInstance.connect('g-signal', _convertToNativeSignal);
 
     for (const method of info.methods) {
         const remoteMethod = _makeProxyMethod(method, false);
-        this[`${method.name}Remote`] = remoteMethod;
-        this[`${method.name}Sync`] = _makeProxyMethod(method, true);
-        this[`${method.name}Async`] = function (...args) {
+        proxyInstance[`${method.name}Remote`] = remoteMethod;
+        proxyInstance[`${method.name}Sync`] = _makeProxyMethod(method, true);
+        proxyInstance[`${method.name}Async`] = function (...args) {
             return new Promise((resolve, reject) => {
                 args.push((result, error, fdList) => {
                     if (error)
@@ -212,12 +212,12 @@ function _addDBusConvenience() {
         };
 
         if (flags & Gio.DBusPropertyInfoFlags.READABLE)
-            getter = _propertyGetter.bind(this, name);
+            getter = _propertyGetter.bind(proxyInstance, name);
 
         if (flags & Gio.DBusPropertyInfoFlags.WRITABLE)
-            setter = _propertySetter.bind(this, name, signature);
+            setter = _propertySetter.bind(proxyInstance, name, signature);
 
-        Object.defineProperty(this, name, {
+        Object.defineProperty(proxyInstance, name, {
             get: getter,
             set: setter,
             configurable: false,
@@ -280,21 +280,21 @@ function _newInterfaceInfo(value) {
     return nodeInfo.interfaces[0];
 }
 
-function _injectToMethod(klass, method, addition) {
+function _injectToMethod(klass, method) {
     var previous = klass[method];
 
     klass[method] = function (...args) {
-        addition.apply(this, args);
+        _addDBusConvenience(this);
         return previous.apply(this, args);
     };
 }
 
-function _injectToStaticMethod(klass, method, addition) {
+function _injectToStaticMethod(klass, method) {
     var previous = klass[method];
 
     klass[method] = function (...parameters) {
         let obj = previous.apply(this, parameters);
-        addition.apply(obj, parameters);
+        _addDBusConvenience(obj);
         return obj;
     };
 }
@@ -574,13 +574,13 @@ function _init() {
         return Gio.bus_unown_name(id);
     };
 
-    _injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
+    _injectToMethod(Gio.DBusProxy.prototype, 'init');
     _promisify(Gio.DBusProxy.prototype, 'init_async');
-    _injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_sync', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
+    _injectToMethod(Gio.DBusProxy.prototype, 'init_async');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_sync');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_finish');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish');
     Gio.DBusProxy.prototype.connectSignal = Signals._connect;
     Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
 
