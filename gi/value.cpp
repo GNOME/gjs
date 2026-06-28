@@ -41,6 +41,7 @@
 #include "gi/gi-utils.h"
 #include "gi/gtype.h"
 #include "gi/info.h"
+#include "gi/inline-array.h"
 #include "gi/js-value-inl.h"
 #include "gi/object.h"
 #include "gi/param.h"
@@ -306,7 +307,11 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         GI::StackArgInfo& arg_info() { return info->first; }
         GI::StackTypeInfo& type_info() { return info->second; }
     };
-    std::vector<ArgumentDetails> args_details(n_param_values);
+    // Signals almost always have only a few parameters; keep the per-argument
+    // scratch data in an inline buffer and only fall back to the heap for
+    // unusually large signals.
+    Gjs::InlineArray<ArgumentDetails, 8> args_details;
+    args_details.allocate(n_param_values);
     bool needs_cleanup = false;
 
     GI::Repository repo;

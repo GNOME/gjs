@@ -416,6 +416,7 @@ libgjs_sources = [
     'gi/gobject.cpp', 'gi/gobject.h',
     'gi/gtype.cpp', 'gi/gtype.h',
     'gi/info.h',
+    'gi/inline-array.h',
     'gi/interface.cpp', 'gi/interface.h',
     'gi/ns.cpp', 'gi/ns.h',
     'gi/object.cpp', 'gi/object.h',
