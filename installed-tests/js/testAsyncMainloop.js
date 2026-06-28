@@ -27,10 +27,10 @@ describe('Async mainloop', function () {
             applicationId: 'org.gnome.gjs.ExampleApplication',
             flags: Gio.ApplicationFlags.HANDLES_OPEN,
         });
-        app.connect('open', (app, [file1, file2]) => {
+        app.connect('open', (theApp, [file1, file2]) => {
             expect(file1.get_basename()).toBe('foo');
             expect(file2.get_basename()).toBe('bar');
-            app.quit();
+            theApp.quit();
         });
 
         await app.runAsync(['invocation', 'foo', 'bar']);
