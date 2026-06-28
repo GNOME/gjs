@@ -78,7 +78,7 @@ describe('console', function () {
         writer_func = jasmine.createSpy(
             'Console test writer func',
             function (level, _fields) {
-                if (level === GLib.LogLevelFlags.ERROR)
+                if (level === GLib.LogLevelFlags.LEVEL_ERROR)
                     return GLib.LogWriterOutput.UNHANDLED;
 
                 return GLib.LogWriterOutput.HANDLED;

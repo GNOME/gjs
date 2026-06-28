@@ -120,7 +120,7 @@ class Console {
     }
 
     /**
-     * Logs a message with severity equal to {@see GLib.LogLevelFlags.DEBUG}.
+     * Logs a message with severity equal to `GLib.LogLevelFlags.LEVEL_DEBUG`.
      *
      * @param  {...any} data formatting substitutions, if applicable
      */
@@ -129,8 +129,9 @@ class Console {
     }
 
     /**
-     * Logs a message with severity equal to {@see GLib.LogLevelFlags.CRITICAL}.
-     * Does not use {@see GLib.LogLevelFlags.ERROR} to avoid asserting and
+     * Logs a message with severity equal to
+     * `GLib.LogLevelFlags.LEVEL_CRITICAL`.
+     * Does not use `GLib.LogLevelFlags.LEVEL_ERROR` to avoid asserting and
      * forcibly shutting down the application.
      *
      * @param  {...any} data formatting substitutions, if applicable
@@ -140,7 +141,7 @@ class Console {
     }
 
     /**
-     * Logs a message with severity equal to {@see GLib.LogLevelFlags.INFO}.
+     * Logs a message with severity equal to `GLib.LogLevelFlags.LEVEL_INFO`.
      *
      * @param  {...any} data formatting substitutions, if applicable
      */
@@ -149,7 +150,7 @@ class Console {
     }
 
     /**
-     * Logs a message with severity equal to {@see GLib.LogLevelFlags.MESSAGE}.
+     * Logs a message with severity equal to `GLib.LogLevelFlags.LEVEL_MESSAGE`.
      *
      * @param  {...any} data formatting substitutions, if applicable
      */
@@ -174,7 +175,7 @@ class Console {
     }
 
     /**
-     * Logs a message with severity equal to {@see GLib.LogLevelFlags.WARNING}.
+     * Logs a message with severity equal to `GLib.LogLevelFlags.LEVEL_WARNING`.
      *
      * @param  {...any} data formatting substitutions, if applicable
      * @returns {void}
