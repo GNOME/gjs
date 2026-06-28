@@ -34,6 +34,41 @@ function _init() {
         };
     }
 
+    if (Gtk.Shortcut) {
+        Gtk.Widget.add_binding =
+            function (keyval, modifiers, callback, format = null, ...args) {
+                const shortcut = new Gtk.Shortcut({
+                    action: Gtk.CallbackAction.new(callback),
+                    trigger: Gtk.KeyvalTrigger.new(keyval, modifiers),
+                });
+                if (format)
+                    shortcut.set_arguments(new GLib.Variant(format, args));
+                this.add_shortcut(shortcut);
+            };
+
+        Gtk.Widget.add_binding_action =
+            function (keyval, modifiers, action, format = null, ...args) {
+                const shortcut = new Gtk.Shortcut({
+                    action: Gtk.NamedAction.new(action),
+                    trigger: Gtk.KeyvalTrigger.new(keyval, modifiers),
+                });
+                if (format)
+                    shortcut.set_arguments(new GLib.Variant(format, args));
+                this.add_shortcut(shortcut);
+            };
+
+        Gtk.Widget.add_binding_signal =
+            function (keyval, modifiers, signal, format = null, ...args) {
+                const shortcut = new Gtk.Shortcut({
+                    action: Gtk.SignalAction.new(signal),
+                    trigger: Gtk.KeyvalTrigger.new(keyval, modifiers),
+                });
+                if (format)
+                    shortcut.set_arguments(new GLib.Variant(format, args));
+                this.add_shortcut(shortcut);
+            };
+    }
+
     Gtk.Widget.prototype._init = function (params) {
         const klass = this.constructor;
         const wrapper = GObject.Object.prototype._init.call(this, params) ?? this;
