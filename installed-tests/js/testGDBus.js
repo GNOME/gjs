@@ -1049,7 +1049,7 @@ describe('Exported DBus object', function () {
         test.emitPropertyChanged('PropReadOnly', null);
         loop.run();
 
-        expect(changedProps).not.toContain('PropReadOnly');
+        expect(Object.keys(changedProps)).not.toContain('PropReadOnly');
         expect(invalidatedProps).toContain('PropReadOnly');
     });
 });
