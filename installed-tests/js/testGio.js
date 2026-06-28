@@ -498,7 +498,7 @@ describe('Non-introspectable file attribute overrides', function () {
     function assertWarnings(testName) {
         for (let c = 0; c < numExpectedWarnings; c++) {
             GLib.test_assert_expected_messages_internal('Gjs', 'testGio.js', 0,
-                `test Gio.${testName}`);
+                `test Gio.FileInfo ${testName}`);
         }
         numExpectedWarnings = 0;
     }
@@ -515,7 +515,7 @@ describe('Non-introspectable file attribute overrides', function () {
             file.set_attribute('custom::remove', Gio.FileAttributeType.INVALID, null, ...flags))
             .toThrowError(/not introspectable/);
         expect(() => info.set_attribute('custom::remove', Gio.FileAttributeType.INVALID)).not.toThrow();
-        assertWarnings();
+        assertWarnings('invalid means unsetting the attribute');
     });
 
     it('works for boolean', function () {
@@ -525,7 +525,7 @@ describe('Non-introspectable file attribute overrides', function () {
             .toThrowError(/not introspectable/);
         expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_STANDARD_IS_HIDDEN, Gio.FileAttributeType.BOOLEAN, false))
             .not.toThrow();
-        assertWarnings();
+        assertWarnings('boolean');
     });
 
     it('works for uint32', function () {
@@ -534,7 +534,7 @@ describe('Non-introspectable file attribute overrides', function () {
             .not.toThrow();
         expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_TIME_MODIFIED_USEC, Gio.FileAttributeType.UINT32, 654321))
             .not.toThrow();
-        assertWarnings();
+        assertWarnings('uint32');
     });
 
     it('works for uint64', function () {
@@ -543,7 +543,7 @@ describe('Non-introspectable file attribute overrides', function () {
             .not.toThrow();
         expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_TIME_MODIFIED, Gio.FileAttributeType.UINT64, Date.now() / 1000))
             .not.toThrow();
-        assertWarnings();
+        assertWarnings('uint64');
     });
 
     it('works for object', function () {
@@ -554,7 +554,7 @@ describe('Non-introspectable file attribute overrides', function () {
             .toThrowError(/not introspectable/);
         expect(() => info.set_attribute(Gio.FILE_ATTRIBUTE_STANDARD_ICON, Gio.FileAttributeType.OBJECT, icon))
             .not.toThrow();
-        assertWarnings();
+        assertWarnings('object');
     });
 
     afterEach(function () {
