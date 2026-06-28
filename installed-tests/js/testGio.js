@@ -137,7 +137,7 @@ describe('Gio.Settings overrides', function () {
     it('throws proper error message when settings schema is specified with a wrong type', function () {
         expect(() => new Gio.Settings({
             settings_schema: 'string.path',
-        }).toThrowError('is not of type Gio.SettingsSchema'));
+        })).toThrowError(/is not of type Gio\.SettingsSchema/);
     });
 
     describe('with existing schema', function () {
