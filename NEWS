@@ -1,3 +1,10 @@
+Version 1.88.1
+
+- Closed bugs and merge requests:
+  * Breaking change introduced in 1.87.1 [#730, !1082, Philip Chimento]
+  * maint: Check for NULL before dereferencing error_out pointer [!1083, Daniel
+    van Vugt]
+
 Version 1.88.0
 --------------
 
