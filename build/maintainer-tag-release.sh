@@ -25,6 +25,11 @@ case $project_version in
     1.8[34].*) gnome_series=48 ;;
     1.8[56].*) gnome_series=49 ;;
     1.8[78].*) gnome_series=50 ;;
+    1.89.* | 1.90.*) gnome_series=51 ;;
+    1.9[12].*) gnome_series=52 ;;
+    1.9[34].*) gnome_series=53 ;;
+    1.9[56].*) gnome_series=54 ;;
+    1.9[78].*) gnome_series=55 ;;
     *)
         echo "Version $project_version not handled by this script"
         exit 1
