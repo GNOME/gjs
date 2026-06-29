@@ -1,5 +1,26 @@
-NEXT
-----
+Version 1.89.1
+--------------
+
+- This is the alpha release for the GNOME 51 cycle.
+
+- Cairo.Context has gained a fontExtents() method, which returns a property bag
+  with properties corresponding to the fields of `cairo_font_extents_t`, and a
+  textPath() method, which renders text as a path. Also, getFontMatrix() and
+  setFontMatrix() which return and accept property bags corresponding to the
+  fields of `cairo_matrix_t`. All of these are thanks to Daniel Wood.
+
+- Gtk.Widget has gained static methods add_binding(), add_binding_action(), and
+  add_binding_signal() (GTK 4 only), for conveniently adding keyboard shortcuts
+  to call a function, invoke a Gtk.ShortcutAction, or emit a signal. Florian
+  Müllner added these.
+
+- Some work-in-progress has been merged, making GNOME platform objects more
+  transparent to the JS garbage collector so that it can make better choices
+  about when to collect. This has the additional bonus of making the info from
+  System.dumpMemoryInfo (visible in Sysprof or dumped to a JSON file) more
+  accurate.
+  Tim Chevalier implemented this work, which is being sponsored by Igalia and is
+  a prerequisite for removing the Big Hammer workaround.
 
 - Backwards-incompatible change: Creating a GObject.Interface no longer installs
   its methods as unbound static methods on the constructor. This was based on an
@@ -20,6 +41,32 @@ NEXT
               return MyInterface.prototype.myMethod.call(this);  // NEW
           }
       }
+
+- Closed bugs and merge requests:
+  * Track memory usage for object prototypes [!1072, Tim Chevalier]
+  * Add Cairo font extents [!1073, Daniel Wood]
+  * More accurate memory usage statistics for Cairo and GdkPixbuf types [!1075,
+    Tim Chevalier]
+  * Various maintenance [!1076, !1077, !1084, !1085, !1086, !1087, !1090, !1091,
+    Philip Chimento]
+  * Cairo/text path [!1080, Daniel Wood]
+  * profiler: Write last value of memory counters [!1081, Philip Chimento]
+  * testCommandLine's non UTF8 file names test fails on ZFS with utf8only=on
+    [#733, !1088, Marisa]
+  * Cairo/fontMatrix [!1089, Daniel Wood]
+  * overrides/Gtk: Support add_binding*() class methods [!1092, Florian Müllner]
+  * More accurate memory usage statistics for GBytes type [!1093, Tim Chevalier]
+  * function: Avoid heap-allocating small argument arrays [!1094, Andre Nijman]
+  * Arguments to `Gio.Application.run()` dropped by `runAsync()` wrapper [#738,
+    !1096, Philip Chimento]
+
+Version 1.88.1
+--------------
+
+- Closed bugs and merge requests:
+  * Breaking change introduced in 1.87.1 [#730, !1082, Philip Chimento]
+  * maint: Check for NULL before dereferencing error_out pointer [!1083, Daniel
+    van Vugt]
 
 Version 1.88.0
 --------------
