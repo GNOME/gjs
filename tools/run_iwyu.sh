@@ -55,7 +55,7 @@ if [[ -z "$IWYU_SCRIPT" ]]; then
     echo 'Could not find IWYU installed as iwyu_tool, iwyu-tool, or iwyu_tool.py'
     exit 1
 fi
-IWYU=(python3 $IWYU_SCRIPT -p .)
+IWYU=(python3 "$IWYU_SCRIPT" -p .)
 IWYU_FEDORA_BUG_ARGS=(-I/usr/lib/clang/20/include)
 IWYU_TOOL_ARGS=(-I../gjs "${IWYU_FEDORA_BUG_ARGS[@]}")
 IWYU_ARGS=(-Wno-pragma-once-outside-header)
