@@ -36,6 +36,8 @@
 #include "gjs/macros.h"
 #include "gjs/module.h"
 
+#include "gi/gerror.h"
+
 #include "util/console.h"
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -119,6 +121,36 @@ static bool get_source_map_registry(JSContext* cx, unsigned argc,
     return true;
 }
 
+static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+
+    JS::UniqueChars filename;
+    if (!gjs_parse_call_args(cx, "launchFile", args, "s", "filename",
+                             &filename))
+        return false;
+
+    Gjs::AutoChar script_contents;
+    size_t script_len;
+    Gjs::AutoError error;
+    if (!g_file_get_contents(filename.get(), script_contents.out(), &script_len,
+                             &error)) {
+        gjs_throw_gerror(cx, error);
+        return false;
+    }
+
+    int exit_status;
+    auto result =
+        gjs->eval(script_contents, script_len, filename.get(), &exit_status);
+    if (result.isErr()) {
+        gjs_throw_gerror(cx, std::move(result.unwrapErr()));
+        return false;
+    }
+
+    args.rval().setUndefined();
+    return true;
+}
+
 static JSFunctionSpec debugger_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
@@ -153,9 +185,7 @@ void gjs_context_setup_debugger_console(GjsContext* self) {
 
 static JSFunctionSpec inspector_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FN("getSourceMapRegistry", get_source_map_registry, 0,
-          GJS_MODULE_PROP_FLAGS),
-    JS_FS_END};
+    JS_FN("launchFile", launch_file, 1, GJS_MODULE_PROP_FLAGS), JS_FS_END};
 
 void gjs_context_setup_inspector(GjsContext* self) {
     auto* gjs = GjsContextPrivate::from_object(self);

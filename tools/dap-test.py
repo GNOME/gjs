@@ -47,6 +47,7 @@ async def main():
     )
 
     await read_message()
+    await read_message()
 
     send_message(
         {
@@ -58,7 +59,7 @@ async def main():
                 "request": "launch",
                 "program": "test.js",
                 "stopOnEntry": True,
-                "cwd": "/home/alien/sites/gjs",
+                "cwd": "/home/alien/sites/gsoc/gjs",
                 "console": "externalTerminal",
                 "sourceMaps": True,
                 "pauseForSourceMap": True,
@@ -68,6 +69,9 @@ async def main():
     )
 
     await read_message()
+
+    while True:
+        await read_message()
 
     proc.terminate()
 

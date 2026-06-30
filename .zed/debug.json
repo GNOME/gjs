@@ -1,0 +1,26 @@
+// Project-local debug tasks
+//
+// For more documentation on how to configure debug tasks,
+// see: https://zed.dev/docs/debugger
+[
+    {
+        "adapter": "gjs",
+        "label": "test.js (gjs)",
+
+        // I added these myself, we need to configure them correctly otherwise
+        "type": "pwa-node",
+        "request": "launch",
+        "program": "../test.js",
+        "stopOnEntry": false,
+        "cwd": "/home/alien/sites/gsoc/gjs",
+    },
+    {
+        "adapter": "JavaScript",
+        "label": "test.js (JavaScript)",
+        "type": "pwa-node",
+        "request": "launch",
+        "program": "test.js",
+        "stopOnEntry": false,
+        "cwd": "/home/alien/sites/gsoc/gjs",
+    },
+]

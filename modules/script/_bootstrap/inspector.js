@@ -1,5 +1,5 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
-/* global debuggee, quit, loadNative, readline, uneval, getSourceMapRegistry */
+/* global debuggee, quit, loadNative, readline, uneval, loadFile */
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Angelo Verlain
 
@@ -33,19 +33,24 @@ function readMessage() {
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
         if (match !== null) {
             contentLength = parseInt(match[1]);
-            // break;
+            break;
         }
     }
 
-    const bytes = input.read_bytes(contentLength, null);
+    const bytes = input.read_bytes(contentLength + 2, null);
+    print(`[${contentLength}][START]${decode(bytes)}[END]`);
+
     return JSON.parse(decode(bytes));
 }
 
 let REQUEST_SEQ = 0;
+let pendingLaunchPath = null;
 
 function sendMessage(message) {
+    const newSeq = ++REQUEST_SEQ;
+
     const body = encode(
-        JSON.stringify({ request_seq: REQUEST_SEQ++, message }),
+        JSON.stringify({ seq: newSeq, ...message }),
     );
     const header = encode(`Content-Length: ${body.length}\r\n\r\n`);
 
@@ -54,13 +59,35 @@ function sendMessage(message) {
     output.flush(null);
 }
 
-function sendResponse(command, body) {
+function sendResponse(command, body, requestSeq) {
     sendMessage({
         type: "response",
-        request_set: REQUEST_SEQ,
         success: true,
         command,
+        request_seq: requestSeq,
         body,
+    });
+}
+
+function newMessage(id, format) {
+    return {
+        id,
+        format,
+    };
+}
+
+/**
+ *
+ * @param {string} command
+ * @param {ReturnType<typeof newMessage>} error
+ */
+function sendErrorResponse(command, error, requestSeq) {
+    sendMessage({
+        type: "response",
+        success: false,
+        command,
+        request_seq: requestSeq,
+        body: { error },
     });
 }
 
@@ -73,34 +100,21 @@ function sendEvent(type, body = {}) {
 }
 
 const handlers = {
-    initialize() {
-        // TODO: fill in our capabilities one by one
-        sendResponse("initialize", {
-            supportsConfigurationDoneRequest: false,
-        });
-    },
-    launch() {
-        /* TODO: currently, we don't really open the correct debuggee
-
-        Request args are like this:
-
-        {
-          "type": "pwa-node",
-          "request": "launch",
-          "program": "test.js",
-          "stopOnEntry": true,
-          "cwd": "/home/alien/sites/gjs",
-          "console": "externalTerminal",
-          "sourceMaps": true,
-          "pauseForSourceMap": true,
-          "sourceMapRenames": true
-        }
-
-        */
+    initialize(args, seq) {
+        sendResponse("initialize",
+            { supportsConfigurationDoneRequest: true },
+            seq);
         sendEvent("initialized");
-        sendResponse("launch");
     },
-    setExceptionBreakpoints(args) {
+    launch(args, seq) {
+        const cwd = args.cwd || ".";
+        const filePath = cwd + "/" + args.program;
+        print(`[LAUNCH] ${filePath}`);
+
+        pendingLaunchPath = filePath;
+        sendResponse("launch", undefined, seq);
+    },
+    setExceptionBreakpoints(args, seq) {
         /**
         TODO: Currently no-op
 
@@ -109,16 +123,50 @@ const handlers = {
           "filterOptions": []
         }
         */
-        sendResponse("setExceptionBreakpoints");
+        sendResponse("setExceptionBreakpoints", undefined, seq);
     },
-    configurationDone() {
-        sendResponse("configurationDone");
+    setBreakpoints(args, seq) {
+        sendResponse("setExceptionBreakpoints", undefined, seq);
+    },
+    configurationDone(args, seq) {
+        sendResponse("configurationDone", undefined, seq);
+
+        if (pendingLaunchPath) {
+            try {
+                launchFile(pendingLaunchPath);
+
+                sendEvent("exited", { exitCode: 0 });
+                sendEvent("terminated");
+            } catch (e) {
+                print(`[ERROR] ${e}`);
+                sendEvent("output", {
+                    category: "stderr",
+                    output: `Error: ${e}\n`,
+                });
+                sendEvent("exited", { exitCode: 1 });
+                sendEvent("terminated");
+                quit(1);
+            }
+            pendingLaunchPath = null;
+        }
+    },
+    disconnect(args, seq) {
+        sendResponse("disconnect", undefined, seq);
+        quit(0);
+    },
+    attach(args, seq) {
+        sendErrorResponse(
+            "attach",
+            newMessage(0, "GJS does not support attach mode"),
+            seq,
+        );
     },
 };
 
-for (;;) {
+function handleRequests() {
     const request = readMessage();
-    if (request === null) break;
+    print("[REQUEST]" + request);
+    if (request === null) return false;
 
     const handler = handlers[request.command];
     if (handler === undefined) {
@@ -126,13 +174,16 @@ for (;;) {
         throw new Error(`Unknown request command: ${request.command}`);
     }
 
-    handler(request.arguments);
+    handler(request.arguments, request.seq);
+    return true;
 }
 
 // State
 
-function onEnterFrame(frame) {
-    print("entered frame", frame?.callee.name);
+function onInitialEnterFrame(frame) {
+    // print("entered frame", frame?.callee.name);
+    dbg.onEnterFrame = undefined;
+    handleRequests();
     return;
 }
 
@@ -142,6 +193,10 @@ const dbg = new Debugger();
 
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
 
-dbg.onEnterFrame = onEnterFrame;
+// dbg.onEnterFrame = onInitialEnterFrame;
+
+for (;;) {
+    if (!handleRequests()) break;
+}
 
 quit(0);
