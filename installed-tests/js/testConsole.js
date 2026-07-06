@@ -11,13 +11,12 @@ import {decodedStringMatching} from './matchers.js';
 
 function objectContainingLogMessage(
     message,
-    domain = DEFAULT_LOG_DOMAIN,
     fields = {},
     messageMatcher = decodedStringMatching
 ) {
     return jasmine.objectContaining({
         MESSAGE: messageMatcher(message),
-        GLIB_DOMAIN: decodedStringMatching(domain),
+        GLIB_DOMAIN: decodedStringMatching(DEFAULT_LOG_DOMAIN),
         ...fields,
     });
 }
@@ -56,28 +55,18 @@ describe('console', function () {
     /**
      * @param {RegExp | string} message _
      * @param {*} [logLevel] _
-     * @param {*} [domain] _
-     * @param {*} [fields] _
      */
-    function expectLog(
-        message,
-        logLevel = GLib.LogLevelFlags.LEVEL_MESSAGE,
-        domain = DEFAULT_LOG_DOMAIN,
-        fields = {}
-    ) {
+    function expectLog(message, logLevel = GLib.LogLevelFlags.LEVEL_MESSAGE) {
+        const fields = {};
         if (logLevel < GLib.LogLevelFlags.LEVEL_WARNING) {
             const [_, currentFile] = new Error().stack.split('\n').at(0).match(
                 /^[^@]*@(.*):\d+:\d+$/);
-
-            fields = {
-                ...fields,
-                CODE_FILE: decodedStringMatching(currentFile),
-            };
+            fields.CODE_FILE = decodedStringMatching(currentFile);
         }
 
         expect(writer_func).toHaveBeenCalledOnceWith(
             logLevel,
-            objectContainingLogMessage(message, domain, fields)
+            objectContainingLogMessage(message, fields)
         );
 
         // Always reset the calls, so that we can assert at the end that no
@@ -89,7 +78,7 @@ describe('console', function () {
         writer_func = jasmine.createSpy(
             'Console test writer func',
             function (level, _fields) {
-                if (level === GLib.LogLevelFlags.ERROR)
+                if (level === GLib.LogLevelFlags.LEVEL_ERROR)
                     return GLib.LogWriterOutput.UNHANDLED;
 
                 return GLib.LogWriterOutput.HANDLED;
@@ -178,7 +167,7 @@ describe('console', function () {
 
         expect(writer_func).toHaveBeenCalledOnceWith(
             GLib.LogLevelFlags.LEVEL_MESSAGE,
-            objectContainingLogMessage('a trace', DEFAULT_LOG_DOMAIN, {
+            objectContainingLogMessage('a trace', {
                 CODE_FILE: decodedStringMatching(currentFile),
                 CODE_LINE: decodedStringMatching(errorLine),
             },
@@ -196,7 +185,7 @@ describe('console', function () {
 
         expect(writer_func).toHaveBeenCalledOnceWith(
             GLib.LogLevelFlags.LEVEL_MESSAGE,
-            objectContainingLogMessage('Trace', DEFAULT_LOG_DOMAIN, {
+            objectContainingLogMessage('Trace', {
                 CODE_FILE: decodedStringMatching(currentFile),
             },
             message => matchStackTrace(message, 'testConsole'))

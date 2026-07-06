@@ -3,7 +3,7 @@
 
 var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
-var Signals = imports.signals;
+const Signals = imports._signals;
 const {_createWrappersForPlatformSpecificNamespace} = imports._common;
 const {setMainLoopHook} = imports._promiseNative;
 var Gio;
@@ -176,19 +176,19 @@ function _propertySetter(name, signature, value) {
         });
 }
 
-function _addDBusConvenience() {
-    let info = this.g_interface_info;
+function _addDBusConvenience(proxyInstance) {
+    const info = proxyInstance.g_interface_info;
     if (!info)
         return;
 
     if (info.signals.length > 0)
-        this.connect('g-signal', _convertToNativeSignal);
+        proxyInstance.connect('g-signal', _convertToNativeSignal);
 
     for (const method of info.methods) {
         const remoteMethod = _makeProxyMethod(method, false);
-        this[`${method.name}Remote`] = remoteMethod;
-        this[`${method.name}Sync`] = _makeProxyMethod(method, true);
-        this[`${method.name}Async`] = function (...args) {
+        proxyInstance[`${method.name}Remote`] = remoteMethod;
+        proxyInstance[`${method.name}Sync`] = _makeProxyMethod(method, true);
+        proxyInstance[`${method.name}Async`] = function (...args) {
             return new Promise((resolve, reject) => {
                 args.push((result, error, fdList) => {
                     if (error)
@@ -212,12 +212,12 @@ function _addDBusConvenience() {
         };
 
         if (flags & Gio.DBusPropertyInfoFlags.READABLE)
-            getter = _propertyGetter.bind(this, name);
+            getter = _propertyGetter.bind(proxyInstance, name);
 
         if (flags & Gio.DBusPropertyInfoFlags.WRITABLE)
-            setter = _propertySetter.bind(this, name, signature);
+            setter = _propertySetter.bind(proxyInstance, name, signature);
 
-        Object.defineProperty(this, name, {
+        Object.defineProperty(proxyInstance, name, {
             get: getter,
             set: setter,
             configurable: false,
@@ -229,43 +229,47 @@ function _addDBusConvenience() {
 function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
-    function wrapper(bus, name, object, asyncCallback, cancellable,
-        flags = Gio.DBusProxyFlags.NONE) {
-        var obj = new Gio.DBusProxy({
-            g_connection: bus,
-            g_interface_name: iname,
-            g_interface_info: info,
-            g_name: name,
-            g_flags: flags,
-            g_object_path: object,
-        });
+    return class extends Gio.DBusProxy {
+        constructor(bus, name, object, asyncCallback, cancellable = null,
+            flags = Gio.DBusProxyFlags.NONE) {
+            const obj = new Gio.DBusProxy({
+                g_connection: bus,
+                g_interface_name: iname,
+                g_interface_info: info,
+                g_name: name,
+                g_flags: flags,
+                g_object_path: object,
+            });
 
-        if (!cancellable)
-            cancellable = null;
-        if (asyncCallback) {
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable).then(
-                () => asyncCallback(obj, null)).catch(e => asyncCallback(null, e));
-        } else {
-            obj.init(cancellable);
+            if (asyncCallback) {
+                obj.init_async(GLib.PRIORITY_DEFAULT, cancellable)
+                    .then(() => asyncCallback(obj, null))
+                    .catch(e => asyncCallback(null, e));
+            } else {
+                obj.init(cancellable);
+            }
+            // For backwards compatibility, return a new instance of DBusProxy,
+            // overriding `this`
+            return obj;
         }
-        return obj;
-    }
-    wrapper.newAsync = function newAsync(bus, name, object, cancellable,
-        flags = Gio.DBusProxyFlags.NONE) {
-        const obj = new Gio.DBusProxy({
-            g_connection: bus,
-            g_interface_name: info.name,
-            g_interface_info: info,
-            g_name: name,
-            g_flags: flags,
-            g_object_path: object,
-        });
 
-        return new Promise((resolve, reject) =>
-            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable ?? null).then(
-                () => resolve(obj)).catch(reject));
+        static newAsync(bus, name, object, cancellable = null,
+            flags = Gio.DBusProxyFlags.NONE) {
+            const obj = new Gio.DBusProxy({
+                g_connection: bus,
+                g_interface_name: info.name,
+                g_interface_info: info,
+                g_name: name,
+                g_flags: flags,
+                g_object_path: object,
+            });
+
+            return new Promise((resolve, reject) =>
+                obj.init_async(GLib.PRIORITY_DEFAULT, cancellable)
+                    .then(() => resolve(obj))
+                    .catch(reject));
+        }
     };
-    return wrapper;
 }
 
 
@@ -280,21 +284,21 @@ function _newInterfaceInfo(value) {
     return nodeInfo.interfaces[0];
 }
 
-function _injectToMethod(klass, method, addition) {
+function _injectToMethod(klass, method) {
     var previous = klass[method];
 
     klass[method] = function (...args) {
-        addition.apply(this, args);
+        _addDBusConvenience(this);
         return previous.apply(this, args);
     };
 }
 
-function _injectToStaticMethod(klass, method, addition) {
+function _injectToStaticMethod(klass, method) {
     var previous = klass[method];
 
     klass[method] = function (...parameters) {
         let obj = previous.apply(this, parameters);
-        addition.apply(obj, parameters);
+        _addDBusConvenience(obj);
         return obj;
     };
 }
@@ -574,13 +578,13 @@ function _init() {
         return Gio.bus_unown_name(id);
     };
 
-    _injectToMethod(Gio.DBusProxy.prototype, 'init', _addDBusConvenience);
+    _injectToMethod(Gio.DBusProxy.prototype, 'init');
     _promisify(Gio.DBusProxy.prototype, 'init_async');
-    _injectToMethod(Gio.DBusProxy.prototype, 'init_async', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_sync', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_finish', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync', _addDBusConvenience);
-    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish', _addDBusConvenience);
+    _injectToMethod(Gio.DBusProxy.prototype, 'init_async');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_sync');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_finish');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_sync');
+    _injectToStaticMethod(Gio.DBusProxy, 'new_for_bus_finish');
     Gio.DBusProxy.prototype.connectSignal = Signals._connect;
     Gio.DBusProxy.prototype.disconnectSignal = Signals._disconnect;
 
@@ -643,6 +647,8 @@ function _init() {
     Gio._LocalFilePrototype = Gio.File.new_for_path('/').constructor.prototype;
 
     Gio.File.prototype.replace_contents_async = function replace_contents_async(contents, etag, make_backup, flags, cancellable, callback) {
+        if (typeof contents === 'string')
+            contents = new TextEncoder().encode(contents);
         return this.replace_contents_bytes_async(contents, etag, make_backup, flags, cancellable, callback);
     };
 
@@ -727,7 +733,7 @@ function _init() {
 
         while (true) {
             // eslint-disable-next-line no-await-in-loop
-            const bytes = await next(count);
+            const bytes = await next();
             if (bytes.get_size() === 0)
                 return;
             yield bytes;

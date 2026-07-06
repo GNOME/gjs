@@ -110,7 +110,7 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo& info,
                                     int64_t value) {
-    GI::EnumInfo::ValuesIterator values = info.values();
+    GI::EnumInfo::ValuesIterable values = info.values();
     if (std::none_of(values.begin(), values.end(),
                      [value](const GI::AutoValueInfo& info) {
                          return info.value() == value;

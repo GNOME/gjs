@@ -1984,8 +1984,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
         if (!iface_info)
             continue;
 
-        GI::InterfaceInfo::MethodsIterator meth_iter = iface_info->methods();
-        GI::InterfaceInfo::PropertiesIterator props_iter =
+        GI::InterfaceInfo::MethodsIterable meth_iter = iface_info->methods();
+        GI::InterfaceInfo::PropertiesIterable props_iter =
             iface_info->properties();
         if (!properties.reserve(properties.length() + meth_iter.size() +
                                 props_iter.size())) {
@@ -2016,8 +2016,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
     }
 
     if (info()) {
-        GI::ObjectInfo::MethodsIterator meth_iter = info()->methods();
-        GI::ObjectInfo::PropertiesIterator props_iter = info()->properties();
+        GI::ObjectInfo::MethodsIterable meth_iter = info()->methods();
+        GI::ObjectInfo::PropertiesIterable props_iter = info()->properties();
         if (!properties.reserve(properties.length() + meth_iter.size() +
                                 props_iter.size())) {
             JS_ReportOutOfMemory(cx);

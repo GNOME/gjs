@@ -46,7 +46,7 @@ bool InterfacePrototype::new_enumerate_impl(
     if (!info())
         return true;
 
-    GI::InterfaceInfo::MethodsIterator methods = info()->methods();
+    GI::InterfaceInfo::MethodsIterable methods = info()->methods();
     int n_methods = methods.size();
     if (!properties.reserve(properties.length() + n_methods)) {
         JS_ReportOutOfMemory(cx);

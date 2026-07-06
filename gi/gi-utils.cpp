@@ -47,7 +47,7 @@ template <InfoTag TAG>
 bool struct_is_simple(const UnownedInfo<TAG>& info) {
     static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
 
-    typename UnownedInfo<TAG>::FieldsIterator iter = info.fields();
+    typename UnownedInfo<TAG>::FieldsIterable iter = info.fields();
 
     // If it's opaque, it's not simple
     if (iter.size() == 0)
@@ -89,7 +89,7 @@ bool simple_struct_has_pointers(const UnownedInfo<TAG>& info) {
     g_assert(struct_is_simple(info) &&
              "Don't call simple_struct_has_pointers() on a non-simple struct");
 
-    typename UnownedInfo<TAG>::FieldsIterator fields = info.fields();
+    typename UnownedInfo<TAG>::FieldsIterable fields = info.fields();
     return std::any_of(
         fields.begin(), fields.end(), [](const AutoFieldInfo& field) {
             return direct_allocation_has_pointers(field.type_info());

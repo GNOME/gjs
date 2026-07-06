@@ -166,7 +166,7 @@ std::unique_ptr<Boxed::FieldMap>
 BoxedPrototype<Base, Prototype, Instance>::create_field_map(
     JSContext* cx, const BoxedInfo& info) {
     auto result = std::make_unique<Boxed::FieldMap>();
-    typename BoxedInfo::FieldsIterator fields = info.fields();
+    typename BoxedInfo::FieldsIterable fields = info.fields();
     if (!result->reserve(fields.size())) {
         JS_ReportOutOfMemory(cx);
         return nullptr;
