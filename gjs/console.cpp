@@ -463,8 +463,10 @@ int main(int argc, char** argv) {
     if (debugging)
         gjs_context_setup_debugger_console(gjs_context);
 
-    if (inspecting)
+    if (inspecting) {
         gjs_context_setup_inspector(gjs_context);
+        return 0;
+    }
 
     int code = define_argv_and_eval_script(gjs_context, script_argc,
                                            script_argv, script, len, filename);
