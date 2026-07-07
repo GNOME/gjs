@@ -10,8 +10,8 @@
         // I added these myself, we need to configure them correctly otherwise
         "type": "pwa-node",
         "request": "launch",
-        "program": "../test.js",
-        "stopOnEntry": false,
+        "program": "test.js",
+        "stopOnEntry": true,
         "cwd": "/home/alien/sites/gsoc/gjs",
     },
     {

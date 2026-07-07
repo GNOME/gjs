@@ -135,7 +135,8 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     Gjs::AutoError error;
     if (!g_file_get_contents(filename.get(), script_contents.out(), &script_len,
                              &error)) {
-        gjs_throw_gerror(cx, error);
+        JS_ReportErrorASCII(cx, "Error getting contents of file: %s",
+                            error->message);
         return false;
     }
 
@@ -143,7 +144,8 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto result =
         gjs->eval(script_contents, script_len, filename.get(), &exit_status);
     if (result.isErr()) {
-        gjs_throw_gerror(cx, std::move(result.unwrapErr()));
+        JS_ReportErrorASCII(cx, "Error evaluating file: %s",
+                            result.inspectErr()->message);
         return false;
     }
 

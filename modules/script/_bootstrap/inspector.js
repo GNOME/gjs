@@ -1,20 +1,16 @@
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
-/* global debuggee, quit, loadNative, readline, uneval, loadFile */
+/* global debuggee, quit, loadNative, readline, uneval, launchFile */
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Angelo Verlain
 
-const { print } = loadNative("_print");
+const { print } = loadNative('_print');
+const Encoding = loadNative('_encodingNative');
 
 const { Gio, GioUnix } = debuggee.imports.gi;
 
 function encode(str) {
-    const encoder = new debuggee.TextEncoder();
-    return encoder.encode(str);
-}
-
-function decode(bytes) {
-    const decoder = new debuggee.TextDecoder();
-    return decoder.decode(bytes);
+    if (str == '') return new Uint8Array();
+    return Encoding.encode(str, 'utf8');
 }
 
 const input = Gio.DataInputStream.new(GioUnix.InputStream.new(0, false));
@@ -24,11 +20,9 @@ function readMessage() {
     let contentLength = null;
 
     while (true) {
-        const [lineBytes] = input.read_line(null);
-        if (lineBytes === null) return null;
+        const line = input.read_line_utf8(null)[0];
 
-        const line = decode(lineBytes);
-        if (line == "" || line == "\r") break;
+        if (line == '' || line == '\r') break;
 
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
         if (match !== null) {
@@ -38,9 +32,8 @@ function readMessage() {
     }
 
     const bytes = input.read_bytes(contentLength + 2, null);
-    print(`[${contentLength}][START]${decode(bytes)}[END]`);
 
-    return JSON.parse(decode(bytes));
+    return JSON.parse(bytes.toArray().toString().slice(2));
 }
 
 let REQUEST_SEQ = 0;
@@ -49,9 +42,7 @@ let pendingLaunchPath = null;
 function sendMessage(message) {
     const newSeq = ++REQUEST_SEQ;
 
-    const body = encode(
-        JSON.stringify({ seq: newSeq, ...message }),
-    );
+    const body = encode(JSON.stringify({ seq: newSeq, ...message }));
     const header = encode(`Content-Length: ${body.length}\r\n\r\n`);
 
     output.write_all(header, null);
@@ -61,7 +52,7 @@ function sendMessage(message) {
 
 function sendResponse(command, body, requestSeq) {
     sendMessage({
-        type: "response",
+        type: 'response',
         success: true,
         command,
         request_seq: requestSeq,
@@ -83,7 +74,7 @@ function newMessage(id, format) {
  */
 function sendErrorResponse(command, error, requestSeq) {
     sendMessage({
-        type: "response",
+        type: 'response',
         success: false,
         command,
         request_seq: requestSeq,
@@ -93,7 +84,7 @@ function sendErrorResponse(command, error, requestSeq) {
 
 function sendEvent(type, body = {}) {
     sendMessage({
-        type: "event",
+        type: 'event',
         event: type,
         body,
     });
@@ -101,18 +92,24 @@ function sendEvent(type, body = {}) {
 
 const handlers = {
     initialize(args, seq) {
-        sendResponse("initialize",
+        sendResponse(
+            'initialize',
             { supportsConfigurationDoneRequest: true },
-            seq);
-        sendEvent("initialized");
+            seq,
+        );
+        sendEvent('initialized');
     },
     launch(args, seq) {
-        const cwd = args.cwd || ".";
-        const filePath = cwd + "/" + args.program;
+        const cwd = args.cwd || '.';
+        const filePath = cwd + '/' + args.program;
         print(`[LAUNCH] ${filePath}`);
 
+        if (args.stopOnEntry) {
+            dbg.onEnterFrame = onInitialEnterFrame;
+        }
+
         pendingLaunchPath = filePath;
-        sendResponse("launch", undefined, seq);
+        sendResponse('launch', undefined, seq);
     },
     setExceptionBreakpoints(args, seq) {
         /**
@@ -123,41 +120,41 @@ const handlers = {
           "filterOptions": []
         }
         */
-        sendResponse("setExceptionBreakpoints", undefined, seq);
+        sendResponse('setExceptionBreakpoints', undefined, seq);
     },
     setBreakpoints(args, seq) {
-        sendResponse("setExceptionBreakpoints", undefined, seq);
+        sendResponse('setExceptionBreakpoints', undefined, seq);
     },
     configurationDone(args, seq) {
-        sendResponse("configurationDone", undefined, seq);
+        sendResponse('configurationDone', undefined, seq);
 
         if (pendingLaunchPath) {
             try {
                 launchFile(pendingLaunchPath);
 
-                sendEvent("exited", { exitCode: 0 });
-                sendEvent("terminated");
+                sendEvent('exited', { exitCode: 0 });
+                sendEvent('terminated');
             } catch (e) {
                 print(`[ERROR] ${e}`);
-                sendEvent("output", {
-                    category: "stderr",
+                sendEvent('output', {
+                    category: 'stderr',
                     output: `Error: ${e}\n`,
                 });
-                sendEvent("exited", { exitCode: 1 });
-                sendEvent("terminated");
+                sendEvent('exited', { exitCode: 1 });
+                sendEvent('terminated');
                 quit(1);
             }
             pendingLaunchPath = null;
         }
     },
     disconnect(args, seq) {
-        sendResponse("disconnect", undefined, seq);
+        sendResponse('disconnect', undefined, seq);
         quit(0);
     },
     attach(args, seq) {
         sendErrorResponse(
-            "attach",
-            newMessage(0, "GJS does not support attach mode"),
+            'attach',
+            newMessage(0, 'GJS does not support attach mode'),
             seq,
         );
     },
@@ -165,7 +162,6 @@ const handlers = {
 
 function handleRequests() {
     const request = readMessage();
-    print("[REQUEST]" + request);
     if (request === null) return false;
 
     const handler = handlers[request.command];
@@ -193,10 +189,13 @@ const dbg = new Debugger();
 
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
 
-// dbg.onEnterFrame = onInitialEnterFrame;
-
-for (;;) {
-    if (!handleRequests()) break;
+try {
+    for (;;) {
+        if (!handleRequests()) break;
+    }
+} catch (error) {
+    print(error);
+    quit(1);
 }
 
 quit(0);
