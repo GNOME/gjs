@@ -6,22 +6,19 @@
 const { print } = loadNative('_print');
 const Encoding = loadNative('_encodingNative');
 
-const { Gio, GioUnix } = debuggee.imports.gi;
-
 function encode(str) {
     if (str == '') return new Uint8Array();
     return Encoding.encode(str, 'utf8');
 }
 
-const input = Gio.DataInputStream.new(GioUnix.InputStream.new(0, false));
-const output = GioUnix.OutputStream.new(1, false);
+const STDIN = 0;
+const input = openInputStream(STDIN);
 
 function readMessage() {
     let contentLength = null;
 
     while (true) {
-        const line = input.read_line_utf8(null)[0];
-
+        const line = readLine(input);
         if (line == '' || line == '\r') break;
 
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
@@ -31,9 +28,8 @@ function readMessage() {
         }
     }
 
-    const bytes = input.read_bytes(contentLength + 2, null);
-
-    return JSON.parse(bytes.toArray().toString().slice(2));
+    const body = readBytes(input, contentLength + 2);
+    return JSON.parse(body);
 }
 
 let REQUEST_SEQ = 0;
@@ -42,12 +38,9 @@ let pendingLaunchPath = null;
 function sendMessage(message) {
     const newSeq = ++REQUEST_SEQ;
 
-    const body = encode(JSON.stringify({ seq: newSeq, ...message }));
-    const header = encode(`Content-Length: ${body.length}\r\n\r\n`);
-
-    output.write_all(header, null);
-    output.write_all(body, null);
-    output.flush(null);
+    const body = JSON.stringify({ seq: newSeq, ...message });
+    // Add extra length bytes for \r\n at the end of body. print() auto-adds \n
+    print(`Content-Length: ${encode(body).length + 2}\r\n\r\n${body}\r`);
 }
 
 function sendResponse(command, body, requestSeq) {
