@@ -12,10 +12,15 @@
 #    include <readline/readline.h>
 #endif
 
+#include <gio/gio.h>
+#include <gio/gunixinputstream.h>
 #include <glib.h>
+#include <glib-object.h>
 
 #include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>  // for ReportUncatchableException
+#include <js/ObjectWithStashedPointer.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/Realm.h>
@@ -30,6 +35,7 @@
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
+#include "gjs/gerror-result.h"  // for AutoError
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -135,8 +141,8 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     Gjs::AutoError error;
     if (!g_file_get_contents(filename.get(), script_contents.out(), &script_len,
                              &error)) {
-        JS_ReportErrorASCII(cx, "Error getting contents of file: %s",
-                            error->message);
+        JS_ReportErrorUTF8(cx, "Error getting contents of file: %s",
+                           error->message);
         return false;
     }
 
@@ -144,12 +150,98 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto result =
         gjs->eval(script_contents, script_len, filename.get(), &exit_status);
     if (result.isErr()) {
-        JS_ReportErrorASCII(cx, "Error evaluating file: %s",
-                            result.inspectErr()->message);
+        JS_ReportErrorUTF8(cx, "Error evaluating file: %s",
+                           result.inspectErr()->message);
         return false;
     }
 
     args.rval().setUndefined();
+    return true;
+}
+
+static bool open_input_stream(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    int32_t fd;
+    if (!gjs_parse_call_args(cx, "openInputStream", args, "i", "fd", &fd))
+        return false;
+
+    Gjs::AutoUnref<GInputStream> base_stream =
+        g_unix_input_stream_new(fd, /* close_fd = */ false);
+    Gjs::AutoUnref<GDataInputStream> stream =
+        g_data_input_stream_new(base_stream);
+    g_filter_input_stream_set_close_base_stream(stream.as<GFilterInputStream>(),
+                                                false);
+
+    JS::RootedObject obj{
+        cx, JS::NewObjectWithStashedPointer(
+                cx, static_cast<void*>(stream.release()), g_object_unref)};
+    if (!obj)
+        return false;
+
+    args.rval().setObject(*obj);
+    return true;
+}
+
+static bool read_line(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject obj{cx};
+    if (!gjs_parse_call_args(cx, "readLine", args, "o", "stream", &obj))
+        return false;
+
+    auto* stream = JS::ObjectGetStashedPointer<GDataInputStream>(cx, obj);
+
+    size_t len;
+    Gjs::AutoError error = nullptr;
+    Gjs::AutoChar line = g_data_input_stream_read_line_utf8(
+        stream, &len, /* cancellable = */ nullptr, error.out());
+    if (!line) {
+        JS_ReportErrorUTF8(cx, "Error reading DAP Content-Length header: %s",
+                           error->message);
+        return false;
+    }
+
+    JS::UTF8Chars chars{line, len};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, chars)};
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
+}
+
+static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
+    using AutoBytes =
+        Gjs::AutoPointer<GBytes, GBytes, g_bytes_unref, g_bytes_ref>;
+
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject obj{cx};
+    uint32_t nbytes;
+    if (!gjs_parse_call_args(cx, "readBytes", args, "ou", "stream", &obj,
+                             "nbytes", &nbytes))
+        return false;
+
+    auto* stream = JS::ObjectGetStashedPointer<GInputStream>(cx, obj);
+
+    Gjs::AutoError error = nullptr;
+    AutoBytes bytes = g_input_stream_read_bytes(
+        stream, nbytes, /* cancellable = */ nullptr, error.out());
+    if (!bytes) {
+        JS_ReportErrorUTF8(cx, "Error reading DAP message body: %s",
+                           error->message);
+        return false;
+    }
+
+    size_t len;
+    const void* pointer = g_bytes_get_data(bytes, &len);
+    JS::UTF8Chars chars{static_cast<const char*>(pointer), len};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, chars)};
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
     return true;
 }
 
@@ -187,7 +279,11 @@ void gjs_context_setup_debugger_console(GjsContext* self) {
 
 static JSFunctionSpec inspector_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
-    JS_FN("launchFile", launch_file, 1, GJS_MODULE_PROP_FLAGS), JS_FS_END};
+    JS_FN("launchFile", launch_file, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("openInputStream", open_input_stream, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("readLine", read_line, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("readBytes", read_bytes, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
 
 void gjs_context_setup_inspector(GjsContext* self) {
     auto* gjs = GjsContextPrivate::from_object(self);
