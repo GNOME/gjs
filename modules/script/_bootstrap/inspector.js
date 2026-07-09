@@ -151,6 +151,9 @@ const handlers = {
             seq,
         );
     },
+    threads(args, seq) {
+        sendResponse('threads', { threads: [{ id: 0, name: 'main' }] }, seq);
+    },
 };
 
 function handleRequests() {
