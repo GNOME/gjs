@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MPL-2.0
 // SPDX-FileCopyrightText: 2026 Angelo Verlain
 
-const { print } = loadNative('_print');
+const { print, printerr } = loadNative('_print');
 const Encoding = loadNative('_encodingNative');
 
 function encode(str) {
@@ -95,7 +95,7 @@ const handlers = {
     launch(args, seq) {
         const cwd = args.cwd || '.';
         const filePath = cwd + '/' + args.program;
-        print(`[LAUNCH] ${filePath}`);
+        printerr(`[LAUNCH] ${filePath}`, args);
 
         if (args.stopOnEntry) {
             dbg.onEnterFrame = onInitialEnterFrame;
@@ -128,7 +128,7 @@ const handlers = {
                 sendEvent('exited', { exitCode: 0 });
                 sendEvent('terminated');
             } catch (e) {
-                print(`[ERROR] ${e}`);
+                printerr(`[ERROR] ${e}`);
                 sendEvent('output', {
                     category: 'stderr',
                     output: `Error: ${e}\n`,
@@ -154,9 +154,20 @@ const handlers = {
     threads(args, seq) {
         sendResponse('threads', { threads: [{ id: 0, name: 'main' }] }, seq);
     },
+    continue(args, seq) {
+        sendResponse('continue', { allThreadsContinued: true }, seq);
+        paused = false;
+    },
+    stackTrace(args, seq) {
+        sendResponse('stackTrace', { stackFrames: [], totalFrames: 0 }, seq);
+    },
+    pause(args, seq) {
+        sendResponse('pause', undefined, seq);
+        pause();
+    },
 };
 
-function handleRequests() {
+function _handleRequest() {
     const request = readMessage();
     if (request === null) return false;
 
@@ -170,13 +181,33 @@ function handleRequests() {
     return true;
 }
 
+function handleRequests(shouldContinue = () => true) {
+    while (shouldContinue()) {
+        if (!_handleRequest()) break;
+    }
+}
+
+function pause() {
+    paused = true;
+    handleRequests(() => paused);
+}
+
 // State
 
-function onInitialEnterFrame(frame) {
-    // print("entered frame", frame?.callee.name);
+let paused = false;
+
+function onInitialEnterFrame() {
+    // printerr("entered frame", frame?.callee.name);
     dbg.onEnterFrame = undefined;
-    handleRequests();
-    return;
+    printerr('initial enter frame');
+
+    sendEvent('stopped', {
+        reason: 'entry',
+        threadId: 0,
+        allThreadsStopped: true,
+    });
+
+    pause();
 }
 
 // Debugger
@@ -186,11 +217,9 @@ const dbg = new Debugger();
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
 
 try {
-    for (;;) {
-        if (!handleRequests()) break;
-    }
+    handleRequests();
 } catch (error) {
-    print(error);
+    printerr(error);
     quit(1);
 }
 
