@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
+#include <cstdint>
 
 #ifdef HAVE_READLINE_READLINE_H
 #    include <readline/history.h>
@@ -136,19 +137,21 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
                              &filename))
         return false;
 
-    Gjs::AutoChar script_contents;
-    size_t script_len;
+    // Here we ALWAYS load the file as an ES module
     Gjs::AutoError error;
-    if (!g_file_get_contents(filename.get(), script_contents.out(), &script_len,
-                             &error)) {
-        JS_ReportErrorUTF8(cx, "Error getting contents of file: %s",
-                           error->message);
+
+    Gjs::AutoUnref<GFile> output{
+        g_file_new_for_commandline_arg(filename.get())};
+    Gjs::AutoChar uri{g_file_get_uri(output)};
+    auto result = gjs->register_module(uri, uri);
+    if (result.isErr()) {
+        JS_ReportErrorUTF8(cx, "Error loading file: %s",
+                           result.inspectErr()->message);
         return false;
     }
 
-    int exit_status;
-    auto result =
-        gjs->eval(script_contents, script_len, filename.get(), &exit_status);
+    uint8_t exit_code;
+    result = gjs->eval_module(uri, &exit_code);
     if (result.isErr()) {
         JS_ReportErrorUTF8(cx, "Error evaluating file: %s",
                            result.inspectErr()->message);
