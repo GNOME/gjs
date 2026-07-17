@@ -492,7 +492,7 @@ static std::string gjs_debug_linear_string(JSLinearString* str, Quotes quotes) {
         else if (c == '\t')
             out << "\\t";
         else if (c >= 32 && c < 127)
-            out << c;
+            out << static_cast<char>(c);
         else if (c <= 255)
             out << "\\x" << std::setfill('0') << std::setw(2)
                 << static_cast<unsigned>(c);
