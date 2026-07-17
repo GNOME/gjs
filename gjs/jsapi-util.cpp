@@ -11,6 +11,7 @@
 
 #include <algorithm>  // for min
 #include <chrono>  // for duration, operator""us
+#include <compare>  // for operator<
 #include <iterator>  // for size
 #include <sstream>
 #include <string>

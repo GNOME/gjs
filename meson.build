@@ -4,7 +4,7 @@
 
 project('gjs', 'cpp', 'c', version: '1.89.90', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 1.4',
-    default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
+    default_options: ['cpp_std=c++20', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
 # cpp_rtti: SpiderMonkey can be compiled with or without runtime type

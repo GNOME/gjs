@@ -59,7 +59,7 @@ IWYU=(python3 "$IWYU_SCRIPT" -p .)
 IWYU_FEDORA_BUG_ARGS=(-I/usr/lib/clang/20/include)
 IWYU_TOOL_ARGS=(-I../gjs "${IWYU_FEDORA_BUG_ARGS[@]}")
 IWYU_ARGS=(-Wno-pragma-once-outside-header)
-IWYU_RAW=(include-what-you-use -xc++ -std=c++17 -Xiwyu --keep=config.h
+IWYU_RAW=(include-what-you-use -xc++ -std=c++20 -Xiwyu --keep=config.h
     "${IWYU_ARGS[@]}")
 IFS=' ' read -r -a DEPS_CFLAGS <<< "$(pkg-config --cflags cairo girepository-2.0 mozjs-140)"
 IWYU_RAW_INC=(-I. -I.. "${DEPS_CFLAGS[@]}" "${IWYU_FEDORA_BUG_ARGS[@]}")

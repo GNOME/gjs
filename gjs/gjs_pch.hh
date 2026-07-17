@@ -10,6 +10,7 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <compare>
 #include <cstddef>
 #include <deque>
 #include <functional>
