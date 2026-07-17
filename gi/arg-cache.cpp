@@ -169,15 +169,14 @@ struct HasTypeInfo {
 };
 
 struct Transferable {
-    constexpr Transferable() : m_transfer(GI_TRANSFER_NOTHING) {}
+    constexpr Transferable() = default;
     constexpr explicit Transferable(GITransfer transfer)
         : m_transfer(transfer) {}
-    GITransfer m_transfer : 2;
+    GITransfer m_transfer : 2 = GI_TRANSFER_NOTHING;
 };
 
 struct Nullable {
-    constexpr Nullable() : m_nullable(false) {}
-    bool m_nullable : 1;
+    bool m_nullable : 1 = false;
 
     bool handle_nullable(JSContext* cx, GIArgument* arg,
                          const char* arg_name) const;

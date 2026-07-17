@@ -143,7 +143,7 @@ struct Argument {
     [[nodiscard]] constexpr bool skip_out() const { return m_skip_out; }
 
  protected:
-    constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
+    constexpr Argument() = default;
 
     [[nodiscard]]
     virtual mozilla::Maybe<Arg::ReturnTag> return_tag() const {
@@ -164,8 +164,8 @@ struct Argument {
     static bool invalid(JSContext*, const char* func = nullptr);
 
     const char* m_arg_name = nullptr;
-    bool m_skip_in : 1;
-    bool m_skip_out : 1;
+    bool m_skip_in : 1 = false;
+    bool m_skip_out : 1 = false;
 
  private:
     friend struct ArgsCache;
@@ -196,9 +196,6 @@ static_assert(sizeof(Argument) <= 24,
 struct ArgsCache {
     GJS_JSAPI_RETURN_CONVENTION
     bool initialize(JSContext*, const GI::CallableInfo&);
-
-    // COMPAT: in C++20, use default initializers for these bitfields
-    ArgsCache() : m_is_method(false), m_has_return(false) {}
 
     constexpr bool initialized() { return m_args != nullptr; }
     constexpr void clear() { m_args.reset(); }
@@ -294,8 +291,8 @@ struct ArgsCache {
  private:
     AutoCppPointer<ArgumentPtr[]> m_args;
 
-    bool m_is_method : 1;
-    bool m_has_return : 1;
+    bool m_is_method : 1 = false;
+    bool m_has_return : 1 = false;
 };
 
 }  // namespace Gjs

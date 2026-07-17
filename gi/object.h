@@ -322,14 +322,14 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     // and scope-notify callbacks passed to methods), used when tracing
     std::vector<GClosure*> m_closures;
 
-    bool m_wrapper_finalized : 1;
-    bool m_gobj_disposed : 1;
-    bool m_gobj_finalized : 1;
+    bool m_wrapper_finalized : 1 = false;
+    bool m_gobj_disposed : 1 = false;
+    bool m_gobj_finalized : 1 = false;
 
     /* True if this object has visible JS state, and thus its lifecycle is
      * managed using toggle references. False if this object just keeps a hard
      * ref on the underlying GObject, and may be finalized at will. */
-    bool m_uses_toggle_ref : 1;
+    bool m_uses_toggle_ref : 1 = false;
 
     static bool s_weak_pointer_callback;
 

@@ -56,13 +56,6 @@
 
 using mozilla::Maybe, mozilla::Some;
 
-template <class Base, class Prototype, class Instance>
-BoxedInstance<Base, Prototype, Instance>::BoxedInstance(Prototype* prototype,
-                                                        JS::HandleObject obj)
-    : BaseClass(prototype, obj),
-      m_allocated_directly(false),
-      m_owning_ptr(false) {}
-
 // See GIWrapperBase::resolve().
 template <class Base, class Prototype, class Instance>
 bool BoxedPrototype<Base, Prototype, Instance>::resolve_impl(

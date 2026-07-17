@@ -2416,11 +2416,7 @@ void ObjectInstance::prepare_shutdown() {
 
 ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
                                JS::HandleObject object)
-    : GIWrapperInstance(prototype, object),
-      m_wrapper_finalized(false),
-      m_gobj_disposed(false),
-      m_gobj_finalized(false),
-      m_uses_toggle_ref(false) {
+    : GIWrapperInstance(prototype, object) {
     GTypeQuery query;
     g_type_query(gtype(), &query);
     g_assert(query.type);

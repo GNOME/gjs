@@ -53,14 +53,13 @@ bool gjs_environment_variable_is_set(const char* env_variable_name);
 class LogFile {
     FILE* m_fp;
     const char* m_errmsg = nullptr;
-    bool m_should_close : 1;
+    bool m_should_close : 1 = false;
 
  public:
     LogFile(const LogFile&) = delete;
     LogFile& operator=(const LogFile&) = delete;
 
-    explicit LogFile(const char* filename, FILE* fallback_fp = stdout)
-        : m_should_close(false) {
+    explicit LogFile(const char* filename, FILE* fallback_fp = stdout) {
         if (filename) {
             m_fp = fopen(filename, "a");
             if (!m_fp)
