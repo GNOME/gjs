@@ -189,15 +189,9 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         return gjs_string_from_utf8(cx, version, args.rval());
     }
 
-    static constexpr JSClassOps class_ops = {
-        nullptr,  // addProperty
-        nullptr,  // deleteProperty
-        nullptr,  // enumerate
-        &Ns::new_enumerate,
-        &Ns::resolve,
-        nullptr,  // mayResolve
-        &Ns::finalize,
-    };
+    static constexpr JSClassOps class_ops = {.newEnumerate = &Ns::new_enumerate,
+                                             .resolve = &Ns::resolve,
+                                             .finalize = &Ns::finalize};
 
     static constexpr JSPropertySpec proto_props[] = {
         JS_STRING_SYM_PS(toStringTag, "GIRepositoryNamespace", JSPROP_READONLY),
@@ -207,19 +201,14 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         JS_PS_END};
 
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        nullptr,  // prototypeFunctions
-        Ns::proto_props,
-        nullptr,  // finishInit
-        js::ClassSpec::DontDefineConstructor};
+        .prototypeProperties = Ns::proto_props,
+        .flags = js::ClassSpec::DontDefineConstructor};
 
     static constexpr JSClass klass = {
-        "GIRepositoryNamespace",
-        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-        &Ns::class_ops, &Ns::class_spec};
+        .name = "GIRepositoryNamespace",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &Ns::class_ops,
+        .spec = &Ns::class_spec};
 
  public:
     GJS_JSAPI_RETURN_CONVENTION

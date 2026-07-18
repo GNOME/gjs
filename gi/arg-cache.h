@@ -96,9 +96,9 @@ struct Argument {
     // functions that call it
     struct Init {
         const char* name;
-        uint8_t index;
+        uint8_t index = Argument::ABSENT;
         GITransfer transfer : 2;
-        GjsArgumentFlags flags : 6;
+        GjsArgumentFlags flags : 6 = GjsArgumentFlags::NONE;
     };
 
     virtual ~Argument() = default;

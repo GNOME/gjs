@@ -190,21 +190,14 @@ bool ErrorBase::value_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-const struct JSClassOps ErrorBase::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    nullptr,  // resolve
-    nullptr,  // mayResolve
-    &ErrorBase::finalize,
-};
+const struct JSClassOps ErrorBase::class_ops = {.finalize =
+                                                    &ErrorBase::finalize};
 
 const struct JSClass ErrorBase::klass = {
-    "GLib_Error",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE |
-        JSCLASS_IS_DOMJSCLASS,  // needed for Error.isError()
-    &ErrorBase::class_ops};
+    .name = "GLib_Error",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE |
+             JSCLASS_IS_DOMJSCLASS,  // needed for Error.isError()
+    .cOps = &ErrorBase::class_ops};
 
 // We need to shadow all fields of GError, to prevent calling the getter from
 // GBoxed (which would trash memory accessing the instance private data)

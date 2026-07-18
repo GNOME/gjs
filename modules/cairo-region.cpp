@@ -261,9 +261,10 @@ static bool region_release_argument(JSContext*, GITransfer transfer,
 }
 
 void gjs_cairo_region_init() {
-    static GjsForeignInfo foreign_info = {region_to_gi_argument,
-                                          region_from_gi_argument,
-                                          region_release_argument};
+    static GjsForeignInfo foreign_info = {
+        .to_func = region_to_gi_argument,
+        .from_func = region_from_gi_argument,
+        .release_func = region_release_argument};
 
     gjs_struct_foreign_register("cairo", "Region", &foreign_info);
 }

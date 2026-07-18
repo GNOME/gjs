@@ -227,7 +227,7 @@ static bool gjs_value_from_array_and_length_values(
 void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                            const GValue* param_values, void* invocation_hint,
                            void* marshal_data) {
-    GSignalQuery signal_query = { 0, };
+    GSignalQuery signal_query = {.signal_id = 0};
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
 
@@ -939,7 +939,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
          */
         int32_t i;
         if (Gjs::js_value_to_c<int32_t>(cx, value, &i)) {
-            GValue int_value = { 0, };
+            GValue int_value = G_VALUE_INIT;
             g_value_init(&int_value, G_TYPE_INT);
             Gjs::gvalue_set(&int_value, i);
             g_value_transform(&int_value, gvalue);
@@ -1269,7 +1269,7 @@ static bool gjs_value_from_g_value_internal(
     }
 
     if (g_value_type_transformable(gtype, G_TYPE_DOUBLE)) {
-        GValue double_value = { 0, };
+        GValue double_value = G_VALUE_INIT;
         g_value_init(&double_value, G_TYPE_DOUBLE);
         g_value_transform(gvalue, &double_value);
         return Gjs::c_value_to_js(cx, Gjs::gvalue_get<double>(&double_value),
@@ -1277,7 +1277,7 @@ static bool gjs_value_from_g_value_internal(
     }
 
     if (g_value_type_transformable(gtype, G_TYPE_INT)) {
-        GValue int_value = { 0, };
+        GValue int_value = G_VALUE_INIT;
         g_value_init(&int_value, G_TYPE_INT);
         g_value_transform(gvalue, &int_value);
         return Gjs::c_value_to_js(cx, Gjs::gvalue_get<int>(&int_value),

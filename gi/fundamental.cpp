@@ -223,22 +223,14 @@ FundamentalPrototype::~FundamentalPrototype() {
 }
 
 const struct JSClassOps FundamentalBase::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    &FundamentalBase::resolve,
-    nullptr,  // mayResolve
-    &FundamentalBase::finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    &FundamentalBase::trace};
+    .resolve = &FundamentalBase::resolve,
+    .finalize = &FundamentalBase::finalize,
+    .trace = &FundamentalBase::trace};
 
 const struct JSClass FundamentalBase::klass = {
-    "GFundamental_Object",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-    &FundamentalBase::class_ops,
-};
+    .name = "GFundamental_Object",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+    .cOps = &FundamentalBase::class_ops};
 
 // FIXME: assume info is non-null on main? Is it possible to have hidden
 // fundamental types?

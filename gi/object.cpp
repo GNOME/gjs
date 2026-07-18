@@ -3381,22 +3381,16 @@ bool ObjectBase::init_gobject(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 const struct JSClassOps ObjectBase::class_ops = {
-    &ObjectBase::add_property,
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    &ObjectBase::new_enumerate,
-    &ObjectBase::resolve,
-    nullptr,  // mayResolve
-    &ObjectBase::finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    &ObjectBase::trace,
-};
+    .addProperty = &ObjectBase::add_property,
+    .newEnumerate = &ObjectBase::new_enumerate,
+    .resolve = &ObjectBase::resolve,
+    .finalize = &ObjectBase::finalize,
+    .trace = &ObjectBase::trace};
 
 const struct JSClass ObjectBase::klass = {
-    "GObject_Object",
-    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-    &ObjectBase::class_ops};
+    .name = "GObject_Object",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+    .cOps = &ObjectBase::class_ops};
 
 JSFunctionSpec ObjectBase::proto_methods[] = {
     JS_FN("_init", &ObjectBase::init_gobject, 0, 0),

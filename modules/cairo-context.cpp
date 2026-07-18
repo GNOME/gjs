@@ -1042,9 +1042,10 @@ static bool context_release_argument(JSContext*, GITransfer transfer,
 }
 
 void gjs_cairo_context_init() {
-    static GjsForeignInfo foreign_info = {context_to_gi_argument,
-                                          context_from_gi_argument,
-                                          context_release_argument};
+    static GjsForeignInfo foreign_info = {
+        .to_func = context_to_gi_argument,
+        .from_func = context_from_gi_argument,
+        .release_func = context_release_argument};
 
     gjs_struct_foreign_register("cairo", "Context", &foreign_info);
 }

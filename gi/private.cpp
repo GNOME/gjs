@@ -314,7 +314,9 @@ static bool gjs_register_interface_with_class(JSContext* cx, unsigned argc,
 
 static inline void gjs_add_interface(GType instance_type,
                                      GType interface_type) {
-    static GInterfaceInfo interface_vtable{nullptr, nullptr, nullptr};
+    static GInterfaceInfo interface_vtable{.interface_init = nullptr,
+                                           .interface_finalize = nullptr,
+                                           .interface_data = nullptr};
     g_type_add_interface_static(instance_type, interface_type,
                                 &interface_vtable);
 }

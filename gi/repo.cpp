@@ -192,19 +192,10 @@ static bool repo_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
     return true;
 }
 
-static const struct JSClassOps gjs_repo_class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    repo_resolve,
-};
+static const struct JSClassOps gjs_repo_class_ops = {.resolve = repo_resolve};
 
-struct JSClass gjs_repo_class = {
-    "GIRepository",
-    0,
-    &gjs_repo_class_ops,
-};
+struct JSClass gjs_repo_class = {.name = "GIRepository",
+                                 .cOps = &gjs_repo_class_ops};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* repo_new(JSContext* cx) {

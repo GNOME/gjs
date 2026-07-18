@@ -53,19 +53,16 @@ class CairoRegion : public CWrapper<CairoRegion, cairo_region_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoRegion::proto_funcs,
-        CairoRegion::proto_props,
-        CairoRegion::define_gtype_prop,
-    };
+        .prototypeFunctions = CairoRegion::proto_funcs,
+        .prototypeProperties = CairoRegion::proto_props,
+        .finishInit = CairoRegion::define_gtype_prop};
     // COMPAT: Switch to background finalize after https://bugzilla.mozilla.org/show_bug.cgi?id=2035230
     // (The same for other instances of JS_CLASS_FOREGROUND_FINALIZE in this file)
     static constexpr JSClass klass = {
-        "Region", JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoRegion::class_ops, &CairoRegion::class_spec};
+        .name = "Region",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoRegion::class_ops,
+        .spec = &CairoRegion::class_spec};
 
  public:
     CairoRegion() = delete;
@@ -96,17 +93,14 @@ class CairoContext : public CWrapper<CairoContext, cairo_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoContext::proto_funcs,
-        CairoContext::proto_props,
-        CairoContext::define_gtype_prop,
-    };
+        .prototypeFunctions = CairoContext::proto_funcs,
+        .prototypeProperties = CairoContext::proto_props,
+        .finishInit = CairoContext::define_gtype_prop};
     static constexpr JSClass klass = {
-        "Context", JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoContext::class_ops, &CairoContext::class_spec};
+        .name = "Context",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoContext::class_ops,
+        .spec = &CairoContext::class_spec};
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool dispose(JSContext*, unsigned, JS::Value*);
@@ -137,17 +131,13 @@ class CairoPath : public CWrapper<CairoPath, cairo_path_t> {
 
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        CairoPath::create_abstract_constructor,
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        nullptr,  // prototypeFunctions
-        CairoPath::proto_props,
-        nullptr,  // finishInit
-    };
+        .createConstructor = CairoPath::create_abstract_constructor,
+        .prototypeProperties = CairoPath::proto_props};
     static constexpr JSClass klass = {
-        "Path", JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPath::class_ops, &CairoPath::class_spec};
+        .name = "Path",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPath::class_ops,
+        .spec = &CairoPath::class_spec};
 
  public:
     static cairo_path_t* copy_ptr(cairo_path_t*);
@@ -180,17 +170,15 @@ class CairoSurface : public CWrapper<CairoSurface, cairo_surface_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        &CairoSurface::create_abstract_constructor,
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoSurface::proto_funcs,
-        CairoSurface::proto_props,
-        &CairoSurface::define_gtype_prop,
-    };
+        .createConstructor = &CairoSurface::create_abstract_constructor,
+        .prototypeFunctions = CairoSurface::proto_funcs,
+        .prototypeProperties = CairoSurface::proto_props,
+        .finishInit = &CairoSurface::define_gtype_prop};
     static constexpr JSClass klass = {
-        "Surface", JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoSurface::class_ops, &CairoSurface::class_spec};
+        .name = "Surface",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoSurface::class_ops,
+        .spec = &CairoSurface::class_spec};
 
     static cairo_surface_t* copy_ptr(cairo_surface_t* surface) {
         return cairo_surface_reference(surface);
@@ -231,18 +219,16 @@ class CairoImageSurface : public CWrapper<CairoImageSurface, cairo_surface_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor,
-        &CairoImageSurface::new_proto,
-        CairoImageSurface::static_funcs,
-        nullptr,  // constructorProperties
-        CairoImageSurface::proto_funcs,
-        CairoImageSurface::proto_props,
-        &CairoSurface::define_gtype_prop,
-    };
+        .createPrototype = &CairoImageSurface::new_proto,
+        .constructorFunctions = CairoImageSurface::static_funcs,
+        .prototypeFunctions = CairoImageSurface::proto_funcs,
+        .prototypeProperties = CairoImageSurface::proto_props,
+        .finishInit = &CairoSurface::define_gtype_prop};
     static constexpr JSClass klass = {
-        "ImageSurface",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoSurface::class_ops, &CairoImageSurface::class_spec};
+        .name = "ImageSurface",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoSurface::class_ops,
+        .spec = &CairoImageSurface::class_spec};
 
     static cairo_surface_t* copy_ptr(cairo_surface_t* surface) {
         return cairo_surface_reference(surface);
@@ -272,18 +258,15 @@ class CairoPSSurface : public CWrapper<CairoPSSurface, cairo_surface_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor,
-        &CairoPSSurface::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoPSSurface::proto_funcs,
-        CairoPSSurface::proto_props,
-        &CairoSurface::define_gtype_prop,
-    };
+        .createPrototype = &CairoPSSurface::new_proto,
+        .prototypeFunctions = CairoPSSurface::proto_funcs,
+        .prototypeProperties = CairoPSSurface::proto_props,
+        .finishInit = &CairoSurface::define_gtype_prop};
     static constexpr JSClass klass = {
-        "PSSurface",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoSurface::class_ops, &CairoPSSurface::class_spec};
+        .name = "PSSurface",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoSurface::class_ops,
+        .spec = &CairoPSSurface::class_spec};
 
     static cairo_surface_t* copy_ptr(cairo_surface_t* surface) {
         return cairo_surface_reference(surface);
@@ -317,18 +300,15 @@ class CairoPDFSurface : public CWrapper<CairoPDFSurface, cairo_surface_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor,
-        &CairoPDFSurface::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoSurface::proto_funcs,
-        CairoSurface::proto_props,
-        &CairoSurface::define_gtype_prop,
-    };
+        .createPrototype = &CairoPDFSurface::new_proto,
+        .prototypeFunctions = CairoSurface::proto_funcs,
+        .prototypeProperties = CairoSurface::proto_props,
+        .finishInit = &CairoSurface::define_gtype_prop};
     static constexpr JSClass klass = {
-        "PDFSurface",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoSurface::class_ops, &CairoPDFSurface::class_spec};
+        .name = "PDFSurface",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoSurface::class_ops,
+        .spec = &CairoPDFSurface::class_spec};
 
     static cairo_surface_t* copy_ptr(cairo_surface_t* surface) {
         return cairo_surface_reference(surface);
@@ -362,18 +342,14 @@ class CairoSVGSurface : public CWrapper<CairoSVGSurface, cairo_surface_t> {
 
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor,
-        &CairoSVGSurface::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        nullptr,  // prototypeFunctions
-        CairoSVGSurface::proto_props,
-        &CairoSurface::define_gtype_prop,
-    };
+        .createPrototype = &CairoSVGSurface::new_proto,
+        .prototypeProperties = CairoSVGSurface::proto_props,
+        .finishInit = &CairoSurface::define_gtype_prop};
     static constexpr JSClass klass = {
-        "SVGSurface",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoSurface::class_ops, &CairoSVGSurface::class_spec};
+        .name = "SVGSurface",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoSurface::class_ops,
+        .spec = &CairoSVGSurface::class_spec};
 
     static cairo_surface_t* copy_ptr(cairo_surface_t* surface) {
         return cairo_surface_reference(surface);
@@ -411,17 +387,15 @@ class CairoPattern : public CWrapper<CairoPattern, cairo_pattern_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        &CairoPattern::create_abstract_constructor,
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoPattern::proto_funcs,
-        CairoPattern::proto_props,
-        &CairoPattern::define_gtype_prop,
-    };
+        .createConstructor = &CairoPattern::create_abstract_constructor,
+        .prototypeFunctions = CairoPattern::proto_funcs,
+        .prototypeProperties = CairoPattern::proto_props,
+        .finishInit = &CairoPattern::define_gtype_prop};
     static constexpr JSClass klass = {
-        "Pattern", JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPattern::class_ops, &CairoPattern::class_spec};
+        .name = "Pattern",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPattern::class_ops,
+        .spec = &CairoPattern::class_spec};
 
     static GType gtype() { return CAIRO_GOBJECT_TYPE_PATTERN; }
 
@@ -471,17 +445,16 @@ class CairoGradient : public CWrapper<CairoGradient, cairo_pattern_t> {
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        &CairoGradient::create_abstract_constructor,
-        &CairoGradient::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoGradient::proto_funcs,
-        CairoGradient::proto_props,
-        &CairoPattern::define_gtype_prop,
-    };
+        .createConstructor = &CairoGradient::create_abstract_constructor,
+        .createPrototype = &CairoGradient::new_proto,
+        .prototypeFunctions = CairoGradient::proto_funcs,
+        .prototypeProperties = CairoGradient::proto_props,
+        .finishInit = &CairoPattern::define_gtype_prop};
     static constexpr JSClass klass = {
-        "Gradient", JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPattern::class_ops, &CairoGradient::class_spec};
+        .name = "Gradient",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPattern::class_ops,
+        .spec = &CairoGradient::class_spec};
 
     static void add_associated_memory(JSObject*, cairo_pattern_t*);
 
@@ -504,18 +477,15 @@ class CairoLinearGradient
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        &CairoLinearGradient::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoLinearGradient::proto_funcs,
-        CairoLinearGradient::proto_props,
-        &CairoPattern::define_gtype_prop,
-    };
+        .createPrototype = &CairoLinearGradient::new_proto,
+        .prototypeFunctions = CairoLinearGradient::proto_funcs,
+        .prototypeProperties = CairoLinearGradient::proto_props,
+        .finishInit = &CairoPattern::define_gtype_prop};
     static constexpr JSClass klass = {
-        "LinearGradient",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPattern::class_ops, &CairoLinearGradient::class_spec};
+        .name = "LinearGradient",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPattern::class_ops,
+        .spec = &CairoLinearGradient::class_spec};
 
     static cairo_pattern_t* copy_ptr(cairo_pattern_t* pattern) {
         return cairo_pattern_reference(pattern);
@@ -545,18 +515,15 @@ class CairoRadialGradient
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        &CairoRadialGradient::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoRadialGradient::proto_funcs,
-        CairoRadialGradient::proto_props,
-        &CairoPattern::define_gtype_prop,
-    };
+        .createPrototype = &CairoRadialGradient::new_proto,
+        .prototypeFunctions = CairoRadialGradient::proto_funcs,
+        .prototypeProperties = CairoRadialGradient::proto_props,
+        .finishInit = &CairoPattern::define_gtype_prop};
     static constexpr JSClass klass = {
-        "RadialGradient",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPattern::class_ops, &CairoRadialGradient::class_spec};
+        .name = "RadialGradient",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPattern::class_ops,
+        .spec = &CairoRadialGradient::class_spec};
 
     static cairo_pattern_t* copy_ptr(cairo_pattern_t* pattern) {
         return cairo_pattern_reference(pattern);
@@ -586,18 +553,15 @@ class CairoSurfacePattern
     static const JSFunctionSpec proto_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        &CairoSurfacePattern::new_proto,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        CairoSurfacePattern::proto_funcs,
-        CairoSurfacePattern::proto_props,
-        &CairoPattern::define_gtype_prop,
-    };
+        .createPrototype = &CairoSurfacePattern::new_proto,
+        .prototypeFunctions = CairoSurfacePattern::proto_funcs,
+        .prototypeProperties = CairoSurfacePattern::proto_props,
+        .finishInit = &CairoPattern::define_gtype_prop};
     static constexpr JSClass klass = {
-        "SurfacePattern",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPattern::class_ops, &CairoSurfacePattern::class_spec};
+        .name = "SurfacePattern",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPattern::class_ops,
+        .spec = &CairoSurfacePattern::class_spec};
 
     static cairo_pattern_t* copy_ptr(cairo_pattern_t* pattern) {
         return cairo_pattern_reference(pattern);
@@ -625,18 +589,16 @@ class CairoSolidPattern : public CWrapper<CairoSolidPattern, cairo_pattern_t> {
     static const JSFunctionSpec static_funcs[];
     static const JSPropertySpec proto_props[];
     static constexpr js::ClassSpec class_spec = {
-        &CairoSolidPattern::create_abstract_constructor,
-        &CairoSolidPattern::new_proto,
-        CairoSolidPattern::static_funcs,
-        nullptr,  // constructorProperties
-        nullptr,  // prototypeFunctions
-        CairoSolidPattern::proto_props,
-        &CairoPattern::define_gtype_prop,
-    };
+        .createConstructor = &CairoSolidPattern::create_abstract_constructor,
+        .createPrototype = &CairoSolidPattern::new_proto,
+        .constructorFunctions = CairoSolidPattern::static_funcs,
+        .prototypeProperties = CairoSolidPattern::proto_props,
+        .finishInit = &CairoPattern::define_gtype_prop};
     static constexpr JSClass klass = {
-        "SolidPattern",
-        JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-        &CairoPattern::class_ops, &CairoSolidPattern::class_spec};
+        .name = "SolidPattern",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &CairoPattern::class_ops,
+        .spec = &CairoSolidPattern::class_spec};
 
     static cairo_pattern_t* copy_ptr(cairo_pattern_t* pattern) {
         return cairo_pattern_reference(pattern);

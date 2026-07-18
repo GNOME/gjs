@@ -155,14 +155,14 @@ class PromiseJobDispatcher::Source : public GSource {
 };
 
 GSourceFuncs PromiseJobDispatcher::Source::source_funcs = {
-    [](GSource* source, int* timeout) {
-        return static_cast<Source*>(source)->prepare(timeout);
-    },
-    nullptr,  // check
-    [](GSource* source, GSourceFunc, void*) {
-        return static_cast<Source*>(source)->dispatch();
-    },
-    [](GSource* source) { static_cast<Source*>(source)->~Source(); },
+    .prepare =
+        [](GSource* source, int* timeout) {
+            return static_cast<Source*>(source)->prepare(timeout);
+        },
+    .dispatch = [](GSource* source, GSourceFunc,
+                   void*) { return static_cast<Source*>(source)->dispatch(); },
+    .finalize =
+        [](GSource* source) { static_cast<Source*>(source)->~Source(); },
 };
 
 PromiseJobDispatcher::PromiseJobDispatcher(GjsContextPrivate* gjs)

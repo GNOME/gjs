@@ -142,19 +142,14 @@ bool InterfacePrototype::has_instance_impl(JSContext* cx,
 }
 
 const struct JSClassOps InterfaceBase::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    &InterfaceBase::new_enumerate,
-    &InterfaceBase::resolve,
-    nullptr,  // mayResolve
-    &InterfaceBase::finalize,
-};
+    .newEnumerate = &InterfaceBase::new_enumerate,
+    .resolve = &InterfaceBase::resolve,
+    .finalize = &InterfaceBase::finalize};
 
 const struct JSClass InterfaceBase::klass = {
-    "GObject_Interface",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-    &InterfaceBase::class_ops};
+    .name = "GObject_Interface",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+    .cOps = &InterfaceBase::class_ops};
 
 // clang-format off
 JSFunctionSpec InterfaceBase::static_methods[] = {

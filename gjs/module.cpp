@@ -203,20 +203,13 @@ class GjsScriptModule {
     }
 
     static constexpr JSClassOps class_ops = {
-        nullptr,  // addProperty
-        nullptr,  // deleteProperty
-        nullptr,  // enumerate
-        nullptr,  // newEnumerate
-        &GjsScriptModule::resolve,
-        nullptr,  // mayResolve
-        &GjsScriptModule::finalize,
-    };
+        .resolve = &GjsScriptModule::resolve,
+        .finalize = &GjsScriptModule::finalize};
 
     static constexpr JSClass klass = {
-        "GjsScriptModule",
-        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-        &GjsScriptModule::class_ops,
-    };
+        .name = "GjsScriptModule",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+        .cOps = &GjsScriptModule::class_ops};
 
  public:
     /* Creates a JS object to pass to JS::SetScriptPrivate as a script's

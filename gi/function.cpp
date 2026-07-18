@@ -155,19 +155,16 @@ class Function : public CWrapper<Function> {
     static const JSFunctionSpec proto_funcs[];
 
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        &Function::inherit_builtin_function,
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        Function::proto_funcs,
-        Function::proto_props,
-        nullptr,  // finishInit
-        js::ClassSpec::DontDefineConstructor};
+        .createPrototype = &Function::inherit_builtin_function,
+        .prototypeFunctions = Function::proto_funcs,
+        .prototypeProperties = Function::proto_props,
+        .flags = js::ClassSpec::DontDefineConstructor};
 
     static constexpr JSClass klass = {
-        "GIRepositoryFunction",
-        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-        &Function::class_ops, &Function::class_spec};
+        .name = "GIRepositoryFunction",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+        .cOps = &Function::class_ops,
+        .spec = &Function::class_spec};
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
@@ -640,7 +637,8 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             GIArgument arg;
         };
 
-        auto* data = new InvalidateData({std::move(arg_info), *arg});
+        auto* data =
+            new InvalidateData({.arg_info = std::move(arg_info), .arg = *arg});
         g_closure_add_invalidate_notifier(
             this, data, [](void* invalidate_data, GClosure* c) {
                 auto* self = static_cast<GjsCallbackTrampoline*>(c);
@@ -1259,16 +1257,8 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
     return gjs_string_from_utf8(cx, descr, rval);
 }
 
-const JSClassOps Function::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    nullptr,  // resolve
-    nullptr,  // mayResolve
-    &Function::finalize,
-    &Function::call,
-};
+const JSClassOps Function::class_ops = {.finalize = &Function::finalize,
+                                        .call = &Function::call};
 
 const JSPropertySpec Function::proto_props[] = {
     JS_PSG("length", &Function::get_length, JSPROP_PERMANENT),

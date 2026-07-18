@@ -313,15 +313,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         CWrapperPointerOps<Base, Wrapped>::unset_private(obj);
     }
 
-    static constexpr JSClassOps class_ops = {
-        nullptr,  // addProperty
-        nullptr,  // deleteProperty
-        nullptr,  // enumerate
-        nullptr,  // newEnumerate
-        nullptr,  // resolve
-        nullptr,  // mayResolve
-        &CWrapper::finalize,
-    };
+    static constexpr JSClassOps class_ops = {.finalize = &CWrapper::finalize};
 
     /**
      * CWrapper::create_abstract_constructor:
@@ -414,9 +406,6 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
 
         // Workaround for ubsan bug
         // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962
-        // Note that the corresponding function pointers in the js::ClassSpec
-        // must be initialized as nullptr, not the default initializer! (see
-        // e.g. CairoPath::class_spec.finishInit)
         using NullOpType =
             std::integral_constant<js::ClassObjectCreationOp, nullptr>;
         using CreateConstructorType =

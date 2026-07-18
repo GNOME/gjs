@@ -1654,7 +1654,7 @@ class Repository {
                                   &IterableNamespace::get_info>;
     [[nodiscard]]
     Iterable infos(const char* ns) const {
-        return Iterable{{m_ptr, ns}};
+        return Iterable{{.repo = m_ptr, .ns = ns}};
     }
 
     [[nodiscard]]

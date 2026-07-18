@@ -595,7 +595,7 @@ static void gjstest_test_func_gjs_context_run_in_realm() {
     struct RunInRealmData {
         int sentinel;
         bool has_run;
-    } data{42, false};
+    } data{.sentinel = 42, .has_run = false};
 
     gjs_context_run_in_realm(
         gjs_context,

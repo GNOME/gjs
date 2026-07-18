@@ -142,32 +142,20 @@ static void param_finalize(JS::GCContext*, JSObject* obj) {
  * class have.
  */
 static const struct JSClassOps gjs_param_class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    param_resolve,
-    nullptr,  // mayResolve
-    param_finalize};
+    .resolve = param_resolve, .finalize = param_finalize};
 
 static JSPropertySpec proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "GObject_ParamSpec", JSPROP_READONLY),
     JS_PS_END};
 
-static constexpr js::ClassSpec class_spec = {
-    nullptr,      // createConstructor
-    nullptr,      // createPrototype
-    nullptr,      // constructorFunctions
-    nullptr,      // constructorProperties
-    nullptr,      // prototypeFunctions
-    proto_props,  // prototypeProperties
-    nullptr       // finishInit
-};
+static constexpr js::ClassSpec class_spec = {.prototypeProperties =
+                                                 proto_props};
 
 struct JSClass gjs_param_class = {
-    "GObject_ParamSpec",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-    &gjs_param_class_ops, &class_spec};
+    .name = "GObject_ParamSpec",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+    .cOps = &gjs_param_class_ops,
+    .spec = &class_spec};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_param_prototype(JSContext* cx) {
