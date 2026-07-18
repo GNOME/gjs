@@ -146,8 +146,7 @@ void gvalue_set(GValue* gvalue, Tag::RealT<TAG> value) {
 
 // Specialization for types where TAG and RealT<TAG> are the same type, to allow
 // inferring template parameter
-template <typename T,
-          typename = std::enable_if_t<std::is_same_v<Gjs::Tag::RealT<T>, T>>>
+template <Gjs::Tag::RealType T>
 inline void gvalue_set(GValue* gvalue, T value) {
     gvalue_set<T>(gvalue, value);
 }

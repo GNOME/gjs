@@ -6,17 +6,15 @@
 
 #include <config.h>
 
+#include <concepts>
 #include <type_traits>
 
 namespace GjsEnum {
 
+// COMPAT: Use std::is_scoped_enum_v in C++23
 template <typename T>
-constexpr bool is_class() {
-    if constexpr (std::is_enum_v<T>) {
-        return !std::is_convertible_v<T, std::underlying_type_t<T>>;
-    }
-    return false;
-}
+concept Scoped =
+    std::is_enum_v<T> && !std::convertible_to<T, std::underlying_type_t<T>>;
 
 template <class EnumType>
 struct WrapperImpl {
@@ -35,61 +33,52 @@ struct WrapperImpl {
 
 #if defined (__clang__) || defined (__GNUC__)
 template <class EnumType>
-using Wrapper =
-    std::conditional_t<is_class<EnumType>(), WrapperImpl<EnumType>, void>;
+using Wrapper = WrapperImpl<EnumType>;
 #else
 template <class EnumType>
-using Wrapper = std::conditional_t<is_class<EnumType>(),
-                                   std::underlying_type_t<EnumType>, void>;
+using Wrapper = std::underlying_type_t<EnumType>;
 #endif
 }  // namespace GjsEnum
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator&(
-    EnumType const& first, EnumType const& second) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr Wrapped operator&(const EnumType& first, const EnumType& second) {
     return static_cast<Wrapped>(static_cast<Wrapped>(first) &
                                 static_cast<Wrapped>(second));
 }
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator|(
-    EnumType const& first, EnumType const& second) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr Wrapped operator|(const EnumType& first, const EnumType& second) {
     return static_cast<Wrapped>(static_cast<Wrapped>(first) |
                                 static_cast<Wrapped>(second));
 }
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator|(
-    Wrapped const& first, EnumType const& second) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr Wrapped operator|(const Wrapped& first, const EnumType& second) {
     return static_cast<Wrapped>(static_cast<Wrapped>(first) |
                                 static_cast<Wrapped>(second));
 }
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped> operator^(
-    EnumType const& first, EnumType const& second) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr Wrapped operator^(const EnumType& first, const EnumType& second) {
     return static_cast<Wrapped>(static_cast<Wrapped>(first) ^
                                 static_cast<Wrapped>(second));
 }
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped&> operator|=(
-    EnumType& first,  //  NOLINT(runtime/references)
-    EnumType const& second) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr Wrapped& operator|=(EnumType& first,  //  NOLINT(runtime/references)
+                              const EnumType& second) {
     first = static_cast<EnumType>(first | second);
     return reinterpret_cast<Wrapped&>(first);
 }
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), Wrapped&> operator&=(
-    EnumType& first,  //  NOLINT(runtime/references)
-    EnumType const& second) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr Wrapped& operator&=(EnumType& first,  //  NOLINT(runtime/references)
+                              const EnumType& second) {
     first = static_cast<EnumType>(first & second);
     return reinterpret_cast<Wrapped&>(first);
 }
 
-template <class EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
-constexpr std::enable_if_t<GjsEnum::is_class<EnumType>(), EnumType> operator~(
-    EnumType const& first) {
+template <GjsEnum::Scoped EnumType, class Wrapped = GjsEnum::Wrapper<EnumType>>
+constexpr EnumType operator~(const EnumType& first) {
     return static_cast<EnumType>(~static_cast<Wrapped>(first));
 }

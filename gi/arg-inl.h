@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <string.h>  // for memset
 
+#include <concepts>  // for integral
 #include <cstddef>  // for nullptr_t
 #include <limits>
 #include <string>  // for to_string
@@ -125,8 +126,7 @@ constexpr decltype(auto) gjs_arg_member(GIArgument* arg) {
     }
 }
 
-template <typename TAG, typename = std::enable_if_t<
-                            std::is_arithmetic_v<Gjs::Tag::RealT<TAG>>>>
+template <Gjs::Tag::Numeric TAG>
 constexpr void gjs_arg_set(GIArgument* arg, Gjs::Tag::RealT<TAG> v) {
     if constexpr (std::is_same_v<TAG, bool> ||
                   std::is_same_v<TAG, Gjs::Tag::GBoolean>)
@@ -137,9 +137,8 @@ constexpr void gjs_arg_set(GIArgument* arg, Gjs::Tag::RealT<TAG> v) {
 
 // Specialization for types where TAG and RealT<TAG> are the same type, to allow
 // inferring template parameter
-template <typename T,
-          typename = std::enable_if_t<std::is_same_v<Gjs::Tag::RealT<T>, T> &&
-                                      std::is_arithmetic_v<T>>>
+template <Gjs::Tag::Numeric T>
+    requires Gjs::Tag::RealType<T>
 constexpr void gjs_arg_set(GIArgument* arg, T v) {
     gjs_arg_set<T>(arg, v);
 }
@@ -147,7 +146,8 @@ constexpr void gjs_arg_set(GIArgument* arg, T v) {
 // Specialization for non-function pointers, so that you don't have to repeat
 // the pointer type explicitly for type deduction, and that takes care of
 // GIArgument not having constness
-template <typename T, typename = std::enable_if_t<!std::is_function_v<T>>>
+template <typename T>
+    requires(!std::is_function_v<T>)
 constexpr void gjs_arg_set(GIArgument* arg, T* v) {
     using NonconstPtrT = std::add_pointer_t<std::remove_const_t<T>>;
     gjs_arg_member<NonconstPtrT>(arg) = const_cast<NonconstPtrT>(v);
@@ -210,12 +210,11 @@ constexpr Gjs::Tag::RealT<TAG> gjs_arg_steal(GIArgument* arg) {
 // Implementation to store rounded (u)int64_t numbers into double
 
 template <typename BigTag>
+    requires std::integral<Gjs::Tag::RealT<BigTag>> &&
+             (std::numeric_limits<Gjs::Tag::RealT<BigTag>>::max() >
+              std::numeric_limits<int32_t>::max())
 [[nodiscard]]
-constexpr std::enable_if_t<
-    std::is_integral_v<Gjs::Tag::RealT<BigTag>> &&
-        (std::numeric_limits<Gjs::Tag::RealT<BigTag>>::max() >
-         std::numeric_limits<int32_t>::max()),
-    double> gjs_arg_get_maybe_rounded(GIArgument* arg) {
+constexpr double gjs_arg_get_maybe_rounded(GIArgument* arg) {
     using BigT = Gjs::Tag::RealT<BigTag>;
     BigT val = gjs_arg_get<BigTag>(arg);
 

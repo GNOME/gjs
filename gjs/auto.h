@@ -10,6 +10,7 @@
 
 #include <stdlib.h>
 
+#include <concepts>  // for same_as
 #include <type_traits>
 #include <utility>
 
@@ -35,6 +36,14 @@ using AutoPointerRefFunction = F* (*)(F*);
 template <typename F = void>
 using AutoPointerFreeFunction = void (*)(F*);
 
+// Workaround for ubsan bug https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962
+namespace detail {
+template <auto ptr>
+concept NotNull =
+    !std::is_same_v<std::integral_constant<decltype(ptr), ptr>,
+                    std::integral_constant<decltype(ptr), nullptr>>;
+}
+
 template <typename T, typename F = void,
           AutoPointerFreeFunction<F> free_func = free,
           AutoPointerRefFunction<F> ref_func = nullptr>
@@ -48,29 +57,12 @@ struct AutoPointer {
  protected:
     using BaseType = AutoPointer<T, F, free_func, ref_func>;
 
- private:
-    template <typename FunctionType, FunctionType function>
-    static constexpr bool has_function() {
-        using NullType = std::integral_constant<FunctionType, nullptr>;
-        using ActualType = std::integral_constant<FunctionType, function>;
-
-        return !std::is_same_v<ActualType, NullType>;
-    }
-
  public:
-    static constexpr bool has_free_function() {
-        return has_function<AutoPointerFreeFunction<F>, free_func>();
-    }
-
-    static constexpr bool has_ref_function() {
-        return has_function<AutoPointerRefFunction<F>, ref_func>();
-    }
-
     constexpr AutoPointer(Ptr ptr = nullptr)  // NOLINT(runtime/explicit)
         : m_ptr(ptr) {}
-    template <typename U, typename = std::enable_if_t<std::is_same_v<U, Tp> &&
-                                                      std::is_array_v<T>>>
-    explicit constexpr AutoPointer(U ptr[]) : m_ptr(ptr) {}
+    explicit constexpr AutoPointer(std::same_as<Tp> auto ptr[])
+        requires std::is_array_v<T>
+        : m_ptr(ptr) {}
 
     constexpr AutoPointer(Ptr ptr, const TakeOwnership&) : AutoPointer(ptr) {
         m_ptr = copy();
@@ -100,26 +92,27 @@ struct AutoPointer {
         return *this;
     }
 
-    template <typename U = T>
-    constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> operator->() {
+    constexpr Ptr operator->()
+        requires(!std::is_array_v<T>)
+    {
         return m_ptr;
     }
 
-    template <typename U = T>
-    constexpr std::enable_if_t<!std::is_array_v<U>, ConstPtr> operator->()
-        const {
+    constexpr ConstPtr operator->() const
+        requires(!std::is_array_v<T>)
+    {
         return m_ptr;
     }
 
-    template <typename U = T>
-    constexpr std::enable_if_t<std::is_array_v<U>, RvalueRef> operator[](
-        int index) {
+    constexpr RvalueRef operator[](int index)
+        requires std::is_array_v<T>
+    {
         return m_ptr[index];
     }
 
-    template <typename U = T>
-    constexpr std::enable_if_t<std::is_array_v<U>, std::add_const_t<RvalueRef>>
-    operator[](int index) const {
+    constexpr std::add_const_t<RvalueRef> operator[](int index) const
+        requires std::is_array_v<T>
+    {
         return m_ptr[index];
     }
 
@@ -146,7 +139,7 @@ struct AutoPointer {
         Ptr old_ptr = m_ptr;
         m_ptr = ptr;
 
-        if constexpr (has_free_function()) {
+        if constexpr (detail::NotNull<free_func>) {
             if (old_ptr)
                 free_func(reinterpret_cast<F*>(old_ptr));
         }
@@ -160,10 +153,10 @@ struct AutoPointer {
         reset();
     }
 
-    template <typename U = T>
     [[nodiscard]]
-    constexpr std::enable_if_t<!std::is_array_v<U>, Ptr> copy() const {
-        static_assert(has_ref_function(), "No ref function provided");
+    constexpr Ptr copy() const
+        requires(!std::is_array_v<T> && detail::NotNull<ref_func>)
+    {
         return m_ptr ? reinterpret_cast<Ptr>(
                            ref_func(reinterpret_cast<F*>(m_ptr)))
                      : nullptr;

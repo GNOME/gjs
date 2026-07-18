@@ -610,9 +610,8 @@ struct FallbackReturn : FallbackOut {
     }
 };
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericOut : SkipAll, Positioned {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue) override {
         return set_out_parameter(state, arg);
@@ -626,9 +625,8 @@ struct NumericOut : SkipAll, Positioned {
 
 using BooleanOut = NumericOut<Tag::GBoolean>;
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericReturn : SkipAll {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
         return invalid(cx, G_STRFUNC);
@@ -1392,16 +1390,14 @@ struct BooleanIn : SkipAll {
             JS::HandleValue) override;
 };
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericIn : SkipAll {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
 };
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericInOut : NumericIn<TAG>, Positioned {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
         if (!NumericIn<TAG>::in(cx, state, arg, value))
@@ -1970,7 +1966,7 @@ bool BooleanIn::in(JSContext*, GjsFunctionCallState*, GIArgument* arg,
     return true;
 }
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 GJS_JSAPI_RETURN_CONVENTION
 bool NumericIn<TAG>::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                         JS::HandleValue value) {

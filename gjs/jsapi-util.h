@@ -14,7 +14,7 @@
 #include <limits>
 #include <string>  // for string, u16string
 #include <string_view>
-#include <type_traits>  // for enable_if_t, add_pointer_t, add_const_t
+#include <type_traits>  // for add_pointer_t, add_const_t
 #include <vector>
 
 #include <glib-object.h>
@@ -242,9 +242,9 @@ static constexpr size_t N_REASONS = 0 FOREACH_GC_REASON(COUNT_GC_REASON);
 };
 
 template <typename T>
+    requires(sizeof(T) == 8)
 [[nodiscard]]
 bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
-    static_assert(sizeof(T) == 8, "64-bit types only");
     g_assert(bi && "bigint cannot be null");
     g_assert(clamped && "forgot out parameter");
 

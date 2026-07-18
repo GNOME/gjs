@@ -9,24 +9,21 @@
 #include <stdint.h>
 
 #include <algorithm>
+#include <concepts>  // for integral, signed_integral, unsigned_integral
 #include <type_traits>
 #include <utility>
 #include <vector>
 
-template <typename T>
-constexpr void* gjs_int_to_pointer(T v) {
-    static_assert(std::is_integral_v<T>, "Need integer value");
-
-    if constexpr (std::is_signed_v<T>)
-        return reinterpret_cast<void*>(static_cast<intptr_t>(v));
-    else
-        return reinterpret_cast<void*>(static_cast<uintptr_t>(v));
+constexpr void* gjs_int_to_pointer(std::signed_integral auto v) {
+    return reinterpret_cast<void*>(static_cast<intptr_t>(v));
 }
 
-template <typename T>
-constexpr T gjs_pointer_to_int(void* p) {
-    static_assert(std::is_integral_v<T>, "Need integer value");
+constexpr void* gjs_int_to_pointer(std::unsigned_integral auto v) {
+    return reinterpret_cast<void*>(static_cast<uintptr_t>(v));
+}
 
+template <std::integral T>
+constexpr T gjs_pointer_to_int(void* p) {
     if constexpr (std::is_signed_v<T>)
         return static_cast<T>(reinterpret_cast<intptr_t>(p));
     else

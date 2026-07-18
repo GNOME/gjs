@@ -43,10 +43,9 @@ static bool type_can_be_allocated_directly(const TypeInfo& type_info) {
  * instances without needing a constructor.
  */
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 [[nodiscard]]
 bool struct_is_simple(const UnownedInfo<TAG>& info) {
-    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
-
     typename UnownedInfo<TAG>::FieldsIterable iter = info.fields();
 
     // If it's opaque, it's not simple
@@ -83,9 +82,8 @@ static bool direct_allocation_has_pointers(const TypeInfo& type_info) {
 }
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 bool simple_struct_has_pointers(const UnownedInfo<TAG>& info) {
-    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
-
     g_assert(struct_is_simple(info) &&
              "Don't call simple_struct_has_pointers() on a non-simple struct");
 
@@ -97,10 +95,9 @@ bool simple_struct_has_pointers(const UnownedInfo<TAG>& info) {
 }
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 std::pair<Maybe<ConstructorIndex>, Maybe<ConstructorIndex>>
 find_boxed_constructor_indices(const UnownedInfo<TAG>& info) {
-    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
-
     if (info.gtype() == G_TYPE_NONE)
         return {};
 

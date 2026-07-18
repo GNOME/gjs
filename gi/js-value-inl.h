@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <cmath>  // for isnan
+#include <concepts>  // for integral
 #include <limits>
 #include <string>
 #include <type_traits>
@@ -235,18 +236,16 @@ constexpr BigT min_safe_big_number() {
     return std::numeric_limits<BigT>::lowest();
 }
 
-template <typename WantedType, typename TAG,
-          typename = std::enable_if_t<!std::is_same_v<Tag::RealT<TAG>, TAG>>,
-          typename U>
+namespace detail {
+// Internal version of js_value_to_c_checked_impl that is agnostic to whether
+// TAG is a real type or not. This is needed because the two overloads below
+// both use this logic, but one can't call the other because their requirements
+// don't overlap.
+template <typename WantedType, Tag::CanContain<WantedType> TAG>
 GJS_JSAPI_RETURN_CONVENTION
-inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value, U* out,
-                                  bool* out_of_range) {
+inline bool js_value_to_c_checked_impl(JSContext* cx, JS::HandleValue value,
+                                       auto* out, bool* out_of_range) {
     using T = Tag::RealT<TAG>;
-    static_assert(std::numeric_limits<T>::max() >=
-                          std::numeric_limits<WantedType>::max() &&
-                      std::numeric_limits<T>::lowest() <=
-                          std::numeric_limits<WantedType>::lowest(),
-                  "Container can't contain wanted type");
 
     if constexpr (std::is_same_v<WantedType, uint64_t> ||
                   std::is_same_v<WantedType, int64_t>) {
@@ -312,22 +311,32 @@ inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value, U* out,
         return ret;
     }
 }
+}  // namespace detail
 
-template <typename WantedType, typename T,
-          typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
+template <typename WantedType, typename TAG>
+    requires(!Tag::RealType<TAG> && Tag::CanContain<TAG, WantedType>)
+    GJS_JSAPI_RETURN_CONVENTION
+inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value,
+                                  auto* out, bool* out_of_range) {
+    return detail::js_value_to_c_checked_impl<WantedType, TAG>(cx, value, out,
+                                                               out_of_range);
+}
+
+// Specialization for types where TAG and RealT<TAG> are the same type, to allow
+// inferring template parameter
+template <typename WantedType, Tag::RealType T>
+    requires Tag::CanContain<T, WantedType>
 GJS_JSAPI_RETURN_CONVENTION
 inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value, T* out,
                                   bool* out_of_range) {
-    return js_value_to_c_checked<WantedType, T, void, T>(cx, value, out,
-                                                         out_of_range);
+    return detail::js_value_to_c_checked_impl<WantedType, T, T>(cx, value, out,
+                                                                out_of_range);
 }
 
-template <typename WantedType, typename TAG, typename U>
+template <std::integral WantedType, typename TAG, typename U>
 GJS_JSAPI_RETURN_CONVENTION
 inline bool js_value_to_c_checked(JSContext* cx, JS::HandleValue value,
                                   TypeWrapper<U>* out, bool* out_of_range) {
-    static_assert(std::is_integral_v<WantedType>);
-
     if constexpr (std::is_same_v<WantedType, U>) {
         WantedType wanted_out;
         if (!js_value_to_c_checked<WantedType, TAG>(cx, value, &wanted_out,
@@ -396,8 +405,7 @@ inline bool c_value_to_js(JSContext* cx [[maybe_unused]], Tag::RealT<TAG> value,
 
 // Specialization for types where TAG and RealT<TAG> are the same type, to allow
 // inferring template parameter
-template <typename T,
-          typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
+template <Tag::RealType T>
 GJS_JSAPI_RETURN_CONVENTION
 inline bool c_value_to_js(JSContext* cx, T value,
                           JS::MutableHandleValue js_value_p) {
@@ -434,8 +442,7 @@ inline bool c_value_to_js_checked(JSContext* cx [[maybe_unused]],
 
 // Specialization for types where TAG and RealT<TAG> are the same type, to allow
 // inferring template parameter
-template <typename T,
-          typename = std::enable_if_t<std::is_same_v<Tag::RealT<T>, T>>>
+template <Tag::RealType T>
 GJS_JSAPI_RETURN_CONVENTION
 inline bool c_value_to_js_checked(JSContext* cx, T value,
                                   JS::MutableHandleValue js_value_p) {

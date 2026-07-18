@@ -10,7 +10,7 @@
 
 #include <stddef.h>
 
-#include <type_traits>
+#include <concepts>
 
 #include <glib-object.h>
 
@@ -34,9 +34,8 @@ class Closure : public GClosure {
     ~Closure() { unset_context(); }
 
     // Need to call this if inheriting from Closure to call the dtor
-    template <class C>
+    template <std::derived_from<Closure> C>
     constexpr void add_finalize_notifier() {
-        static_assert(std::is_base_of_v<Closure, C>);
         g_closure_add_finalize_notifier(
             this, nullptr,
             [](void*, GClosure* closure) { static_cast<C*>(closure)->~C(); });

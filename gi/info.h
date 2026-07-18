@@ -78,6 +78,9 @@ enum class InfoTag : uint8_t {
     VFUNC,
 };
 
+template <InfoTag TAG>
+concept BoxedTag = TAG == InfoTag::STRUCT || TAG == InfoTag::UNION;
+
 namespace detail {
 template <InfoTag TAG>
 struct InfoTraits {};
@@ -317,13 +320,11 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     // the lifetime of the StackInfo. Do not store the UnownedInfo, or try to
     // take ownership.
     UnownedInfo(const StackArgInfo& other)  // NOLINT(runtime/explicit)
-        : UnownedInfo(detail::Pointer::get_from(other)) {
-        static_assert(TAG == InfoTag::ARG);
-    }
+        requires(TAG == InfoTag::ARG)
+        : UnownedInfo(detail::Pointer::get_from(other)) {}
     UnownedInfo(const StackTypeInfo& other)  // NOLINT(runtime/explicit)
-        : UnownedInfo(detail::Pointer::get_from(other)) {
-        static_assert(TAG == InfoTag::TYPE);
-    }
+        requires(TAG == InfoTag::TYPE)
+        : UnownedInfo(detail::Pointer::get_from(other)) {}
 
     // Caller must take care that the lifetime of UnownedInfo does not exceed
     // the lifetime of the originating OwnedInfo. That means, if you store it,
