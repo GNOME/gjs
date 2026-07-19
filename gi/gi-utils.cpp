@@ -52,10 +52,9 @@ bool struct_is_simple(const UnownedInfo<TAG>& info) {
     if (iter.size() == 0)
         return false;
 
-    return std::all_of(
-        iter.begin(), iter.end(), [](const AutoFieldInfo& field_info) {
-            return type_can_be_allocated_directly(field_info.type_info());
-        });
+    return std::ranges::all_of(iter, [](const AutoFieldInfo& field_info) {
+        return type_can_be_allocated_directly(field_info.type_info());
+    });
 }
 
 [[nodiscard]]
@@ -87,11 +86,9 @@ bool simple_struct_has_pointers(const UnownedInfo<TAG>& info) {
     g_assert(struct_is_simple(info) &&
              "Don't call simple_struct_has_pointers() on a non-simple struct");
 
-    typename UnownedInfo<TAG>::FieldsIterable fields = info.fields();
-    return std::any_of(
-        fields.begin(), fields.end(), [](const AutoFieldInfo& field) {
-            return direct_allocation_has_pointers(field.type_info());
-        });
+    return std::ranges::any_of(info.fields(), [](const AutoFieldInfo& field) {
+        return direct_allocation_has_pointers(field.type_info());
+    });
 }
 
 template <InfoTag TAG>

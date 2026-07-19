@@ -87,9 +87,8 @@ bool gjs_define_static_methods(JSContext* cx, JS::HandleObject constructor,
     if (!type_struct)
         return true;
 
-    auto iter = type_struct->methods();
-    return std::all_of(
-        iter.begin(), iter.end(),
+    return std::ranges::all_of(
+        type_struct->methods(),
         [cx, constructor, gtype](const GI::AutoFunctionInfo& meth_info) {
             return gjs_define_function(cx, constructor, gtype, meth_info);
         });

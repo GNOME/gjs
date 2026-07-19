@@ -241,8 +241,7 @@ static void assert_coverage_data_matches_values_for_key(
     while (!line.empty() && !remaining_matches.empty()) {
         T entry = (*extract)(line);
 
-        auto found = std::find(remaining_matches.begin(),
-                               remaining_matches.end(), entry);
+        auto found = std::ranges::find(remaining_matches, entry);
         g_assert_false(found == remaining_matches.end());
         remaining_matches.erase(found);
 

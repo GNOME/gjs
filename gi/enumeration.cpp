@@ -66,12 +66,10 @@ bool gjs_define_enum_values(JSContext* cx, JS::HandleObject in_object,
     /* Fill in enum values first, so we don't define the enum itself until we're
      * sure we can finish successfully.
      */
-    auto iter = info.values();
-    return std::all_of(iter.begin(), iter.end(),
-                       [cx, in_object](const GI::AutoValueInfo& value_info) {
-                           return gjs_define_enum_value(cx, in_object,
-                                                        value_info);
-                       });
+    return std::ranges::all_of(
+        info.values(), [cx, in_object](const GI::AutoValueInfo& value_info) {
+            return gjs_define_enum_value(cx, in_object, value_info);
+        });
 }
 
 bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,

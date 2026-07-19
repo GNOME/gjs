@@ -115,11 +115,10 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo& info,
                                     int64_t value) {
-    GI::EnumInfo::ValuesIterable values = info.values();
-    if (std::none_of(values.begin(), values.end(),
-                     [value](const GI::AutoValueInfo& info) {
-                         return info.value() == value;
-                     })) {
+    if (std::ranges::none_of(info.values(),
+                             [value](const GI::AutoValueInfo& info) {
+                                 return info.value() == value;
+                             })) {
         gjs_throw(cx, "%" PRId64 " is not a valid value for enumeration %s",
                   value, info.name());
         return false;
