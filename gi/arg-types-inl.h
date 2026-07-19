@@ -243,7 +243,7 @@ struct MarshallingInfo<void> {
 
 namespace Tag {
 template <typename TAG>
-using RealT = typename MarshallingInfo<TAG>::real_type;
+using RealT = MarshallingInfo<TAG>::real_type;
 
 template <typename TAG>
 concept RealType = std::same_as<TAG, RealT<TAG>>;
@@ -278,10 +278,10 @@ template <typename TAG>
 using JSValueContainingT = RealT<typename MarshallingInfo<TAG>::containing_tag>;
 
 template <typename TAG>
-using JSValueContainingTag = typename MarshallingInfo<TAG>::containing_tag;
+using JSValueContainingTag = MarshallingInfo<TAG>::containing_tag;
 
 template <typename TAG>
-using JSValuePackT = typename MarshallingInfo<TAG>::jsvalue_pack_type;
+using JSValuePackT = MarshallingInfo<TAG>::jsvalue_pack_type;
 
 template <typename TAG>
 using JSValuePackTag = std::conditional_t<

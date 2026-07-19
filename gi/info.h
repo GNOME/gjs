@@ -215,14 +215,13 @@ namespace detail {
 // declarations individually.
 struct Pointer {
     template <InfoTag TAG>
-    using CStruct = typename InfoTraits<TAG>::CStruct;
+    using CStruct = InfoTraits<TAG>::CStruct;
 
     template <InfoTag TAG>
     [[nodiscard]]
-    static constexpr
-        typename detail::InfoTraits<TAG>::CStruct* cast(GIBaseInfo* ptr) {
+    static constexpr detail::InfoTraits<TAG>::CStruct* cast(GIBaseInfo* ptr) {
         // (the following is a GI_TAG_INFO() cast but written out)
-        return reinterpret_cast<typename detail::InfoTraits<TAG>::CStruct*>(
+        return reinterpret_cast<detail::InfoTraits<TAG>::CStruct*>(
             g_type_check_instance_cast(reinterpret_cast<GTypeInstance*>(ptr),
                                        gtype_func(TAG)()));
     }
@@ -281,7 +280,7 @@ template <InfoTag TAG>
 class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     friend struct detail::Pointer;
 
-    using CStruct = typename detail::InfoTraits<TAG>::CStruct;
+    using CStruct = detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
 
     explicit UnownedInfo(CStruct* info) : m_info(info) { validate(); }
@@ -357,7 +356,7 @@ template <InfoTag TAG>
 class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     friend struct detail::Pointer;
 
-    using CStruct = typename detail::InfoTraits<TAG>::CStruct;
+    using CStruct = detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
 
     explicit OwnedInfo(CStruct* info) : m_info(info) {
@@ -594,7 +593,7 @@ template <typename T>
 using NInfosFunc = unsigned (*)(T);
 
 template <typename T, InfoTag TAG>
-using GetInfoFunc = typename detail::InfoTraits<TAG>::CStruct* (*)(T, unsigned);
+using GetInfoFunc = detail::InfoTraits<TAG>::CStruct* (*)(T, unsigned);
 
 template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
           GetInfoFunc<T, TAG> get_info>
