@@ -100,7 +100,8 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
         Gjs::AutoTypeClass<GFlagsClass> gflags_class{gtype};
 
         // check all bits are valid bits for the flag and is a 32 bit flag
-        if ((static_cast<uint32_t>(value) & gflags_class->mask) != value) {
+        if (std::cmp_not_equal(
+                static_cast<uint32_t>(value) & gflags_class->mask, value)) {
             // Not a uint32_t with invalid mask values
             gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
                       value, g_type_name(gtype));

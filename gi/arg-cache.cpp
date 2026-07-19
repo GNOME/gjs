@@ -189,7 +189,7 @@ struct Nullable {
 };
 
 struct Positioned {
-    void set_arg_pos(int pos) {
+    void set_arg_pos(uint8_t pos) {
         g_assert(pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
         m_arg_pos = pos;
@@ -219,9 +219,9 @@ struct ExplicitArray {
     uint8_t m_length_pos;
     GIDirection m_length_direction : 2;
 
-    ExplicitArray(int pos, GIDirection direction)
+    ExplicitArray(unsigned pos, GIDirection direction)
         : m_length_pos(pos), m_length_direction(direction) {
-        g_assert(pos >= 0 && pos <= Argument::MAX_ARGS &&
+        g_assert(pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
     }
 };
@@ -2663,7 +2663,7 @@ bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo& callable) {
         type_info.tag() != GI_TYPE_TAG_VOID || type_info.is_pointer();
     m_is_method = callable.is_method();
 
-    int size = callable.n_args();
+    unsigned size = callable.n_args();
     size += (m_is_method ? 1 : 0);
     size += (m_has_return ? 1 : 0);
 

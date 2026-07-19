@@ -332,7 +332,7 @@ int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
         return -1;
     }
 
-    if (static_cast<size_t>(bytes_written) != count)
+    if (std::cmp_not_equal(bytes_written, count))
         g_warning("%s: %zu bytes sent, only %zd bytes written", __func__, count,
                   bytes_written);
 

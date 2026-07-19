@@ -906,7 +906,6 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     Gjs::InlineArray<void*, 8> ffi_arg_pointers;
     ffi_arg_pointers.allocate(ffi_argc);
 
-    int gi_arg_pos = 0;        // index into GIArgument array
     unsigned ffi_arg_pos = 0;  // index into ffi_arg_pointers
     unsigned js_arg_pos = 0;   // index into args
 
@@ -950,7 +949,7 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
                                                              state.gi_argc));
 
     state.processed_c_args = ffi_arg_pos;
-    for (gi_arg_pos = 0; gi_arg_pos < state.gi_argc;
+    for (unsigned gi_arg_pos = 0; gi_arg_pos < state.gi_argc;
          gi_arg_pos++, ffi_arg_pos++) {
         GIArgument* in_value = &state.in_cvalue(gi_arg_pos);
         Argument* gjs_arg = m_arguments.argument(gi_arg_pos);
@@ -1009,7 +1008,6 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     }
 
     g_assert_cmpuint(ffi_arg_pos, ==, ffi_argc);
-    g_assert_cmpuint(gi_arg_pos, ==, state.gi_argc);
 
     Maybe<Arg::ReturnTag> return_tag = m_arguments.return_tag();
     // return_value_p will point inside the return GIFFIReturnValue union if the
@@ -1032,28 +1030,29 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     // Process out arguments and return values. This loop is skipped if we fail
     // the type conversion above, or if state.did_throw_gerror is true.
     js_arg_pos = 0;
-    for (gi_arg_pos = -1; gi_arg_pos < state.gi_argc; gi_arg_pos++) {
+    for (int gi_out_arg_pos = -1; std::cmp_less(gi_out_arg_pos, state.gi_argc);
+         gi_out_arg_pos++) {
         Maybe<Argument*> gjs_arg;
         GIArgument* out_value;
 
-        if (gi_arg_pos == -1) {
+        if (gi_out_arg_pos == -1) {
             out_value = state.return_value();
             gjs_arg = m_arguments.return_value();
         } else {
-            out_value = &state.out_cvalue(gi_arg_pos);
-            gjs_arg = Some(m_arguments.argument(gi_arg_pos));
+            out_value = &state.out_cvalue(gi_out_arg_pos);
+            gjs_arg = Some(m_arguments.argument(gi_out_arg_pos));
         }
 
         gjs_debug_marshal(
             GJS_DEBUG_GFUNCTION, "Marshalling argument '%s' out, %d/%d GI args",
             gjs_arg.map(std::mem_fn(&Argument::arg_name)).valueOr("<unknown>"),
-            gi_arg_pos, state.gi_argc);
+            gi_out_arg_pos, state.gi_argc);
 
         JS::RootedValue js_out_arg{cx};
         if (!r_value) {
-            if (!gjs_arg && gi_arg_pos >= 0) {
+            if (!gjs_arg && gi_out_arg_pos >= 0) {
                 GI::StackArgInfo arg_info;
-                m_info.load_arg(gi_arg_pos, &arg_info);
+                m_info.load_arg(gi_out_arg_pos, &arg_info);
                 gjs_throw(
                     cx,
                     "Error invoking %s: impossible to determine what to pass "
@@ -1105,7 +1104,7 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
     unsigned ffi_arg_max = state->last_processed_index();
     bool postinvoke_release_failed = false;
     for (int gi_arg_pos = -(state->first_arg_offset());
-         gi_arg_pos < state->gi_argc && ffi_arg_pos < ffi_arg_max;
+         std::cmp_less(gi_arg_pos, state->gi_argc) && ffi_arg_pos < ffi_arg_max;
          gi_arg_pos++, ffi_arg_pos++) {
         Maybe<Argument*> gjs_arg;
         GIArgument* in_value = nullptr;
