@@ -15,7 +15,7 @@
 
 namespace Gjs {
 class NativeModuleDefineFuncs {
-    NativeModuleDefineFuncs() {}
+    NativeModuleDefineFuncs() = default;
     using DefineModuleFunc = bool (*)(JSContext*,
                                       JS::MutableHandleObject module_out);
 
