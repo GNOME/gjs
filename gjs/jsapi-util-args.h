@@ -31,7 +31,7 @@
 
 namespace detail {
 
-[[nodiscard]] GJS_ALWAYS_INLINE
+[[nodiscard]] [[gnu::always_inline]]
 static inline bool check_nullable(const char*& fchar, const char*& fmt_string) {
     if (*fchar != '?')
         return false;
@@ -66,7 +66,7 @@ using ParseArgsResult = JS::Result<JS::Ok, ParseArgsErr>;
 
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to use JS::ToBoolean instead? */
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
                                      JS::HandleValue value, bool* ref) {
     if (c != 'b')
@@ -79,7 +79,7 @@ static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
                                      JS::HandleValue value,
                                      JS::MutableHandleObject ref) {
@@ -95,7 +95,7 @@ static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value,
                                      JS::UniqueChars* ref) {
@@ -112,7 +112,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value,
                                      Gjs::AutoChar* ref) {
@@ -127,7 +127,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
                                      JS::HandleValue value,
                                      JS::MutableHandleString ref) {
@@ -143,7 +143,7 @@ static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, int32_t* ref) {
     if (c != 'i')
@@ -155,7 +155,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, uint32_t* ref) {
     double num;
@@ -172,7 +172,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, int64_t* ref) {
     if (c != 't')
@@ -184,7 +184,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     return JS::Ok();
 }
 
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, double* ref) {
     if (c != 'f')
@@ -199,7 +199,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
 /* Special case: treat pointer-to-enum as pointer-to-int, but use enable_if to
  * prevent instantiation for any other types besides pointer-to-enum */
 template <typename T, typename std::enable_if_t<std::is_enum_v<T>, int> = 0>
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, T* ref) {
     /* Sadly, we cannot use std::underlying_type<T> here; the underlying type of
@@ -218,7 +218,7 @@ template <typename T>
 static inline void free_if_necessary(T param_ref [[maybe_unused]]) {}
 
 template <typename T>
-GJS_ALWAYS_INLINE
+[[gnu::always_inline]]
 static inline void free_if_necessary(JS::Rooted<T>* param_ref) {
     // This is not exactly right, since before we consumed a JS::Value there may
     // have been something different inside the handle. But it has already been
