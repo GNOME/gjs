@@ -30,9 +30,8 @@ Checks:
     # marshalling code.
 
   # To do list for bugprone checks:
-  # - bugprone-assignment-in-if-condition - False positives on every use of
-  #   g_str_has_prefix/suffix. Consider enabling in C++20 and switch to using
-  #   string/string_view::starts_with/ends_with. (COMPAT)
+  # - bugprone-assignment-in-if-condition:
+  #   https://github.com/llvm/llvm-project/issues/210638
   # - bugprone-derived-method-shadowing-base-method - We use the CRTP pattern
   #   extensively. Since Clang 22 this check produces too many false positives.
   # - bugprone-multi-level-implicit-pointer-conversion - Many false postives on
