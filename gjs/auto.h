@@ -149,9 +149,7 @@ struct AutoPointer {
         std::swap(this->m_ptr, other.m_ptr);
     }
 
-    /* constexpr */ ~AutoPointer() {  // one day, with -std=c++2a
-        reset();
-    }
+    constexpr ~AutoPointer() { reset(); }
 
     [[nodiscard]]
     constexpr Ptr copy() const

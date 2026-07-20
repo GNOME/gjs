@@ -23,7 +23,7 @@ class InlineArray {
 
  public:
     InlineArray() = default;
-    ~InlineArray() {
+    constexpr ~InlineArray() {
         if (m_pointer != m_inline)
             delete[] m_pointer;
     }
@@ -31,7 +31,7 @@ class InlineArray {
     InlineArray(const InlineArray&) = delete;
     InlineArray& operator=(const InlineArray&) = delete;
 
-    void allocate(size_t size) {
+    constexpr void allocate(size_t size) {
         if (size > N)
             m_pointer = new T[size];
     }
