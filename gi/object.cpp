@@ -303,8 +303,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
     }
 
     if (param->flags & G_PARAM_DEPRECATED) {
-        gjs_warn_deprecated_once_per_callsite(cx, DeprecatedGObjectProperty,
-                                              {format_name(), param->name});
+        gjs_warn_deprecated_once_per_callsite<DeprecatedGObjectProperty>(
+            cx, format_name(), param->name);
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
@@ -462,9 +462,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
 
     if (property_info.has_deprecated_param_flag() ||
         property_info.is_deprecated() || getter.is_deprecated()) {
-        gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty,
-            {format_name(), property_info.name()});
+        gjs_warn_deprecated_once_per_callsite<DeprecatedGObjectProperty>(
+            cx, format_name(), property_info.name());
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
@@ -559,9 +558,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     }
 
     if (pspec_caller->pspec->flags & G_PARAM_DEPRECATED) {
-        gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty,
-            {format_name(), pspec_caller->pspec->name});
+        gjs_warn_deprecated_once_per_callsite<DeprecatedGObjectProperty>(
+            cx, format_name(), pspec_caller->pspec->name);
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
@@ -678,8 +676,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         return true;
 
     if (param_spec->flags & G_PARAM_DEPRECATED) {
-        gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty, {format_name(), param_spec->name});
+        gjs_warn_deprecated_once_per_callsite<DeprecatedGObjectProperty>(
+            cx, format_name(), param_spec->name);
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
@@ -853,9 +851,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
 
     if (property_info.has_deprecated_param_flag() ||
         property_info.is_deprecated() || setter.is_deprecated()) {
-        gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty,
-            {format_name(), property_info.name()});
+        gjs_warn_deprecated_once_per_callsite<DeprecatedGObjectProperty>(
+            cx, format_name(), property_info.name());
     }
 
     gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter %s",
@@ -933,9 +930,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
                      pspec_caller->pspec->name);
 
     if (pspec_caller->pspec->flags & G_PARAM_DEPRECATED) {
-        gjs_warn_deprecated_once_per_callsite(
-            cx, DeprecatedGObjectProperty,
-            {format_name(), pspec_caller->pspec->name});
+        gjs_warn_deprecated_once_per_callsite<DeprecatedGObjectProperty>(
+            cx, format_name(), pspec_caller->pspec->name);
     }
 
     using T = Gjs::Tag::RealT<TAG>;

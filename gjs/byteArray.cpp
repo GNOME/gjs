@@ -62,8 +62,8 @@ static bool instance_to_string_func(JSContext* cx, unsigned argc,
     GJS_GET_THIS(cx, argc, vp, args, this_obj);
     JS::UniqueChars encoding;
 
-    gjs_warn_deprecated_once_per_callsite(
-        cx, GjsDeprecationMessageId::ByteArrayInstanceToString);
+    gjs_warn_deprecated_once_per_callsite<
+        GjsDeprecationMessageId::ByteArrayInstanceToString>(cx);
 
     if (!gjs_parse_call_args(cx, "toString", args, "|s", "encoding", &encoding))
         return false;

@@ -11,6 +11,7 @@
 #include <stdlib.h>     // for free
 #include <sys/types.h>  // for ssize_t
 
+#include <format>
 #include <limits>
 #include <string>  // for string, u16string
 #include <string_view>
@@ -275,3 +276,12 @@ bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
 }  // namespace Gjs
 
 [[nodiscard]] const char* gjs_explain_gc_reason(JS::GCReason);
+
+// Formatters for various JSAPI types
+
+template <>
+struct std::formatter<JS::UniqueChars> : std::formatter<const char*> {
+    auto format(const JS::UniqueChars& str, std::format_context& cx) const {
+        return formatter<const char*>::format(str ? str.get() : "(null)", cx);
+    }
+};

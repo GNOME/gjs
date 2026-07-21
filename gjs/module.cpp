@@ -7,7 +7,6 @@
 #include <stddef.h>     // for size_t
 
 #include <string>
-#include <vector>  // for vector
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -184,9 +183,9 @@ class GjsScriptModule {
          * be supported according to ES6. For compatibility with earlier GJS, we
          * treat it as if it were a real property, but warn about it. */
 
-        gjs_warn_deprecated_once_per_callsite(
-            cx, GjsDeprecationMessageId::ModuleExportedLetOrConst,
-            {gjs_debug_id(id), m_name.get()});
+        gjs_warn_deprecated_once_per_callsite<
+            GjsDeprecationMessageId::ModuleExportedLetOrConst>(
+            cx, gjs_debug_id(id), m_name);
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx, maybe_desc.value());
         return JS_DefinePropertyById(cx, module, id, desc);

@@ -14,6 +14,7 @@
 #include <concepts>
 #include <cstddef>
 #include <deque>
+#include <format>
 #include <functional>
 #include <iterator>
 #include <limits>
