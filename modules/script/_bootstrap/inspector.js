@@ -165,6 +165,9 @@ const handlers = {
         sendResponse('pause', undefined, seq);
         pause();
     },
+    setBreakpoint(args, seq) {
+        sendResponse('setBreakpoint', { breakpoints: [] }, seq);
+    },
 };
 
 function _handleRequest() {
