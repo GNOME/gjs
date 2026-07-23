@@ -235,6 +235,26 @@ describe('Gio.Settings overrides', function () {
             const sub = settings.get_child('sub');
             expect(sub.get_uint('marine')).toEqual(10);
         });
+
+        it('can use custom mappings to bind properties of different types', function () {
+            const foo = new Foo({boolval: false});
+            settings.bind_with_mapping('window-size', foo, 'boolval',
+                Gio.SettingsBindFlags.DEFAULT,
+                variant => {
+                    const [w, h] = variant.deepUnpack();
+                    return [true, w * h > 0];
+                },
+                val => {
+                    const size = val ? 10 : 0;
+                    return new GLib.Variant('(ii)', [size, size]);
+                });
+
+            expect(foo.boolval).toBeTrue();
+
+            foo.boolval = false;
+            const sizes = settings.get_value('window-size').deepUnpack();
+            expect(sizes.every(s => s === 0)).toBeTrue();
+        });
     });
 });
 

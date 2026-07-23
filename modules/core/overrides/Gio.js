@@ -901,6 +901,10 @@ function _init() {
 
         bind: createCheckedMethod('bind'),
         bind_writable: createCheckedMethod('bind_writable'),
+        bind_with_mapping: function (id, ...args) {
+            this._checkKey(id);
+            GjsPrivate.g_settings_bind_with_mapping(this, id, ...args);
+        },
         create_action: createCheckedMethod('create_action'),
         get_default_value: createCheckedMethod('get_default_value'),
         get_user_value: createCheckedMethod('get_user_value'),
