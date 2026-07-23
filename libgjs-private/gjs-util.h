@@ -153,6 +153,39 @@ void gjs_g_binding_group_bind_full(
     GDestroyNotify to_notify, GjsBindingTransformFunc from_callback,
     void* from_data, GDestroyNotify from_notify);
 
+/* For imports.overrides.Gio */
+
+/**
+ * GjsSettingsBindGetMapping:
+ * @value: (out):
+ * @variant:
+ * @user_data:
+ */
+typedef gboolean (*GjsSettingsBindGetMapping)(GValue* value,
+                                              GVariant* variant, void* user_data);
+
+/**
+ * gjs_g_settings_bind_with_mapping:
+ * @settings:
+ * @key:
+ * @object:
+ * @property:
+ * @flags:
+ * @get_mapping: (scope notified) (nullable) (closure get_data):
+ * @get_data:
+ * @get_notify: (destroy get_data):
+ * @set_mapping: (scope notified) (nullable) (closure set_data):
+ * @set_data:
+ * @set_notify: (destroy set_data):
+ */
+GJS_EXPORT
+void gjs_g_settings_bind_with_mapping(
+    GSettings* settings, const char* key, GObject* object,
+    const char* property, GSettingsBindFlags flags,
+    GjsSettingsBindGetMapping get_mapping, void* get_data,
+    GDestroyNotify get_notify, GSettingsBindSetMapping set_mapping,
+    void* set_data, GDestroyNotify set_notify);
+
 /* For imports.overrides.Gtk */
 GJS_EXPORT
 void gjs_gtk_container_child_set_property(GObject* container, GObject* child,
