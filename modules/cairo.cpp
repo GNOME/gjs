@@ -29,8 +29,9 @@ static XLibConstructor constructor;
 bool gjs_cairo_check_status(JSContext* cx, cairo_status_t status,
                             const char* name) {
     if (status != CAIRO_STATUS_SUCCESS) {
-        gjs_throw(cx, "cairo error on %s: \"%s\" (%d)", name,
-                  cairo_status_to_string(status), status);
+        gjs_throw(cx, "cairo error on {}: \"{}\" ({})", name,
+                  cairo_status_to_string(status),
+                  static_cast<unsigned>(status));
         return false;
     }
 

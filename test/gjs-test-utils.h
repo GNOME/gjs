@@ -63,6 +63,7 @@ void gjs_test_add_tests_for_jsapi_utils();
 
 namespace Gjs::Test {
 
+void add_tests_for_formatters();
 void add_tests_for_misc_utils();
 void add_tests_for_toggle_queue();
 

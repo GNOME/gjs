@@ -5,6 +5,10 @@
 
 #include <config.h>
 
+#include <format>
+#include <string>
+#include <type_traits>
+
 #include <glib.h>
 
 #include <mozilla/Result.h>
@@ -93,3 +97,35 @@ class SelectResultImpl<T*, Gjs::AutoError> {
 };
 
 }  // namespace mozilla::detail
+
+// Formatters
+
+template <>
+struct std::formatter<Gjs::AutoError> : std::formatter<const char*> {
+    auto format(const Gjs::AutoError& err, std::format_context& cx) const {
+        if (!err)
+            return formatter<const char*>::format("(null error)", cx);
+        return formatter<const char*>::format(err->message, cx);
+    }
+};
+
+template <typename T>
+struct std::formatter<Gjs::GErrorResult<T>> : std::formatter<std::string> {
+    auto format(const Gjs::GErrorResult<T>& result,
+                std::format_context& cx) const {
+        if (result.isOk()) {
+            if constexpr (std::is_same_v<T, mozilla::Ok>) {
+                return std::formatter<std::string>::format("Ok", cx);
+            } else if constexpr (std::is_pointer_v<T>) {
+                return std::formatter<std::string>::format(
+                    std::format("Ok({})", static_cast<void*>(result.inspect())),
+                    cx);
+            } else {
+                return std::formatter<std::string>::format(
+                    std::format("Ok({})", result.inspect()), cx);
+            }
+        }
+        return std::formatter<std::string>::format(result.inspectErr()->message,
+                                                   cx);
+    }
+};

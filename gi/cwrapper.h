@@ -121,8 +121,8 @@ class CWrapperPointerOps {
         if (!typecheck(cx, wrapper)) {
             const JSClass* obj_class = JS::GetClass(wrapper);
             gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object %p is not a subclass of %s, it's a %s",
-                             wrapper.get(), Base::klass.name, obj_class->name);
+                             "{:?} is not a subclass of {}, it's a {}", wrapper,
+                             Base::klass.name, obj_class->name);
             return false;
         }
         *out = for_js_nocheck(wrapper);

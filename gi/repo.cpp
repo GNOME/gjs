@@ -119,9 +119,8 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
             g_strconcat(ns_name.get(), platform, nullptr)};
         auto required = repo.require(platform_specific, version.get());
         if (!required.isOk()) {
-            gjs_throw(cx, "Failed to require %s %s: %s",
-                      platform_specific.get(), version.get(),
-                      required.inspectErr()->message);
+            gjs_throw(cx, "Failed to require {} {}: {}", platform_specific,
+                      version, required);
             return false;
         }
     }
@@ -129,9 +128,8 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
 
     auto required = repo.require(ns_name.get(), version.get());
     if (!required.isOk()) {
-        gjs_throw(cx, "Requiring %s, version %s: %s", ns_name.get(),
-                  version ? version.get() : "none",
-                  required.inspectErr()->message);
+        gjs_throw(cx, "Requiring {}, version {}: {}", ns_name,
+                  version ? version.get() : "none", required);
         return false;
     }
 
@@ -301,7 +299,7 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                 cx, in_object, object_info.value(), &ignored);
         }
 
-        gjs_throw(cx, "Unsupported type %s, deriving from fundamental %s",
+        gjs_throw(cx, "Unsupported type {}, deriving from fundamental {}",
                   g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
         return false;
     }
@@ -341,7 +339,7 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                                                 &ignored1, &ignored2);
     }
 
-    gjs_throw(cx, "API of type %s not implemented, cannot define %s.%s",
+    gjs_throw(cx, "API of type {} not implemented, cannot define {}.{}",
               info.type_string(), info.ns(), info.name());
     return false;
 }
@@ -356,7 +354,7 @@ JSObject* gjs_lookup_private_namespace(JSContext* cx) {
 JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo& info) {
     const char* ns = info.ns();
     if (ns == nullptr) {
-        gjs_throw(cx, "%s '%s' does not have a namespace", info.type_string(),
+        gjs_throw(cx, "{} '{}' does not have a namespace", info.type_string(),
                   info.name());
 
         return nullptr;
@@ -478,7 +476,7 @@ JSObject* gjs_lookup_generic_constructor(JSContext* cx,
 
     if (!value.isObject()) [[unlikely]] {
         gjs_throw(cx,
-                  "Constructor of %s.%s was the wrong type, expected an object",
+                  "Constructor of {}.{} was the wrong type, expected an object",
                   info.ns(), constructor_name);
         return nullptr;
     }
@@ -499,7 +497,7 @@ JSObject* gjs_lookup_generic_prototype(JSContext* cx,
 
     if (!value.isObject()) [[unlikely]] {
         gjs_throw(cx,
-                  "Prototype of %s.%s was the wrong type, expected an object",
+                  "Prototype of {}.{} was the wrong type, expected an object",
                   info.ns(), info.name());
         return nullptr;
     }

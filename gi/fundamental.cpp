@@ -169,8 +169,7 @@ bool FundamentalInstance::invoke_constructor(JSContext* cx,
     Maybe<const GI::FunctionInfo> constructor_info =
         get_prototype()->constructor_info();
     if (!constructor_info) {
-        gjs_throw(cx, "Couldn't find a constructor for type %s",
-                  format_name().c_str());
+        gjs_throw(cx, "Couldn't find a constructor for type {}", format_name());
         return false;
     }
 
@@ -260,9 +259,9 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
             return nullptr;
     } else {
         if (!value.isObject()) [[unlikely]] {
-            gjs_throw(cx,
-                      "Fundamental constructor was not an object, it was a %s",
-                      JS::InformalValueTypeName(value));
+            gjs_throw(
+                cx, "Fundamental constructor was not an object, it was a {:t}",
+                value);
             return nullptr;
         }
 
@@ -410,7 +409,7 @@ bool FundamentalInstance::object_for_gvalue(
     if (!proto_priv->call_get_value_function(value, &fobj)) {
         if (!G_VALUE_HOLDS(value, gtype) || !g_value_fits_pointer(value)) {
             gjs_throw(cx,
-                      "Failed to convert GValue of type %s to a fundamental %s "
+                      "Failed to convert GValue of type {} to a fundamental {} "
                       "instance",
                       G_VALUE_TYPE_NAME(value), g_type_name(gtype));
             return false;
@@ -452,8 +451,8 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         }
 
         gjs_throw(cx,
-                  "Fundamental object of type %s does not support conversion "
-                  "to a GValue of type %s",
+                  "Fundamental object of type {} does not support conversion "
+                  "to a GValue of type {}",
                   instance->type_name(), G_VALUE_TYPE_NAME(gvalue));
         return false;
     }

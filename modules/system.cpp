@@ -67,7 +67,7 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
 
     GObject* obj;
     if (!ObjectBase::to_c_ptr(cx, target_obj, &obj)) {
-        gjs_throw(cx, "Object %p is not a GObject", &target_obj);
+        gjs_throw(cx, "{:?} is not a GObject", target_obj);
         return false;
     }
 
@@ -117,8 +117,7 @@ static bool gjs_dump_heap(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     LogFile file(filename);
     if (file.has_error()) {
-        gjs_throw(cx, "Cannot dump heap to %s: %s", filename.get(),
-                  file.errmsg());
+        gjs_throw(cx, "Cannot dump heap to {}: {}", filename, file.errmsg());
         return false;
     }
     js::DumpHeap(cx, file.fp(), js::CollectNurseryBeforeDump);
@@ -233,7 +232,7 @@ static bool gjs_dump_memory_info(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     LogFile file(filename);
     if (file.has_error()) {
-        gjs_throw(cx, "Cannot dump memory info to %s: %s", filename.get(),
+        gjs_throw(cx, "Cannot dump memory info to {}: {}", filename,
                   file.errmsg());
         return false;
     }

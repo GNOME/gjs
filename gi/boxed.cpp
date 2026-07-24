@@ -219,8 +219,7 @@ BoxedPrototype<Base, Prototype, Instance>::lookup_field(JSContext* cx,
 
     auto entry = m_field_map->lookup(prop_name);
     if (!entry) {
-        gjs_throw(cx, "No field %s on boxed type %s",
-                  gjs_debug_string(prop_name).c_str(), name());
+        gjs_throw(cx, "No field {} on boxed type {}", prop_name, name());
         return {};
     }
 
@@ -363,8 +362,7 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
         GIArgument rval_arg;
         Gjs::GErrorResult<> result = zero_args_info->invoke({}, {}, &rval_arg);
         if (result.isErr()) {
-            gjs_throw(cx, "Failed to invoke boxed constructor: %s",
-                      result.inspectErr()->message);
+            gjs_throw(cx, "Failed to invoke boxed constructor: {}", result);
             return false;
         }
 
@@ -414,7 +412,7 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
         }
     } else {
         gjs_throw(cx,
-                  "Unable to construct struct type %s since it has no default "
+                  "Unable to construct struct type {} since it has no default "
                   "constructor and cannot be allocated directly",
                   name());
         return false;
@@ -427,7 +425,7 @@ bool BoxedInstance<Base, Prototype, Instance>::constructor_impl(
 
     if (args.length() > 1) {
         gjs_throw(cx,
-                  "Constructor with multiple arguments not supported for %s",
+                  "Constructor with multiple arguments not supported for {}",
                   name());
         return false;
     }
@@ -478,7 +476,7 @@ Maybe<GI::AutoFieldInfo> BoxedBase<Base, Prototype, Instance>::get_field_info(
     JSContext* cx, uint32_t id) const {
     Maybe<GI::AutoFieldInfo> field_info = info().fields()[id];
     if (!field_info)
-        gjs_throw(cx, "No field %d on boxed type %s", id, name());
+        gjs_throw(cx, "No field {} on boxed type {}", id, name());
 
     return field_info;
 }
@@ -517,8 +515,8 @@ bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
     const GI::UnownedInfo<FieldInstance::TAG>& struct_info,
     JS::MutableHandleValue value) const {
     if (!GI::struct_is_simple(struct_info)) {
-        gjs_throw(cx, "Reading field %s.%s is not supported",
-                  format_name().c_str(), field_info.name());
+        gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
+                  field_info.name());
 
         return false;
     }
@@ -598,8 +596,8 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
 
     GIArgument arg;
     if (field_info.read(m_ptr, &arg).isErr()) {
-        gjs_throw(cx, "Reading field %s.%s is not supported",
-                  format_name().c_str(), field_info.name());
+        gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
+                  field_info.name());
         return false;
     }
 
@@ -609,15 +607,15 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
         Maybe<GI::AutoFieldInfo> length_field_info{
             get_field_info(cx, length_field_ix)};
         if (!length_field_info) {
-            gjs_throw(cx, "Reading field %s.%s is not supported",
-                      format_name().c_str(), field_info.name());
+            gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
+                      field_info.name());
             return false;
         }
 
         GIArgument length_arg;
         if (length_field_info->read(m_ptr, &length_arg).isErr()) {
-            gjs_throw(cx, "Reading field %s.%s is not supported",
-                      format_name().c_str(), length_field_info->name());
+            gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
+                      length_field_info->name());
             return false;
         }
 
@@ -652,8 +650,8 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
     JSContext* cx, const GI::FieldInfo& field_info,
     const GI::UnownedInfo<FieldBase::TAG>& boxed_info, JS::HandleValue value) {
     if (!GI::struct_is_simple(boxed_info)) {
-        gjs_throw(cx, "Writing field %s.%s is not supported",
-                  format_name().c_str(), field_info.name());
+        gjs_throw(cx, "Writing field {}.{} is not supported", format_name(),
+                  field_info.name());
 
         return false;
     }
@@ -678,8 +676,8 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
 
         if (source_priv && source_priv->info() != boxed_info) {
             std::string source_name{source_priv->format_name()};
-            gjs_throw(cx, "Impossible to associate a %s to a %s.%s field",
-                      source_name.c_str(), name(), field_info.name());
+            gjs_throw(cx, "Impossible to associate a {} to a {}.{} field",
+                      source_name, name(), field_info.name());
             return false;
         }
     }
@@ -748,8 +746,8 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
     });
 
     if (field_info.write(m_ptr, &arg).isErr()) {
-        gjs_throw(cx, "Writing field %s.%s is not supported",
-                  format_name().c_str(), field_info.name());
+        gjs_throw(cx, "Writing field {}.{} is not supported", format_name(),
+                  field_info.name());
         return false;
     }
 
@@ -951,7 +949,7 @@ bool BoxedInstance<Base, Prototype, Instance>::init_from_c_struct(
         return true;
     }
 
-    gjs_throw(cx, "Can't create a Javascript object for %s; no way to copy",
+    gjs_throw(cx, "Can't create a Javascript object for {}; no way to copy",
               name());
     return false;
 }

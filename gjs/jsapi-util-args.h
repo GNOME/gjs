@@ -258,7 +258,7 @@ static bool parse_call_args_helper(JSContext* cx, const char* function_name,
          * thrown by the various conversion functions */
         const char* message = res.inspectErr().message();
         JS_ClearPendingException(cx);
-        gjs_throw(cx, "Error invoking %s, at argument %d (%s): %s",
+        gjs_throw(cx, "Error invoking {}, at argument {} ({}): {}",
                   function_name, param_ix, param_name, message);
         return false;
     }
@@ -303,7 +303,7 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
              "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!ignore_trailing_args && args.length() > 0) {
-        gjs_throw(cx, "Error invoking %s: Expected 0 arguments, got %d",
+        gjs_throw(cx, "Error invoking {}: Expected 0 arguments, got {}",
                   function_name, args.length());
         return false;
     }
@@ -383,12 +383,12 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
         return false;
     if (!ignore_trailing_args && args.length() > n_total) {
         if (n_required == n_total) {
-            gjs_throw(cx, "Error invoking %s: Expected %d arguments, got %d",
+            gjs_throw(cx, "Error invoking {}: Expected {} arguments, got {}",
                       function_name, n_required, args.length());
         } else {
             gjs_throw(cx,
-                      "Error invoking %s: Expected minimum %d arguments (and "
-                      "%d optional), got %d",
+                      "Error invoking {}: Expected minimum {} arguments (and "
+                      "{} optional), got {}",
                       function_name, n_required, n_total - n_required,
                       args.length());
         }

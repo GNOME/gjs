@@ -79,8 +79,8 @@ static bool gjs_override_property(JSContext* cx, unsigned argc, JS::Value* vp) {
     }
 
     if (!pspec) {
-        gjs_throw(cx, "No such property '%s' to override on type '%s'",
-                  name.get(), g_type_name(gtype));
+        gjs_throw(cx, "No such property '{}' to override on type '{}'", name,
+                  g_type_name(gtype));
         return false;
     }
 
@@ -170,7 +170,7 @@ static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
 
         if (!iface_val.isObject()) {
             gjs_throw(
-                cx, "Invalid parameter interfaces (element %d was not a GType)",
+                cx, "Invalid parameter interfaces (element {} was not a GType)",
                 ix);
             return false;
         }
@@ -181,7 +181,7 @@ static bool get_interface_gtypes(JSContext* cx, JS::HandleObject interfaces,
             return false;
         if (iface_type == G_TYPE_INVALID) {
             gjs_throw(
-                cx, "Invalid parameter interfaces (element %d was not a GType)",
+                cx, "Invalid parameter interfaces (element {} was not a GType)",
                 ix);
             return false;
         }
@@ -229,7 +229,7 @@ static bool gjs_register_interface_impl(JSContext* cx, const char* name,
         return false;
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
-        gjs_throw(cx, "Type name %s is already registered", name);
+        gjs_throw(cx, "Type name {} is already registered", name);
         return false;
     }
 
@@ -351,7 +351,7 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
         return false;
 
     if (g_type_from_name(name) != G_TYPE_INVALID) {
-        gjs_throw(cx, "Type name %s is already registered", name);
+        gjs_throw(cx, "Type name {} is already registered", name);
         return false;
     }
 
@@ -515,7 +515,7 @@ static bool gjs_signal_new(JSContext* cx, unsigned argc, JS::Value* vp) {
     for (uint32_t ix = 0; ix < n_parameters; ix++) {
         if (!JS_GetElement(cx, params_obj, ix, &gtype_val) ||
             !gtype_val.isObject()) {
-            gjs_throw(cx, "Invalid signal parameter number %d", ix);
+            gjs_throw(cx, "Invalid signal parameter number {}", ix);
             return false;
         }
 

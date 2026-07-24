@@ -612,8 +612,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     bool check_is_instance(JSContext* cx, const char* for_what) const {
         if (!is_prototype())
             return true;
-        gjs_throw(cx, "Can't %s on %s.prototype; only on instances", for_what,
-                  format_name().c_str());
+        gjs_throw(cx, "Can't {} on {}.prototype; only on instances", for_what,
+                  format_name());
         return false;
     }
 
@@ -718,9 +718,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return true;
 
         gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                         "Object is of type %s - cannot convert to %s.%s",
-                         priv->format_name().c_str(),
-                         expected_info.ns(), expected_info.name());
+                         "Object is of type {} - cannot convert to {}.{}",
+                         priv->format_name(), expected_info.ns(),
+                         expected_info.name());
         return false;
     }
     GJS_JSAPI_RETURN_CONVENTION
@@ -735,9 +735,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return true;
 
         gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                         "Object is of type %s - cannot convert to %s",
-                         priv->format_name().c_str(),
-                         g_type_name(expected_gtype));
+                         "Object is of type {} - cannot convert to {}",
+                         priv->format_name(), g_type_name(expected_gtype));
         return false;
     }
     [[nodiscard]]

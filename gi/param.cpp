@@ -267,7 +267,7 @@ bool gjs_typecheck_param(JSContext* cx, JS::HandleObject object,
     if (!g_type_is_a(G_TYPE_FROM_INSTANCE(param), expected_type)) {
         if (throw_error) {
             gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object is of type %s - cannot convert to %s",
+                             "Object is of type {} - cannot convert to {}",
                              g_type_name(G_TYPE_FROM_INSTANCE(param)),
                              g_type_name(expected_type));
         }

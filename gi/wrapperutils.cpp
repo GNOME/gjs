@@ -51,13 +51,13 @@ bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
                                          const char* field_name) {
-    gjs_throw(cx, "No property %s on %s", field_name, g_type_name(gtype));
+    gjs_throw(cx, "No property {} on {}", field_name, g_type_name(gtype));
     return false;
 }
 
 bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
                                       const char* field_name) {
-    gjs_throw(cx, "Property %s.%s is not writable", g_type_name(gtype),
+    gjs_throw(cx, "Property {}.{} is not writable", g_type_name(gtype),
               field_name);
     return false;
 }

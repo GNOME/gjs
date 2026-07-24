@@ -51,10 +51,10 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
     if (!JS_DefineProperty(cx, in_object, fixed_name,
                            static_cast<double>(value_val),
                            GJS_MODULE_PROP_FLAGS)) {
-        gjs_throw(cx,
-                  "Unable to define enumeration value %s %" PRId64
-                  " (no memory most likely)",
-                  fixed_name.get(), value_val);
+        gjs_throw(
+            cx,
+            "Unable to define enumeration value {} {} (no memory most likely)",
+            fixed_name, value_val);
         return false;
     }
 
@@ -87,7 +87,7 @@ bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
 
     JS::RootedObject enum_obj{cx, JS_NewPlainObject(cx)};
     if (!enum_obj) {
-        gjs_throw(cx, "Could not create enumeration %s.%s", info.ns(),
+        gjs_throw(cx, "Could not create enumeration {}.{}", info.ns(),
                   enum_name);
         return false;
     }

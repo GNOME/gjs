@@ -5,7 +5,6 @@
 
 #include <config.h>
 
-#include <inttypes.h>
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen, memcpy
 
@@ -103,8 +102,8 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
         if (std::cmp_not_equal(
                 static_cast<uint32_t>(value) & gflags_class->mask, value)) {
             // Not a uint32_t with invalid mask values
-            gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
-                      value, g_type_name(gtype));
+            gjs_throw(cx, "{:#x} is not a valid value for flags {}", value,
+                      g_type_name(gtype));
             return false;
         }
     }
@@ -119,8 +118,8 @@ static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo& info,
                              [value](const GI::AutoValueInfo& info) {
                                  return info.value() == value;
                              })) {
-        gjs_throw(cx, "%" PRId64 " is not a valid value for enumeration %s",
-                  value, info.name());
+        gjs_throw(cx, "{} is not a valid value for enumeration {}", value,
+                  info.name());
         return false;
     }
 
@@ -250,7 +249,7 @@ static bool gjs_array_to_g_list(JSContext* cx, JS::HandleValue value,
     for (size_t i = 0; i < length; ++i) {
         elem = JS::UndefinedValue();
         if (!JS_GetElement(cx, array, i, &elem)) {
-            gjs_throw(cx, "Missing array element %zu", i);
+            gjs_throw(cx, "Missing array element {}", i);
             return false;
         }
 
@@ -305,7 +304,7 @@ static bool hashtable_int_key(JSContext* cx, JS::HandleValue value,
         return false;
 
     if (out_of_range) {
-        gjs_throw(cx, "value is out of range for hash table key of type %s",
+        gjs_throw(cx, "value is out of range for hash table key of type {}",
                   Gjs::static_type_name<IntTag>());
     }
 
@@ -328,8 +327,7 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
                       gi_type_tag_to_string(type_tag));
 
     if (!GI::is_supported_ghash_key_type(type_tag)) {
-        gjs_throw(cx, "Type %s not supported for hash table keys",
-                  gi_type_tag_to_string(type_tag));
+        gjs_throw(cx, "Type {} not supported for hash table keys", type_tag);
         return false;
     }
 
@@ -537,12 +535,12 @@ static bool gjs_array_to_auto_array(JSContext* cx, JS::Value array_value,
         elem = JS::UndefinedValue();
 
         if (!JS_GetElement(cx, array, i, &elem)) {
-            gjs_throw(cx, "Missing array element %zu", i);
+            gjs_throw(cx, "Missing array element {}", i);
             return false;
         }
 
         if (!js_value_to_c_strict<T>(cx, elem, &result[i])) {
-            gjs_throw(cx, "Invalid element in %s array",
+            gjs_throw(cx, "Invalid element in {} array",
                       Gjs::static_type_name<T>());
             return false;
         }
@@ -592,8 +590,8 @@ static bool gjs_string_to_intarray(JSContext* cx, JS::HandleString str,
 
         default:
             // can't convert a string to this type
-            gjs_throw(cx, "Cannot convert string to array of '%s'",
-                      gi_type_tag_to_string(element_type));
+            gjs_throw(cx, "Cannot convert string to array of '{}'",
+                      element_type);
             return false;
     }
 }
@@ -613,7 +611,7 @@ static bool array_to_basic_c_array(JSContext* cx, JS::HandleValue v_array,
 
         elem.setUndefined();
         if (!JS_GetElement(cx, array_obj, ix, &elem)) {
-            gjs_throw(cx, "Missing array element %zu", ix);
+            gjs_throw(cx, "Missing array element {}", ix);
             return false;
         }
 
@@ -648,7 +646,7 @@ static bool gjs_array_to_ptrarray(JSContext* cx, JS::Value array_value,
 
         elem = JS::UndefinedValue();
         if (!JS_GetElement(cx, array_obj, i, &elem)) {
-            gjs_throw(cx, "Missing array element %u", i);
+            gjs_throw(cx, "Missing array element {}", i);
             return false;
         }
 
@@ -682,7 +680,7 @@ static bool gjs_array_to_flat_array(JSContext* cx, JS::HandleValue array_value,
         elem = JS::UndefinedValue();
 
         if (!JS_GetElement(cx, array, i, &elem)) {
-            gjs_throw(cx, "Missing array element %u", i);
+            gjs_throw(cx, "Missing array element {}", i);
             return false;
         }
 
@@ -753,7 +751,7 @@ static bool gjs_array_to_basic_array(JSContext* cx, JS::HandleValue v_array,
             return gjs_array_to_auto_array<Gjs::Tag::GType>(cx, v_array, length,
                                                             array_out);
         case GI_TYPE_TAG_VOID:
-            gjs_throw(cx, "Unhandled array element type %d",
+            gjs_throw(cx, "Unhandled array element type {}",
                       element_storage_type);
             return false;
         default:
@@ -807,7 +805,7 @@ static bool gjs_array_to_array(JSContext* cx, JS::HandleValue array_value,
                                          param_info, arr_p);
         default:
             // Basic types already handled in gjs_array_to_basic_array()
-            gjs_throw(cx, "Unhandled array element type %d", element_type);
+            gjs_throw(cx, "Unhandled array element type {}", element_type);
             return false;
     }
 }
@@ -989,20 +987,16 @@ static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    const GI::TypeInfo& arginfo,
                                    const char* arg_name,
                                    GjsArgumentType arg_type) {
-    gjs_throw(cx, "Expected type %s for %s but got type '%s'",
-              arginfo.display_string(),
-              gjs_argument_display_name(arg_name, arg_type).c_str(),
-              JS::InformalValueTypeName(value));
+    gjs_throw(cx, "Expected type {} for {} but got type '{:t}'", arginfo,
+              gjs_argument_display_name(arg_name, arg_type), value);
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool throw_invalid_argument_tag(JSContext* cx, JS::HandleValue value,
                                        GITypeTag type_tag, const char* arg_name,
                                        GjsArgumentType arg_type) {
-    gjs_throw(cx, "Expected type %s for %s but got type '%s'",
-              gi_type_tag_to_string(type_tag),
-              gjs_argument_display_name(arg_name, arg_type).c_str(),
-              JS::InformalValueTypeName(value));
+    gjs_throw(cx, "Expected type {} for {} but got type '{:t}'", type_tag,
+              gjs_argument_display_name(arg_name, arg_type), value);
     return false;
 }
 
@@ -1012,10 +1006,9 @@ static bool throw_invalid_interface_argument(JSContext* cx,
                                              const GI::BaseInfo& interface_info,
                                              const char* arg_name,
                                              GjsArgumentType arg_type) {
-    gjs_throw(cx, "Expected type %s for %s but got type '%s'",
+    gjs_throw(cx, "Expected type {} for {} but got type '{:t}'",
               interface_info.type_string(),
-              gjs_argument_display_name(arg_name, arg_type).c_str(),
-              JS::InformalValueTypeName(value));
+              gjs_argument_display_name(arg_name, arg_type), value);
     return false;
 }
 
@@ -1165,9 +1158,8 @@ static bool value_to_gdk_atom_gi_argument_internal(JSContext* cx,
                                                    const char* arg_name,
                                                    GjsArgumentType arg_type) {
     if (!value.isNull() && !value.isString()) {
-        gjs_throw(cx, "Expected type String or null for %s but got type '%s'",
-                  gjs_argument_display_name(arg_name, arg_type).c_str(),
-                  JS::InformalValueTypeName(value));
+        gjs_throw(cx, "Expected type String or null for {} but got type '{:t}'",
+                  gjs_argument_display_name(arg_name, arg_type), value);
         return false;
     }
 
@@ -1349,7 +1341,7 @@ bool value_to_interface_gi_argument_internal(
                 // Should have been caught above as STRUCT/BOXED/UNION
                 gjs_throw(
                     cx,
-                    "Boxed type %s registered for unexpected interface_type %s",
+                    "Boxed type {} registered for unexpected interface_type {}",
                     g_type_name(gtype), interface_info.type_string());
                 return false;
             }
@@ -1374,7 +1366,7 @@ bool value_to_interface_gi_argument_internal(
                     cx, obj, arg, GI_DIRECTION_IN, transfer, gtype);
             }
 
-            gjs_throw(cx, "Unhandled GType %s unpacking GIArgument from Object",
+            gjs_throw(cx, "Unhandled GType {} unpacking GIArgument from Object",
                       g_type_name(gtype));
             gjs_arg_unset(arg);
             return false;
@@ -1417,7 +1409,7 @@ bool value_to_interface_gi_argument_internal(
             return false;
         }
 
-        gjs_throw(cx, "Unhandled GType %s unpacking GIArgument from Number",
+        gjs_throw(cx, "Unhandled GType {} unpacking GIArgument from Number",
                   g_type_name(gtype));
         return false;
     }
@@ -1440,9 +1432,8 @@ inline static bool gjs_arg_set_from_js_value(JSContext* cx,
 
     if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
-            gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      gjs_debug_value(value).c_str(),
-                      gjs_argument_display_name(arg_name, arg_type).c_str(),
+            gjs_throw(cx, "value {} is out of range for {} (type {})", value,
+                      gjs_argument_display_name(arg_name, arg_type),
                       Gjs::static_type_name<TAG>());
         }
 
@@ -1462,9 +1453,8 @@ static bool check_nullable_argument(JSContext* cx, const char* arg_name,
                                     GITypeTag type_tag, GjsArgumentFlags flags,
                                     GIArgument* arg) {
     if (!(flags & GjsArgumentFlags::MAY_BE_NULL) && !gjs_arg_get<void*>(arg)) {
-        gjs_throw(cx, "%s (type %s) may not be null",
-                  gjs_argument_display_name(arg_name, arg_type).c_str(),
-                  gi_type_tag_to_string(type_tag));
+        gjs_throw(cx, "{} (type {}) may not be null",
+                  gjs_argument_display_name(arg_name, arg_type), type_tag);
         return false;
     }
 
@@ -1718,7 +1708,7 @@ static bool basic_array_to_linked_list(JSContext* cx, JS::HandleValue value,
 
         elem = JS::UndefinedValue();
         if (!JS_GetElement(cx, array, i, &elem)) {
-            gjs_throw(cx, "Missing array element %zu", i);
+            gjs_throw(cx, "Missing array element {}", i);
             return false;
         }
 
@@ -2114,7 +2104,7 @@ bool gjs_value_to_callback_out_arg(JSContext* cx, JS::HandleValue value,
 
     // Otherwise, throw an error to prevent a segfault.
     if (!arg) {
-        gjs_throw(cx, "Return value %s is not optional but was passed NULL",
+        gjs_throw(cx, "Return value {} is not optional but was passed NULL",
                   arg_info.name());
         return false;
     }
@@ -2221,8 +2211,8 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
             }
 
             if (!g_unichar_validate(value)) {
-                gjs_throw(cx, "Invalid unicode codepoint U+%" PRIXLEAST32,
-                          value);
+                gjs_throw(cx, "Invalid unicode codepoint U+{:X}",
+                          uint_least32_t{value});
                 return false;
             }
 
@@ -2452,7 +2442,7 @@ static bool gjs_array_from_basic_c_array_internal(
                 return false;
             break;
         case GI_TYPE_TAG_VOID:
-            gjs_throw(cx, "Unknown Array element-type %d", element_tag);
+            gjs_throw(cx, "Unknown Array element-type {}", element_tag);
             return false;
         default:
             g_assert_not_reached();
@@ -2546,8 +2536,7 @@ static bool gjs_array_from_carray_internal(JSContext* cx,
             break;
         default:
             // Basic types handled above
-            gjs_throw(cx, "Unknown Array element-type %s",
-                      element_type.display_string());
+            gjs_throw(cx, "Unknown Array element-type {}", element_type);
             return false;
     }
 
@@ -2653,7 +2642,7 @@ bool gjs_array_from_g_value_array(JSContext* cx, JS::MutableHandleValue value_p,
         length = ptr_array->len;
     } else {
         g_assert_not_reached();
-        gjs_throw(cx, "%s is not an array type", g_type_name(value_gtype));
+        gjs_throw(cx, "{} is not an array type", g_type_name(value_gtype));
         return false;
     }
 
@@ -2891,8 +2880,7 @@ static bool gjs_array_from_zero_terminated_c_array(
             break;
         default:
             // Handled in gjs_array_from_basic_zero_terminated_c_array()
-            gjs_throw(cx, "Unknown element-type %s",
-                      element_type.display_string());
+            gjs_throw(cx, "Unknown element-type {}", element_type);
             return false;
     }
 
@@ -3233,7 +3221,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
             GI::AutoBaseInfo interface_info{type_info.interface()};
 
             if (interface_info.is_unresolved()) {
-                gjs_throw(cx, "Unable to resolve arg type '%s'",
+                gjs_throw(cx, "Unable to resolve arg type '{}'",
                           interface_info.name());
                 return false;
             }
@@ -3251,8 +3239,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                         // Check to make sure 32 bit flag
                         if (!std::in_range<uint32_t>(value_int64)) {
                             gjs_throw(cx,
-                                      "0x%" PRIx64
-                                      " is not a valid value for flags %s",
+                                      "{:#x} is not a valid value for flags {}",
                                       value_int64, g_type_name(gtype));
                             return false;
                         }
@@ -3330,8 +3317,8 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                     Gjs::GErrorResult<> result =
                         atom_name_fun.invoke({{*arg}}, {}, &atom_name_ret);
                     if (result.isErr()) {
-                        gjs_throw(cx, "Failed to call gdk_atom_name(): %s",
-                                  result.inspectErr()->message);
+                        gjs_throw(cx, "Failed to call gdk_atom_name(): {}",
+                                  result);
                         return false;
                     }
 
@@ -3395,7 +3382,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                 g_type_is_a(gtype, G_TYPE_FLAGS)) {
                 // Should have been handled above
                 gjs_throw(cx,
-                          "Type %s registered for unexpected interface_type %s",
+                          "Type {} registered for unexpected interface_type {}",
                           g_type_name(gtype), interface_info.type_string());
                 return false;
             }
@@ -3426,7 +3413,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
             }
 
             gjs_throw(cx,
-                      "Unhandled GType %s packing GIArgument into JS::Value",
+                      "Unhandled GType {} packing GIArgument into JS::Value",
                       g_type_name(gtype));
             return false;
         }
@@ -3933,7 +3920,7 @@ static bool gjs_g_arg_release_internal(
                 return true;
             }
 
-            gjs_throw(cx, "Unhandled GType %s releasing GIArgument",
+            gjs_throw(cx, "Unhandled GType {} releasing GIArgument",
                       g_type_name(gtype));
             return false;
         }
@@ -4030,7 +4017,7 @@ static bool gjs_g_arg_release_internal(
                 default:
                     // basic types handled above
                     gjs_throw(
-                        cx, "Don't know how to release GArray element-type %d",
+                        cx, "Don't know how to release GArray element-type {}",
                         element_tag);
                     return false;
             }

@@ -78,8 +78,8 @@ static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
     }
 
     if (entry == foreign_structs_table.end()) {
-        gjs_throw(cx, "Unable to find module implementing foreign type %s.%s",
-                  key.first.c_str(), key.second.c_str());
+        gjs_throw(cx, "Unable to find module implementing foreign type {}.{}",
+                  key.first, key.second);
         return nullptr;
     }
 

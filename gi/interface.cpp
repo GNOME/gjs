@@ -162,7 +162,7 @@ bool gjs_lookup_interface_constructor(JSContext* cx, GType gtype,
     GI::Repository repo;
     Maybe<GI::AutoRegisteredTypeInfo> interface_info{repo.find_by_gtype(gtype)};
     if (!interface_info) {
-        gjs_throw(cx, "Cannot expose non introspectable interface %s",
+        gjs_throw(cx, "Cannot expose non introspectable interface {}",
                   g_type_name(gtype));
         return false;
     }

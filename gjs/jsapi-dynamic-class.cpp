@@ -116,8 +116,8 @@ bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,
             const JSClass* obj_class = JS::GetClass(obj);
 
             gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object %p is not a subclass of %s, it's a %s",
-                             obj.get(), static_clasp->name,
+                             "{:?} is not a subclass of {}, it's a {}", obj,
+                             static_clasp->name,
                              format_dynamic_class_name(obj_class->name));
         }
 

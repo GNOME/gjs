@@ -718,7 +718,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     // Test that we can throw
 
-    gjs_throw(fx->cx, "This is an exception %d", 42);
+    gjs_throw(fx->cx, "This is an exception {}", 42);
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
 
@@ -746,7 +746,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
 
-    gjs_throw(fx->cx, "Second different exception %s", "foo");
+    gjs_throw(fx->cx, "Second different exception {}", "foo");
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
 

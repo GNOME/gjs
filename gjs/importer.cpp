@@ -329,8 +329,8 @@ static JSObject* load_module_init(JSContext* cx, JS::HandleObject in_object,
             return &v_module.toObject();
 
         Gjs::AutoChar full_path{g_file_get_parse_name(file)};
-        gjs_throw(cx, "Unexpected non-object module __init__ imported from %s",
-                  full_path.get());
+        gjs_throw(cx, "Unexpected non-object module __init__ imported from {}",
+                  full_path);
         return nullptr;
     }
 
@@ -575,7 +575,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
      * the path. Be sure an exception is set. */
     g_assert(!JS_IsExceptionPending(cx));
     gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
-                     "No JS module '%s' found in search path", name.get());
+                     "No JS module '{}' found in search path", name);
     return false;
 }
 

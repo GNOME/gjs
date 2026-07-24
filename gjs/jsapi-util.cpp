@@ -63,11 +63,11 @@ static void throw_property_lookup_error(JSContext* cx, JS::HandleObject obj,
      * exception
      */
     if (description)
-        gjs_throw(cx, "No property '%s' in %s (or %s)",
-                  gjs_debug_id(property_name).c_str(), description, reason);
+        gjs_throw(cx, "No property '{}' in {} (or {})", property_name,
+                  description, reason);
     else
-        gjs_throw(cx, "No property '%s' in object %p (or %s)",
-                  gjs_debug_id(property_name).c_str(), obj.get(), reason);
+        gjs_throw(cx, "No property '{}' in {} (or {})", property_name, obj,
+                  reason);
 }
 
 /* Returns whether the object had the property; if the object did not have the
@@ -194,7 +194,7 @@ void gjs_throw_abstract_constructor_error(JSContext* cx,
         name = proto_class->name;
     }
 
-    gjs_throw(cx, "You cannot construct new instances of '%s'", name);
+    gjs_throw(cx, "You cannot construct new instances of '{}'", name);
 }
 
 JSObject* gjs_build_string_array(JSContext* cx,

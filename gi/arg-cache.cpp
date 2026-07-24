@@ -5,7 +5,6 @@
 
 #include <config.h>
 
-#include <inttypes.h>
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 #include <string.h>
@@ -108,9 +107,8 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool report_typeof_mismatch(JSContext* cx, const char* arg_name,
                                    JS::HandleValue value,
                                    ExpectedType expected) {
-    gjs_throw(cx, "Expected type %s for argument '%s' but got type %s",
-              expected_type_names[expected], arg_name,
-              JS::InformalValueTypeName(value));
+    gjs_throw(cx, "Expected type {} for argument '{}' but got type {:t}",
+              expected_type_names[expected], arg_name, value);
     return false;
 }
 
@@ -118,14 +116,14 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool report_gtype_mismatch(JSContext* cx, const char* arg_name,
                                   JS::Value value, GType expected) {
     gjs_throw(
-        cx, "Expected an object of type %s for argument '%s' but got type %s",
-        g_type_name(expected), arg_name, JS::InformalValueTypeName(value));
+        cx, "Expected an object of type {} for argument '{}' but got type {:t}",
+        g_type_name(expected), arg_name, value);
     return false;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool report_invalid_null(JSContext* cx, const char* arg_name) {
-    gjs_throw(cx, "Argument %s may not be null", arg_name);
+    gjs_throw(cx, "Argument {} may not be null", arg_name);
     return false;
 }
 
@@ -1158,7 +1156,7 @@ struct CArrayOut : CArrayInOut {
             JS::HandleValue) override {
         if (m_length_direction != GI_DIRECTION_OUT) {
             gjs_throw(cx,
-                      "Using different length argument direction for array %s"
+                      "Using different length argument direction for array {}"
                       "is not supported for out arrays",
                       m_arg_name);
             return false;
@@ -1772,10 +1770,9 @@ GJS_JSAPI_RETURN_CONVENTION
 bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
                            GIArgument*, JS::HandleValue) {
     gjs_throw(cx,
-              "Function %s() cannot be called: argument '%s' is not "
-              "introspectable because it has a %s",
-              state->display_name().get(), m_arg_name,
-              reason_strings[m_reason]);
+              "Function {}() cannot be called: argument '{}' is not "
+              "introspectable because it has a {}",
+              state->display_name(), m_arg_name, reason_strings[m_reason]);
     return false;
 }
 
@@ -1804,7 +1801,7 @@ bool CArrayIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
     if (m_length_direction != GI_DIRECTION_IN) {
         gjs_throw(cx,
-                  "Using different length argument direction for array %s is "
+                  "Using different length argument direction for array {} is "
                   "not supported for in arrays",
                   m_arg_name);
         return false;
@@ -1826,7 +1823,7 @@ bool CArrayInOut::in(JSContext* cx, GjsFunctionCallState* state,
                      GIArgument* arg, JS::HandleValue value) {
     if (m_length_direction != GI_DIRECTION_INOUT) {
         gjs_throw(cx,
-                  "Using different length argument direction for array %s is "
+                  "Using different length argument direction for array {} is "
                   "not supported for inout arrays",
                   m_arg_name);
         return false;
@@ -1881,8 +1878,9 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
         m_ffi_closure = nullptr;
     } else {
         if (JS_TypeOfValue(cx, value) != JSTYPE_FUNCTION) {
-            gjs_throw(cx, "Expected function for callback argument %s, got %s",
-                      m_arg_name, JS::InformalValueTypeName(value));
+            gjs_throw(cx,
+                      "Expected function for callback argument {}, got {:t}",
+                      m_arg_name, value);
             return false;
         }
 
@@ -1974,7 +1972,7 @@ bool NumericIn<TAG>::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
 
     if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
-            gjs_throw(cx, "Argument %s: value is out of range for %s",
+            gjs_throw(cx, "Argument {}: value is out of range for {}",
                       arg_name(), Gjs::static_type_name<TAG>());
         }
 
@@ -2070,8 +2068,8 @@ bool EnumIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
     }
 
     if (number > max || number < min) {
-        gjs_throw(cx, "%" PRId64 " is not a valid value for enum argument %s",
-                  number, m_arg_name);
+        gjs_throw(cx, "{} is not a valid value for enum argument {}", number,
+                  m_arg_name);
         return false;
     }
 
@@ -2092,9 +2090,8 @@ bool FlagsIn::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
 
     uint64_t bits = static_cast<uint64_t>(number);
     if ((bits & m_mask) != bits) {
-        gjs_throw(cx,
-                  "0x%" PRIx64 " is not a valid value for flags argument %s",
-                  bits, m_arg_name);
+        gjs_throw(cx, "{:#x} is not a valid value for flags argument {}", bits,
+                  m_arg_name);
         return false;
     }
 
@@ -2523,7 +2520,7 @@ bool GValueInTransferNone::release(JSContext* cx, GjsFunctionCallState* state,
 }  // namespace Arg
 
 bool Argument::invalid(JSContext* cx, const char* func) {
-    gjs_throw(cx, "%s not implemented", func ? func : "Function");
+    gjs_throw(cx, "{} not implemented", func ? func : "Function");
     return false;
 }
 
@@ -2669,10 +2666,10 @@ bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo& callable) {
     size += (m_has_return ? 1 : 0);
 
     if (size > Argument::MAX_ARGS) {
-        gjs_throw(cx,
-                  "Too many arguments, only %u are supported, while %d are "
-                  "provided!",
-                  Argument::MAX_ARGS, size);
+        gjs_throw(
+            cx,
+            "Too many arguments, only {} are supported, while {} are provided!",
+            Argument::MAX_ARGS, size);
         return false;
     }
 

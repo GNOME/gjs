@@ -328,8 +328,8 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
         Gjs::AutoMainRealm ar{cx};
 
         gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
-                         "Attempted to import invalid URI: %s (%s)", uri,
-                         error->message);
+                         "Attempted to import invalid URI: {} ({})", uri,
+                         error);
         return false;
     }
 
@@ -345,8 +345,8 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
             Gjs::AutoMainRealm ar{cx};
 
             gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
-                             "Attempted to import invalid URI: %s (%s)", uri,
-                             error->message);
+                             "Attempted to import invalid URI: {} ({})", uri,
+                             error);
             return false;
         }
 
@@ -459,8 +459,7 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
         Gjs::AutoMainRealm ar{cx};
 
         gjs_throw_custom(cx, JSEXN_ERR, "ImportError",
-                         "Unable to load file from: %s (%s)", uri.get(),
-                         error->message);
+                         "Unable to load file from: {} ({})", uri, error);
         return false;
     }
 
@@ -567,8 +566,7 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
                                      /* etag_out = */ nullptr, &error)) {
         Gjs::AutoChar uri{g_file_get_uri(G_FILE(file))};
         gjs_throw_custom(promise->cx, JSEXN_ERR, "ImportError",
-                         "Unable to load file async from: %s (%s)", uri.get(),
-                         error->message);
+                         "Unable to load file async from: {} ({})", uri, error);
         promise->reject_with_pending_exception();
         return;
     }

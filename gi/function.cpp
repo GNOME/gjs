@@ -10,6 +10,7 @@
 #include <memory>  // for unique_ptr
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <type_traits>
 #include <utility>  // for in_range, move
 #include <vector>
@@ -540,9 +541,9 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 
         if (!is_array) {
             gjs_throw(cx,
-                      "Call to %s (%s.%s) returned unexpected value, expecting "
+                      "Call to {} ({}.{}) returned unexpected value, expecting "
                       "an Array",
-                      gjs_debug_callable(callable()).c_str(), m_info.ns(),
+                      gjs_debug_callable(callable()), m_info.ns(),
                       m_info.name());
             return false;
         }
@@ -647,7 +648,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                 if (!gjs_gi_argument_release(self->cx(), transfer, type_info,
                                              &data->arg)) {
                     gjs_throw(self->cx(),
-                              "Impossible to release closure argument '%s'",
+                              "Impossible to release closure argument '{}'",
                               data->arg_info.name());
                 }
             });
@@ -753,7 +754,7 @@ bool GjsCallbackTrampoline::initialize() {
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
             if (type_info.interface().is_callback()) {
                 gjs_throw(cx(),
-                          "The %s %s accepts another callback as a parameter. "
+                          "The {} {} accepts another callback as a parameter. "
                           "This is not supported",
                           m_info.kind_string(), m_info.name());
                 return false;
@@ -772,7 +773,7 @@ bool GjsCallbackTrampoline::initialize() {
                     if (length_arg_info.direction() != direction) {
                         gjs_throw(
                             cx(),
-                            "The %s %s has an array with different-direction "
+                            "The {} {} has an array with different-direction "
                             "length argument. This is not supported",
                             m_info.kind_string(), m_info.name());
                         return false;
@@ -865,8 +866,7 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     GjsFunctionCallState state{cx, m_info};
 
     if (state.gi_argc > Argument::MAX_ARGS) {
-        gjs_throw(cx, "Function %s has too many arguments",
-                  format_name().c_str());
+        gjs_throw(cx, "Function {} has too many arguments", format_name());
         return false;
     }
 
@@ -967,10 +967,10 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
             GI::StackArgInfo arg_info;
             m_info.load_arg(gi_arg_pos, &arg_info);
             gjs_throw(cx,
-                      "Error invoking %s: impossible to determine what to pass "
-                      "to the '%s' argument. It may be that the function is "
+                      "Error invoking {}: impossible to determine what to pass "
+                      "to the '{}' argument. It may be that the function is "
                       "unsupported, or there may be a bug in its annotations.",
-                      format_name().c_str(), arg_info.name());
+                      format_name(), arg_info.name());
             state.failed = true;
             break;
         }
@@ -1055,10 +1055,10 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
                 m_info.load_arg(gi_out_arg_pos, &arg_info);
                 gjs_throw(
                     cx,
-                    "Error invoking %s: impossible to determine what to pass "
-                    "to the out '%s' argument. It may be that the function is "
+                    "Error invoking {}: impossible to determine what to pass "
+                    "to the out '{}' argument. It may be that the function is "
                     "unsupported, or there may be a bug in its annotations.",
-                    format_name().c_str(), arg_info.name());
+                    format_name(), arg_info.name());
                 state.failed = true;
                 break;
             }
@@ -1280,8 +1280,7 @@ bool Function::init(JSContext* cx, GType gtype /* = G_TYPE_NONE */) {
             if (result.inspectErr()->code != GI_INVOKE_ERROR_SYMBOL_NOT_FOUND)
                 return gjs_throw_gerror(cx, result.unwrapErr());
 
-            gjs_throw(cx, "Virtual function not implemented: %s",
-                      result.inspectErr()->message);
+            gjs_throw(cx, "Virtual function not implemented: {}", result);
             return false;
         }
 

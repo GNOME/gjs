@@ -247,13 +247,14 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
     Gjs::AutoChar utf8_string{g_filename_to_utf8(filename_string, n_bytes,
                                                  nullptr, &written, &error)};
     if (error) {
+        // COMPAT: use {:?} for escaping in C++23
         Gjs::AutoChar escaped_char{g_strescape(filename_string, nullptr)};
         gjs_throw(
             cx,
-            "Could not convert filename string to UTF-8 for string: %s. If "
+            "Could not convert filename string to UTF-8 for string: {}. If "
             "string is invalid UTF-8 and used for display purposes, try GLib "
-            "attribute standard::display-name. The reason is: %s. ",
-            escaped_char.get(), error->message);
+            "attribute standard::display-name. The reason is: {}. ",
+            escaped_char, error);
         return false;
     }
 
@@ -362,8 +363,8 @@ bool gjs_string_to_ucs4(JSContext* cx, JS::HandleString str,
             g_utf16_to_ucs4(reinterpret_cast<const gunichar2*>(utf16), len,
                             nullptr, &length, &error);
         if (*ucs4_string_p == nullptr) {
-            gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
-                      error->message);
+            gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: {}",
+                      error);
             return false;
         }
         if (len_p != nullptr)
@@ -396,8 +397,7 @@ bool gjs_string_from_ucs4(JSContext* cx, const gunichar* ucs4_string,
     gunichar2* u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, nullptr,
                                             &u16_string_length, &error);
     if (!u16_string) {
-        gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
-                  error->message);
+        gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: {}", error);
         return false;
     }
 

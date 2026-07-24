@@ -231,7 +231,7 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
             return g_boxed_copy(gtype, ptr);
 
         gjs_throw(cx,
-                  "Can't transfer ownership of a %s type not registered as "
+                  "Can't transfer ownership of a {} type not registered as "
                   "boxed",
                   Base::DEBUG_TAG);
         return nullptr;

@@ -10,9 +10,11 @@
 #include <string.h>
 
 #include <cstddef>  // for nullptr_t
+#include <format>
 #include <iterator>
 #include <ranges>
 #include <span>
+#include <string_view>
 #include <type_traits>
 #include <utility>  // for pair, make_pair, move
 
@@ -32,6 +34,7 @@
 #include <mozilla/Result.h>
 
 #include "gjs/auto.h"
+#include "gjs/format-utils.h"
 #include "gjs/gerror-result.h"
 #include "util/log.h"
 
@@ -980,7 +983,7 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
     }
 
     // Used in exception messages
-    [[nodiscard]] const char* kind_string() const {
+    [[nodiscard]] std::string_view kind_string() const {
         if (this->is_callback())
             return "callback";
         if (this->is_function())
@@ -1813,3 +1816,30 @@ template <GI::InfoTag TAG>
 struct GCPolicy<GI::OwnedInfo<TAG>>
     : public IgnoreGCPolicy<GI::OwnedInfo<TAG>> {};
 }  // namespace JS
+
+// Formatters for various GI types
+
+template <>
+struct std::formatter<GITypeTag> : std::formatter<const char*> {
+    auto format(GITypeTag tag, std::format_context& cx) const {
+        return formatter<const char*>::format(gi_type_tag_to_string(tag), cx);
+    }
+};
+
+template <>
+struct std::formatter<GI::TypeInfo> : Gjs::FormatterBase<'?'> {
+    auto format(const GI::TypeInfo& t, std::format_context& cx) const {
+        if (spec() == '?')
+            return std::format_to(
+                cx.out(), "GITypeInfo {}",
+                static_cast<void*>(GI::detail::Pointer::get_from(t)));
+        return std::format_to(cx.out(), "{}", t.display_string());
+    }
+};
+
+template <>
+struct std::formatter<GI::AutoTypeInfo> : std::formatter<GI::TypeInfo> {
+    auto format(const GI::AutoTypeInfo& t, std::format_context& cx) const {
+        return std::formatter<GI::TypeInfo>::format(t, cx);
+    }
+};

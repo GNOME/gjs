@@ -28,7 +28,6 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>  // for InformalValueTypeName, JS_Get...
 #include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
@@ -141,7 +140,7 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
         }
     }
 
-    gjs_throw(cx, "No known GIArgument conversion for %s",
+    gjs_throw(cx, "No known GIArgument conversion for {}",
               G_VALUE_TYPE_NAME(value));
     return false;
 }
@@ -161,7 +160,7 @@ static bool maybe_release_signal_value(JSContext* cx,
 
     if (!gjs_gi_argument_release(cx, transfer, type_info, &arg,
                                  GjsArgumentFlags::ARG_OUT)) {
-        gjs_throw(cx, "Cannot release argument %s value, we're gonna leak!",
+        gjs_throw(cx, "Cannot release argument {} value, we're gonna leak!",
                   arg_info.name());
         return false;
     }
@@ -501,9 +500,8 @@ static bool throw_expect_type(JSContext* cx, JS::HandleValue value,
             val_str = JS_EncodeStringToUTF8(cx, str);
     }
 
-    gjs_throw(cx, "Wrong type %s; %s%s%s expected%s%s",
-              JS::InformalValueTypeName(value), expected_type, gtype ? " " : "",
-              gtype ? g_type_name(gtype) : "",
+    gjs_throw(cx, "Wrong type {:t}; {}{}{} expected{}{}", value, expected_type,
+              gtype ? " " : "", gtype ? g_type_name(gtype) : "",
               out_of_range ? ". But it's out of range: " : "",
               out_of_range ? val_str.get() : "");
     return false;  // for convenience
@@ -545,7 +543,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
 
             GType dest_gtype = G_VALUE_TYPE(gvalue);
             if (!g_value_type_compatible(source_gtype, dest_gtype)) {
-                gjs_throw(cx, "GObject.Value expected GType %s, found %s",
+                gjs_throw(cx, "GObject.Value expected GType {}, found {}",
                           g_type_name(dest_gtype), g_type_name(source_gtype));
                 return false;
             }
@@ -769,8 +767,8 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
 
             if (gtype == G_TYPE_ARRAY || gtype == G_TYPE_PTR_ARRAY ||
                 gtype == G_TYPE_HASH_TABLE) {
-                gjs_throw(cx, "Converting %s to %s is not supported",
-                          JS::InformalValueTypeName(value), g_type_name(gtype));
+                gjs_throw(cx, "Converting {:t} to {} is not supported", value,
+                          g_type_name(gtype));
                 return false;
             }
 
@@ -870,7 +868,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             GEnumValue* v =
                 g_enum_get_value(enum_class, static_cast<int>(value_int64));
             if (v == nullptr) {
-                gjs_throw(cx, "%d is not a valid value for enumeration %s",
+                gjs_throw(cx, "{} is not a valid value for enumeration {}",
                           value.toInt32(), g_type_name(gtype));
                 return false;
             }
@@ -967,7 +965,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
               g_value_type_transformable(gtype, G_TYPE_INT),
               g_value_type_transformable(G_TYPE_INT, gtype));
 
-    gjs_throw(cx, "Don't know how to convert JavaScript object to GType %s",
+    gjs_throw(cx, "Don't know how to convert JavaScript object to GType {}",
               g_type_name(gtype));
     return false;
 }
@@ -1175,7 +1173,7 @@ static bool gjs_value_from_g_value_internal(
         GI::Repository repo;
         Maybe<GI::AutoRegisteredTypeInfo> info{repo.find_by_gtype(gtype)};
         if (!info) {
-            gjs_throw(cx, "No introspection information found for %s",
+            gjs_throw(cx, "No introspection information found for {}",
                       g_type_name(gtype));
             return false;
         }
@@ -1201,7 +1199,7 @@ static bool gjs_value_from_g_value_internal(
             obj =
                 UnionInstance::new_for_c_union(cx, union_info.value(), gboxed);
         } else {
-            gjs_throw(cx, "Unexpected introspection type %s for %s",
+            gjs_throw(cx, "Unexpected introspection type {} for {}",
                       info->type_string(), g_type_name(gtype));
             return false;
         }
@@ -1297,7 +1295,7 @@ static bool gjs_value_from_g_value_internal(
         return true;
     }
 
-    gjs_throw(cx, "Don't know how to convert GType %s to JavaScript object",
+    gjs_throw(cx, "Don't know how to convert GType {} to JavaScript object",
               g_type_name(gtype));
     return false;
 }

@@ -257,7 +257,7 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
 
     if (format_args.size() != expected_args) {
         gjs_throw(cx,
-                  "Deprecation message %d takes %zu format arguments, got %zu",
+                  "Deprecation message {} takes {} format arguments, got {}",
                   message_id, expected_args, format_args.size());
         return false;
     }

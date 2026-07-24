@@ -63,7 +63,7 @@ bool Gjs::NativeModuleDefineFuncs::define(
     const auto& iter = m_modules.find(module_id);
 
     if (iter == m_modules.end()) {
-        gjs_throw(cx, "No native module '%s' has registered itself", module_id);
+        gjs_throw(cx, "No native module '{}' has registered itself", module_id);
         return false;
     }
 

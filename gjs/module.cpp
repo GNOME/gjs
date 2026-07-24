@@ -184,8 +184,7 @@ class GjsScriptModule {
          * treat it as if it were a real property, but warn about it. */
 
         gjs_warn_deprecated_once_per_callsite<
-            GjsDeprecationMessageId::ModuleExportedLetOrConst>(
-            cx, gjs_debug_id(id), m_name);
+            GjsDeprecationMessageId::ModuleExportedLetOrConst>(cx, id, m_name);
 
         JS::Rooted<JS::PropertyDescriptor> desc(cx, maybe_desc.value());
         return JS_DefinePropertyById(cx, module, id, desc);
@@ -424,7 +423,7 @@ static bool import_native_module_sync(JSContext* cx, unsigned argc,
     JS::RootedObject native_obj(cx);
     if (!Gjs::NativeModuleDefineFuncs::get().define(cx, id.get(),
                                                     &native_obj)) {
-        gjs_throw(cx, "Failed to load native module: %s", id.get());
+        gjs_throw(cx, "Failed to load native module: {}", id);
         return false;
     }
 

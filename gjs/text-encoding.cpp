@@ -58,7 +58,7 @@ static void gfree_arraybuffer_contents(void* contents, void*) {
 static std::nullptr_t gjs_throw_type_error_from_gerror(
     JSContext* cx, Gjs::AutoError const& error) {
     g_return_val_if_fail(error, nullptr);
-    gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr, "%s", error->message);
+    gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr, "{}", error);
     return nullptr;
 }
 
@@ -207,7 +207,7 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
 
     // g_convert only handles ssize_t bytes, but we may have size_t max
     if (!std::in_range<ssize_t>(input_len)) [[unlikely]] {
-        gjs_throw(cx, "Array too big to decode: %zu bytes", input_len);
+        gjs_throw(cx, "Array too big to decode: {} bytes", input_len);
         return nullptr;
     }
 

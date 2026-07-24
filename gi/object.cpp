@@ -318,9 +318,9 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
                                             rval))
             return true;
 
-        gjs_throw(cx, "Can't convert value %s got from %s::%s property",
-                  Gjs::gvalue_to_string<TAG>(&gvalue).c_str(),
-                  format_name().c_str(), param->name);
+        gjs_throw(cx, "Can't convert value {} got from {}::{} property",
+                  Gjs::gvalue_to_string<TAG>(&gvalue), format_name(),
+                  param->name);
         return false;
     } else {
         return gjs_value_from_g_value(cx, rval, &gvalue);
@@ -478,7 +478,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     if (!simple_getters_caller(type_info, m_ptr, info_caller->native_address,
                                &ret)) {
         const std::string& class_name = format_name();
-        gjs_throw(cx, "Wrong type for %s::%s getter", class_name.c_str(),
+        gjs_throw(cx, "Wrong type for {}::{} getter", class_name,
                   property_info.name());
         return false;
     }
@@ -495,8 +495,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
             g_object_class_find_property(klass, property_info.name());
         if (!pspec) {
             const std::string& class_name = format_name();
-            gjs_throw(cx, "Error converting value got from %s::%s getter",
-                      class_name.c_str(), property_info.name());
+            gjs_throw(cx, "Error converting value got from {}::{} getter",
+                      class_name, property_info.name());
             return false;
         }
         return prop_getter_impl<void>(cx, pspec, args[0]);
@@ -626,14 +626,14 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
     GI::AutoTypeInfo type{field.type_info()};
     if (!GI::is_supported_gobject_field_type(type)) {
         gjs_throw(cx,
-                  "Can't get field %s; GObject introspection supports only "
-                  "fields with simple types, not %s",
-                  field.name(), type.display_string());
+                  "Can't get field {}; GObject introspection supports only "
+                  "fields with simple types, not {}",
+                  field.name(), type);
         return false;
     }
 
     if (field.read(m_ptr, &arg).isErr()) {
-        gjs_throw(cx, "Error getting field %s from object", field.name());
+        gjs_throw(cx, "Error getting field {} from object", field.name());
         return false;
     }
 
@@ -698,15 +698,14 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
         using HolderTag = Gjs::Tag::JSValuePackTag<TAG>;
         if (!Gjs::js_value_to_c_checked<T, HolderTag>(cx, value, &val,
                                                       &out_of_range)) {
-            gjs_throw(cx, "Can't convert value %s to set %s::%s property",
-                      gjs_debug_value(value).c_str(), format_name().c_str(),
-                      param_spec->name);
+            gjs_throw(cx, "Can't convert value {} to set {}::{} property",
+                      value, format_name(), param_spec->name);
             return false;
         }
 
         if (out_of_range) {
-            gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      std::to_string(val).c_str(), param_spec->name,
+            gjs_throw(cx, "value {} is out of range for {} (type {})",
+                      std::to_string(val), param_spec->name,
                       Gjs::static_type_name<TAG>());
             return false;
         }
@@ -715,9 +714,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
     } else {
         T native_value;
         if (!Gjs::js_value_to_c<TAG>(cx, value, &native_value)) {
-            gjs_throw(cx, "Can't convert %s value to set %s::%s property",
-                      gjs_debug_value(value).c_str(), format_name().c_str(),
-                      param_spec->name);
+            gjs_throw(cx, "Can't convert {} value to set {}::{} property",
+                      value, format_name(), param_spec->name);
             return false;
         }
 
@@ -875,9 +873,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         GParamSpec* pspec =
             g_object_class_find_property(klass, property_info.name());
         if (!pspec) {
-            const std::string& class_name = format_name();
-            gjs_throw(cx, "Error converting value to call %s::%s setter",
-                      class_name.c_str(), property_info.name());
+            gjs_throw(cx, "Error converting value to call {}::{} setter",
+                      format_name(), property_info.name());
             return false;
         }
         return prop_setter_impl<void>(cx, pspec, value);
@@ -885,8 +882,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
 
     if (!simple_setters_caller(type_info, &arg, m_ptr,
                                info_caller->native_address)) {
-        const std::string& class_name = format_name();
-        gjs_throw(cx, "Wrong type for %s::%s setter", class_name.c_str(),
+        gjs_throw(cx, "Wrong type for {}::{} setter", format_name(),
                   property_info.name());
         return false;
     }
@@ -948,9 +944,9 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
             return false;
 
         if (out_of_range) {
-            gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      std::to_string(native_value).c_str(),
-                      pspec_caller->pspec->name, Gjs::static_type_name<TAG>());
+            gjs_throw(cx, "value {} is out of range for {} (type {})",
+                      std::to_string(native_value), pspec_caller->pspec->name,
+                      Gjs::static_type_name<TAG>());
             return false;
         }
 
@@ -1232,8 +1228,8 @@ static JSNative create_getter_invoker(JSContext* cx, GParamSpec* pspec,
     }
 
     if (init_result.isErr()) {
-        gjs_throw(cx, "Impossible to create invoker for %s: %s", getter.name(),
-                  init_result.inspectErr()->message);
+        gjs_throw(cx, "Impossible to create invoker for {}: {}", getter.name(),
+                  init_result);
         return nullptr;
     }
 
@@ -1409,8 +1405,8 @@ static JSNative create_setter_invoker(JSContext* cx, GParamSpec* pspec,
     }
 
     if (init_result.isErr()) {
-        gjs_throw(cx, "Impossible to create invoker for %s: %s", setter.name(),
-                  init_result.inspectErr()->message);
+        gjs_throw(cx, "Impossible to create invoker for {}: {}", setter.name(),
+                  init_result);
         return nullptr;
     }
 
@@ -2081,7 +2077,7 @@ bool ObjectPrototype::props_to_g_parameters(
             return false;
         if (value.isUndefined()) {
             gjs_throw(cx,
-                      "Invalid value 'undefined' for property %s in object "
+                      "Invalid value 'undefined' for property {} in object "
                       "initializer.",
                       param_spec->name);
             return false;
@@ -2610,7 +2606,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
     if (args.length() > 0 && !args[0].isUndefined()) {
         if (!args[0].isObject()) {
             gjs_throw(cx,
-                      "Argument to the constructor of %s should be a plain JS "
+                      "Argument to the constructor of {} should be a plain JS "
                       "object with properties to set",
                       name());
             return false;
@@ -2619,7 +2615,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
         JS::RootedObject props{cx, &args[0].toObject()};
         if (ObjectBase::for_js(cx, props)) {
             gjs_throw(cx,
-                      "Argument to the constructor of %s should be a plain JS "
+                      "Argument to the constructor of {} should be a plain JS "
                       "object with properties to set",
                       name());
             return false;
@@ -2631,8 +2627,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
     }
 
     if (G_TYPE_IS_ABSTRACT(gtype())) {
-        gjs_throw(cx, "Cannot instantiate abstract type %s",
-                  g_type_name(gtype()));
+        gjs_throw(cx, "Cannot instantiate abstract type {}", type_name());
         return false;
     }
 
@@ -3000,7 +2995,7 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
     unsigned signal_id;
     if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
                              &signal_detail, true)) {
-        gjs_throw(cx, "No signal '%s' on object '%s'", signal_name.get(),
+        gjs_throw(cx, "No signal '{}' on object '{}'", signal_name,
                   type_name());
         return false;
     }
@@ -3059,7 +3054,7 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     unsigned signal_id;
     if (!g_signal_parse_name(signal_name.get(), gtype(), &signal_id,
                              &signal_detail, false)) {
-        gjs_throw(cx, "No signal '%s' on object '%s'", signal_name.get(),
+        gjs_throw(cx, "No signal '{}' on object '{}'", signal_name,
                   type_name());
         return false;
     }
@@ -3067,9 +3062,8 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     g_signal_query(signal_id, &signal_query);
 
     if ((args.length() - 1) != signal_query.n_params) {
-        gjs_throw(cx, "Signal '%s' on %s requires %d args got %d",
-                  signal_name.get(), type_name(), signal_query.n_params,
-                  args.length() - 1);
+        gjs_throw(cx, "Signal '{}' on {} requires {} args got {}", signal_name,
+                  type_name(), signal_query.n_params, args.length() - 1);
         return false;
     }
 
@@ -3520,8 +3514,8 @@ bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
     // from the start.
     ensure_uses_toggle_ref(cx);
     if (!m_uses_toggle_ref) {
-        gjs_throw(cx, "Impossible to set toggle references on %sobject %p",
-                  m_gobj_disposed ? "disposed " : "", gobj);
+        gjs_throw(cx, "Impossible to set toggle references on {}object {}",
+                  m_gobj_disposed ? "disposed " : "", static_cast<void*>(gobj));
         return false;
     }
 
@@ -3624,7 +3618,8 @@ bool ObjectInstance::set_value_from_gobject(JSContext* cx, GObject* gobj,
         return true;
     }
 
-    gjs_throw(cx, "Failed to find JS object for GObject %p of type %s", gobj,
+    gjs_throw(cx, "Failed to find JS object for GObject {} of type {}",
+              static_cast<void*>(gobj),
               g_type_name(G_TYPE_FROM_INSTANCE(gobj)));
     return false;
 }
@@ -3701,7 +3696,7 @@ static Maybe<std::pair<void*, Maybe<GI::AutoFieldInfo>>> find_vfunc_info(
         auto* implementor_iface_class = static_cast<GTypeInstance*>(
             g_type_interface_peek(implementor_class, ancestor_gtype));
         if (implementor_iface_class == nullptr) {
-            gjs_throw(cx, "Couldn't find GType of implementor of interface %s.",
+            gjs_throw(cx, "Couldn't find GType of implementor of interface {}.",
                       g_type_name(ancestor_gtype));
             return Nothing{};
         }
@@ -3814,22 +3809,21 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
                 Gjs::AutoChar identifier{g_strdup_printf(
                     "%s.%s", interface->ns(), interface->name())};
                 gjs_throw(cx,
-                          "%s does not implement %s, add %s to your "
+                          "{0} does not implement {1}, add {1} to your "
                           "implements array",
-                          g_type_name(m_gtype), identifier.get(),
-                          identifier.get());
+                          g_type_name(m_gtype), identifier);
                 return false;
             }
         }
 
         // Fall back to less helpful error message
-        gjs_throw(cx, "Could not find definition of virtual function %s",
+        gjs_throw(cx, "Could not find definition of virtual function {}",
                   name.get());
         return false;
     }
 
     if (vfunc->is_method() != !is_static) {
-        gjs_throw(cx, "Invalid %s definition of %s virtual function %s",
+        gjs_throw(cx, "Invalid {} definition of {} virtual function {}",
                   is_static ? "static" : "non-static",
                   is_static ? "non-static" : "static", name.get());
         return false;

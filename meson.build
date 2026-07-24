@@ -439,6 +439,7 @@ libgjs_sources = [
     'gjs/deprecation.cpp', 'gjs/deprecation.h',
     'gjs/engine.cpp', 'gjs/engine.h',
     'gjs/error-types.cpp',
+    'gjs/format-utils.h',
     'gjs/gerror-result.h',
     'gjs/global.cpp', 'gjs/global.h',
     'gjs/importer.cpp', 'gjs/importer.h',
