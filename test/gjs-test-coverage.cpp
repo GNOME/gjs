@@ -137,14 +137,10 @@ static const char* line_starting_with(const char* data, const char* needle) {
 
 static std::string_view line_starting_with(const std::string_view& data,
                                            const std::string& needle) {
-    const size_t needle_length = needle.size();
     std::string_view iter = data;
 
     while (!iter.empty()) {
-        // COMPAT: Use starts_with in C++20
-        std::string_view prefix{iter.data(),
-                                std::min(iter.size(), needle_length)};
-        if (prefix == needle)
+        if (iter.starts_with(needle))
             return iter;
 
         size_t newline = iter.find('\n');
