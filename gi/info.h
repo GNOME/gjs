@@ -603,9 +603,7 @@ class InfoIterator {
         m_ix++;
         return tmp;
     }
-    bool operator==(const InfoIterator& other) const {
-        return m_obj == other.m_obj && m_ix == other.m_ix;
-    }
+    bool operator==(const InfoIterator& other) const = default;
 };
 
 template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
