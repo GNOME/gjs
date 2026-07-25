@@ -11,6 +11,7 @@
 
 #include <cstddef>  // for nullptr_t
 #include <iterator>
+#include <ranges>
 #include <span>
 #include <utility>  // for pair, make_pair, move
 
@@ -601,11 +602,9 @@ class InfoIterator {
     unsigned m_ix = 0;
 
  public:
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type = int;
+    using iterator_concept = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
     using value_type = OwnedInfo<TAG>;
-    using pointer = value_type*;
-    using reference = value_type&;
 
     InfoIterator() = default;
     explicit InfoIterator(T obj, unsigned ix) : m_obj(obj), m_ix(ix) {}
@@ -645,7 +644,20 @@ class InfoIterable {
         return detail::Pointer::nullable<TAG>(get_info(m_obj, ix));
     }
 
-    [[nodiscard]] Iterator begin() const { return Iterator{m_obj, 0}; }
+    [[nodiscard]] Iterator begin() const {
+        // It's a bit weird to have these checks inside begin(), but they need
+        // to happen at a point where all types are already complete, while also
+        // avoiding instantiating them too early (e.g. before their
+        // InfoOperations are defined), and preferably not having to specify
+        // each possible instantiation.
+        static_assert(
+            std::forward_iterator<Iterator>,
+            "InfoIterator must satisfy all the forward iterator requirements");
+        static_assert(
+            std::ranges::forward_range<InfoIterable>,
+            "InfoIterable must satisfy all the forward range requirements");
+        return Iterator{m_obj, 0};
+    }
     [[nodiscard]]
     Iterator end() const {
         unsigned n_fields = get_n_infos(m_obj);
