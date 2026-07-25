@@ -13,6 +13,7 @@
 #include <iterator>
 #include <ranges>
 #include <span>
+#include <type_traits>
 #include <utility>  // for pair, make_pair, move
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -464,25 +465,6 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     }
 
  public:
-    template <InfoTag TAG>
-    bool operator==(const OwnedInfo<TAG>& other) const {
-        return gi_base_info_equal(
-            ptr(), GI_BASE_INFO(detail::Pointer::get_from(other)));
-    }
-    template <InfoTag TAG>
-    bool operator==(const UnownedInfo<TAG>& other) const {
-        return gi_base_info_equal(
-            ptr(), GI_BASE_INFO(detail::Pointer::get_from(other)));
-    }
-    template <InfoTag TAG>
-    bool operator!=(const OwnedInfo<TAG>& other) const {
-        return !(*this == other);
-    }
-    template <InfoTag TAG>
-    bool operator!=(const UnownedInfo<TAG>& other) const {
-        return !(*this == other);
-    }
-
     template <InfoTag TAG = InfoTag::BASE>
     [[nodiscard]]
     mozilla::Maybe<const UnownedInfo<TAG>> container() const {
@@ -623,9 +605,6 @@ class InfoIterator {
     }
     bool operator==(const InfoIterator& other) const {
         return m_obj == other.m_obj && m_ix == other.m_ix;
-    }
-    bool operator!=(const InfoIterator& other) const {
-        return m_obj != other.m_obj || m_ix != other.m_ix;
     }
 };
 
@@ -1653,10 +1632,6 @@ class Repository {
         bool operator==(const IterableNamespace& other) const {
             return repo == other.repo && strcmp(ns, other.ns) == 0;
         }
-
-        bool operator!=(const IterableNamespace& other) const {
-            return !(*this == other);
-        }
     };
 
  public:
@@ -1804,7 +1779,28 @@ inline void Pointer::to_stack(GITypeInfo* ptr, StackTypeInfo* stack) {
         static_cast<GTypeClass*>(g_type_class_ref(GI_TYPE_TYPE_INFO));
     stack_ptr->dummy0 = 0x7fff'ffff;
 }
+
+// concept detail::InfoWrapper is a shorthand for "is this type any of the above
+// defined wrapper types". is_instantiation_of seems like it should be in the
+// standard library, but isn't. It's easy to implement incorrectly:
+// https://stackoverflow.com/questions/11251376/172999#comment16238019_11251408
+template <typename T, template <auto...> class Template>
+inline constexpr bool is_instantiation_of = false;
+template <template <auto...> class Template, auto... Args>
+inline constexpr bool is_instantiation_of<Template<Args...>, Template> = true;
+template <typename T>
+concept InfoWrapper =
+    is_instantiation_of<T, OwnedInfo> || is_instantiation_of<T, UnownedInfo> ||
+    std::is_same_v<T, StackArgInfo> || std::is_same_v<T, StackTypeInfo>;
+
 }  // namespace detail
+
+[[nodiscard]]
+bool operator==(const detail::InfoWrapper auto& lhs,
+                const detail::InfoWrapper auto& rhs) {
+    return gi_base_info_equal(GI_BASE_INFO(detail::Pointer::get_from(lhs)),
+                              GI_BASE_INFO(detail::Pointer::get_from(rhs)));
+}
 
 static_assert(sizeof(StackArgInfo) == sizeof(GIArgInfo),
               "StackArgInfo should be byte-compatible with GIArgInfo");
