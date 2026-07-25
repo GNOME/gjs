@@ -21,6 +21,7 @@
 #include <new>
 #include <ratio>
 #include <ranges>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>

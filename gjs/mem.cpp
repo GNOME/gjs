@@ -7,6 +7,7 @@
 #include <inttypes.h>
 
 #include <iterator>  // for size
+#include <span>
 
 #include <girepository/girepository.h>
 #include <glib-object.h>
@@ -15,7 +16,6 @@
 #include <mozilla/CheckedInt.h>
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
 #include "gi/info.h"

@@ -11,6 +11,7 @@
 
 #include <cstddef>  // for nullptr_t
 #include <iterator>
+#include <span>
 #include <utility>  // for pair, make_pair, move
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -27,7 +28,6 @@
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 
 #include "gjs/auto.h"
 #include "gjs/gerror-result.h"
@@ -42,11 +42,10 @@
 // CallableInfo.load_arg(), CallableInfo.load_return_type(), and
 // ArgInfo.load_type() methods, for performance.
 
-// COMPAT: We use Mozilla's Maybe, Result, and Span types because they are more
+// COMPAT: We use Mozilla's Maybe and Result types because they are more
 // complete than the C++ standard library types.
 // std::optional does not have transform(), and_then(), etc., until C++23.
 // std::expected does not appear until C++23.
-// std::span does not appear until C++20.
 
 // Note, only the methods actually needed in GJS are wrapped here. So if one is
 // missing, that's not for any particular reason unless noted otherwise; it just
@@ -1095,8 +1094,8 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
 
  public:
     [[nodiscard]]
-    Gjs::GErrorResult<> invoke(const mozilla::Span<const GIArgument>& in_args,
-                               const mozilla::Span<GIArgument>& out_args,
+    Gjs::GErrorResult<> invoke(std::span<const GIArgument> in_args,
+                               std::span<GIArgument> out_args,
                                GIArgument* return_value) const {
         GError* error = nullptr;
         return this->bool_gerror(
@@ -1688,7 +1687,7 @@ class Repository {
         return gi_repository_is_registered(m_ptr, ns, version);
     }
     [[nodiscard]]
-    mozilla::Span<const InterfaceInfo> object_get_gtype_interfaces(
+    std::span<const InterfaceInfo> object_get_gtype_interfaces(
         GType gtype) const {
         InterfaceInfo* interfaces;
         size_t n_interfaces;

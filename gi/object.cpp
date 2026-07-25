@@ -13,6 +13,7 @@
 #include <functional>  // for mem_fn
 #include <limits>
 #include <memory>  // for make_unique, unique_ptr
+#include <span>
 #include <string>
 #include <tuple>  // for tie
 #include <type_traits>
@@ -52,7 +53,6 @@
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 #include <mozilla/Try.h>
 
 #include "gi/arg-inl.h"
@@ -1742,7 +1742,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         }
     }
 
-    mozilla::Span<const GI::InterfaceInfo> interfaces =
+    std::span<const GI::InterfaceInfo> interfaces =
         GI::Repository{}.object_get_gtype_interfaces(m_gtype);
 
     // Fallback to GType system for non custom GObjects with no GI information

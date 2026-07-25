@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
+#include <span>
 #include <string>
 #include <tuple>  // for tie
 #include <type_traits>
@@ -35,7 +36,6 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Result.h>
 #include <mozilla/ScopeExit.h>
-#include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"

@@ -12,6 +12,7 @@
 #include <algorithm>  // for none_of
 #include <concepts>
 #include <functional>  // for mem_fn
+#include <span>
 #include <string>
 #include <utility>  // for in_range, move
 #include <vector>
@@ -39,7 +40,6 @@
 #include <jsapi.h>  // for InformalValueTypeName, IdVector
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
