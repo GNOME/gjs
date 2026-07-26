@@ -967,12 +967,11 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
             << TRANSFER_STRING(caller_owns()) << ", .n_args = " << n_args()
             << ", .args = { ";
 
-        ArgsIterable iter = args();
-        std::for_each(iter.begin(), iter.end(), [&out](AutoArgInfo arg_info) {
+        for (AutoArgInfo arg_info : args()) {
             out << "{ GI_DIRECTION_" << DIRECTION_STRING(arg_info.direction())
                 << ", GI_TRANSFER_"
                 << TRANSFER_STRING(arg_info.ownership_transfer()) << " }, ";
-        });
+        }
         out.seekp(-2, std::ios_base::end);  // Erase trailing comma
 
 #    undef DIRECTION_STRING

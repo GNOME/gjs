@@ -2079,9 +2079,9 @@ bool ObjectPrototype::props_to_g_parameters(
         if (!param_spec)
             return false;
 
-        if (visited_params.find(param_spec) != visited_params.end())
+        auto insert_result = visited_params.insert(param_spec);
+        if (!insert_result.second)  // entry was already present
             continue;
-        visited_params.insert(param_spec);
 
         if (!JS_GetPropertyById(cx, props, prop_id, &value))
             return false;
@@ -2177,8 +2177,8 @@ void ObjectInstance::remove_wrapped_gobjects_if(
  */
 void ObjectInstance::context_dispose_notify(void*, GObject* where_the_object_was
                                             [[maybe_unused]]) {
-    std::for_each(s_wrapped_gobject_list.begin(), s_wrapped_gobject_list.end(),
-        std::mem_fn(&ObjectInstance::handle_context_dispose));
+    for (ObjectInstance* instance : s_wrapped_gobject_list)
+        instance->handle_context_dispose();
 }
 
 /**
@@ -3124,8 +3124,8 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
         g_signal_emitv(instance_and_args.data(), signal_id, signal_detail,
                        nullptr);
         args.rval().setUndefined();
-        std::for_each(args_to_steal.begin(), args_to_steal.end(),
-                      [](Gjs::AutoGValue* value) { value->steal(); });
+        for (Gjs::AutoGValue* value : args_to_steal)
+            value->steal();
         return true;
     }
 
@@ -3133,8 +3133,8 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     Gjs::AutoGValue rvalue(gtype);
     g_signal_emitv(instance_and_args.data(), signal_id, signal_detail, &rvalue);
 
-    std::for_each(args_to_steal.begin(), args_to_steal.end(),
-                  [](Gjs::AutoGValue* value) { value->steal(); });
+    for (Gjs::AutoGValue* value : args_to_steal)
+        value->steal();
 
     return gjs_value_from_g_value(cx, args.rval(), &rvalue);
 }
@@ -3877,10 +3877,9 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
 
         // This is traced, and will be cleared from the list when the closure is
         // invalidated
-        g_assert(std::find(m_vfuncs.begin(), m_vfuncs.end(), trampoline) ==
-                     m_vfuncs.end() &&
+        auto insert_result GJS_USED_ASSERT = m_vfuncs.insert(trampoline);
+        g_assert(insert_result.second &&
                  "This vfunc was already associated with this class");
-        m_vfuncs.insert(trampoline);
         g_closure_add_invalidate_notifier(
             trampoline, this, &ObjectPrototype::vfunc_invalidated_notify);
         g_closure_add_invalidate_notifier(

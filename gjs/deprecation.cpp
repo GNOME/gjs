@@ -109,11 +109,11 @@ static void warn_deprecated_unsafe_internal(JSContext* cx,
                                             unsigned max_frames /* = 1 */) {
     JS::UniqueChars callsite{get_callsite(cx, max_frames)};
     DeprecationEntry entry(id, callsite.get());
-    if (!logged_messages.count(entry)) {
+    auto insert_result = logged_messages.insert(std::move(entry));
+    if (insert_result.second) {
         JS::UniqueChars stack_dump =
             JS::FormatStackDump(cx, false, false, false);
         g_warning("%s\n%s", msg, stack_dump.get());
-        logged_messages.insert(std::move(entry));
     }
 }
 
