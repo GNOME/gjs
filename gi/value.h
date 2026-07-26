@@ -146,13 +146,11 @@ void gvalue_set(GValue* gvalue, Tag::RealT<TAG> value) {
 
 // Specialization for types where TAG and RealT<TAG> are the same type, to allow
 // inferring template parameter
-template <Gjs::Tag::RealType T>
-inline void gvalue_set(GValue* gvalue, T value) {
-    gvalue_set<T>(gvalue, value);
+inline void gvalue_set(GValue* gvalue, Gjs::Tag::RealType auto value) {
+    gvalue_set<decltype(value)>(gvalue, value);
 }
 
-template <typename T>
-void gvalue_set(GValue* gvalue, T* value) = delete;
+void gvalue_set(GValue* gvalue, auto* value) = delete;
 
 template <>
 inline void gvalue_set(GValue* gvalue, char* value) {

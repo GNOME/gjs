@@ -170,8 +170,8 @@ struct Argument {
  private:
     friend struct ArgsCache;
 
-    template <typename T, Arg::Kind ArgKind>
-    static void init_common(const Init&, T* arg);
+    template <Arg::Kind ArgKind>
+    static void init_common(const Init&, auto* arg);
 };
 
 using ArgumentPtr = AutoCppPointer<Argument>;
@@ -225,8 +225,8 @@ struct ArgsCache {
     void build_interface_in_arg(const Argument::Init&,
                                 const GI::BaseInfo& interface_info);
 
-    template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
-    constexpr void set_argument(T* arg, const Argument::Init&);
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    constexpr void set_argument(auto* arg, const Argument::Init&);
 
     void set_array_argument(const GI::CallableInfo&, uint8_t gi_index,
                             const GI::TypeInfo&, GIDirection,
@@ -239,12 +239,10 @@ struct ArgsCache {
     void init_out_array_length_argument(const GI::ArgInfo&, GjsArgumentFlags,
                                         unsigned length_pos);
 
-    template <typename T>
-    constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);
+    constexpr void set_return(auto* arg, GITransfer, GjsArgumentFlags);
 
-    template <typename T>
     constexpr void set_instance(
-        T* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
+        auto* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
     void set_skip_all(uint8_t index, const char* name = nullptr);
 

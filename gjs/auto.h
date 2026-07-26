@@ -213,8 +213,8 @@ using AutoParam =
 using AutoGClosure =
     AutoPointer<GClosure, GClosure, g_closure_unref, g_closure_ref>;
 
-template <typename V, typename T>
-constexpr void AutoPointerDeleter(T v) {
+template <typename V>
+constexpr void AutoPointerDeleter(auto v) {
     if constexpr (std::is_array_v<V>)
         delete[] reinterpret_cast<std::remove_extent_t<V>*>(v);
     else

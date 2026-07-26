@@ -214,8 +214,7 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     return assign(cx, c, nullable, value, reinterpret_cast<int*>(ref));
 }
 
-template <typename T>
-static inline void free_if_necessary(T param_ref [[maybe_unused]]) {}
+static inline void free_if_necessary(auto param_ref [[maybe_unused]]) {}
 
 template <typename T>
 [[gnu::always_inline]]
@@ -226,13 +225,12 @@ static inline void free_if_necessary(JS::Rooted<T>* param_ref) {
     JS::MutableHandle<T>(param_ref).set(nullptr);
 }
 
-template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool parse_call_args_helper(JSContext* cx, const char* function_name,
                                    const JS::CallArgs& args,
                                    const char*& fmt_required,
                                    const char*& fmt_optional, unsigned param_ix,
-                                   const char* param_name, T param_ref) {
+                                   const char* param_name, auto param_ref) {
     bool nullable = false;
     const char* fchar = fmt_required;
 
@@ -268,14 +266,13 @@ static bool parse_call_args_helper(JSContext* cx, const char* function_name,
     return true;
 }
 
-template <typename T, typename... Args>
 GJS_JSAPI_RETURN_CONVENTION
 static bool parse_call_args_helper(JSContext* cx, const char* function_name,
                                    const JS::CallArgs& args,
                                    const char*& fmt_required,
                                    const char*& fmt_optional, unsigned param_ix,
-                                   const char* param_name, T param_ref,
-                                   Args... params) {
+                                   const char* param_name, auto param_ref,
+                                   auto... params) {
     if (!parse_call_args_helper(cx, function_name, args, fmt_required,
                                 fmt_optional, param_ix, param_name, param_ref))
         return false;
@@ -351,11 +348,10 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
  * value may be null. For 's' or 'F' a null pointer is returned, for 'S' or 'o'
  * the handle is set to null.
  */
-template <typename... Args>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
                                 const JS::CallArgs& args, const char* format,
-                                Args... params) {
+                                auto... params) {
     unsigned n_required = 0, n_total = 0;
     bool optional_args = false, ignore_trailing_args = false;
 
@@ -380,7 +376,7 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
     if (!optional_args)
         n_required = n_total;
 
-    g_assert(sizeof...(Args) / 2 == n_total &&
+    g_assert(sizeof...(params) / 2 == n_total &&
              "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!args.requireAtLeast(cx, function_name, n_required))

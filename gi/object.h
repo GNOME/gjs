@@ -109,9 +109,8 @@ class ObjectBase
  public:
     // Overrides GIWrapperBase::typecheck(). We only override the overload that
     // throws, so that we can throw our own more informative error.
-    template <typename T>
     GJS_JSAPI_RETURN_CONVENTION
-    static bool typecheck(JSContext* cx, JS::HandleObject obj, T expected) {
+    static bool typecheck(JSContext* cx, JS::HandleObject obj, auto expected) {
         if (GIWrapperBase::typecheck(cx, obj, expected))
             return true;
 
@@ -121,9 +120,8 @@ class ObjectBase
                   " up to the parent _init properly?");
         return false;
     }
-    template <typename T>
     [[nodiscard]]
-    static bool typecheck(JSContext* cx, JS::HandleObject obj, T expected,
+    static bool typecheck(JSContext* cx, JS::HandleObject obj, auto expected,
                           GjsTypecheckNoThrow no_throw) {
         return GIWrapperBase::typecheck(cx, obj, expected, no_throw);
     }
@@ -501,9 +499,8 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     [[nodiscard]] const char* to_string_kind() const;
 
     // Overrides GIWrapperInstance::typecheck_impl()
-    template <typename T>
     GJS_JSAPI_RETURN_CONVENTION
-    bool typecheck_impl(T expected) const {
+    bool typecheck_impl(auto expected) const {
         g_assert(m_gobj_disposed || !m_ptr ||
                  g_type_is_a(gtype(), G_OBJECT_TYPE(m_ptr.as<GObject*>())));
         return GIWrapperInstance::typecheck_impl(expected);

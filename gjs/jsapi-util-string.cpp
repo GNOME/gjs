@@ -13,6 +13,7 @@
 #include <sstream>    // for operator<<, basic_ostream, ostring...
 #include <string>     // for allocator, char_traits
 #include <string_view>
+#include <type_traits>
 
 #include <glib.h>
 
@@ -261,9 +262,8 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
  * type, by what the compiler believes is the most efficient method possible */
-template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
-static bool from_latin1(JSContext* cx, JSString* str, T** data_p,
+static bool from_latin1(JSContext* cx, JSString* str, auto** data_p,
                         size_t* len_p) {
     /* No garbage collection should be triggered while we are using the string's
      * chars. Crash if that happens. */
@@ -278,6 +278,7 @@ static bool from_latin1(JSContext* cx, JSString* str, T** data_p,
      * can preserve the string length and simply copy the codepoints to an array
      * of different-sized ints */
 
+    using T = std::remove_reference_t<decltype(**data_p)>;
     *data_p = g_new(T, *len_p);
 
     // This will probably use a loop, unfortunately

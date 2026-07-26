@@ -1193,10 +1193,10 @@ static JSNative get_setter_for_type(const GI::TypeInfo& type_info,
 
 // Wrap a call to JS::NewObjectWithStashedPointer() while ensuring the pointer
 // is properly deleted if the call fails.
-template <typename T, typename... Ts>
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static inline JSObject* new_object_with_stashed_pointer(JSContext* cx,
-                                                        const Ts&... args) {
+                                                        const auto&... args) {
     std::unique_ptr<T> data = std::make_unique<T>(args...);
     JSObject* obj = JS::NewObjectWithStashedPointer(
         cx, data.get(), [](T* data) { delete data; });
@@ -2546,8 +2546,7 @@ void ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     g_object_unref(m_ptr);
 }
 
-template <typename T>
-static void invalidate_closure_collection(T* closures, void* data,
+static void invalidate_closure_collection(auto* closures, void* data,
                                           GClosureNotify notify_func) {
     g_assert(closures);
     g_assert(notify_func);

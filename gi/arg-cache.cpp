@@ -2614,8 +2614,9 @@ constexpr size_t argument_maximum_size() {
 }
 #endif
 
-template <typename T, Arg::Kind ArgKind>
-void Argument::init_common(const Init& init, T* arg) {
+template <Arg::Kind ArgKind>
+void Argument::init_common(const Init& init, auto* arg) {
+    using T = std::remove_reference_t<decltype(*arg)>;
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
     static_assert(
         sizeof(T) <= argument_maximum_size<T>(),
@@ -2679,21 +2680,19 @@ bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo& callable) {
     return true;
 }
 
-template <Arg::Kind ArgKind, typename T>
-constexpr void ArgsCache::set_argument(T* arg, const Argument::Init& init) {
-    Argument::init_common<T, ArgKind>(init, arg);
+template <Arg::Kind ArgKind>
+constexpr void ArgsCache::set_argument(auto* arg, const Argument::Init& init) {
+    Argument::init_common<ArgKind>(init, arg);
     arg_get<ArgKind>(init.index) = arg;
 }
 
-template <typename T>
-constexpr void ArgsCache::set_return(T* arg, GITransfer transfer,
+constexpr void ArgsCache::set_return(auto* arg, GITransfer transfer,
                                      GjsArgumentFlags flags) {
     set_argument<Arg::Kind::RETURN_VALUE>(
         arg, Argument::Init{.transfer = transfer, .flags = flags});
 }
 
-template <typename T>
-constexpr void ArgsCache::set_instance(T* arg, GITransfer transfer,
+constexpr void ArgsCache::set_instance(auto* arg, GITransfer transfer,
                                        GjsArgumentFlags flags) {
     set_argument<Arg::Kind::INSTANCE>(
         arg, Argument::Init{.transfer = transfer, .flags = flags});

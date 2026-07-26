@@ -486,8 +486,7 @@ Maybe<GI::AutoFieldInfo> BoxedBase<Base, Prototype, Instance>::get_field_info(
 // Helper function to work around -Wunsupported-friend, where it is not possible
 // for BoxedInstance<STRUCT> to be a friend of a BoxedInstance<UNION> method and
 // vice versa. This could be static for g++, but not for clang++.
-template <class OtherInstance>
-void adopt_nested_ptr(OtherInstance* priv, void* data) {
+void adopt_nested_ptr(auto* priv, void* data) {
     priv->share_ptr(data);
     priv->debug_lifecycle(
         "Boxed pointer created, pointing inside memory owned by parent");
@@ -892,9 +891,8 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_class_impl(
  * specified explicitly in the public API, but the implementation uses
  * std::forward in order to avoid duplicating code. */
 template <class Base, class Prototype, class Instance>
-template <typename... Args>
 JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
-    JSContext* cx, const BoxedInfo& info, void* gboxed, Args... args) {
+    JSContext* cx, const BoxedInfo& info, void* gboxed, auto... args) {
     if (gboxed == nullptr)
         return nullptr;
 
@@ -909,7 +907,8 @@ JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
     if (!priv)
         return nullptr;
 
-    if (!priv->init_from_c_struct(cx, gboxed, std::forward<Args>(args)...))
+    if (!priv->init_from_c_struct(cx, gboxed,
+                                  std::forward<decltype(args)>(args)...))
         return nullptr;
 
     return obj;
