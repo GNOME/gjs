@@ -266,13 +266,13 @@ static size_t zero_terminated_length(const T* data, size_t len) {
 }
 
 // decode() function implementation
-JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
+JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
                                      const char* encoding,
                                      GjsStringTermination string_termination,
                                      bool fatal) {
     g_assert(encoding && "encoding must be non-null");
 
-    if (!JS_IsUint8Array(byte_array)) {
+    if (!JS_IsUint8Array(uint8array)) {
         gjs_throw(cx, "Argument to decode() must be a Uint8Array");
         return nullptr;
     }
@@ -280,7 +280,7 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
     uint8_t* data;
     size_t len;
     bool is_shared_memory;
-    js::GetUint8ArrayLengthAndData(byte_array, &len, &is_shared_memory, &data);
+    js::GetUint8ArrayLengthAndData(uint8array, &len, &is_shared_memory, &data);
 
     // If the desired behavior is zero-terminated, calculate the
     // zero-terminated length of the given data.
@@ -345,7 +345,7 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject byte_array,
     // compare if the length and pointer are still the same. If the pointers
     // differ, we use the slow path to ensure no data corruption occurred. The
     // shared-ness of an array cannot change between calls, so we ignore it.
-    js::GetUint8ArrayLengthAndData(byte_array, &current_len, &ignore_val,
+    js::GetUint8ArrayLengthAndData(uint8array, &current_len, &ignore_val,
                                    &current_data);
 
     // Ensure the private data hasn't changed

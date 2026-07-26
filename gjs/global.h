@@ -78,15 +78,16 @@ GjsGlobalType gjs_global_get_type(JSObject* global);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_global_registry_set(JSContext*, JS::HandleObject registry,
-                             JS::PropertyKey, JS::HandleObject value);
+                             JS::PropertyKey, JS::HandleObject module);
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_global_registry_get(JSContext*, JS::HandleObject registry,
-                             JS::PropertyKey, JS::MutableHandleObject value);
+                             JS::PropertyKey,
+                             JS::MutableHandleObject module_out);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_global_source_map_get(JSContext*, JS::HandleObject registry,
                                JS::HandleString key,
-                               JS::MutableHandleObject value);
+                               JS::MutableHandleObject source_map_consumer_obj);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_create_global_object(JSContext*, GjsGlobalType,

@@ -364,6 +364,8 @@ class GjsInternalGlobal : GjsBaseGlobal {
 /**
  * gjs_create_global_object:
  * @cx: a #JSContext
+ * @global_type: Type of global object, influences what APIs get defined
+ * @existing_global: An existing global object to share a compartment with
  *
  * Creates a global object, and initializes it with the default API.
  *
@@ -371,17 +373,17 @@ class GjsInternalGlobal : GjsBaseGlobal {
  * case an exception is pending on @cx
  */
 JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
-                                   JS::HandleObject current_global) {
-    if (current_global) {
+                                   JS::HandleObject existing_global) {
+    if (existing_global) {
         switch (global_type) {
             case GjsGlobalType::DEFAULT:
-                return GjsGlobal::create_with_compartment(cx, current_global);
+                return GjsGlobal::create_with_compartment(cx, existing_global);
             case GjsGlobalType::DEBUGGER:
                 return GjsDebuggerGlobal::create_with_compartment(
-                    cx, current_global);
+                    cx, existing_global);
             case GjsGlobalType::INTERNAL:
                 return GjsInternalGlobal::create_with_compartment(
-                    cx, current_global);
+                    cx, existing_global);
             default:
                 return nullptr;
         }
