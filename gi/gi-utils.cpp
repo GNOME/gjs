@@ -98,7 +98,6 @@ find_boxed_constructor_indices(const UnownedInfo<TAG>& info) {
     if (info.gtype() == G_TYPE_NONE)
         return {};
 
-    ConstructorIndex i = 0;
     Maybe<ConstructorIndex> first_constructor;
     Maybe<ConstructorIndex> zero_args_constructor;
     Maybe<ConstructorIndex> default_constructor;
@@ -108,7 +107,8 @@ find_boxed_constructor_indices(const UnownedInfo<TAG>& info) {
      * really make sense for non-boxed types, since there is no memory
      * management for the return value.
      */
-    for (const GI::AutoFunctionInfo& func_info : info.methods()) {
+    for (ConstructorIndex i = 0;
+         const GI::AutoFunctionInfo& func_info : info.methods()) {
         if (func_info.is_constructor()) {
             if (!first_constructor)
                 first_constructor = Some(i);

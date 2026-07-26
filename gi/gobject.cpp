@@ -256,8 +256,7 @@ static void gjs_object_class_init(void* class_pointer, void*) {
     if (!pop_class_init_properties(gtype, &properties))
         return;
 
-    unsigned i = 0;
-    for (Gjs::AutoParam& pspec : properties) {
+    for (unsigned i = 0; Gjs::AutoParam& pspec : properties) {
         g_param_spec_set_qdata(pspec, ObjectBase::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_class_install_property(klass, ++i, pspec);

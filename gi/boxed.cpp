@@ -808,8 +808,6 @@ BoxedPrototype<Base, Prototype, Instance>::find_unique_js_field_name(
 template <class Base, class Prototype, class Instance>
 bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
     JSContext* cx, JS::HandleObject proto) {
-    uint32_t count = 0;
-
     // We define all fields as read/write so that the user gets an error
     // message. If we omitted fields or defined them read-only we'd:
     //
@@ -825,7 +823,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
     //
     // At this point methods have already been defined on the prototype, so we
     // may get name conflicts which we need to check for.
-    for (const GI::AutoFieldInfo& field : info().fields()) {
+    for (uint32_t count = 0; const GI::AutoFieldInfo& field : info().fields()) {
         const std::string property_name =
             find_unique_js_field_name(info(), field.name());
         JS::RootedValue private_id{cx, JS::PrivateUint32Value(count++)};
