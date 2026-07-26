@@ -85,10 +85,10 @@ bool gjs_object_require_property(JSContext* cx, JS::HandleObject obj,
                                  JS::MutableHandleValue value) {
     value.setUndefined();
 
-    if (G_UNLIKELY(!JS_GetPropertyById(cx, obj, property_name, value)))
+    if (!JS_GetPropertyById(cx, obj, property_name, value)) [[unlikely]]
         return false;
 
-    if (G_LIKELY(!value.isUndefined()))
+    if (!value.isUndefined()) [[likely]]
         return true;
 
     throw_property_lookup_error(cx, obj, obj_description, property_name,

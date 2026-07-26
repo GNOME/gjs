@@ -231,13 +231,16 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
     gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
 
+    // False positive https://github.com/llvm/llvm-project/issues/195557
+    // NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
+
     if (!is_valid()) {
         // We were destroyed; become a no-op
         return;
     }
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
-    if (G_UNLIKELY(!gjs->is_owner_thread()) || JS::RuntimeHeapIsCollecting()) {
+    if (!gjs->is_owner_thread() || JS::RuntimeHeapIsCollecting()) [[unlikely]] {
         auto* hint = static_cast<GSignalInvocationHint*>(invocation_hint);
         std::ostringstream message;
 
@@ -318,8 +321,6 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
         // Start at argument 1, skip the instance parameter
         for (unsigned i = 1; i < n_param_values; ++i) {
             ArgumentDetails& arg_details = args_details[i];
-            // False positive https://github.com/llvm/llvm-project/issues/195557
-            // NOLINTNEXTLINE(clang-analyzer-cplusplus.NewDeleteLeaks)
             arg_details.info.emplace();
             signal_info->load_arg(i - 1, &arg_details.arg_info());
             arg_details.info->first.load_type(&arg_details.type_info());
@@ -336,6 +337,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                 needs_cleanup = true;
         }
     }
+    // NOLINTEND(clang-analyzer-cplusplus.NewDeleteLeaks)
 
     JS::RootedValueVector argv{m_cx};
     // May end up being less

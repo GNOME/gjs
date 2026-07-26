@@ -35,6 +35,7 @@ fi
 popd > /dev/null || exit 1
 
 if [ $# -eq 0 ]; then
+    # False positive Maybe.h https://github.com/llvm/llvm-project/issues/195557
     run-clang-tidy -clang-tidy-binary tools/ctx.sh -p "${BUILD}" \
         "${CHECKS_OVERRIDE[@]}" gi/*.cpp gjs/*.cpp installed-tests/*.cpp \
         installed-tests/js/libgjstesttools/*.cpp libgjs-private/*.c \

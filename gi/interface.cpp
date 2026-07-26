@@ -169,7 +169,7 @@ bool gjs_lookup_interface_constructor(JSContext* cx, GType gtype,
 
     JSObject* constructor =
         gjs_lookup_generic_constructor(cx, interface_info.ref());
-    if (G_UNLIKELY(!constructor))
+    if (!constructor) [[unlikely]]
         return false;
 
     value_p.setObject(*constructor);

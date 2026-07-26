@@ -163,19 +163,19 @@ static JSObject* gjs_lookup_param_prototype(JSContext* cx) {
     JS::RootedObject in_object{
         cx, gjs_lookup_namespace_object_by_name(cx, atoms.gobject())};
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     JS::RootedValue value{cx};
     if (!JS_GetPropertyById(cx, in_object, atoms.param_spec(), &value) ||
-        G_UNLIKELY(!value.isObject()))
+        !value.isObject()) [[unlikely]]
         return nullptr;
 
     JS::RootedObject constructor{cx, &value.toObject()};
     g_assert(constructor);
 
     if (!JS_GetPropertyById(cx, constructor, atoms.prototype(), &value) ||
-        G_UNLIKELY(!value.isObjectOrNull()))
+        !value.isObjectOrNull()) [[unlikely]]
         return nullptr;
 
     return value.toObjectOrNull();

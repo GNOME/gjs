@@ -302,7 +302,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         set_return_ffi_arg_from_gi_argument(ret_type, result, &argument);
     }
 
-    if (G_UNLIKELY(!is_valid())) {
+    if (!is_valid()) [[unlikely]] {
         warn_about_illegal_js_callback(
             "during shutdown",
             "destroying a Clutter actor or GTK widget with ::destroy signal "
@@ -322,7 +322,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         return;
     }
 
-    if (G_UNLIKELY(!gjs->is_owner_thread())) {
+    if (!gjs->is_owner_thread()) [[unlikely]] {
         warn_about_illegal_js_callback("on a different thread",
                                        "an API not intended to be used in JS",
                                        false);

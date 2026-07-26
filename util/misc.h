@@ -32,7 +32,7 @@
 // enabled. Based on MOZ_ALWAYS_TRUE.
 #define GJS_ALWAYS_TRUE(expr)                                          \
     do {                                                               \
-        if (G_LIKELY(expr)) {                                          \
+        if (expr) [[likely]] {                                         \
             /* Silence [[nodiscard]]. */                               \
         } else {                                                       \
             g_assertion_message_expr(G_LOG_DOMAIN, __FILE__, __LINE__, \

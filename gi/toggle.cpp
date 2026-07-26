@@ -145,7 +145,7 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
                           ToggleQueue::Handler handler) {
     g_assert(owns_lock() && "Unsafe access to queue");
 
-    if (G_UNLIKELY(m_shutdown)) {
+    if (m_shutdown) [[unlikely]] {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Enqueuing GObject %p to toggle %s after "
                   "shutdown, probably from another thread (%p).",

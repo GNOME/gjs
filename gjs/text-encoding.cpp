@@ -206,7 +206,7 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
                                                      encoding);
 
     // g_convert only handles ssize_t bytes, but we may have size_t max
-    if (G_UNLIKELY(!std::in_range<ssize_t>(input_len))) {
+    if (!std::in_range<ssize_t>(input_len)) [[unlikely]] {
         gjs_throw(cx, "Array too big to decode: %zu bytes", input_len);
         return nullptr;
     }

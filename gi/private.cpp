@@ -361,8 +361,8 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
     GTypeQuery query;
     g_type_query(parent_priv->gtype(), &query);
 
-    if (G_UNLIKELY(
-            g_type_test_flags(parent_priv->gtype(), G_TYPE_FLAG_FINAL))) {
+    if (g_type_test_flags(parent_priv->gtype(), G_TYPE_FLAG_FINAL))
+        [[unlikely]] {
         gjs_throw(cx, "Cannot inherit from a final type");
         return false;
     }

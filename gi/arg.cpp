@@ -3577,7 +3577,7 @@ static inline bool gjs_gi_argument_release_array_internal(
 
     GITypeTag type_tag = element_type.tag();
     size_t element_size = gjs_type_get_element_size(type_tag, element_type);
-    if G_UNLIKELY (element_size == 0)
+    if (element_size == 0) [[unlikely]]
         return true;
 
     bool is_pointer = element_type.is_pointer();

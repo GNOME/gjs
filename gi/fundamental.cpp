@@ -240,7 +240,7 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
     const char* constructor_name = info.name();
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     bool found;
@@ -259,7 +259,7 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
                                                 &constructor))
             return nullptr;
     } else {
-        if (G_UNLIKELY(!value.isObject())) {
+        if (!value.isObject()) [[unlikely]] {
             gjs_throw(cx,
                       "Fundamental constructor was not an object, it was a %s",
                       JS::InformalValueTypeName(value));

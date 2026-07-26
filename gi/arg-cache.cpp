@@ -3014,7 +3014,7 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
                                        const GI::BaseInfo& interface_info) {
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
-    if (G_UNLIKELY(base_args.transfer == GI_TRANSFER_CONTAINER)) {
+    if (base_args.transfer == GI_TRANSFER_CONTAINER) [[unlikely]] {
         set_argument<ArgKind>(
             new Arg::NotIntrospectable(INTERFACE_TRANSFER_CONTAINER),
             base_args);

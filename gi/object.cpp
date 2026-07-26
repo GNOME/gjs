@@ -176,7 +176,7 @@ ObjectInstance* ObjectInstance::for_gobject(GObject* gobj) {
 void ObjectInstance::check_js_object_finalized() {
     if (!m_uses_toggle_ref)
         return;
-    if (G_UNLIKELY(m_wrapper_finalized)) {
+    if (m_wrapper_finalized) [[unlikely]] {
         g_critical(
             "Object %p (a %s) resurfaced after the JS wrapper was finalized. "
             "This is some library doing dubious memory management inside "
@@ -200,7 +200,7 @@ void ObjectInstance::set_object_qdata() {
     g_object_set_qdata_full(
         m_ptr, gjs_object_priv_quark(), this, [](void* object) {
             auto* self = static_cast<ObjectInstance*>(object);
-            if (G_UNLIKELY(!self->m_gobj_disposed)) {
+            if (!self->m_gobj_disposed) [[unlikely]] {
                 g_warning(
                     "Object %p (a %s) was finalized but we didn't track "
                     "its disposal",
@@ -1334,7 +1334,7 @@ static JSNative get_getter_for_property(
             prop_getter->load_return_type(&return_type);
             GI::AutoTypeInfo prop_type{property_info->type_info()};
 
-            if (G_LIKELY(type_info_compatible(return_type, prop_type))) {
+            if (type_info_compatible(return_type, prop_type)) [[likely]] {
                 return create_getter_invoker(cx, pspec, *prop_getter,
                                              return_type, priv_out);
             }
@@ -1442,7 +1442,7 @@ static JSNative get_setter_for_property(
             value_arg.load_type(&type_info);
             GI::AutoTypeInfo prop_type{property_info->type_info()};
 
-            if (G_LIKELY(type_info_compatible(type_info, prop_type))) {
+            if (type_info_compatible(type_info, prop_type)) [[likely]] {
                 return create_setter_invoker(cx, pspec, *prop_setter, value_arg,
                                              type_info, priv_out);
             }
@@ -1559,7 +1559,7 @@ bool ObjectPrototype::lazy_define_gobject_property(
                                      setter_priv, flags))
         return false;
 
-    if G_UNLIKELY (!canonical_id.isVoid()) {
+    if (!canonical_id.isVoid()) [[unlikely]] {
         debug_jsprop("Defining alias GObject property", canonical_id, obj);
 
         if (!JS_DefinePropertyById(cx, obj, canonical_id, canonical_desc))
@@ -2220,7 +2220,7 @@ void ObjectInstance::toggle_down() {
 }
 
 void ObjectInstance::toggle_up() {
-    if (G_UNLIKELY(!m_ptr || m_gobj_disposed || m_gobj_finalized)) {
+    if (!m_ptr || m_gobj_disposed || m_gobj_finalized) [[unlikely]] {
         gjs_debug_lifecycle(
             GJS_DEBUG_GOBJECT,
             "Avoid toggling up a wrapper for a %s object: %p (%s)",
@@ -2512,7 +2512,7 @@ void ObjectInstance::associate_js_gobject(JSContext* cx,
     ensure_weak_pointer_callback(cx);
     link();
 
-    if (!G_UNLIKELY(m_gobj_disposed))
+    if (!m_gobj_disposed) [[likely]]
         g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
 }
 
@@ -2841,7 +2841,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
         constructor_name = g_type_name(gtype);
     }
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     bool found;
@@ -2861,7 +2861,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
                                            nullptr, 0, &constructor, &ignored))
             return nullptr;
     } else {
-        if (G_UNLIKELY (!value.isObject()))
+        if (!value.isObject()) [[unlikely]]
             return nullptr;
 
         constructor = &value.toObject();
@@ -2881,7 +2881,7 @@ static JSObject* gjs_lookup_object_prototype_from_info(
     JS::RootedObject constructor{
         cx, gjs_lookup_object_constructor_from_info(cx, info, gtype)};
 
-    if (G_UNLIKELY(!constructor))
+    if (!constructor) [[unlikely]]
         return nullptr;
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -3889,7 +3889,7 @@ bool gjs_lookup_object_constructor(JSContext* cx, GType gtype,
     JSObject* constructor = gjs_lookup_object_constructor_from_info(
         cx, repo.find_by_gtype(gtype), gtype);
 
-    if (G_UNLIKELY(constructor == nullptr))
+    if (constructor == nullptr) [[unlikely]]
         return false;
 
     value_p.setObject(*constructor);
