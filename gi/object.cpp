@@ -54,7 +54,6 @@
 #include <mozilla/Result.h>
 #include <mozilla/Span.h>
 #include <mozilla/Try.h>
-#include <mozilla/Unused.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -85,6 +84,7 @@
 #include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"
 #include "util/log.h"
+#include "util/misc.h"
 
 class JSTracer;
 
@@ -130,8 +130,7 @@ bool ObjectBase::is_custom_js_class() {
 
 void ObjectInstance::link() {
     auto [_, done] = s_wrapped_gobject_list.insert(this);
-    g_assert(done);
-    mozilla::Unused << done;
+    GJS_ALWAYS_TRUE(done);
 }
 
 void ObjectInstance::unlink() { s_wrapped_gobject_list.erase(this); }

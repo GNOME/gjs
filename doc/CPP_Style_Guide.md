@@ -450,7 +450,7 @@ Here is an example of all of the above rules together:
 
 #include <js/GCHashTable.h>  // for GCHashMap
 #include <jsapi.h>           // for JS_New, JSAutoRealm, JS_GetProperty
-#include <mozilla/Unused.h>
+#include <mozilla/Result.h>
 
 #include "gjs/atoms.h"
 #include "gjs/context-private.h"

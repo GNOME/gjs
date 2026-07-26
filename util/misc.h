@@ -16,7 +16,7 @@
 #include <ratio>  // for micro
 #include <string>
 
-#include <glib.h>  // for g_get_monotonic_time
+#include <glib.h>  // for g_get_monotonic_time, g_assert
 
 #include <mozilla/Result.h>
 #include <mozilla/ResultVariant.h>  // IWYU pragma: keep
@@ -26,6 +26,21 @@
 #else
 #    define GJS_USED_ASSERT
 #endif
+
+// GJS_ALWAYS_TRUE(expr) and friends always evaluate the provided expression,
+// regardless of whether asserts are disabled, but only assert if asserts are
+// enabled. Based on MOZ_ALWAYS_TRUE.
+#define GJS_ALWAYS_TRUE(expr)                                          \
+    do {                                                               \
+        if (G_LIKELY(expr)) {                                          \
+            /* Silence [[nodiscard]]. */                               \
+        } else {                                                       \
+            g_assertion_message_expr(G_LOG_DOMAIN, __FILE__, __LINE__, \
+                                     G_STRFUNC, #expr);                \
+        }                                                              \
+    } while (false)
+
+#define GJS_ALWAYS_OK(expr) GJS_ALWAYS_TRUE((expr).isOk())
 
 bool gjs_environment_variable_is_set(const char* env_variable_name);
 
