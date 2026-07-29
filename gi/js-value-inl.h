@@ -298,6 +298,8 @@ inline bool js_value_to_c_checked_impl(JSContext* cx, JS::HandleValue value,
                 }
             }
 
+            // Can't use std::in_range() here because types may be
+            // floating-point or character types
             *out_of_range =
                 (*out >
                      static_cast<T>(std::numeric_limits<WantedType>::max()) ||

@@ -16,7 +16,7 @@
 #include <limits>
 #include <type_traits>
 #include <unordered_set>  // for unordered_set::erase(), insert()
-#include <utility>
+#include <utility>        // for in_range, move
 
 #include <ffi.h>
 #include <girepository/girepository.h>
@@ -338,7 +338,7 @@ struct FixedSizeArray {
     explicit FixedSizeArray(const GI::TypeInfo& type_info) {
         size_t fixed_size = type_info.array_fixed_size().value();
         g_assert(
-            fixed_size <= UINT32_MAX &&
+            std::in_range<uint32_t>(fixed_size) &&
             "4294967295 fixed array elements ought to be enough for anybody");
         m_fixed_size = fixed_size;
     }

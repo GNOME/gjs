@@ -11,12 +11,8 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
-#include <utility>  // for move
+#include <utility>  // for in_range, move
 #include <vector>
-
-#ifndef G_DISABLE_ASSERT
-#    include <limits>  // for numeric_limits
-#endif
 
 #include <ffi.h>
 #include <girepository/girepository.h>
@@ -950,8 +946,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
         GJS_PROFILER_DYNAMIC_STRING(cx, dynamicString + "." + format_name())};
     AutoProfilerLabel label{cx, "", full_name};
 
-    g_assert(ffi_arg_pos + state.gi_argc <
-             std::numeric_limits<decltype(state.processed_c_args)>::max());
+    g_assert(std::in_range<decltype(state.processed_c_args)>(ffi_arg_pos +
+                                                             state.gi_argc));
 
     state.processed_c_args = ffi_arg_pos;
     for (gi_arg_pos = 0; gi_arg_pos < state.gi_argc;

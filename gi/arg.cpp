@@ -13,7 +13,7 @@
 #include <concepts>
 #include <functional>  // for mem_fn
 #include <string>
-#include <utility>  // for move
+#include <utility>  // for in_range, move
 #include <vector>
 
 #include <girepository/girepository.h>
@@ -3249,7 +3249,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 
                     if (gtype != G_TYPE_NONE) {
                         // Check to make sure 32 bit flag
-                        if (static_cast<uint32_t>(value_int64) != value_int64) {
+                        if (!std::in_range<uint32_t>(value_int64)) {
                             gjs_throw(cx,
                                       "0x%" PRIx64
                                       " is not a valid value for flags %s",
