@@ -95,7 +95,6 @@ const handlers = {
     launch(args, seq) {
         const cwd = args.cwd || '.';
         const filePath = cwd + '/' + args.program;
-        printerr(`[LAUNCH] ${filePath}`, args);
 
         if (args.stopOnEntry) {
             dbg.onEnterFrame = onInitialEnterFrame;
@@ -115,9 +114,6 @@ const handlers = {
         */
         sendResponse('setExceptionBreakpoints', undefined, seq);
     },
-    setBreakpoints(args, seq) {
-        sendResponse('setExceptionBreakpoints', undefined, seq);
-    },
     configurationDone(args, seq) {
         sendResponse('configurationDone', undefined, seq);
 
@@ -128,7 +124,6 @@ const handlers = {
                 sendEvent('exited', { exitCode: 0 });
                 sendEvent('terminated');
             } catch (e) {
-                printerr(`[ERROR] ${e}`);
                 sendEvent('output', {
                     category: 'stderr',
                     output: `Error: ${e}\n`,
@@ -165,8 +160,30 @@ const handlers = {
         sendResponse('pause', undefined, seq);
         pause();
     },
-    setBreakpoint(args, seq) {
-        sendResponse('setBreakpoint', { breakpoints: [] }, seq);
+    setBreakpoints(args, seq) {
+        /***
+        "source": {
+           "name": "test.js",
+           "path": "/home/alien/sites/gsoc/gjs/test.js"
+         },
+         "breakpoints": [
+           {
+             "line": 7
+           }
+         ],
+         "sourceModified": false
+         */
+        printerr(JSON.stringify(args));
+        // const scripts = dbg.findScripts({ url: `file://${args.source.path}` });
+        const scripts = dbg.findScripts();
+        printerr("Found n scripts:" + JSON.stringify(scripts))
+
+        scripts.forEach((script, i) => {
+            printerr(i, script.url);
+            printerr(i, script.startLine);
+        })
+
+        sendResponse('setBreakpoints', { breakpoints: [] }, seq);
     },
 };
 
@@ -202,7 +219,6 @@ let paused = false;
 function onInitialEnterFrame() {
     // printerr("entered frame", frame?.callee.name);
     dbg.onEnterFrame = undefined;
-    printerr('initial enter frame');
 
     sendEvent('stopped', {
         reason: 'entry',
