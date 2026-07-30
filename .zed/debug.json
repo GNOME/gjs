@@ -13,6 +13,7 @@
         "program": "test.js",
         "stopOnEntry": true,
         "cwd": "/home/alien/sites/gsoc/gjs",
+        "gjsPath": "flatpak-spawn --host meson devenv -C /home/alien/sites/gsoc/gjs/_build gjs-console",
     },
     {
         "adapter": "JavaScript",
