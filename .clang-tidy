@@ -110,12 +110,20 @@ CheckOptions:
     # we only care about confusion between 1 and l
 CustomChecks:
   - Name: use-typesafe-min
-    Query: match conditionalOperator(isExpandedFromMacro("MIN")).bind("min")
+    Query: |
+      match conditionalOperator(
+        isExpandedFromMacro("MIN"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("min")
     Diagnostic:
       - BindName: min
         Message: Prefer std::min() instead of MIN macro for type safety
   - Name: use-typesafe-max
-    Query: match conditionalOperator(isExpandedFromMacro("MAX")).bind("max")
+    Query: |
+      match conditionalOperator(
+        isExpandedFromMacro("MAX"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("max")
     Diagnostic:
       - BindName: max
         Message: Prefer std::max() instead of MAX macro for type safety
