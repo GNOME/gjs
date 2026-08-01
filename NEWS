@@ -1,3 +1,12 @@
+Version 1.89.2
+--------------
+
+- This is the beta release for the GNOME 51 cycle. There are no notable changes
+  since 1.89.1, only minor bug fixes.
+
+- Closed bugs and merge requests:
+  * Various maintenance [!1097, Philip Chimento]
+
 Version 1.89.1
 --------------
 
