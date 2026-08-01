@@ -6,6 +6,8 @@
 
 #include <inttypes.h>
 
+#include <iterator>  // for size
+
 #include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -38,7 +40,7 @@ void gjs_memory_report(const char* where, bool die_if_leaks) {
               "Memory report: %s",
               where);
 
-    size_t n_counters = G_N_ELEMENTS(counters);
+    size_t n_counters = std::size(counters);
 
     int64_t total_objects = 0;
     for (size_t i = 0; i < n_counters; ++i) {

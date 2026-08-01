@@ -119,6 +119,17 @@ CustomChecks:
     Diagnostic:
       - BindName: max
         Message: Prefer std::max() instead of MAX macro for type safety
+  - Name: use-typesafe-array-size
+    Query: |
+      match binaryOperator(
+        hasOperatorName("/"),
+        isExpandedFromMacro("G_N_ELEMENTS"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("size")
+    Diagnostic:
+      - BindName: size
+        Message: >
+          Prefer std::size() instead of G_N_ELEMENTS macro for type safety
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true

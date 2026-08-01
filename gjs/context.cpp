@@ -25,6 +25,7 @@
 #endif
 
 #include <new>
+#include <iterator>     // for size
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>
@@ -311,7 +312,7 @@ static void gjs_context_class_init(GjsContextClass* klass) {
                     G_PARAM_STATIC_STRINGS));
 
     g_object_class_install_properties(
-        object_class, G_N_ELEMENTS(gjs_context_props), gjs_context_props);
+        object_class, std::size(gjs_context_props), gjs_context_props);
 
     // For GjsPrivate
     if (!g_getenv("GJS_USE_UNINSTALLED_FILES")) {

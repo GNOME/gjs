@@ -6,6 +6,7 @@
 
 #include <cstddef>        // for size_t
 #include <functional>     // for hash<int>
+#include <iterator>       // for size
 #include <sstream>
 #include <string>         // for string
 #include <string_view>
@@ -61,7 +62,7 @@ const char* messages[] = {
     "{} has been renamed. Please update your code to use {} instead.",
 };
 
-static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
+static_assert(std::size(messages) == GjsDeprecationMessageId::LastValue);
 
 struct DeprecationEntry {
     GjsDeprecationMessageId id;
