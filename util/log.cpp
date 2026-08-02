@@ -198,12 +198,12 @@ void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
         double since = total - previous;
         const char* ts_suffix;
 
-        if (since > 50.0) {
-            ts_suffix = "!!  ";
+        if (since > 200.0) {
+            ts_suffix = "!!!!";
         } else if (since > 100.0) {
             ts_suffix = "!!! ";
-        } else if (since > 200.0) {
-            ts_suffix = "!!!!";
+        } else if (since > 50.0) {
+            ts_suffix = "!!  ";
         } else {
             ts_suffix = "    ";
         }
