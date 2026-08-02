@@ -357,7 +357,7 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* cx, GError* gerror) {
         return StructInstance::new_for_c_struct(cx, glib_boxed, gerror);
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct %s with JSObject",
+    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct {} with JSObject",
                       info->name());
 
     JS::RootedObject obj{cx, gjs_new_object_with_generic_prototype(cx, *info)};

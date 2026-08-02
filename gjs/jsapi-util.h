@@ -275,13 +275,13 @@ bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
     g_assert(clamped && "forgot out parameter");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Checking if BigInt %s is out of range for type %s",
-                      gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>());
+                      "Checking if BigInt {} is out of range for type {}", bi,
+                      Gjs::static_type_name<T>());
 
     if (JS::BigIntFits(bi, clamped)) {
-        gjs_debug_marshal(
-            GJS_DEBUG_GFUNCTION, "BigInt %s is in the range of type %s",
-            std::to_string(*clamped).c_str(), Gjs::static_type_name<T>());
+        gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                          "BigInt {} is in the range of type {}", *clamped,
+                          Gjs::static_type_name<T>());
         return false;
     }
 
@@ -292,9 +292,8 @@ bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
     }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "BigInt %s is not in the range of type %s, clamped to %s",
-                      gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>(),
-                      std::to_string(*clamped).c_str());
+                      "BigInt {} is not in the range of type {}, clamped to {}",
+                      bi, Gjs::static_type_name<T>(), *clamped);
     return true;
 }
 
@@ -352,6 +351,16 @@ struct std::formatter<JSObject*> : Gjs::FormatterBase<'?'> {
         if (spec() == '?')
             return std::format_to(cx.out(), "Object {}", static_cast<void*>(o));
         return std::format_to(cx.out(), "{}", gjs_debug_object(o));
+    }
+};
+
+template <>
+struct std::formatter<JS::BigInt*> : Gjs::FormatterBase<'?'> {
+    auto format(JS::BigInt* bi, std::format_context& cx) const {
+        if (spec() == '?')
+            return std::format_to(cx.out(), "JS::BigInt {}",
+                                  static_cast<void*>(bi));
+        return std::format_to(cx.out(), "{}", gjs_debug_bigint(bi));
     }
 };
 

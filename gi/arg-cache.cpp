@@ -1980,10 +1980,9 @@ bool NumericIn<TAG>::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
     }
 
     gjs_debug_marshal(
-        GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
-        gjs_argument_display_name(arg_name(), GJS_ARGUMENT_ARGUMENT).c_str(),
-        std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
-        Gjs::static_type_name<TAG>());
+        GJS_DEBUG_GFUNCTION, "{} set to value {} (type {})",
+        gjs_argument_display_name(arg_name(), GJS_ARGUMENT_ARGUMENT),
+        gjs_arg_get<TAG>(arg), Gjs::static_type_name<TAG>());
 
     return true;
 }

@@ -229,8 +229,8 @@ bool set_main_loop_hook(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    gjs_debug(GJS_DEBUG_MAINLOOP, "Set main loop hook to %s",
-              gjs_debug_object(callback).c_str());
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Set main loop hook to {}",
+              gjs_debug_callable(callback));
 
     GjsContextPrivate* priv = GjsContextPrivate::from_cx(cx);
     if (!priv->set_main_loop_hook(callback)) {

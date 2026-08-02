@@ -8,6 +8,11 @@
 
 #include <stdint.h>
 
+#include <format>
+#include <string>
+#include <type_traits>  // for type_identity
+#include <utility>      // for forward
+
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app should
  * have its own entry in the enum. Be sure to add new enum entries to the switch
@@ -150,5 +155,17 @@ enum GjsDebugTopic : uint8_t {
 void gjs_log_init();
 void gjs_log_cleanup();
 
-[[gnu::format(printf, 2, 3)]]
-void gjs_debug(GjsDebugTopic, const char* format, ...);
+namespace Gjs::detail {
+void debug_impl(GjsDebugTopic, const std::string&);
+bool topic_enabled(GjsDebugTopic topic);
+}  // namespace Gjs::detail
+
+template <typename... Args>
+void gjs_debug(GjsDebugTopic topic, std::format_string<Args...> fmt,
+               Args&&... args) {
+    if (!Gjs::detail::topic_enabled(topic))
+        return;
+
+    Gjs::detail::debug_impl(topic,
+                            std::format(fmt, std::forward<Args>(args)...));
+}

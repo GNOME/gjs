@@ -547,12 +547,10 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     }
 
     void log_usage() const {
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-        mozilla::Maybe<GI::BaseInfo> parent = container();
         gjs_debug_gi_usage(
-            "{ GIInfoType %s, \"%s\", \"%s\", \"%s\" }", type_string(), ns(),
-            parent.map(std::mem_fn(&GI::BaseInfo::name)).valueOr(""), name());
-#endif  // GJS_VERBOSE_ENABLE_GI_USAGE
+            "{{ GIInfoType {}, \"{}\", \"{}\", \"{}\" }}", type_string(), ns(),
+            container().map(std::mem_fn(&GI::BaseInfo::name)).valueOr(""),
+            name());
     }
 };
 
@@ -944,41 +942,22 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
 
     void log_usage() {
 #if GJS_VERBOSE_ENABLE_GI_USAGE
-        std::ostringstream out;
-
-#    define DIRECTION_STRING(d)              \
-        (((d) == GI_DIRECTION_IN)    ? "IN"  \
-         : ((d) == GI_DIRECTION_OUT) ? "OUT" \
-                                     : "INOUT")
-#    define TRANSFER_STRING(t)                          \
-        (((t) == GI_TRANSFER_NOTHING)     ? "NOTHING"   \
-         : ((t) == GI_TRANSFER_CONTAINER) ? "CONTAINER" \
-                                          : "EVERYTHING")
-
-        out << ".details = { .func = { .retval_transfer = GI_TRANSFER_"
-            << TRANSFER_STRING(caller_owns()) << ", .n_args = " << n_args()
-            << ", .args = { ";
-
+        std::string args_details;
         for (AutoArgInfo arg_info : args()) {
-            out << "{ GI_DIRECTION_" << DIRECTION_STRING(arg_info.direction())
-                << ", GI_TRANSFER_"
-                << TRANSFER_STRING(arg_info.ownership_transfer()) << " }, ";
+            std::format_to(std::back_inserter(args_details),
+                           "{}{{ GI_DIRECTION_{}, GI_TRANSFER_{} }}, ",
+                           args_details.empty() ? "" : ", ",
+                           arg_info.direction(), arg_info.ownership_transfer());
         }
-        out.seekp(-2, std::ios_base::end);  // Erase trailing comma
-
-#    undef DIRECTION_STRING
-#    undef TRANSFER_STRING
-
-        out << " } } }";
-        std::string details{out.str()};
 
         using Base = BaseInfoOperations<Wrapper>;
-        mozilla::Maybe<GI::BaseInfo> parent = Base::container();
         gjs_debug_gi_usage(
-            "{ GIInfoType %s, \"%s\", \"%s\", \"%s\", %s }",
+            "{{ GIInfoType {}, \"{}\", \"{}\", \"{}\", .details = {{ .func = "
+            "{{ .retval_transfer = GI_TRANSFER_{}, .n_args = {}, .args = {{ {} "
+            "}} }} }} }}",
             Base::type_string(), Base::ns(),
-            parent.map(std::mem_fn(&GI::BaseInfo::name)).valueOr(""),
-            Base::name(), details.c_str());
+            Base::container().map(std::mem_fn(&GI::BaseInfo::name)).valueOr(""),
+            Base::name(), caller_owns(), n_args(), args_details);
 #endif  // GJS_VERBOSE_ENABLE_GI_USAGE
     }
 
@@ -1823,6 +1802,44 @@ template <>
 struct std::formatter<GITypeTag> : std::formatter<const char*> {
     auto format(GITypeTag tag, std::format_context& cx) const {
         return formatter<const char*>::format(gi_type_tag_to_string(tag), cx);
+    }
+};
+
+template <>
+struct std::formatter<GITransfer> : std::formatter<std::string_view> {
+    auto format(GITransfer t, std::format_context& cx) const {
+        std::string_view descr;
+        switch (t) {
+            case GI_TRANSFER_NOTHING:
+                descr = "NOTHING";
+                break;
+            case GI_TRANSFER_CONTAINER:
+                descr = "CONTAINER";
+                break;
+            case GI_TRANSFER_EVERYTHING:
+                descr = "EVERYTHING";
+                break;
+        }
+        return formatter<std::string_view>::format(descr, cx);
+    }
+};
+
+template <>
+struct std::formatter<GIDirection> : std::formatter<std::string_view> {
+    auto format(GIDirection d, std::format_context& cx) const {
+        std::string_view descr;
+        switch (d) {
+            case GI_DIRECTION_IN:
+                descr = "IN";
+                break;
+            case GI_DIRECTION_OUT:
+                descr = "OUT";
+                break;
+            case GI_DIRECTION_INOUT:
+                descr = "INOUT";
+                break;
+        }
+        return formatter<std::string_view>::format(descr, cx);
     }
 };
 

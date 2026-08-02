@@ -12,7 +12,6 @@
 #include <concepts>
 #include <functional>  // for mem_fn
 #include <span>
-#include <string>
 #include <utility>  // for in_range, move
 #include <vector>
 
@@ -323,8 +322,7 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
              "keys from JS_Enumerate must be non-symbol property keys");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting JS::Value to GHashTable key %s",
-                      gi_type_tag_to_string(type_tag));
+                      "Converting JS::Value to GHashTable key {}", type_tag);
 
     if (!GI::is_supported_ghash_key_type(type_tag)) {
         gjs_throw(cx, "Type {} not supported for hash table keys", type_tag);
@@ -1019,8 +1017,8 @@ bool gjs_array_to_basic_explicit_array(
     g_assert(contents_out && length_out && "forgot out parameter");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting argument '%s' JS value %s to C array",
-                      arg_name, gjs_debug_value(value).c_str());
+                      "Converting argument '{}' JS value {} to C array",
+                      arg_name, value);
 
     if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
         (!value.isString() && !value.isObjectOrNull())) {
@@ -1090,8 +1088,8 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to C array, transfer %d",
-        arg_name, gjs_debug_value(value).c_str(), transfer);
+        "Converting argument '{}' JS value {} to C array, transfer {}",
+        arg_name, value, transfer);
 
     if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
         (!value.isString() && !value.isObjectOrNull())) {
@@ -1192,7 +1190,7 @@ bool value_to_interface_gi_argument_internal(
                       .valueOr(G_TYPE_NONE);
 
     if (gtype != G_TYPE_NONE)
-        gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is %s",
+        gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is {}",
                           g_type_name(gtype));
 
     if (gtype == G_TYPE_VALUE) {
@@ -1373,8 +1371,8 @@ bool value_to_interface_gi_argument_internal(
         }
 
         gjs_debug(GJS_DEBUG_GFUNCTION,
-                  "conversion of JSObject value %s to type %s failed",
-                  gjs_debug_value(value).c_str(), interface_info.name());
+                  "conversion of JSObject value {} to type {} failed", value,
+                  interface_info.name());
 
         gjs_throw(cx,
                   "Unexpected unregistered type unpacking GIArgument from "
@@ -1415,8 +1413,7 @@ bool value_to_interface_gi_argument_internal(
     }
 
     gjs_debug(GJS_DEBUG_GFUNCTION,
-              "JSObject type '%s' is neither null nor an object",
-              JS::InformalValueTypeName(value));
+              "JSObject type '{:t}' is neither null nor an object", value);
     return throw_invalid_interface_argument(cx, value, interface_info, arg_name,
                                             arg_type);
 }
@@ -1440,10 +1437,9 @@ inline static bool gjs_arg_set_from_js_value(JSContext* cx,
         return false;
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
-                      gjs_argument_display_name(arg_name, arg_type).c_str(),
-                      std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
-                      Gjs::static_type_name<TAG>());
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "{} set to value {} (type {})",
+                      gjs_argument_display_name(arg_name, arg_type),
+                      gjs_arg_get<TAG>(arg), Gjs::static_type_name<TAG>());
 
     return true;
 }
@@ -1471,8 +1467,8 @@ bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type %s", arg_name,
-        gjs_debug_value(value).c_str(), gi_type_tag_to_string(type_tag));
+        "Converting argument '{}' JS value {} to GIArgument type {}", arg_name,
+        value, type_tag);
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -1594,8 +1590,8 @@ bool gjs_value_to_gerror_gi_argument(JSContext* cx, JS::HandleValue value,
                                      GjsArgumentFlags flags) {
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type error",
-        arg_name, gjs_debug_value(value).c_str());
+        "Converting argument '{}' JS value {} to GIArgument type error",
+        arg_name, value);
 
     if (value.isNull()) {
         gjs_arg_set(arg, nullptr);
@@ -1618,8 +1614,8 @@ bool gjs_value_to_gdk_atom_gi_argument(JSContext* cx, JS::HandleValue value,
                                        GjsArgumentType arg_type) {
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type interface",
-        arg_name, gjs_debug_value(value).c_str());
+        "Converting argument '{}' JS value {} to GIArgument type interface",
+        arg_name, value);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is GdkAtom");
 
@@ -1643,8 +1639,8 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type interface",
-        arg_name, gjs_debug_value(value).c_str());
+        "Converting argument '{}' JS value {} to GIArgument type interface",
+        arg_name, value);
 
     if (auto struct_info = interface_info.as<GI::InfoTag::STRUCT>();
         struct_info && struct_info->is_foreign()) {
@@ -1746,8 +1742,8 @@ bool gjs_value_to_basic_glist_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type glist",
-        arg_name, gjs_debug_value(value).c_str());
+        "Converting argument '{}' JS value {} to GIArgument type glist",
+        arg_name, value);
 
     return basic_array_to_linked_list(cx, value, element_tag, arg_name,
                                       arg_type, &gjs_arg_member<GList*>(arg));
@@ -1763,8 +1759,8 @@ bool gjs_value_to_basic_gslist_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type gslist",
-        arg_name, gjs_debug_value(value).c_str());
+        "Converting argument '{}' JS value {} to GIArgument type gslist",
+        arg_name, value);
 
     return basic_array_to_linked_list(cx, value, element_tag, arg_name,
                                       arg_type, &gjs_arg_member<GSList*>(arg));
@@ -1782,8 +1778,8 @@ bool gjs_value_to_basic_ghash_gi_argument(
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type ghash",
-        arg_name, gjs_debug_value(value).c_str());
+        "Converting argument '{}' JS value {} to GIArgument type ghash",
+        arg_name, value);
 
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
@@ -1987,8 +1983,8 @@ bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '%s' JS value %s to GIArgument type %s", arg_name,
-        gjs_debug_value(value).c_str(), gi_type_tag_to_string(type_tag));
+        "Converting argument '{}' JS value {} to GIArgument type {}", arg_name,
+        value, type_tag);
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:
@@ -2132,8 +2128,7 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
              "use gjs_value_from_gi_argument() for non-basic types");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting GIArgument %s to JS::Value",
-                      gi_type_tag_to_string(type_tag));
+                      "Converting GIArgument {} to JS::Value", type_tag);
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -2947,8 +2942,8 @@ bool gjs_value_from_basic_fixed_size_array_gi_argument(
     JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
     size_t fixed_size, GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting GIArgument fixed array of %s to JS::Value",
-                      gi_type_tag_to_string(element_tag));
+                      "Converting GIArgument fixed array of {} to JS::Value",
+                      element_tag);
 
     void* c_array = gjs_arg_get<void*>(arg);
     if (!c_array) {
@@ -2986,8 +2981,8 @@ bool gjs_value_from_basic_garray_gi_argument(JSContext* cx,
                                              GITypeTag element_tag,
                                              GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting GIArgument GArray of %s to JS::Value",
-                      gi_type_tag_to_string(element_tag));
+                      "Converting GIArgument GArray of {} to JS::Value",
+                      element_tag);
 
     auto* garray = gjs_arg_get<GArray*>(arg);
     if (!garray) {
@@ -3003,8 +2998,8 @@ bool gjs_value_from_basic_gptrarray_gi_argument(
     JSContext* cx, JS::MutableHandleValue value_out, GITypeTag element_tag,
     GIArgument* arg) {
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting GIArgument GPtrArray of %s to JS::Value",
-                      gi_type_tag_to_string(element_tag));
+                      "Converting GIArgument GPtrArray of {} to JS::Value",
+                      element_tag);
 
     auto* ptr_array = gjs_arg_get<GPtrArray*>(arg);
     if (!ptr_array) {
@@ -3189,8 +3184,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
     }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Converting GIArgument %s to JS::Value",
-                      gi_type_tag_to_string(type_tag));
+                      "Converting GIArgument {} to JS::Value", type_tag);
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -3289,8 +3283,8 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                 G_TYPE_IS_INTERFACE(gtype))
                 gtype = G_TYPE_FROM_INSTANCE(gjs_arg_get<GTypeInstance*>(arg));
 
-            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                              "gtype of INTERFACE is %s", g_type_name(gtype));
+            gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is {}",
+                              g_type_name(gtype));
 
             // Test GValue and GError before Struct, or it will be handled as
             // the latter
@@ -3852,8 +3846,8 @@ static bool gjs_g_arg_release_internal(
                 G_TYPE_IS_INTERFACE(gtype))
                 gtype = G_TYPE_FROM_INSTANCE(gjs_arg_get<GTypeInstance*>(arg));
 
-            gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                              "gtype of INTERFACE is %s", g_type_name(gtype));
+            gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is {}",
+                              g_type_name(gtype));
 
             // In gjs_value_from_gi_argument we handle Struct/Union types
             // without a registered GType, but here we are specifically handling
@@ -4122,8 +4116,8 @@ bool gjs_gi_argument_release(JSContext* cx, GITransfer transfer,
         return true;
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Releasing GIArgument %s out param or return value",
-                      type_info.type_string());
+                      "Releasing GIArgument {} out param or return value",
+                      type_info);
 
     return gjs_g_arg_release_internal(cx, transfer, type_info, type_info.tag(),
                                       GJS_ARGUMENT_ARGUMENT, flags, arg);
@@ -4136,8 +4130,8 @@ void gjs_gi_argument_release_basic(GITransfer transfer, GITypeTag type_tag,
         return;
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Releasing GIArgument %s out param or return value",
-                      gi_type_tag_to_string(type_tag));
+                      "Releasing GIArgument {} out param or return value",
+                      type_tag);
 
     release_basic_type_internal(type_tag, arg);
 }
@@ -4156,8 +4150,8 @@ bool gjs_gi_argument_release_in_arg(JSContext* cx, GITransfer transfer,
 
     GITypeTag tag = type_info.tag();
 
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument %s in param",
-                      type_info.type_string());
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Releasing GIArgument {} in param",
+                      type_info);
 
     if (!type_needs_release(type_info, tag))
         return true;

@@ -228,7 +228,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                            void* marshal_data) {
     GSignalQuery signal_query = {.signal_id = 0};
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure {}", debug_addr());
 
     // False positive https://github.com/llvm/llvm-project/issues/195557
     // NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
@@ -377,8 +377,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
         if (!res) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
-                      "Unable to convert arg %d in order to invoke closure",
-                      i);
+                      "Unable to convert arg {} in order to invoke closure", i);
             gjs_log_exception(m_cx);
             return;
         }
@@ -563,16 +562,14 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         }
 
         gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                          "Guessed GValue type %s from JS Value",
+                          "Guessed GValue type {} from JS Value",
                           g_type_name(gtype));
 
         g_value_init(gvalue, gtype);
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Converting JS::Value to gtype %s",
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Converting JS::Value to gtype {}",
                       g_type_name(gtype));
-
 
     if (gtype == G_TYPE_STRING) {
         /* Don't use ValueToString since we don't want to just toString()
@@ -959,8 +956,8 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
     }
 
     gjs_debug(GJS_DEBUG_GCLOSURE,
-              "JS::Value is number %d gtype fundamental %d transformable to "
-              "int %d from int %d",
+              "JS::Value is number {} gtype fundamental {} transformable to "
+              "int {} from int {}",
               value.isNumber(), G_TYPE_IS_FUNDAMENTAL(gtype),
               g_value_type_transformable(gtype, G_TYPE_INT),
               g_value_type_transformable(G_TYPE_INT, gtype));
@@ -1013,8 +1010,7 @@ static bool gjs_value_from_g_value_internal(
         introspection_info) {
     GType gtype = G_VALUE_TYPE(gvalue);
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Converting gtype %s to JS::Value",
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Converting gtype {} to JS::Value",
                       g_type_name(gtype));
 
     if (gtype != G_TYPE_STRV && g_value_fits_pointer(gvalue) &&
@@ -1023,7 +1019,7 @@ static bool gjs_value_from_g_value_internal(
         // however most signals don't explicitly mark themselves as nullable,
         // so better to avoid this.
         gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                          "Converting NULL %s to JS::NullValue()",
+                          "Converting NULL {} to JS::NullValue()",
                           g_type_name(gtype));
         value_p.setNull();
         return true;

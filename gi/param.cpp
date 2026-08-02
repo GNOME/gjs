@@ -93,7 +93,7 @@ static bool param_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
 
     if (method_info->is_method()) {
         gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Defining method %s in prototype for GObject.ParamSpec",
+                  "Defining method {} in prototype for GObject.ParamSpec",
                   method_info->name());
 
         if (!gjs_define_function(cx, obj, G_TYPE_PARAM, method_info.ref()))
@@ -127,8 +127,8 @@ static bool gjs_param_constructor(JSContext* cx, unsigned argc, JS::Value* vp) {
 
 static void param_finalize(JS::GCContext*, JSObject* obj) {
     Param* priv = JS::GetMaybePtrFromReservedSlot<Param>(obj, POINTER);
-    gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, obj %p priv %p", obj,
-                        priv);
+    gjs_debug_lifecycle(GJS_DEBUG_GPARAM, "finalize, {:?} priv {}", obj,
+                        static_cast<void*>(priv));
     if (!priv)
         return;  // wrong class?
 
@@ -203,8 +203,8 @@ bool gjs_define_param_class(JSContext* cx, JS::HandleObject in_object) {
         return false;
 
     gjs_debug(GJS_DEBUG_GPARAM,
-              "Defined class ParamSpec prototype is %p class %p in object %p",
-              prototype.get(), &gjs_param_class, in_object.get());
+              "Defined class ParamSpec prototype is {:?} in {:?}", prototype,
+              in_object);
     return true;
 }
 
@@ -212,11 +212,10 @@ JSObject* gjs_param_from_g_param(JSContext* cx, GParamSpec* gparam) {
     if (!gparam)
         return nullptr;
 
-    gjs_debug(GJS_DEBUG_GPARAM,
-              "Wrapping %s '%s' on %s with JSObject",
-              g_type_name(G_TYPE_FROM_INSTANCE((GTypeInstance*) gparam)),
-              gparam->name,
-              g_type_name(gparam->owner_type));
+    gjs_debug(
+        GJS_DEBUG_GPARAM, "Wrapping {} '{}' on {} with JSObject",
+        g_type_name(G_TYPE_FROM_INSTANCE(gparam)), gparam->name,
+        gparam->owner_type ? g_type_name(gparam->owner_type) : "(no owner)");
 
     JS::RootedObject proto{cx, gjs_lookup_param_prototype(cx)};
     if (!proto)
@@ -230,9 +229,9 @@ JSObject* gjs_param_from_g_param(JSContext* cx, GParamSpec* gparam) {
     auto* priv = new Param(gparam);
     JS::SetReservedSlot(obj, POINTER, JS::PrivateValue(priv));
 
-    gjs_debug(GJS_DEBUG_GPARAM,
-              "JSObject created with param instance %p type %s", gparam,
-              g_type_name(G_TYPE_FROM_INSTANCE(gparam)));
+    gjs_debug(
+        GJS_DEBUG_GPARAM, "JSObject created with param instance {} type {}",
+        static_cast<void*>(gparam), g_type_name(G_TYPE_FROM_INSTANCE(gparam)));
 
     return obj;
 }

@@ -9,7 +9,6 @@
 #include <string.h>
 
 #include <algorithm>  // for min
-#include <string>
 #include <string_view>
 
 #include <glib.h>
@@ -152,8 +151,8 @@ void gjs_throw_full(JSContext* cx, JSExnType error_kind, const char* error_name,
         if (!append_new_cause(cx, pending, v_exc, &appended))
             saved_exc.restore();
         if (!appended)
-            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'",
-                      std::string{msg}.c_str());
+            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '{}'",
+                      msg);
     } else {
         JS_SetPendingException(cx, v_exc);
     }

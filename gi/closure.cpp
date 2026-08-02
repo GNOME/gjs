@@ -49,8 +49,8 @@ Closure::Closure(JSContext* cx, JSObject* callable, bool root,
 
     g_closure_add_invalidate_notifier(this, nullptr, closure_notify);
 
-    gjs_debug_closure("Create closure %p which calls callable %p '%s'", this,
-                      m_callable.debug_addr(), description);
+    gjs_debug_closure("Create closure {} which calls callable {} '{}'",
+                      debug_addr(), m_callable.debug_addr(), description);
 }
 
 /* Memory management of closures is "interesting" because we're keeping around a
@@ -100,9 +100,9 @@ void Closure::unset_context() {
 
 void Closure::global_context_finalized() {
     gjs_debug_closure(
-        "Context global object destroy notifier on closure %p which calls "
-        "callable %p",
-        this, m_callable.debug_addr());
+        "Context global object destroy notifier on closure {} which calls "
+        "callable {}",
+        debug_addr(), m_callable.debug_addr());
 
     if (m_callable) {
         // Manually unset the context as we don't need to unregister the
@@ -128,11 +128,12 @@ void Closure::global_context_finalized() {
  */
 void Closure::closure_invalidated() {
     GJS_DEC_COUNTER(closure);
-    gjs_debug_closure("Invalidating closure %p which calls callable %p", this,
-                      m_callable.debug_addr());
+    gjs_debug_closure("Invalidating closure {} which calls callable {}",
+                      debug_addr(), m_callable.debug_addr());
 
     if (!m_callable) {
-        gjs_debug_closure("   (closure %p already dead, nothing to do)", this);
+        gjs_debug_closure("   (closure {} already dead, nothing to do)",
+                          debug_addr());
         return;
     }
 
@@ -143,16 +144,16 @@ void Closure::closure_invalidated() {
      * reason other than destruction of the JSContext.
      */
     gjs_debug_closure(
-        "   (closure %p's context was alive, "
-        "removing our destroy notifier on global object)",
-        this);
+        "   (closure {}'s context was alive, removing our destroy notifier on "
+        "global object)",
+        debug_addr());
 
     reset();
 }
 
 void Closure::closure_set_invalid() {
-    gjs_debug_closure("Invalidating signal closure %p which calls callable %p",
-                      this, m_callable.debug_addr());
+    gjs_debug_closure("Invalidating signal closure {} which calls callable {}",
+                      debug_addr(), m_callable.debug_addr());
 
     m_callable.prevent_collection();
     reset();
@@ -173,25 +174,25 @@ bool Closure::invoke(JS::HandleObject this_obj,
 
     if (gjs_log_exception(m_cx)) {
         gjs_debug_closure(
-            "Exception was pending before invoking callback??? "
-            "Not expected - closure %p",
-            this);
+            "Exception was pending before invoking callback??? Not expected - "
+            "closure {}",
+            debug_addr());
     }
 
     JS::RootedValue v_callable{m_cx, JS::ObjectValue(*m_callable.get())};
     if (!JS::Call(m_cx, this_obj, v_callable, args, retval)) {
         gjs_debug_closure(
             "Closure invocation failed (exception should have been thrown) "
-            "closure %p callable %p",
-            this, m_callable.debug_addr());
+            "closure {} callable {}",
+            debug_addr(), m_callable.debug_addr());
         return false;
     }
 
     if (gjs_log_exception_uncaught(m_cx)) {
         gjs_debug_closure(
-            "Closure invocation succeeded but an exception was set"
-            " - closure %p",
-            m_cx);
+            "Closure invocation succeeded but an exception was set - closure "
+            "{}",
+            debug_addr());
     }
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);

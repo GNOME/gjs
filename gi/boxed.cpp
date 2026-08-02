@@ -77,8 +77,8 @@ bool BoxedPrototype<Base, Prototype, Instance>::resolve_impl(
     method_info->log_usage();
 
     if (method_info->is_method()) {
-        gjs_debug(GJS_DEBUG_GBOXED, "Defining method %s in prototype for %s",
-                  method_info->name(), format_name().c_str());
+        gjs_debug(GJS_DEBUG_GBOXED, "Defining method {} in prototype for {}",
+                  method_info->name(), format_name());
 
         // obj is the Boxed prototype
         if (!gjs_define_function(cx, obj, gtype(), *method_info))
@@ -827,12 +827,8 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
         JS::RootedId id{cx, gjs_intern_string_to_id(cx, property_name.c_str())};
 
         gjs_debug_marshal(GJS_DEBUG_GBOXED,
-                          "Defining field %s%s in prototype for %s",
-                          field.name(),
-                          property_name != field.name()
-                              ? (" (as " + property_name + ")").c_str()
-                              : "",
-                          format_name().c_str());
+                          "Defining field {} (as {}) in prototype for {}",
+                          field.name(), property_name, format_name());
 
         if (!gjs_define_property_dynamic(cx, proto, property_name.c_str(), id,
                                          "boxed_field", &Base::field_getter,
@@ -894,7 +890,7 @@ JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
     if (gboxed == nullptr)
         return nullptr;
 
-    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct %s %p with JSObject",
+    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct {} {} with JSObject",
                       info.name(), gboxed);
 
     JS::RootedObject obj(cx, gjs_new_object_with_generic_prototype(cx, info));

@@ -338,7 +338,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         if (this->m_scope == GI_SCOPE_TYPE_ASYNC) {
             // We don't release the trampoline here as we've an extra ref that
             // has been set in gjs_marshal_callback_in()
-            gjs_debug_closure("Saving async closure for gc cleanup %p", this);
+            gjs_debug_closure("Saving async closure for gc cleanup {}",
+                              debug_addr());
             gjs->async_closure_enqueue_for_gc(this);
         }
         gjs->schedule_gc_if_needed();
@@ -955,8 +956,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
         Argument* gjs_arg = m_arguments.argument(gi_arg_pos);
 
         gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                          "Marshalling argument '%s' in, %d/%d GI args, %u/%u "
-                          "C args, %u/%u JS args",
+                          "Marshalling argument '{}' in, {}/{} GI args, {}/{} "
+                          "C args, {}/{} JS args",
                           gjs_arg ? gjs_arg->arg_name() : "<unknown>",
                           gi_arg_pos, state.gi_argc, ffi_arg_pos, ffi_argc,
                           js_arg_pos, args.length());
@@ -1044,7 +1045,7 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
         }
 
         gjs_debug_marshal(
-            GJS_DEBUG_GFUNCTION, "Marshalling argument '%s' out, %d/%d GI args",
+            GJS_DEBUG_GFUNCTION, "Marshalling argument '{}' out, {}/{} GI args",
             gjs_arg.map(std::mem_fn(&Argument::arg_name)).valueOr("<unknown>"),
             gi_out_arg_pos, state.gi_argc);
 
@@ -1127,7 +1128,7 @@ bool Function::finish_invoke(JSContext* cx, const JS::CallArgs& args,
 
         gjs_debug_marshal(
             GJS_DEBUG_GFUNCTION,
-            "Releasing argument '%s', %d/%d GI args, %u/%u C args",
+            "Releasing argument '{}', {}/{} GI args, {}/{} C args",
             (*gjs_arg)->arg_name(), gi_arg_pos, state->gi_argc, ffi_arg_pos,
             state->processed_c_args);
 
@@ -1183,8 +1184,8 @@ bool Function::call(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!Function::for_js_typecheck(cx, callee, &priv, &args))
         return false;
 
-    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee %p priv %p",
-                      callee.get(), priv);
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "Call callee {:?} priv {}", callee,
+                      static_cast<void*>(priv));
 
     g_assert(priv);
     return priv->invoke(cx, args);

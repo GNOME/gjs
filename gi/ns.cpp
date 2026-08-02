@@ -118,7 +118,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         }
 
         gjs_debug(GJS_DEBUG_GNAMESPACE,
-                  "Found info type %s for '%s' in namespace '%s'",
+                  "Found info type {} for '{}' in namespace '{}'",
                   info->type_string(), info->name(), info->ns());
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
@@ -132,7 +132,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
         bool defined;
         if (!gjs_define_info(cx, obj, info.ref(), &defined)) {
-            gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
+            gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '{}'",
                       info->name());
             return false;
         }
@@ -223,7 +223,8 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         Ns::init_private(ns, priv);
 
         gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
-                            "ns constructor, obj %p priv %p", ns.get(), priv);
+                            "ns constructor, {:?} priv {}", ns,
+                            static_cast<void*>(priv));
 
         return ns;
     }

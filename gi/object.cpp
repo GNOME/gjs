@@ -209,8 +209,8 @@ void ObjectInstance::set_object_qdata() {
             }
             self->m_gobj_finalized = true;
             gjs_debug_lifecycle(GJS_DEBUG_GOBJECT,
-                                "Wrapped GObject %p finalized",
-                                self->m_ptr.get());
+                                "Wrapped GObject {} finalized",
+                                self->m_ptr.as<void>());
         });
 }
 
@@ -307,7 +307,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx, GParamSpec* param,
             cx, format_name(), param->name);
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property {}",
                      param->name);
 
     Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param));
@@ -466,7 +466,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
             cx, format_name(), property_info.name());
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property {}",
                      property_info.name());
 
     GIArgument ret;
@@ -562,7 +562,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
             cx, format_name(), pspec_caller->pspec->name);
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property %s",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Accessing GObject property {}",
                      pspec_caller->pspec->name);
 
     using T = Gjs::Tag::RealT<TAG>;
@@ -620,7 +620,7 @@ bool ObjectInstance::field_getter_impl(JSContext* cx,
 
     GIArgument arg = { 0 };
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding %s with GObject field",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Overriding {} with GObject field",
                      field.name());
 
     GI::AutoTypeInfo type{field.type_info()};
@@ -680,7 +680,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx, GParamSpec* param_spec,
             cx, format_name(), param_spec->name);
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop %s",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop {}",
                      param_spec->name);
 
     Gjs::AutoGValue gvalue(G_PARAM_SPEC_VALUE_TYPE(param_spec));
@@ -853,7 +853,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
             cx, format_name(), property_info.name());
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter %s",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter {}",
                      property_info.name());
 
     GI::StackArgInfo arg_info;
@@ -922,7 +922,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
     if (!check_gobject_finalized("set any property on"))
         return true;
 
-    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter %s",
+    gjs_debug_jsprop(GJS_DEBUG_GOBJECT, "Setting GObject prop via setter {}",
                      pspec_caller->pspec->name);
 
     if (pspec_caller->pspec->flags & G_PARAM_DEPRECATED) {
@@ -1938,8 +1938,8 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
 
     if (method_info.is_method()) {
         gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Defining method %s in prototype for %s (%s)",
-                  method_info.name(), type_name(), format_name().c_str());
+                  "Defining method {} in prototype for {} ({})",
+                  method_info.name(), type_name(), format_name());
         if (auto iface_info = implementor_info.as<GI::InfoTag::INTERFACE>()) {
             bool found = false;
             if (!resolve_on_interface_prototype(cx, iface_info.value(), id, obj,
@@ -2103,8 +2103,8 @@ void ObjectInstance::wrapped_gobj_dispose_notify(
     void* data, GObject* where_the_object_was GJS_USED_VERBOSE_LIFECYCLE) {
     auto* priv = static_cast<ObjectInstance*>(data);
     priv->gobj_dispose_notify();
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p disposed",
-                        where_the_object_was);
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject {} disposed",
+                        static_cast<void*>(where_the_object_was));
 }
 
 void ObjectInstance::track_gobject_finalization() {
@@ -2113,8 +2113,8 @@ void ObjectInstance::track_gobject_finalization() {
     g_object_set_qdata_full(m_ptr, quark, this, [](void* data) {
         auto* self = static_cast<ObjectInstance*>(data);
         self->m_gobj_finalized = true;
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject %p finalized",
-                            self->m_ptr.get());
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Wrapped GObject {} finalized",
+                            self->m_ptr.as<void>());
     });
 }
 
@@ -2215,9 +2215,9 @@ void ObjectInstance::toggle_up() {
     if (!m_ptr || m_gobj_disposed || m_gobj_finalized) [[unlikely]] {
         gjs_debug_lifecycle(
             GJS_DEBUG_GOBJECT,
-            "Avoid toggling up a wrapper for a %s object: %p (%s)",
+            "Avoid toggling up a wrapper for a {} object: {} ({})",
             m_ptr ? (m_gobj_finalized ? "finalized" : "disposed") : "released",
-            m_ptr ? m_ptr.as<void>() : this, g_type_name(gtype()));
+            m_ptr ? m_ptr.as<void>() : static_cast<void*>(this), type_name());
         return;
     }
 
@@ -2332,8 +2332,8 @@ void ObjectInstance::release_native_object() {
     }
 
     if (m_ptr)
-        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Releasing native object %s %p",
-                            g_type_name(gtype()), m_ptr.get());
+        gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Releasing native object {} {}",
+                            type_name(), m_ptr.as<void>());
 
     if (m_gobj_disposed)
         ignore_gobject_finalization();
@@ -2434,9 +2434,10 @@ ObjectPrototype::ObjectPrototype(const Maybe<GI::ObjectInfo>& info, GType gtype)
 void ObjectInstance::update_heap_wrapper_weak_pointers(JSTracer* trc,
                                                        JS::Compartment*,
                                                        void*) {
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "Weak pointer update callback, "
-                        "%zu wrapped GObject(s) to examine",
-                        ObjectInstance::num_wrapped_gobjects());
+    gjs_debug_lifecycle(
+        GJS_DEBUG_GOBJECT,
+        "Weak pointer update callback, {} wrapped GObject(s) to examine",
+        ObjectInstance::num_wrapped_gobjects());
 
     // Take a lock on the queue till we're done with it, so that we don't
     // risk that another thread will queue something else while sweeping
@@ -2954,7 +2955,8 @@ bool ObjectInstance::connect_impl(JSContext* cx, const JS::CallArgs& args,
     GQuark signal_detail;
     const char* func_name = connect_func_name(after, object);
 
-    gjs_debug_gsignal("connect obj %p priv %p", m_wrapper.get(), this);
+    gjs_debug_gsignal("connect {:?} priv {}", m_wrapper.get(),
+                      static_cast<void*>(this));
 
     if (!check_gobject_disposed_or_finalized("connect to any signal on")) {
         args.rval().setInt32(0);
@@ -3034,8 +3036,8 @@ bool ObjectInstance::emit_impl(JSContext* cx, const JS::CallArgs& args) {
     GQuark signal_detail;
     GSignalQuery signal_query;
 
-    gjs_debug_gsignal("emit obj %p priv %p argc %d", m_wrapper.get(), this,
-                      args.length());
+    gjs_debug_gsignal("emit {:?} priv {} argc {}", m_wrapper.get(),
+                      static_cast<void*>(this), args.length());
 
     if (!check_gobject_finalized("emit any signal on")) {
         args.rval().setUndefined();
@@ -3208,8 +3210,8 @@ bool ObjectBase::signal_find(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 bool ObjectInstance::signal_find_impl(JSContext* cx, const JS::CallArgs& args) {
-    gjs_debug_gsignal("[Gi.signal_find_symbol]() obj %p priv %p argc %d",
-                      m_wrapper.get(), this, args.length());
+    gjs_debug_gsignal("[Gi.signal_find_symbol]() {:?} priv {} argc {}",
+                      m_wrapper.get(), static_cast<void*>(this), args.length());
 
     if (!check_gobject_finalized("find any signal on")) {
         args.rval().setInt32(0);
@@ -3284,8 +3286,8 @@ bool ObjectInstance::signals_action_impl(JSContext* cx,
                                          const JS::CallArgs& args) {
     const std::string action_name = signal_match_to_action_name<MatchFunc>();
     const std::string action_tag = "[Gi.signals_" + action_name + "_symbol]";
-    gjs_debug_gsignal("[%s]() obj %p priv %p argc %d", action_tag.c_str(),
-                      m_wrapper.get(), this, args.length());
+    gjs_debug_gsignal("{}() {:?} priv {} argc {}", action_tag, m_wrapper.get(),
+                      static_cast<void*>(this), args.length());
 
     if (!check_gobject_finalized((action_name + " any signal on").c_str())) {
         args.rval().setInt32(0);
@@ -3547,8 +3549,8 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
 
     GType gtype = G_TYPE_FROM_INSTANCE(gobj);
 
-    gjs_debug_marshal(GJS_DEBUG_GOBJECT, "Wrapping %s %p with JSObject",
-                      g_type_name(gtype), gobj);
+    gjs_debug_marshal(GJS_DEBUG_GOBJECT, "Wrapping {} {} with JSObject",
+                      g_type_name(gtype), static_cast<void*>(gobj));
 
     JS::RootedObject proto(cx, gjs_lookup_object_prototype(cx, gtype));
     if (!proto)

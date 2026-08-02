@@ -52,6 +52,8 @@ class Closure : public GClosure {
     }
     static void unref(Closure* self) { g_closure_unref(self); }
 
+    [[nodiscard]] void* debug_addr() { return static_cast<void*>(this); }
+
  public:
     using Ptr = Gjs::AutoPointer<Closure, Closure, unref, ref>;
 

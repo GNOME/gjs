@@ -23,7 +23,8 @@ class MainLoop {
     bool m_exiting = false;
 
     void debug(const char* msg) {
-        gjs_debug(GJS_DEBUG_MAINLOOP, "Main loop instance %p: %s", this, msg);
+        gjs_debug(GJS_DEBUG_MAINLOOP, "Main loop instance {}: {}",
+                  static_cast<void*>(this), msg);
     }
 
     [[nodiscard]]

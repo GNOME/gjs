@@ -145,7 +145,6 @@
 #ifndef _WIN32
 #include <signal.h>
 #endif
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

@@ -21,9 +21,10 @@
 // No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
 inline void debug(const char* did GJS_USED_VERBOSE_LIFECYCLE,
                   const ObjectInstance* object GJS_USED_VERBOSE_LIFECYCLE) {
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue %s %p (%s @ %p)", did,
-                        object, object ? g_type_name(object->gtype()) : "",
-                        object ? object->ptr() : nullptr);
+    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue {} {} ({} @ {})", did,
+                        static_cast<const void*>(object),
+                        object ? object->type_name() : "",
+                        object ? static_cast<void*>(object->ptr()) : nullptr);
 }
 
 void ToggleQueue::lock() {
@@ -106,13 +107,13 @@ std::pair<bool, bool> ToggleQueue::cancel(ObjectInstance* obj) {
         it++;
     }
 
-    gjs_debug_lifecycle(GJS_DEBUG_GOBJECT, "ToggleQueue: %p (%p) was %s", obj,
-                        obj ? obj->ptr() : nullptr,
-                        had_toggle_down && had_toggle_up
-                            ? "queued to toggle BOTH"
-                        : had_toggle_down ? "queued to toggle DOWN"
-                        : had_toggle_up   ? "queued to toggle UP"
-                                          : "not queued");
+    gjs_debug_lifecycle(
+        GJS_DEBUG_GOBJECT, "ToggleQueue: {} ({}) was {}",
+        static_cast<void*>(obj), obj ? static_cast<void*>(obj->ptr()) : nullptr,
+        had_toggle_down && had_toggle_up ? "queued to toggle BOTH"
+        : had_toggle_down                ? "queued to toggle DOWN"
+        : had_toggle_up                  ? "queued to toggle UP"
+                                         : "not queued");
     return {had_toggle_down, had_toggle_up};
 }
 
@@ -147,9 +148,11 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
 
     if (m_shutdown) [[unlikely]] {
         gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Enqueuing GObject %p to toggle %s after "
-                  "shutdown, probably from another thread (%p).",
-                  obj->ptr(), direction == UP ? "UP" : "DOWN", g_thread_self());
+                  "Enqueuing GObject {} to toggle {} after shutdown, probably "
+                  "from another thread ({}).",
+                  static_cast<void*>(obj->ptr()),
+                  direction == UP ? "UP" : "DOWN",
+                  static_cast<void*>(g_thread_self()));
         return;
     }
 

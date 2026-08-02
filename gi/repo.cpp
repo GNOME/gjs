@@ -153,8 +153,8 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Defined namespace '%s' %p in GIRepository %p", ns_name.get(),
-              gi_namespace.get(), repo_obj.get());
+              "Defined namespace '{}' {:?} in GIRepository {:?}", ns_name,
+              gi_namespace, repo_obj);
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     gjs->schedule_gc_if_needed();
@@ -180,8 +180,8 @@ static bool repo_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
         return true;
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook, obj %s",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
+    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '{}' hook, obj {}", id,
+                     obj);
 
     if (!resolve_namespace_object(cx, obj, id))
         return false;
@@ -201,8 +201,7 @@ static JSObject* repo_new(JSContext* cx) {
     if (repo == nullptr)
         return nullptr;
 
-    gjs_debug_lifecycle(GJS_DEBUG_GREPO, "repo constructor, obj %p",
-                        repo.get());
+    gjs_debug_lifecycle(GJS_DEBUG_GREPO, "repo constructor, {:?}", repo);
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject versions{cx, JS_NewPlainObject(cx)};

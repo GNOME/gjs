@@ -539,8 +539,8 @@ static bool on_context_module_rejected_log_exception(JSContext* cx,
                                                      JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise rejected: %s",
-              gjs_debug_callable(&args.callee()).c_str());
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise rejected: {}",
+              gjs_debug_callable(&args.callee()));
 
     JS::HandleValue error = args.get(0);
 
@@ -559,8 +559,8 @@ static bool on_context_module_resolved(JSContext* cx, unsigned argc,
                                        JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise resolved: %s",
-              gjs_debug_callable(&args.callee()).c_str());
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise resolved: {}",
+              gjs_debug_callable(&args.callee()));
 
     args.rval().setUndefined();
 
@@ -622,8 +622,8 @@ static void load_context_module(JSContext* cx, const char* uri,
             JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
             gjs_debug(GJS_DEBUG_IMPORTER,
-                      "Module evaluation promise rejected: %s",
-                      gjs_debug_callable(&args.callee()).c_str());
+                      "Module evaluation promise rejected: {}",
+                      gjs_debug_callable(&args.callee()));
 
             JS::HandleValue error = args.get(0);
             // Abort because this module is required.
@@ -913,7 +913,7 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status,
     switch (status) {
         case JSGC_BEGIN:
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT,
-                                "Begin garbage collection because of %s",
+                                "Begin garbage collection because of {}",
                                 gjs_explain_gc_reason(reason));
 
             // We finalize any pending toggle refs before doing any garbage
@@ -987,9 +987,8 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
     g_assert(from_cx(cx) == this);
 
     gjs_debug(GJS_DEBUG_MAINLOOP,
-              "Enqueue job %s, promise=%s, allocation site=%s",
-              gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
-              gjs_debug_object(allocation_site).c_str());
+              "Enqueue job {}, promise={}, allocation site={}", job, promise,
+              allocation_site);
 
     if (!m_job_queue.append(job)) {
         JS_ReportOutOfMemory(m_cx);
@@ -1003,7 +1002,8 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
 
 bool GjsContextPrivate::dispatch_wasm_job(WasmJob&& d) {
     // This callback is invoked from a non-JS thread
-    gjs_debug(GJS_DEBUG_MAINLOOP, "Enqueue Wasm Dispatchable %p", d.get());
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Enqueue Wasm Dispatchable {}",
+              static_cast<void*>(d.get()));
 
     {
         std::scoped_lock lock(m_wasm_job_queue_mutex);
@@ -1035,8 +1035,7 @@ bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
     JS::RootedValue rval{m_cx};
 
     JSAutoRealm ar{m_cx, job};
-    gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
-              gjs_debug_object(job).c_str());
+    gjs_debug(GJS_DEBUG_MAINLOOP, "handling job {}, {}", ix, job);
 
     if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
         /* Uncatchable exception - return false so that System.exit()
@@ -1056,7 +1055,7 @@ bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
         gjs_log_exception_uncaught(m_cx);
     }
 
-    gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job {}", ix);
     return true;
 }
 
@@ -1096,7 +1095,7 @@ bool GjsContextPrivate::run_jobs_fallible() {
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         // A previous job might have set this flag. e.g., System.exit().
         if (m_should_exit || !m_dispatcher.is_running()) {
-            gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of %s",
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of {}",
                       m_should_exit ? "exit" : "main loop cancel");
             break;
         }
@@ -1136,8 +1135,8 @@ bool GjsContextPrivate::run_jobs_fallible() {
             break;
 
         for (auto& d : pending) {
-            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable %p",
-                      d.get());
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable {}",
+                      static_cast<void*>(d.get()));
             JS::Dispatchable::Run(m_cx, std::move(d),
                                   JS::Dispatchable::NotShuttingDown);
             gjs_debug(GJS_DEBUG_MAINLOOP, "Completed Wasm Dispatchable");
@@ -1575,8 +1574,8 @@ GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
     if (exit_status_p) {
         if (result.isOk() && retval.isInt32()) {
             int code = retval.toInt32();
-            gjs_debug(GJS_DEBUG_CONTEXT,
-                      "Script returned integer code %d", code);
+            gjs_debug(GJS_DEBUG_CONTEXT, "Script returned integer code {}",
+                      code);
             *exit_status_p = code;
         } else {
             *exit_status_p = out_code;

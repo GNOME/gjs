@@ -69,9 +69,8 @@ struct ObjectBox::impl {
 
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
-        gjs_debug_lifecycle(GJS_DEBUG_GBOXED,
-                            "%s: ObjectBox %p, JSObject %s", what, m_parent,
-                            gjs_debug_object(m_root).c_str());
+        gjs_debug_lifecycle(GJS_DEBUG_GBOXED, "{}: ObjectBox {}, JSObject {}",
+                            what, static_cast<void*>(m_parent), m_root.get());
     }
 
     ObjectBox* m_parent;

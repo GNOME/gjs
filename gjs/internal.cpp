@@ -69,8 +69,8 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
     Gjs::AutoChar full_path(g_strdup_printf(
         "resource:///org/gnome/gjs/modules/internal/%s.js", identifier));
 
-    gjs_debug(GJS_DEBUG_IMPORTER, "Loading internal module '%s' (%s)",
-              identifier, full_path.get());
+    gjs_debug(GJS_DEBUG_IMPORTER, "Loading internal module '{}' ({})",
+              identifier, full_path);
 
     Gjs::AutoChar script;
     size_t script_len;

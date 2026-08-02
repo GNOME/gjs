@@ -27,9 +27,7 @@ void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
         return;
     }
 
-    gjs_debug(GJS_DEBUG_NATIVE,
-              "Registered native JS module '%s'",
-              module_id);
+    gjs_debug(GJS_DEBUG_NATIVE, "Registered native JS module '{}'", module_id);
 }
 
 /**
@@ -58,7 +56,7 @@ bool Gjs::NativeModuleDefineFuncs::is_registered(const char* module_id) const {
 bool Gjs::NativeModuleDefineFuncs::define(
     JSContext* cx, const char* module_id,
     JS::MutableHandleObject module_out) const {
-    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", module_id);
+    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '{}'", module_id);
 
     const auto& iter = m_modules.find(module_id);
 

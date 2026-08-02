@@ -5,7 +5,6 @@
 #include <config.h>
 
 #include <errno.h>
-#include <stdarg.h>
 #include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
 #include <string.h>  // for strchr, strcmp
 
@@ -23,6 +22,7 @@
 #include <atomic>  // for atomic_bool
 #include <memory>  // for unique_ptr
 #include <string>  // for string
+#include <string_view>
 
 #include <glib.h>
 
@@ -171,52 +171,55 @@ void gjs_log_cleanup() {
 
 #define PREFIX_LENGTH 12
 
-static void write_to_stream(FILE* logfp, const char* prefix, const char* s) {
+static void write_to_stream(FILE* logfp, const char* topic_prefix,
+                            const std::string& thread_prefix,
+                            const std::string& timer_prefix,
+                            const std::string& s) {
     // seek to end to avoid truncating in case we're using shared logfile
     (void)fseek(logfp, 0, SEEK_END);
 
-    fprintf(logfp, "%*s: %s", PREFIX_LENGTH, prefix, s);
-    if (!g_str_has_suffix(s, "\n"))
+    fprintf(logfp, "%*s: %s%s%s", PREFIX_LENGTH, topic_prefix,
+            thread_prefix.c_str(), timer_prefix.c_str(), s.c_str());
+    if (!s.ends_with("\n"))
         fputs("\n", logfp);
     fflush(logfp);
 }
 
-// COMPAT: Replace with a format string in C++20.
-// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
-void gjs_debug(GjsDebugTopic topic, const char* format, ...) {
-    va_list args;
+namespace Gjs::detail {
 
-    if (!s_debug_log_enabled || !s_enabled_topics[topic])
-        return;
+// Separate in order to allow early return before expensive formatting
+bool topic_enabled(GjsDebugTopic topic) {
+    return s_debug_log_enabled && s_enabled_topics[topic];
+}
 
-    va_start(args, format);
-    Gjs::AutoChar s{g_strdup_vprintf(format, args)};
-    va_end(args);
-
+void debug_impl(GjsDebugTopic topic, const std::string& s) {
+    std::string timer_prefix, thread_prefix;
     if (s_timer) {
         static double previous = 0.0;
         double total = g_timer_elapsed(s_timer, nullptr) * 1000.0;
         double since = total - previous;
-        const char* ts_suffix;
 
+        std::string_view ts_suffix;
         if (since > 200.0) {
             ts_suffix = "!!!!";
         } else if (since > 100.0) {
-            ts_suffix = "!!! ";
+            ts_suffix = "!!!";
         } else if (since > 50.0) {
-            ts_suffix = "!!  ";
-        } else {
-            ts_suffix = "    ";
+            ts_suffix = "!!";
         }
 
-        s.reset(g_strdup_printf("%g %s%s", total, ts_suffix, s.get()));
+        timer_prefix = std::format("{:g} {:4}", total, ts_suffix);
 
         previous = total;
     }
 
     if (s_print_thread) {
-        s.reset(g_strdup_printf("(thread %p) %s", g_thread_self(), s.get()));
+        thread_prefix =
+            std::format("(thread {}) ", static_cast<void*>(g_thread_self()));
     }
 
-    write_to_stream(s_log_file->fp(), topic_to_prefix(topic), s);
+    write_to_stream(s_log_file->fp(), topic_to_prefix(topic), thread_prefix,
+                    timer_prefix, s);
 }
+
+}  // namespace Gjs::detail

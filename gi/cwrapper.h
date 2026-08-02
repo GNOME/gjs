@@ -281,18 +281,19 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
  protected:
     static void debug_lifecycle(
         const Wrapped* wrapped_ptr GJS_USED_VERBOSE_LIFECYCLE,
-        const JSObject* obj GJS_USED_VERBOSE_LIFECYCLE,
+        JSObject* obj GJS_USED_VERBOSE_LIFECYCLE,
         const char* message GJS_USED_VERBOSE_LIFECYCLE) {
-        gjs_debug_lifecycle(Base::DEBUG_TOPIC, "[%p: JS wrapper %p] %s",
-                            wrapped_ptr, obj, message);
+        gjs_debug_lifecycle(Base::DEBUG_TOPIC, "[{}: JS wrapper {:?}] {}",
+                            static_cast<const void*>(wrapped_ptr), obj,
+                            message);
     }
     void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
                       const char* id GJS_USED_VERBOSE_PROPS,
-                      const JSObject* obj GJS_USED_VERBOSE_PROPS) const {
-        gjs_debug_jsprop(Base::DEBUG_TOPIC, "[%p: JS wrapper %p] %s prop %s",
-                         this, obj, message, id);
+                      JSObject* obj GJS_USED_VERBOSE_PROPS) const {
+        gjs_debug_jsprop(Base::DEBUG_TOPIC, "[{}: JS wrapper {:?}] {} prop {}",
+                         static_cast<const void*>(this), obj, message, id);
     }
-    void debug_jsprop(const char* message, jsid id, const JSObject* obj) const {
+    void debug_jsprop(const char* message, jsid id, JSObject* obj) const {
         if constexpr (GJS_VERBOSE_ENABLE_PROPS)
             debug_jsprop(message, gjs_debug_id(id).c_str(), obj);
     }
@@ -480,8 +481,8 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
                 return nullptr;
         }
 
-        gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class %s prototype %p",
-                  Base::klass.name, proto.get());
+        gjs_debug(GJS_DEBUG_CONTEXT, "Initialized class {} prototype {:?}",
+                  Base::klass.name, proto);
         return proto;
     }
 

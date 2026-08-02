@@ -122,7 +122,7 @@ static bool gjs_dump_heap(JSContext* cx, unsigned argc, JS::Value* vp) {
     }
     js::DumpHeap(cx, file.fp(), js::CollectNurseryBeforeDump);
 
-    gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to %s",
+    gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to {}",
               filename ? filename.get() : "stdout");
 
     args.rval().setUndefined();

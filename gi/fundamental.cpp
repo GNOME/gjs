@@ -132,16 +132,16 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
             // we do not define deprecated methods in the prototype
             if (method_info->is_deprecated()) {
                 gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                          "Ignoring definition of deprecated method %s in "
-                          "prototype %s",
-                          method_info->name(), format_name().c_str());
+                          "Ignoring definition of deprecated method {} in "
+                          "prototype {}",
+                          method_info->name(), format_name());
                 *resolved = false;
                 return true;
             }
 
             gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                      "Defining method %s in prototype for %s",
-                      method_info->name(), format_name().c_str());
+                      "Defining method {} in prototype for {}",
+                      method_info->name(), format_name());
 
             if (!gjs_define_function(cx, obj, gtype(), *method_info))
                 return false;
@@ -336,9 +336,9 @@ bool FundamentalPrototype::define_class(JSContext* cx,
 
     if (info.fields().size() > 0) {
         gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                  "Fundamental type '%s' apparently has accessible fields. GJS "
+                  "Fundamental type '{}' apparently has accessible fields. GJS "
                   "has no support for this yet, ignoring these.",
-                  priv->format_name().c_str());
+                  priv->format_name());
     }
 
     return true;
@@ -363,7 +363,7 @@ JSObject* FundamentalInstance::object_for_c_ptr(JSContext* cx,
         return p->value();
 
     gjs_debug_marshal(GJS_DEBUG_GFUNDAMENTAL,
-                      "Wrapping fundamental %p with JSObject", gfundamental);
+                      "Wrapping fundamental {} with JSObject", gfundamental);
 
     JS::RootedObject proto{cx, gjs_lookup_fundamental_prototype_from_gtype(
                                    cx, G_TYPE_FROM_INSTANCE(gfundamental))};
