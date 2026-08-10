@@ -4,6 +4,7 @@
   "files": [
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
+      "modules/script/_bootstrap/inspector.js",
   ],
   "compilerOptions": {
     "noEmit": true,  // don't generate files, just typecheck them
