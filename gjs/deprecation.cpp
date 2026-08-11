@@ -6,6 +6,7 @@
 
 #include <cstddef>        // for size_t
 #include <functional>     // for hash<int>
+#include <iterator>       // for size
 #include <sstream>
 #include <string>         // for string
 #include <string_view>
@@ -61,7 +62,7 @@ const char* messages[] = {
     "{} has been renamed. Please update your code to use {} instead.",
 };
 
-static_assert(G_N_ELEMENTS(messages) == GjsDeprecationMessageId::LastValue);
+static_assert(std::size(messages) == GjsDeprecationMessageId::LastValue);
 
 struct DeprecationEntry {
     GjsDeprecationMessageId id;
@@ -109,11 +110,11 @@ static void warn_deprecated_unsafe_internal(JSContext* cx,
                                             unsigned max_frames /* = 1 */) {
     JS::UniqueChars callsite{get_callsite(cx, max_frames)};
     DeprecationEntry entry(id, callsite.get());
-    if (!logged_messages.count(entry)) {
+    auto insert_result = logged_messages.insert(std::move(entry));
+    if (insert_result.second) {
         JS::UniqueChars stack_dump =
             JS::FormatStackDump(cx, false, false, false);
         g_warning("%s\n%s", msg, stack_dump.get());
-        logged_messages.insert(std::move(entry));
     }
 }
 

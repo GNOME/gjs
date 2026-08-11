@@ -51,8 +51,5 @@
 #    define GJS_JSAPI_RETURN_CONVENTION [[nodiscard]]
 #endif
 
-#ifdef __GNUC__
-#    define GJS_ALWAYS_INLINE __attribute__((always_inline))
-#else
-#    define GJS_ALWAYS_INLINE
-#endif
+#define GJS_ALWAYS_INLINE \
+    _Pragma("GCC warning \"GJS_ALWAYS_INLINE is a no-op\"")

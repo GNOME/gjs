@@ -34,20 +34,20 @@ void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
 
 /**
  * is_registered:
- * @name: name of the module
+ * @module_id: name of the module
  *
- * Checks if a native module corresponding to @name has already
- * been registered. This is used to check to see if a name is a
- * builtin module without starting to try and load it.
+ * Checks if a native module corresponding to @module_id has already been
+ * registered. This is used to check to see if a name is a builtin module
+ * without starting to try and load it.
  */
-bool Gjs::NativeModuleDefineFuncs::is_registered(const char* name) const {
-    return m_modules.count(name) > 0;
+bool Gjs::NativeModuleDefineFuncs::is_registered(const char* module_id) const {
+    return m_modules.count(module_id) > 0;
 }
 
 /**
  * define:
  * @cx: the #JSContext
- * @id: Name under which the module was registered with add()
+ * @module_id: Name under which the module was registered with add()
  * @module_out: Return location for a #JSObject
  *
  * Loads a builtin native-code module called @name into @module_out by calling
@@ -56,13 +56,14 @@ bool Gjs::NativeModuleDefineFuncs::is_registered(const char* name) const {
  * Returns: true on success, false if an exception was thrown.
  */
 bool Gjs::NativeModuleDefineFuncs::define(
-    JSContext* cx, const char* id, JS::MutableHandleObject module_out) const {
-    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", id);
+    JSContext* cx, const char* module_id,
+    JS::MutableHandleObject module_out) const {
+    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", module_id);
 
-    const auto& iter = m_modules.find(id);
+    const auto& iter = m_modules.find(module_id);
 
     if (iter == m_modules.end()) {
-        gjs_throw(cx, "No native module '%s' has registered itself", id);
+        gjs_throw(cx, "No native module '%s' has registered itself", module_id);
         return false;
     }
 

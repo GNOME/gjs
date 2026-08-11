@@ -85,13 +85,13 @@ Gjs::AutoChar gjs_hyphen_to_camel(const char* str) {
  *
  * Returns: Unique UTF8 chars, empty on exception throw.
  */
-JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value value) {
-    if (!value.isString()) {
+JS::UniqueChars gjs_string_to_utf8(JSContext* cx, const JS::Value string_val) {
+    if (!string_val.isString()) {
         gjs_throw(cx, "Value is not a string, cannot convert to UTF-8");
         return nullptr;
     }
 
-    JS::RootedString str(cx, value.toString());
+    JS::RootedString str{cx, string_val.toString()};
     return JS_EncodeStringToUTF8(cx, str);
 }
 
@@ -424,18 +424,19 @@ bool gjs_get_string_id(JSContext* cx, jsid id, JS::UniqueChars* name_p) {
 
 /**
  * gjs_unichar_from_string:
- * @string: A string
+ * @string_val: A string
  * @result: (out): A unicode character
  *
  * If successful, @result is assigned the Unicode codepoint
  * corresponding to the first full character in @string.  This
  * function handles characters outside the BMP.
  *
- * If @string is empty, @result will be 0.  An exception will
- * be thrown if @string can not be represented as UTF-8.
+ * If @string_val is empty, @result will be 0. An exception will be thrown if
+ * @string_val cannot be represented as UTF-8.
  */
-bool gjs_unichar_from_string(JSContext* cx, JS::Value value, gunichar* result) {
-    JS::UniqueChars utf8_str{gjs_string_to_utf8(cx, value)};
+bool gjs_unichar_from_string(JSContext* cx, JS::Value string_val,
+                             gunichar* result) {
+    JS::UniqueChars utf8_str{gjs_string_to_utf8(cx, string_val)};
     if (utf8_str) {
         *result = g_utf8_get_char(utf8_str.get());
         return true;
@@ -492,7 +493,7 @@ static std::string gjs_debug_linear_string(JSLinearString* str, Quotes quotes) {
         else if (c == '\t')
             out << "\\t";
         else if (c >= 32 && c < 127)
-            out << c;
+            out << static_cast<char>(c);
         else if (c <= 255)
             out << "\\x" << std::setfill('0') << std::setw(2)
                 << static_cast<unsigned>(c);

@@ -8,7 +8,6 @@
 
 #include <stdint.h>
 
-#include <limits>
 #include <type_traits>
 
 #include <girepository/girepository.h>
@@ -27,25 +26,6 @@ struct TypeWrapper {
  private:
     T m_value;
 };
-
-template <typename T1, typename T2>
-constexpr bool comparable_types() {
-    return std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2> &&
-           std::is_integral_v<T1> == std::is_integral_v<T2> &&
-           std::is_signed_v<T1> == std::is_signed_v<T2>;
-}
-
-template <typename T, typename Container>
-constexpr bool type_fits() {
-    if constexpr (comparable_types<T, Container>()) {
-        return (std::numeric_limits<T>::max() <=
-                    std::numeric_limits<Container>::max() &&
-                std::numeric_limits<T>::lowest() >=
-                    std::numeric_limits<Container>::lowest());
-    }
-
-    return false;
-}
 
 // These tags are used to disambiguate types such as gboolean and GType which
 // are in fact typedefs of other generic types. Using the tag instead of the
@@ -222,7 +202,7 @@ struct MarshallingInfo<const char*> {
 
 template <>
 struct MarshallingInfo<Tag::Long> {
-    static constexpr bool is_32 = type_fits<long, int32_t>();
+    static constexpr bool is_32 = sizeof (long) == 4;
     using real_type = long;
     using containing_tag = std::conditional_t<is_32, int32_t, int64_t>;
     using jsvalue_pack_type =
@@ -232,7 +212,7 @@ struct MarshallingInfo<Tag::Long> {
 
 template <>
 struct MarshallingInfo<Tag::UnsignedLong> {
-    static constexpr bool is_32 = type_fits<unsigned long, uint32_t>();
+    static constexpr bool is_32 = sizeof(unsigned long) == 4;
     using real_type = unsigned long;
     using containing_tag = std::conditional_t<is_32, uint32_t, uint64_t>;
     using jsvalue_pack_type =

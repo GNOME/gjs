@@ -6,7 +6,6 @@
 
 #include <config.h>
 
-#include <limits.h>  // for INT_MAX
 #include <stdint.h>
 #include <string.h>
 
@@ -188,8 +187,13 @@ constexpr GTypeFunc gtype_func(InfoTag tag) {
 
 }  // namespace detail
 
+// The specializations of this template below are ordered by dependency. If any
+// specialization has a method body that uses Maybe<AutoFooInfo> or
+// InfoIterable<FOO>, it must come after the specialization of
+// InfoOperations<Wrapper, FOO>. If you get an error about InfoOperations being
+// an incomplete type, it is probably for that reason.
 template <typename Wrapper, InfoTag TAG>
-class InfoOperations {};
+class InfoOperations;
 
 class StackArgInfo;
 class StackTypeInfo;
@@ -803,9 +807,6 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
     }
 };
 
-// Needs to come after InfoOperations<TYPE> but before InfoOperations<CALLABLE>
-// since this class instantiates the GI::StackTypeInfo template, but
-// InfoOperations<CALLABLE> instantiates this one.
 template <class Wrapper>
 class InfoOperations<Wrapper, InfoTag::ARG>
     : public BaseInfoOperations<Wrapper> {
@@ -967,12 +968,11 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
             << TRANSFER_STRING(caller_owns()) << ", .n_args = " << n_args()
             << ", .args = { ";
 
-        ArgsIterable iter = args();
-        std::for_each(iter.begin(), iter.end(), [&out](AutoArgInfo arg_info) {
+        for (AutoArgInfo arg_info : args()) {
             out << "{ GI_DIRECTION_" << DIRECTION_STRING(arg_info.direction())
                 << ", GI_TRANSFER_"
                 << TRANSFER_STRING(arg_info.ownership_transfer()) << " }, ";
-        });
+        }
         out.seekp(-2, std::ios_base::end);  // Erase trailing comma
 
 #    undef DIRECTION_STRING
@@ -1067,7 +1067,6 @@ class InfoOperations<Wrapper, InfoTag::CONSTANT>
     }
 };
 
-// Must come before any use of MethodsIterable
 template <class Wrapper>
 class InfoOperations<Wrapper, InfoTag::FUNCTION>
     : public CallableInfoOperations<Wrapper> {
@@ -1088,8 +1087,6 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
     Gjs::GErrorResult<> invoke(const mozilla::Span<const GIArgument>& in_args,
                                const mozilla::Span<GIArgument>& out_args,
                                GIArgument* return_value) const {
-        g_assert(in_args.size() <= INT_MAX);
-        g_assert(out_args.size() <= INT_MAX);
         GError* error = nullptr;
         return this->bool_gerror(
             gi_function_info_invoke(ptr(), in_args.data(), in_args.size(),
@@ -1127,6 +1124,23 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
     operator CallableInfo() const {
         return detail::Pointer::to_unowned<InfoTag::CALLABLE>(
             GI_CALLABLE_INFO(ptr()));
+    }
+};
+
+template <class Wrapper>
+class InfoOperations<Wrapper, InfoTag::VALUE>
+    : public BaseInfoOperations<Wrapper> {
+    DELETE_ALL_TYPECHECK_METHODS;
+
+    [[nodiscard]]
+    GIValueInfo* ptr() const {
+        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
+    }
+
+ public:
+    [[nodiscard]]
+    int64_t value() const {
+        return gi_value_info_get_value(ptr());
     }
 };
 
@@ -1356,6 +1370,58 @@ class InfoOperations<Wrapper, InfoTag::VFUNC>
 };
 
 template <class Wrapper>
+class InfoOperations<Wrapper, InfoTag::PROPERTY>
+    : public BaseInfoOperations<Wrapper> {
+    DELETE_ALL_TYPECHECK_METHODS;
+
+    [[nodiscard]]
+    GIPropertyInfo* ptr() const {
+        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
+    }
+
+    [[nodiscard]]
+    GParamFlags flags() const {
+        return gi_property_info_get_flags(ptr());
+    }
+
+ public:
+    [[nodiscard]]
+    mozilla::Maybe<AutoFunctionInfo> getter() const {
+        return detail::Pointer::nullable<InfoTag::FUNCTION>(
+            gi_property_info_get_getter(ptr()));
+    }
+    [[nodiscard]]
+    mozilla::Maybe<AutoFunctionInfo> setter() const {
+        return detail::Pointer::nullable<InfoTag::FUNCTION>(
+            gi_property_info_get_setter(ptr()));
+    }
+    [[nodiscard]]
+    AutoTypeInfo type_info() const {
+        return detail::Pointer::to_owned<InfoTag::TYPE>(
+            gi_property_info_get_type_info(ptr()));
+    }
+
+    // Flag reading methods
+
+    [[nodiscard]]
+    bool has_deprecated_param_flag() const {
+        // Note, different from is_deprecated(). It's possible that the property
+        // has the deprecated GParamSpec flag, but is not marked deprecated in
+        // the GIR doc comment.
+        return flags() & G_PARAM_DEPRECATED;
+    }
+};
+
+// Out-of-line definition to avoid chicken-and-egg loop between AutoFunctionInfo
+// and AutoPropertyInfo
+template <class Wrapper>
+inline mozilla::Maybe<AutoPropertyInfo>
+InfoOperations<Wrapper, InfoTag::FUNCTION>::property() const {
+    return detail::Pointer::nullable<InfoTag::PROPERTY>(
+        gi_function_info_get_property(ptr()));
+}
+
+template <class Wrapper>
 class InfoOperations<Wrapper, InfoTag::INTERFACE>
     : public RegisteredTypeInfoOperations<Wrapper> {
     DELETE_ALL_TYPECHECK_METHODS;
@@ -1537,75 +1603,6 @@ class InfoOperations<Wrapper, InfoTag::OBJECT>
 
     [[nodiscard]] operator BaseInfo() const {
         return detail::Pointer::to_unowned<InfoTag::BASE>(GI_BASE_INFO(ptr()));
-    }
-};
-
-template <class Wrapper>
-class InfoOperations<Wrapper, InfoTag::PROPERTY>
-    : public BaseInfoOperations<Wrapper> {
-    DELETE_ALL_TYPECHECK_METHODS;
-
-    [[nodiscard]]
-    GIPropertyInfo* ptr() const {
-        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
-    }
-
-    [[nodiscard]]
-    GParamFlags flags() const {
-        return gi_property_info_get_flags(ptr());
-    }
-
- public:
-    [[nodiscard]]
-    mozilla::Maybe<AutoFunctionInfo> getter() const {
-        return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            gi_property_info_get_getter(ptr()));
-    }
-    [[nodiscard]]
-    mozilla::Maybe<AutoFunctionInfo> setter() const {
-        return detail::Pointer::nullable<InfoTag::FUNCTION>(
-            gi_property_info_get_setter(ptr()));
-    }
-    [[nodiscard]]
-    AutoTypeInfo type_info() const {
-        return detail::Pointer::to_owned<InfoTag::TYPE>(
-            gi_property_info_get_type_info(ptr()));
-    }
-
-    // Flag reading methods
-
-    [[nodiscard]]
-    bool has_deprecated_param_flag() const {
-        // Note, different from is_deprecated(). It's possible that the property
-        // has the deprecated GParamSpec flag, but is not marked deprecated in
-        // the GIR doc comment.
-        return flags() & G_PARAM_DEPRECATED;
-    }
-};
-
-// Out-of-line definition to avoid chicken-and-egg loop between AutoFunctionInfo
-// and AutoPropertyInfo
-template <class Wrapper>
-inline mozilla::Maybe<AutoPropertyInfo>
-InfoOperations<Wrapper, InfoTag::FUNCTION>::property() const {
-    return detail::Pointer::nullable<InfoTag::PROPERTY>(
-        gi_function_info_get_property(ptr()));
-}
-
-template <class Wrapper>
-class InfoOperations<Wrapper, InfoTag::VALUE>
-    : public BaseInfoOperations<Wrapper> {
-    DELETE_ALL_TYPECHECK_METHODS;
-
-    [[nodiscard]]
-    GIValueInfo* ptr() const {
-        return detail::Pointer::get_from(*static_cast<const Wrapper*>(this));
-    }
-
- public:
-    [[nodiscard]]
-    int64_t value() const {
-        return gi_value_info_get_value(ptr());
     }
 };
 

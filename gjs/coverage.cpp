@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen
 
+#include <iterator>  // for size
 #include <new>
 
 #include <gio/gio.h>
@@ -443,7 +444,7 @@ static void gjs_coverage_class_init(GjsCoverageClass* klass) {
                     G_PARAM_STATIC_STRINGS));
 
     g_object_class_install_properties(
-        object_class, G_N_ELEMENTS(gjs_coverage_props), gjs_coverage_props);
+        object_class, std::size(gjs_coverage_props), gjs_coverage_props);
 }
 
 /**

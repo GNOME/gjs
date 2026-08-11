@@ -372,11 +372,8 @@ void gjs_dbus_implementation_class_init(GjsDBusImplementationClass* klass) {
                      G_TYPE_VARIANT /* parameters */);
 }
 
-static gboolean idle_cb(void* data) {
-    GDBusInterfaceSkeleton* skeleton = G_DBUS_INTERFACE_SKELETON(data);
-
-    g_dbus_interface_skeleton_flush(skeleton);
-    return G_SOURCE_REMOVE;
+static void idle_flush_cb(void *data) {
+    g_dbus_interface_skeleton_flush(G_DBUS_INTERFACE_SKELETON(data));
 }
 
 /**
@@ -394,8 +391,9 @@ void gjs_dbus_implementation_emit_property_changed(GjsDBusImplementation* self,
     g_hash_table_replace(self->outstanding_properties, g_strdup(property),
                          gjs_gvariant_ref_sink0(newvalue));
 
+    // cleared in gjs_dbus_implementation_flush()
     if (!self->idle_id)
-        self->idle_id = g_idle_add(idle_cb, self);
+        self->idle_id = g_idle_add_once(idle_flush_cb, self);
 }
 
 /**

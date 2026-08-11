@@ -296,7 +296,8 @@ static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     // Separate initialization from declaration because of possible overwriting
     // when siglongjmp() jumps into this function
-    eof = exit_warning = false;
+    eof = false;
+    exit_warning = false;
     lineno = 1;
     do {
         /*
@@ -327,7 +328,8 @@ static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
                     exit_warning = false;
                 }
                 buffer.clear();
-                startline = lineno = 1;
+                startline = 1;
+                lineno = 1;
             }
 #endif  // HAVE_SIGNAL_H
 
@@ -340,7 +342,7 @@ static bool gjs_console_interact(JSContext* cx, unsigned argc, JS::Value* vp) {
             }
             buffer += temp_buf;
             buffer += "\n";
-            lineno++;
+            lineno = lineno + 1;
         } while (!JS_Utf8BufferIsCompilableUnit(cx, global, buffer.c_str(),
                                                 buffer.size()));
 

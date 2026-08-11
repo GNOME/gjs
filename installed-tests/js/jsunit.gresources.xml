@@ -43,5 +43,6 @@
     <file>modules/subA/subB/foobar.js</file>
     <file>modules/subBadInit/__init__.js</file>
     <file>modules/subErrorInit/__init__.js</file>
+    <file preprocess="xml-stripblanks">org.gnome.gjs.Test.xml</file>
   </gresource>
 </gresources>

@@ -39,7 +39,6 @@
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
 #include <mozilla/Span.h>
-#include <mozilla/Unused.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -69,6 +68,7 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
+#include "util/misc.h"
 
 using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 
@@ -1158,7 +1158,7 @@ static void intern_gdk_atom(const char* name, GIArgument* ret) {
     gjs_arg_set(atom_intern_args.data(), name);
     gjs_arg_set(atom_intern_args.data() + 1, false);
 
-    mozilla::Unused << atom_intern_fun.invoke(atom_intern_args, {}, ret);
+    GJS_ALWAYS_OK(atom_intern_fun.invoke(atom_intern_args, {}, ret));
 }
 
 static bool value_to_gdk_atom_gi_argument_internal(JSContext* cx,

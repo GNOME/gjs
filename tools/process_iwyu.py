@@ -94,6 +94,8 @@ FALSE_POSITIVES = (
     # False positive when using JS::WeakCache::put
     ('gi/fundamental.cpp', '#include <utility>', 'for forward'),
     ('gi/gtype.cpp', '#include <utility>', 'for forward'),
+    # False positive when using mozilla::Vector::eraseIfEqual
+    ('gjs/objectbox.cpp', '#include <algorithm>', 'for remove_if'),
     # Same underlying problem, false positive due to inlined methods from
     # gi/info.h and gi/auto.h
     ('gi/enumeration.cpp', '#include <girepository/girepository.h>', 'for gi_enum_info_get_value'),

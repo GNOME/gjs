@@ -32,7 +32,7 @@ typedef struct GjsMatchInfo_ GjsMatchInfo;
 #define GJS_TYPE_MATCH_INFO (gjs_match_info_get_type())
 
 GJS_EXPORT
-GType gjs_match_info_get_type(void) G_GNUC_CONST;
+GType gjs_match_info_get_type(void);
 
 GJS_EXPORT
 GRegex* gjs_match_info_get_regex(const GjsMatchInfo* self);

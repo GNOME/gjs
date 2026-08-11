@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <algorithm>  // for find
-
 #include <glib.h>
 
 #include <js/AllocPolicy.h>
@@ -54,8 +52,7 @@ struct ObjectBox::impl {
     }
 
     ~impl() {
-        auto* it = std::find(m_wrappers.begin(), m_wrappers.end(), m_parent);
-        m_wrappers.erase(it);
+        m_wrappers.eraseIfEqual(m_parent);
         debug("Finalized");
     }
 
@@ -89,21 +86,17 @@ void ObjectBox::destroy(ObjectBox* object) { object->m_impl->unref(); }
 void ObjectBox::destroy_impl(ObjectBox::impl* impl) { delete impl; }
 
 ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
-    ObjectBox::Ptr box;
-
-    ObjectBox** found =
-        std::find_if(m_wrappers.begin(), m_wrappers.end(),
-                     [obj](ObjectBox* b) { return b->m_impl->m_root == obj; });
-    if (found != m_wrappers.end()) {
-        box = *found;
-        box->m_impl->ref();
-        box->m_impl->debug("Reusing box");
-    } else {
-        box = new ObjectBox(obj);
-        if (!box->m_impl->init(cx))
-            return nullptr;
+    for (ObjectBox* box : m_wrappers) {
+        if (box->m_impl->m_root == obj) {
+            box->m_impl->ref();
+            box->m_impl->debug("Reusing box");
+            return box;
+        }
     }
 
+    ObjectBox::Ptr box{new ObjectBox(obj)};
+    if (!box->m_impl->init(cx))
+        return nullptr;
     return box;
 }
 

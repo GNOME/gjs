@@ -207,11 +207,8 @@ static bool gjs_value_from_array_and_length_values(
     bool is_introspected_signal) {
     JS::RootedValue array_length{cx};
 
-    // NOLINTBEGIN(bugprone-assert-side-effect,bugprone-reserved-identifier)
-    // G_VALUE_HOLDS* macros mess up these two checks
-    g_assert(G_VALUE_HOLDS_POINTER(array_value));
-    g_assert(G_VALUE_HOLDS_INT(array_length_value));
-    // NOLINTEND(bugprone-assert-side-effect,bugprone-reserved-identifier)
+    g_assert(g_type_check_value_holds(array_value, G_TYPE_POINTER));
+    g_assert(g_type_check_value_holds(array_length_value, G_TYPE_INT));
 
     if (!gjs_value_from_g_value_internal(cx, &array_length, array_length_value,
                                          no_copy, is_introspected_signal,

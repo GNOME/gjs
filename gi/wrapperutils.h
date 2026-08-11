@@ -52,7 +52,7 @@ bool gjs_wrapper_to_string_func(JSContext*, JSObject* this_obj,
                                 const char* objtype,
                                 const mozilla::Maybe<const GI::BaseInfo>&,
                                 GType, const void* native_address,
-                                JS::MutableHandleValue ret);
+                                JS::MutableHandleValue rval);
 
 // Needed because some of the templates don't have Maybe as their info() type
 GJS_JSAPI_RETURN_CONVENTION

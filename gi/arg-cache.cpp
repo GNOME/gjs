@@ -12,6 +12,7 @@
 
 #include <algorithm>
 #include <functional>  // for mem_fn
+#include <iterator>    // for size
 #include <limits>
 #include <type_traits>
 #include <unordered_set>  // for unordered_set::erase(), insert()
@@ -67,7 +68,7 @@ enum ExpectedType : uint8_t {
 };
 
 static const char* expected_type_names[] = {"object", "function", "string"};
-static_assert(G_N_ELEMENTS(expected_type_names) == ExpectedType::LAST,
+static_assert(std::size(expected_type_names) == ExpectedType::LAST,
               "Names must match the values in ExpectedType");
 
 static constexpr void gjs_gi_argument_set_array_length(GITypeTag tag,
@@ -1770,7 +1771,7 @@ static const char* reason_strings[] = {
     "union type not registered as a GType",                // UNREGISTERED_UNION
     "type not supported by introspection",                 // UNSUPPORTED_TYPE
 };
-static_assert(G_N_ELEMENTS(reason_strings) == LAST_REASON);
+static_assert(std::size(reason_strings) == LAST_REASON);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,

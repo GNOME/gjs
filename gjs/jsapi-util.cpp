@@ -11,6 +11,7 @@
 
 #include <algorithm>  // for min
 #include <chrono>  // for duration, operator""us
+#include <iterator>  // for size
 #include <sstream>
 #include <string>
 #include <utility>  // for move
@@ -672,7 +673,7 @@ const char* gjs_explain_gc_reason(JS::GCReason reason) {
         "RSS above threshold",     "GjsContext disposed", "Big Hammer hit",
         "gjs_context_gc() called", "Memory usage is low",
     };
-    static_assert(G_N_ELEMENTS(reason_strings) == Gjs::GCReason::N_REASONS,
+    static_assert(std::size(reason_strings) == Gjs::GCReason::N_REASONS,
                   "Explanations must match the values in Gjs::GCReason");
 
     auto reason_ix = static_cast<size_t>(reason);

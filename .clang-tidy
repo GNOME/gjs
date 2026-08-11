@@ -4,6 +4,7 @@
 Checks:
   - -*
   - bugprone-argument-comment
+  - bugprone-assert-side-effect
   - bugprone-branch-clone
   - bugprone-dangling-handle
   - bugprone-implicit-widening-of-multiplication-result
@@ -29,11 +30,8 @@ Checks:
     # marshalling code.
 
   # To do list for bugprone checks:
-  # - bugprone-assert-side-effect - Has started producing false positives in
-  #   Clang 22 for g_assert(). Figure out why and file a bug.
-  # - bugprone-assignment-in-if-condition - False positives on every use of
-  #   g_str_has_prefix/suffix. Consider enabling in C++20 and switch to using
-  #   string/string_view::starts_with/ends_with. (COMPAT)
+  # - bugprone-assignment-in-if-condition:
+  #   https://github.com/llvm/llvm-project/issues/210638
   # - bugprone-derived-method-shadowing-base-method - We use the CRTP pattern
   #   extensively. Since Clang 22 this check produces too many false positives.
   # - bugprone-multi-level-implicit-pointer-conversion - Many false postives on
@@ -85,6 +83,8 @@ Checks:
     # but are not needed for basic PEMDAS. May consider enabling if this is made
     # configurable.
 CheckOptions:
+  bugprone-assert-side-effect.AssertMacros: "assert,g_assert,g_return_if_fail,\
+    g_return_val_if_fail"
   bugprone-dangling-handle.HandleClasses: "std::basic_string_view;std::span;\
     mozilla::Span"
   bugprone-reserved-identifier.AllowedIdentifiers: _GNU_SOURCE
@@ -110,15 +110,34 @@ CheckOptions:
     # we only care about confusion between 1 and l
 CustomChecks:
   - Name: use-typesafe-min
-    Query: match conditionalOperator(isExpandedFromMacro("MIN")).bind("min")
+    Query: |
+      match conditionalOperator(
+        isExpandedFromMacro("MIN"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("min")
     Diagnostic:
       - BindName: min
         Message: Prefer std::min() instead of MIN macro for type safety
   - Name: use-typesafe-max
-    Query: match conditionalOperator(isExpandedFromMacro("MAX")).bind("max")
+    Query: |
+      match conditionalOperator(
+        isExpandedFromMacro("MAX"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("max")
     Diagnostic:
       - BindName: max
         Message: Prefer std::max() instead of MAX macro for type safety
+  - Name: use-typesafe-array-size
+    Query: |
+      match binaryOperator(
+        hasOperatorName("/"),
+        isExpandedFromMacro("G_N_ELEMENTS"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("size")
+    Diagnostic:
+      - BindName: size
+        Message: >
+          Prefer std::size() instead of G_N_ELEMENTS macro for type safety
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true
