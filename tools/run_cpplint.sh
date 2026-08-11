@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2025 Philip Chimento <philip.chimento@gmail.com>
 
@@ -6,27 +6,4 @@ cd "$(dirname -- "$0")/.." || exit 1
 
 [ $# -eq 0 ] && set -- .
 
-filters=(
-    build/include_what_you_use
-    readability/braces:modules/cairo-region.cpp
-      # https://github.com/cpplint/cpplint/issues/406
-    readability/nolint  # https://github.com/cpplint/cpplint/issues/298
-    runtime/int  # In many places required by GLib APIs
-    whitespace/braces:gjs/mem.cpp
-      # https://github.com/cpplint/cpplint/issues/373
-    whitespace/braces:modules/cairo-memory.cpp
-      # https://github.com/cpplint/cpplint/issues/373
-    whitespace/indent_namespace  # https://github.com/cpplint/cpplint/issues/372
-)
-filter_arg=$(printf ",-%s" "${filters[@]}")
-filter_arg="--filter=${filter_arg:1}"  # remove leading comma
-
-exclude=(
-    subprojects/
-    "_*build/"
-    gi/gjs_gi_trace.h
-    gjs/gjs_pch.hh
-)
-mapfile -t exclude_args < <(printf -- "--exclude=%s\n" "${exclude[@]}")
-
-cpplint --quiet --recursive "${exclude_args[@]}" "$filter_arg" "$@"
+cpplint --quiet --recursive "$@"
