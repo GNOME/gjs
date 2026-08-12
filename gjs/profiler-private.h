@@ -27,6 +27,11 @@
 
 class AutoProfilerLabel {
  public:
+    // This dynamicString parameter looks like a prime candidate for conversion
+    // into a format string, which would enable formatting into a buffer to
+    // avoid allocations, but benchmark it first, particularly in the
+    // profiler-disabled case. The current code is basically a no-op with
+    // profiling disabled and using GJS_PROFILER_DYNAMIC_STRING.
     explicit AutoProfilerLabel(JSContext* cx, const char* label,
                                const std::string& dynamicString,
                                JS::ProfilingCategoryPair categoryPair =

@@ -10,6 +10,7 @@
 
 #include <algorithm>  // for none_of
 #include <concepts>
+#include <format>
 #include <functional>  // for mem_fn
 #include <span>
 #include <utility>  // for in_range, move
@@ -963,14 +964,13 @@ static GArray* garray_new_for_basic_type(unsigned length, GITypeTag tag) {
 
 std::string gjs_argument_display_name(const char* arg_name,
                                       GjsArgumentType arg_type) {
-    using std::string_literals::operator""s;
     switch (arg_type) {
         case GJS_ARGUMENT_ARGUMENT:
-            return "Argument '"s + (arg_name ? arg_name : "(null)") + "'";
+            return std::format("Argument '{}'", arg_name ? arg_name : "(null)");
         case GJS_ARGUMENT_RETURN_VALUE:
             return "Return value";
         case GJS_ARGUMENT_FIELD:
-            return "Field '"s + (arg_name ? arg_name : "(null)") + "'";
+            return std::format("Field '{}'", arg_name ? arg_name : "(null)");
         case GJS_ARGUMENT_LIST_ELEMENT:
             return "List element";
         case GJS_ARGUMENT_HASH_ELEMENT:

@@ -10,6 +10,7 @@
 
 #include <algorithm>  // for find
 #include <array>
+#include <format>
 #include <functional>  // for mem_fn
 #include <limits>
 #include <memory>  // for make_unique, unique_ptr
@@ -3272,7 +3273,8 @@ template <ObjectBase::SignalMatchFunc(*MatchFunc)>
 bool ObjectInstance::signals_action_impl(JSContext* cx,
                                          const JS::CallArgs& args) {
     const std::string action_name = signal_match_to_action_name<MatchFunc>();
-    const std::string action_tag = "[Gi.signals_" + action_name + "_symbol]";
+    const std::string action_tag =
+        std::format("[Gi.signals_{}_symbol]", action_name);
     gjs_debug_gsignal("{}() {:?} priv {} argc {}", action_tag, m_wrapper.get(),
                       static_cast<void*>(this), args.length());
 

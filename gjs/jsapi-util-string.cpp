@@ -594,10 +594,10 @@ std::string gjs_debug_object(JSObject* const obj) {
 std::string gjs_debug_callable(JSObject* callable) {
     if (JSFunction* fn = JS_GetObjectFunction(callable)) {
         if (JSString* display_id = JS_GetMaybePartialFunctionDisplayId(fn))
-            return {"function " + gjs_debug_string(display_id)};
-        return {"unnamed function"};
+            return std::format("function {}", display_id);
+        return "unnamed function";
     }
-    return {"callable object " + gjs_debug_object(callable)};
+    return std::format("callable object {}", callable);
 }
 
 std::string gjs_debug_value(JS::Value v) {

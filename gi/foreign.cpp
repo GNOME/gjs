@@ -7,6 +7,7 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
+#include <format>
 #include <string>
 #include <unordered_map>
 #include <utility>  // for pair
@@ -50,7 +51,7 @@ static bool gjs_foreign_load_foreign_module(JSContext* cx,
 
     // FIXME: Find a way to check if a module is imported and only execute this
     // statement if it isn't
-    std::string script = "imports." + entry->first + ';';
+    std::string script = std::format(R"js(imports.{};)js", entry->first);
     JS::RootedValue retval{cx};
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     if (!gjs->eval_with_scope(nullptr, script.c_str(), script.length(),

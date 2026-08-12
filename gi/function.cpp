@@ -1334,7 +1334,6 @@ JSObject* Function::create(JSContext* cx, GType gtype,
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
                               GType gtype, const GI::CallableInfo& info) {
-    using std::string_literals::operator""s;
     std::string name;
 
     JS::RootedObject function{cx, Gjs::Function::create(cx, gtype, info)};
@@ -1344,7 +1343,7 @@ JSObject* gjs_define_function(JSContext* cx, JS::HandleObject in_object,
     if (info.is_function()) {
         name = info.name();
     } else if (info.is_vfunc()) {
-        name = "vfunc_"s + info.name();
+        name = std::format("vfunc_{}", info.name());
     } else {
         g_assert_not_reached();
     }

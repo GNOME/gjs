@@ -5,6 +5,7 @@
 #include <config.h>
 
 #include <charconv>
+#include <format>
 #include <string>
 #include <string_view>
 #include <system_error>
@@ -59,8 +60,8 @@ StatmParseError::StatmParseError(const char* message,
     g_assert(result.ec != std::errc() && "result should not be successful");
 
     std::error_code code = std::make_error_code(result.ec);
-    m_message = std::string(message) + ": " + code.message() +
-                " (remaining string '" + result.ptr + "')";
+    m_message = std::format("{}: {} (remaining string '{}')", message,
+                            code.message(), result.ptr);
 }
 
 }  // namespace Gjs
