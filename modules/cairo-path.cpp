@@ -5,6 +5,8 @@
 
 #include <config.h>
 
+#include <string>
+
 #include <cairo.h>
 #include <girepository/girepository.h>  // for GIArgument, GITransfer, ...
 
@@ -18,7 +20,6 @@
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
 #include "gi/foreign.h"
-#include "gjs/auto.h"
 #include "gjs/enum-utils.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -65,9 +66,9 @@ GJS_JSAPI_RETURN_CONVENTION static bool path_to_gi_argument(
     GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            Gjs::AutoChar display_name{
-                gjs_argument_display_name(arg_name, argument_type)};
-            gjs_throw(cx, "%s may not be null", display_name.get());
+            gjs_throw(
+                cx, "%s may not be null",
+                gjs_argument_display_name(arg_name, argument_type).c_str());
             return false;
         }
 
@@ -76,9 +77,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool path_to_gi_argument(
     }
 
     if (!value.isObject()) {
-        Gjs::AutoChar display_name{
-            gjs_argument_display_name(arg_name, argument_type)};
-        gjs_throw(cx, "%s is not a Cairo.Path", display_name.get());
+        gjs_throw(cx, "%s is not a Cairo.Path",
+                  gjs_argument_display_name(arg_name, argument_type).c_str());
         return false;
     }
 

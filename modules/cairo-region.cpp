@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <string>
+
 #include <cairo.h>
 #include <girepository/girepository.h>
 
@@ -21,7 +23,6 @@
 #include "gi/arg.h"
 #include "gi/foreign.h"
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/enum-utils.h"
 #include "gjs/jsapi-util-args.h"
@@ -217,9 +218,9 @@ static bool region_to_gi_argument(JSContext* cx, JS::Value value,
                                   GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            Gjs::AutoChar display_name{
-                gjs_argument_display_name(arg_name, argument_type)};
-            gjs_throw(cx, "%s may not be null", display_name.get());
+            gjs_throw(
+                cx, "%s may not be null",
+                gjs_argument_display_name(arg_name, argument_type).c_str());
             return false;
         }
 

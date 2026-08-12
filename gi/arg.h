@@ -9,6 +9,8 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
+#include <string>
+
 #include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>  // for GHashTable
@@ -47,7 +49,7 @@ enum class [[clang::flag_enum]] GjsArgumentFlags : uint8_t {
 GjsArgumentFlags operator|(GjsArgumentFlags const&, GjsArgumentFlags const&);
 
 [[nodiscard]]
-char* gjs_argument_display_name(const char* arg_name, GjsArgumentType);
+std::string gjs_argument_display_name(const char* arg_name, GjsArgumentType);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_value_to_callback_out_arg(JSContext*, JS::HandleValue,
