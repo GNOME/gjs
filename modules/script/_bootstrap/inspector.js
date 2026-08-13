@@ -253,7 +253,7 @@ const handlers = {
             breakpoints: entries,
         });
     },
-    scopes(seq, args) {
+    scopes(seq, _args) {
         const newestFrame = dbg.getNewestFrame();
         const scopes = toDapScopes(newestFrame?.environment ?? null);
         sendResponse(seq, 'scopes', {
@@ -271,13 +271,16 @@ function toDapScope(environment, id = 0) {
     if (!environment) return null;
 
     let object;
-    if
-    try {
-        object = environment.object;
-    } catch {}
+    if (environment.type !== 'declarative') {
+        object ??= environment.object;
+    } else {
+        object ??= environment.callee;
+    }
 
     let name;
-    if (object?.isPromise) {
+    if (object?.class) {
+        name = object.class;
+    } else if (object?.isPromise) {
         name = 'Promise';
     } else if (object?.displayName) {
         name = object.displayName;
@@ -494,6 +497,8 @@ dbg.onNewScript = (/** @type {Debugger.Script} */ script) => {
 };
 
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
+
+printerr('Hello');
 
 try {
     handleRequests();

@@ -120,6 +120,7 @@ declare namespace Debugger {
         parent: Debugger.Environment | null;
         // throws when type is `declarative`
         object: Debugger.Object | null;
+        callee: Debugger.Object | null;
     }
 
     class Object {
@@ -128,6 +129,7 @@ declare namespace Debugger {
         getVariable(name: string): Debugger.Value | null;
         isPromise: boolean;
         script: Debugger.Script | null;
+        class: string | undefined;
     }
 
     class Value {}
