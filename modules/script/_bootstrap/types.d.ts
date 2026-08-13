@@ -1,6 +1,5 @@
 /// @ts-check
 
-
 declare const debuggee = "__DEBUGEE__OPAQUE__";
 declare function loadNative(name: "_print"): {
     print: (...args: unknown[]) => void;
@@ -106,9 +105,7 @@ declare namespace Debugger {
         setBreakpoint(offset: Offset, handler: BreakpointHandler): void;
         clearAllBreakpoints(offset?: Offset): void;
         getLineOffsets(line: number): Offset[];
-        getOffsetLocation(
-            offset: Offset,
-        ): null | {
+        getOffsetLocation(offset: Offset): null | {
             lineNumber: number;
             columnNumber: number;
             isEntryPoint: boolean;
@@ -121,6 +118,9 @@ declare namespace Debugger {
         // throws when type is `declarative`
         object: Debugger.Object | null;
         callee: Debugger.Object | null;
+        names(): string[];
+        // throws Debugger.DebuggeeWouldRun
+        getVariable(name: string): Variable;
     }
 
     class Object {
@@ -130,7 +130,22 @@ declare namespace Debugger {
         isPromise: boolean;
         script: Debugger.Script | null;
         class: string | undefined;
+        isBoundFunction: boolean | undefined;
+        isArrowFunction: boolean | undefined;
+        isGeneratorFunction: boolean | undefined;
+        isAsyncFunction: boolean | undefined;
+        parameterNames: any;
+        isProxy: boolean;
+        callable: boolean;
     }
 
     class Value {}
+
+    class OptimizedOutObject {
+        optimizedOut: true;
+    }
+
+    type NativeValue = string | number | boolean | null | undefined | symbol;
+
+    type Variable = Debugger.Value | OptimizedOutObject | NativeValue | null
 }

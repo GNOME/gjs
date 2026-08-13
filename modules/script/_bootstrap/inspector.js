@@ -257,10 +257,172 @@ const handlers = {
         const newestFrame = dbg.getNewestFrame();
         const scopes = toDapScopes(newestFrame?.environment ?? null);
         sendResponse(seq, 'scopes', {
-            scopes: scopes || [],
+            scopes,
+        });
+    },
+    /**
+     * @param {{ variablesReference: number }} args
+     */
+    variables(seq, args) {
+        const nthEnvironment = findNthEnvironment(args.variablesReference);
+
+        if (!nthEnvironment) {
+            sendResponse(seq, 'variables', {
+                variables: [],
+            });
+            return;
+        }
+
+        const variables = toDapVariables(nthEnvironment);
+        sendResponse(seq, 'variables', {
+            variables: variables,
         });
     },
 };
+
+/**
+ * @param {Debugger.Environment} environment
+ * @returns {any}
+ */
+function toDapVariables(environment) {
+    return environment.names().map((name) => {
+        return toDapVariable(environment, name);
+    });
+}
+
+/**
+ * @param {string} name
+ * @param {Debugger.Environment} environment
+ * @returns {{ name: string, type: string, value: any, evaluateName: string; variablesReference: number; }}
+ */
+function toDapVariable(environment, name) {
+    /** @type {{type: string, value: any}} */
+    let variableDescription;
+
+    let variable;
+
+    try {
+        variable = environment.getVariable(name);
+    } catch {
+        return {
+            name,
+            evaluateName: name,
+            type: 'undefined',
+            value: 'undefined',
+            variablesReference: 0,
+        };
+    }
+
+    switch (typeof variable) {
+        case 'bigint':
+            variableDescription = {
+                type: 'bigint',
+                value: variable.toString(),
+            };
+            break;
+        case 'number':
+            variableDescription = {
+                type: 'number',
+                value: variable.toString(),
+            };
+            break;
+        case 'string':
+            variableDescription = {
+                type: 'string',
+                value: variable,
+            };
+            break;
+        case 'undefined':
+            variableDescription = { type: 'object', value: 'null' };
+            break;
+        case 'boolean':
+            variableDescription = {
+                type: 'boolean',
+                value: variable.toString(),
+            };
+            break;
+        case 'symbol':
+            variableDescription = {
+                type: 'symbol',
+                value: variable.toString(),
+            };
+            break;
+        case 'object':
+            if (variable === null)
+                variableDescription = { type: 'null', value: 'null' };
+            else if (variable instanceof Debugger.Object) {
+                printerr('got a variable', name, JSON.stringify(variable));
+                if (variable.isProxy) {
+                    variableDescription = {
+                        type: 'object',
+                        value: '<proxy>',
+                    };
+                }
+                if (variable.isPromise) {
+                    variableDescription = {
+                        type: 'object',
+                        value: '<promise>',
+                    };
+                } else if (variable.isArrowFunction) {
+                    variableDescription = {
+                        type: 'object',
+                        value: `(${variable.parameterNames}) => { ... }`,
+                    };
+                } else if (variable.isGeneratorFunction) {
+                    variableDescription = {
+                        type: 'object',
+                        value: `f* (${variable.parameterNames}) { ... }`,
+                    };
+                } else if (variable.isAsyncFunction) {
+                    variableDescription = {
+                        type: 'object',
+                        value: `async f (${variable.parameterNames}) { ... }`,
+                    };
+                } else if (variable.isBoundFunction || variable.callable) {
+                    variableDescription = {
+                        type: 'object',
+                        value: `f (${variable.parameterNames}) { ... }`,
+                    };
+                } else {
+                    variableDescription = {
+                        type: 'object',
+                        value:
+                            variable.displayName ??
+                            variable.name ??
+                            '<unknown>',
+                    };
+                }
+                variableDescription.value += `${variable.class}`;
+            } else if ('optimizedOut' in variable)
+                variableDescription = {
+                    type: 'object',
+                    value: '<optimized out>',
+                };
+            else variableDescription = { type: 'object', value: '<unknown>' };
+            break;
+    }
+
+    return {
+        name,
+        evaluateName: name,
+        variablesReference: 0,
+        ...variableDescription,
+    };
+}
+
+/**
+ * @param {number} n
+ * @returns {Debugger.Environment | null}
+ */
+function findNthEnvironment(n) {
+    let environment = dbg.getNewestFrame()?.environment ?? null;
+
+    for (let i = 1; i < n; i++) {
+        if (!environment) return null;
+        environment = environment.parent;
+    }
+    return environment;
+}
 
 /**
  *
@@ -320,7 +482,7 @@ function toDapScopes(environment) {
 
     const scopes = [];
 
-    let i = 0;
+    let i = 1;
     while (environment) {
         const scope = toDapScope(environment, i);
         if (!scope) break;
