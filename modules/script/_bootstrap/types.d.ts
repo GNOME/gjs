@@ -73,6 +73,7 @@ declare class Debugger {
     // events
     onNewScript: undefined | ((script: Debugger.Script) => void);
     onEnterFrame: undefined | ((frame: Debugger.Frame) => void);
+    onDebuggerStatement: undefined | ((frame: Debugger.Frame) => void);
 
     // methods
     addDebuggee(debugee: any): void;

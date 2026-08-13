@@ -658,6 +658,16 @@ dbg.onNewScript = (/** @type {Debugger.Script} */ script) => {
     resolveBreakpointsForUrl(script.url);
 };
 
+dbg.onDebuggerStatement = function (frame) {
+    sendEvent('stopped', {
+        reason: 'instruction breakpoint',
+        threadId: 0,
+        allThreadsStopped: true,
+    });
+
+    pause();
+};
+
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
 
 printerr('Hello');
