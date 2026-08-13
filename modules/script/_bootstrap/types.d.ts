@@ -1,5 +1,6 @@
 /// @ts-check
 
+
 declare const debuggee = "__DEBUGEE__OPAQUE__";
 declare function loadNative(name: "_print"): {
     print: (...args: unknown[]) => void;
@@ -23,7 +24,7 @@ declare function quit(exitCode: number): void;
 
 // Debugger types
 
-namespace DAP {
+declare namespace DAP {
     interface ProtocolMessage {
         seq: number;
         type: "request" | "response" | "event";
@@ -60,7 +61,7 @@ namespace DAP {
     interface ErrorResponse extends Response {
         success: false;
         body: {
-            error: DAPMessage;
+            error: Message;
         };
     }
 
@@ -69,7 +70,7 @@ namespace DAP {
 
 // Debugger API
 
-class Debugger {
+declare class Debugger {
     // events
     onNewScript: undefined | ((script: Debugger.Script) => void);
     onEnterFrame: undefined | ((frame: Debugger.Frame) => void);
@@ -80,7 +81,7 @@ class Debugger {
     getNewestFrame(): Debugger.Frame | null;
 }
 
-namespace Debugger {
+declare namespace Debugger {
     interface BreakpointHandler {
         hit(frame: Debugger.Frame): void;
     }
@@ -96,6 +97,7 @@ namespace Debugger {
         onStack: boolean;
         script: Debugger.Script | null;
         offset: Debugger.Offset | null;
+        environment: Debugger.Environment | null;
     }
 
     class Script {
@@ -112,4 +114,21 @@ namespace Debugger {
             isEntryPoint: boolean;
         };
     }
+
+    class Environment {
+        type: "declarative" | "object" | "with";
+        parent: Debugger.Environment | null;
+        // throws when type is `declarative`
+        object: Debugger.Object | null;
+    }
+
+    class Object {
+        name: string | undefined;
+        displayName: string | undefined;
+        getVariable(name: string): Debugger.Value | null;
+        isPromise: boolean;
+        script: Debugger.Script | null;
+    }
+
+    class Value {}
 }

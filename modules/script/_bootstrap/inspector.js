@@ -206,7 +206,6 @@ const handlers = {
     stackTrace(seq) {
         const newestFrame = dbg.getNewestFrame();
         const dapFrames = toDapStackFrames(newestFrame);
-        printerr(JSON.stringify(dapFrames, null, 2));
         sendResponse(seq, 'stackTrace', {
             stackFrames: dapFrames,
             totalFrames: dapFrames.length,
@@ -254,34 +253,108 @@ const handlers = {
             breakpoints: entries,
         });
     },
+    scopes(seq, args) {
+        const newestFrame = dbg.getNewestFrame();
+        const scopes = toDapScopes(newestFrame?.environment ?? null);
+        sendResponse(seq, 'scopes', {
+            scopes: scopes || [],
+        });
+    },
 };
+
+/**
+ *
+ * @param {Debugger.Environment | null} environment
+ * @param {number} id
+ */
+function toDapScope(environment, id = 0) {
+    if (!environment) return null;
+
+    let object;
+    if
+    try {
+        object = environment.object;
+    } catch {}
+
+    let name;
+    if (object?.isPromise) {
+        name = 'Promise';
+    } else if (object?.displayName) {
+        name = object.displayName;
+    } else if (object?.name) {
+        name = object.name;
+    } else {
+        name = 'Unknown name';
+    }
+
+    const script = object?.script;
+    let location;
+    if (script) {
+        const offsets = script.getLineOffsets(1);
+        for (const o of offsets) {
+            const c = script.getOffsetLocation(o);
+            if (c) {
+                location = c;
+                break;
+            }
+        }
+    }
+
+    return {
+        name: `${environment.type}: ${name ?? 'Unknown name'}`,
+        expensive: true,
+        variablesReference: id,
+        line: location?.lineNumber ?? 0,
+        column: location?.columnNumber ?? 0,
+    };
+}
+
+/**
+ * @param {Debugger.Environment | null} environment
+ */
+function toDapScopes(environment) {
+    if (!environment) return null;
+
+    const scopes = [];
+
+    let i = 0;
+    while (environment) {
+        const scope = toDapScope(environment, i);
+        if (!scope) break;
+        scopes.push(scope);
+        environment = environment.parent;
+        i++;
+    }
+
+    return scopes;
+}
 
 /**
  * @param {Debugger.Frame | null} frame
  */
 function toDapStackFrame(frame) {
-    if (!frame) return null;
+    if (!frame?.script) return null;
 
-    if (!frame.script) return null;
-
-    const offset = frame.offset
+    const location = frame.offset
         ? frame.script.getOffsetLocation(frame.offset)
         : null;
 
-    printerr('frame props', offset);
+    // converting from file:///path/to/script.js to /path/to/script.js
+    const path = frame.script.url.slice(7);
 
     return {
         id: frame.depth ?? 0,
-        name: frame.script.displayName ?? "helloworld",
-        line: offset?.lineNumber,
-        column: offset?.columnNumber,
+        name: frame.script.displayName ?? 'Unknown Frame',
+        line: location?.lineNumber ?? 0,
+        column: location?.columnNumber ?? 0,
         source: {
-            name: frame.script.url,
-            path: frame.script.url,
+            name: path,
+            path,
             sourceReference: 0,
         },
         presentationHint: 'normal',
-        canRestart: frame.onStack,
+        // canRestart: frame.onStack,
+        canRestart: false,
     };
 }
 
@@ -322,7 +395,10 @@ function handleRequests(shouldContinue = () => true) {
 
 function pause() {
     STATE.paused = true;
-    handleRequests(() => STATE.paused);
+    handleRequests(() => {
+        printerr('paused, handling request', STATE.paused);
+        return STATE.paused;
+    });
 }
 
 // DEBUGGER API handlers
