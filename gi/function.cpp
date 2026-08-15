@@ -8,7 +8,6 @@
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr
-#include <sstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -270,18 +269,13 @@ static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo& ret_type,
 void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
                                                            const char* reason,
                                                            bool dump_stack) {
-    std::ostringstream message;
-
-    message << "Attempting to run a JS callback " << when << ". "
-            << "This is most likely caused by " << reason << ". "
-            << "Because it would crash the application, it has been blocked.\n"
-            << "The offending " << m_info.kind_string() << " was "
-            << m_info.name() << "().";
-
-    if (dump_stack) {
-        message << "\n" << gjs_dumpstack_string();
-    }
-    g_critical("%s", message.str().c_str());
+    using std::string_literals::operator""s;
+    gjs_critical(
+        "Attempting to run a JS callback {}. This is most likely caused by "
+        "{}. Because it would crash the application, it has been blocked.\n"
+        "The offending {} was {}().{}",
+        when, reason, m_info.kind_string(), m_info,
+        dump_stack ? "\n" + gjs_dumpstack_string() : ""s);
 }
 
 /* This is our main entry point for ffi_closure callbacks. ffi_prep_closure() is
@@ -381,9 +375,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                 gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            g_error("Call to %s (%s) terminated with uncatchable exception",
-                    gjs_debug_callable(callable()).c_str(),
-                    m_info.display_string().c_str());
+            gjs_error("Call to {} ({}) terminated with uncatchable exception",
+                      gjs_debug_callable(callable()), m_info);
         }
 
         // If the callback has a GError** argument, then make a GError from the
@@ -420,7 +413,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
     JS::RootedValueVector jsargs{cx};
 
     if (!jsargs.reserve(n_args))
-        g_error("Unable to reserve space for vector");
+        gjs_error("Unable to reserve space for vector");
 
     GITypeTag ret_tag = ret_type.tag();
     bool ret_type_is_void = ret_tag == GI_TYPE_TAG_VOID;
@@ -469,7 +462,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                     args[array_length_pos + c_args_offset]);
 
                 if (!jsargs.growBy(1))
-                    g_error("Unable to grow vector");
+                    gjs_error("Unable to grow vector");
 
                 if (!gjs_value_from_explicit_array(
                         cx, jsargs[n_jsargs++], type_info,
@@ -480,7 +473,7 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             }
             case PARAM_NORMAL: {
                 if (!jsargs.growBy(1))
-                    g_error("Unable to grow vector");
+                    gjs_error("Unable to grow vector");
 
                 GIArgument* arg = args[i + c_args_offset];
                 if (arg_info.direction() == GI_DIRECTION_INOUT &&

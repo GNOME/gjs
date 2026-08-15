@@ -79,7 +79,8 @@ static void on_cleanup_finalization_registry(JSFunction* cleanup_task,
                                              void* data) {
     auto* gjs = static_cast<GjsContextPrivate*>(data);
     if (!gjs->queue_finalization_registry_cleanup(cleanup_task))
-        g_critical("Out of memory queueing FinalizationRegistry cleanup task");
+        gjs_critical(
+            "Out of memory queueing FinalizationRegistry cleanup task");
 }
 
 bool gjs_load_internal_source(JSContext* cx, const char* filename, char** src,
@@ -114,7 +115,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved) {
             gjs_dll = hinstDLL;
             const char* reason = JS_InitWithFailureDiagnostic();
             if (reason)
-                g_error("Could not initialize JavaScript: %s", reason);
+                gjs_error("Could not initialize JavaScript: {}", reason);
             gjs_is_inited = true;
         } break;
 
@@ -135,7 +136,7 @@ class GjsInit {
     GjsInit() {
         const char* reason = JS_InitWithFailureDiagnostic();
         if (reason)
-            g_error("Could not initialize JavaScript: %s", reason);
+            gjs_error("Could not initialize JavaScript: {}", reason);
     }
 
     ~GjsInit() {
@@ -237,9 +238,9 @@ JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     js::SetSourceHook(cx, std::move(hook));
 
     if (g_getenv("GJS_DISABLE_EXTRA_WARNINGS")) {
-        g_warning(
+        gjs_warning(
             "GJS_DISABLE_EXTRA_WARNINGS has been removed, GJS no longer logs "
-            "extra warnings.");
+            "extra warnings");
     }
 
     bool enable_jit = !(g_getenv("GJS_DISABLE_JIT"));

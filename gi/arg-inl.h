@@ -12,7 +12,6 @@
 #include <concepts>  // for integral
 #include <cstddef>  // for nullptr_t
 #include <limits>
-#include <string>  // for to_string
 #include <type_traits>
 
 #include <girepository/girepository.h>
@@ -29,6 +28,7 @@
 #include "gi/js-value-inl.h"
 #include "gi/utils-inl.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 // GIArgument accessor templates
 //
@@ -220,10 +220,10 @@ constexpr double gjs_arg_get_maybe_rounded(GIArgument* arg) {
 
     if (val < Gjs::min_safe_big_number<BigT>() ||
         val > Gjs::max_safe_big_number<BigT>()) {
-        g_warning(
-            "Value %s cannot be safely stored in a JS Number "
-            "and may be rounded",
-            std::to_string(val).c_str());
+        gjs_warning(
+            "Value {} cannot be safely stored in a JS Number and may be "
+            "rounded",
+            val);
     }
 
     return static_cast<double>(val);

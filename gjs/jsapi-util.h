@@ -24,6 +24,7 @@
 #include <glib.h>
 
 #include <js/BigInt.h>
+#include <js/CharacterEncoding.h>  // for ConstUTF8CharsZ
 #include <js/ErrorReport.h>  // for JSExnType
 #include <js/GCAPI.h>
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
@@ -307,6 +308,13 @@ template <>
 struct std::formatter<JS::UniqueChars> : std::formatter<const char*> {
     auto format(const JS::UniqueChars& str, std::format_context& cx) const {
         return formatter<const char*>::format(str ? str.get() : "(null)", cx);
+    }
+};
+
+template <>
+struct std::formatter<JS::ConstUTF8CharsZ> : std::formatter<const char*> {
+    auto format(JS::ConstUTF8CharsZ str, std::format_context& cx) const {
+        return formatter<const char*>::format(str ? str.c_str() : "(null)", cx);
     }
 };
 

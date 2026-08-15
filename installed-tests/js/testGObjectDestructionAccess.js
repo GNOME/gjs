@@ -380,7 +380,7 @@ describe('Disposed or finalized GObject', function () {
         file = null;
 
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during garbage collection*offending vfunc was dispose()*');
+            '*during garbage collection*offending vfunc was GObject.Object.dispose()*');
         System.gc();
         GLib.test_assert_expected_messages_internal('Gjs', 'testGObjectDestructionAccess.js', 0,
             'calls dispose vfunc on explicit disposal only');

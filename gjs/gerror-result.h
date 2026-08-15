@@ -58,6 +58,13 @@ struct SmartPointer<GError> : AutoError {
 template <typename T = mozilla::Ok>
 using GErrorResult = mozilla::Result<T, AutoError>;
 
+// Used below in the formatter
+namespace detail {
+template <typename T>
+concept HasPointerGet =
+    requires(T p) { requires std::is_pointer_v<decltype(p.get())>; };
+}  // namespace detail
+
 }  // namespace Gjs
 
 namespace mozilla::detail {
@@ -119,6 +126,11 @@ struct std::formatter<Gjs::GErrorResult<T>> : std::formatter<std::string> {
             } else if constexpr (std::is_pointer_v<T>) {
                 return std::formatter<std::string>::format(
                     std::format("Ok({})", static_cast<void*>(result.inspect())),
+                    cx);
+            } else if constexpr (Gjs::detail::HasPointerGet<T>) {
+                return std::formatter<std::string>::format(
+                    std::format("Ok({})",
+                                static_cast<void*>(result.inspect().get())),
                     cx);
             } else {
                 return std::formatter<std::string>::format(

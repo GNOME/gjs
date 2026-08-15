@@ -2074,8 +2074,8 @@ bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
         // basic types handled in gjs_value_to_basic_gi_argument(), ERROR
         // handled in gjs_value_to_gerror_gi_argument(), and INTERFACE handled
         // in gjs_value_to_interface_gi_argument()
-        g_warning("Unhandled type %s for JavaScript to GIArgument conversion",
-                  gi_type_tag_to_string(type_tag));
+        gjs_warning("Unhandled type {} for JavaScript to GIArgument conversion",
+                    type_tag);
         throw_invalid_argument(cx, value, type_info, arg_name, arg_type);
         return false;
     }
@@ -3462,8 +3462,8 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 
     default:
         // basic types handled in gjs_value_from_basic_gi_argument()
-        g_warning("Unhandled type %s converting GIArgument to JavaScript",
-                  gi_type_tag_to_string(type_tag));
+        gjs_warning("Unhandled type {} converting GIArgument to JavaScript",
+                    type_tag);
         return false;
     }
 }
@@ -4101,8 +4101,7 @@ static bool gjs_g_arg_release_internal(
 
     default:
         // basic types should have been handled in release_basic_type_internal()
-        g_warning("Unhandled type %s releasing GIArgument",
-                  gi_type_tag_to_string(type_tag));
+        gjs_warning("Unhandled type {} releasing GIArgument", type_tag);
         return false;
     }
 }

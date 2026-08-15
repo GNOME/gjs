@@ -42,6 +42,7 @@ Checks:
   - custom-avoid-char-pointer-return
   - custom-use-likely-attribute
   - custom-use-typesafe-array-size
+  - custom-use-typesafe-log
   - custom-use-typesafe-min
   - custom-use-typesafe-max
 
@@ -165,6 +166,26 @@ CustomChecks:
       - BindName: size
         Message: >
           Prefer std::size() instead of G_N_ELEMENTS macro for type safety
+  - Name: use-typesafe-log
+    # Under __clang_analyzer__, g_message etc are not macros
+    Query: |
+      match callExpr(
+        callee(functionDecl(hasAnyName(
+          "g_log",
+          "g_debug",
+          "g_info",
+          "g_message",
+          "g_warning",
+          "g_critical",
+          "g_error"))),
+        unless(anyOf(
+          isExpansionInFileMatching("\.c$"),
+          isExpandedFromMacro("g_return_val_if_reached"),
+          isExpandedFromMacro("G_OBJECT_WARN_INVALID_PROPERTY_ID"),
+      ))).bind("log")
+    Diagnostic:
+      - BindName: log
+        Message: Prefer gjs_log/gjs_warning etc. for type-safe formatting
   - Name: use-typesafe-min
     Query: |
       match conditionalOperator(

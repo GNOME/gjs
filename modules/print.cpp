@@ -33,9 +33,10 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "modules/print.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
+static bool log_native(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     if (argc != 1) {
@@ -50,7 +51,7 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     exc_state.restore();
 
     if (!jstr) {
-        g_message("JS LOG: <cannot convert value to string>");
+        gjs_message("JS LOG: <cannot convert value to string>");
         return true;
     }
 
@@ -58,7 +59,7 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!s)
         return false;
 
-    g_message("JS LOG: %s", s.get());
+    gjs_message("JS LOG: {}", s);
 
     args.rval().setUndefined();
     return true;
@@ -290,7 +291,7 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
 }
 
 static constexpr JSFunctionSpec funcs[] = {
-    JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("log", log_native, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),

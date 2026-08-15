@@ -36,6 +36,7 @@
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 using Gjs::GErrorResult;
 using mozilla::Err, mozilla::Ok;
@@ -189,9 +190,9 @@ static inline GErrorResult<> write_line(GOutputStream* out, const char* line) {
 GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
                                                               JSContext* cx) {
     if (!s_coverage_enabled) {
-        g_critical(
+        gjs_critical(
             "Code coverage requested, but gjs_coverage_enable() was not called."
-            " You must call this function before creating any GjsContext.");
+            " You must call this function before creating any GjsContext");
         return Gjs::AutoUnref<GFile>{};
     }
 
@@ -297,20 +298,19 @@ void gjs_coverage_write_statistics(GjsCoverage* self) {
     GErrorResult<Gjs::AutoUnref<GFile>> result{
         write_statistics_internal(self, cx)};
     if (result.isErr()) {
-        g_critical("Error writing coverage data: %s",
-                   result.inspectErr()->message);
+        gjs_critical("Error writing coverage data: {}", result);
         return;
     }
 
     Gjs::AutoChar output_file_path{g_file_get_path(result.unwrap())};
-    g_message("Wrote coverage statistics to %s", output_file_path.get());
+    gjs_message("Wrote coverage statistics to {}", output_file_path);
 }
 
 static void gjs_coverage_init(GjsCoverage*) {
     if (!s_coverage_enabled)
-        g_critical(
+        gjs_critical(
             "Code coverage requested, but gjs_coverage_enable() was not called."
-            " You must call this function before creating any GjsContext.");
+            " You must call this function before creating any GjsContext");
 }
 
 static void coverage_tracer(JSTracer* trc, void* data) {

@@ -7,7 +7,8 @@
 #include <limits.h>  // for INT_MAX
 #include <stdint.h>
 
-#include <sstream>
+#include <format>
+#include <iterator>  // for back_inserter
 #include <string>
 
 #include <girepository/girepository.h>
@@ -241,33 +242,35 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     if (!gjs->is_owner_thread() || JS::RuntimeHeapIsCollecting()) [[unlikely]] {
         auto* hint = static_cast<GSignalInvocationHint*>(invocation_hint);
-        std::ostringstream message;
+        std::string message;
 
         if (!gjs->is_owner_thread()) {
-            message << "Attempting to call back into JSAPI on a different "
-                       "thread. This is most likely caused by an API not "
-                       "intended to be used in JS. Because it would crash the "
-                       "application, it has been blocked.";
+            message =
+                "Attempting to call back into JSAPI on a different thread. "
+                "This is most likely caused by an API not intended to be used "
+                "in JS. Because it would crash the application, it has been "
+                "blocked.";
         } else {
-            message
-                << "Attempting to call back into JSAPI during the sweeping "
-                   "phase of GC. This is most likely caused by not destroying "
-                   "a Clutter actor or Gtk+ widget with ::destroy signals "
-                   "connected, but can also be caused by using the destroy(), "
-                   "dispose(), or remove() vfuncs. Because it would crash the "
-                   "application, it has been blocked and the JS callback not "
-                   "invoked.";
-            message << "\n" << gjs_dumpstack_string();
+            message =
+                "Attempting to call back into JSAPI during the sweeping phase "
+                "of GC. This is most likely caused by not destroying a Clutter "
+                "actor or Gtk+ widget with ::destroy signals connected, but "
+                "can also be caused by using the destroy(), dispose(), or "
+                "remove() vfuncs. Because it would crash the application, it "
+                "has been blocked and the JS callback not invoked.\n" +
+                gjs_dumpstack_string();
         }
         if (hint) {
             g_signal_query(hint->signal_id, &signal_query);
 
             void* instance = g_value_peek_pointer(&param_values[0]);
-            message << "\nThe offending signal was " << signal_query.signal_name
-                    << " on " << g_type_name(G_TYPE_FROM_INSTANCE(instance))
-                    << " " << instance << ".";
+            std::format_to(std::back_inserter(message),
+                           "\nThe offending signal was {} on {} {}.",
+                           signal_query.signal_name,
+                           g_type_name(G_TYPE_FROM_INSTANCE(instance)),
+                           instance);
         }
-        g_critical("%s", message.str().c_str());
+        gjs_critical("{}", message);
         return;
     }
 
@@ -341,7 +344,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     JS::RootedValueVector argv{m_cx};
     // May end up being less
     if (!argv.reserve(n_param_values))
-        g_error("Unable to reserve space");
+        gjs_error("Unable to reserve space");
     JS::RootedValue argv_to_append{m_cx};
     bool is_introspected_signal = !!signal_info;
     for (unsigned i = 0; i < n_param_values; ++i) {
@@ -398,8 +401,8 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                 gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            g_error("Call to %s terminated with uncatchable exception",
-                    gjs_debug_callable(callable()).c_str());
+            gjs_error("Call to {} terminated with uncatchable exception",
+                      gjs_debug_callable(callable()));
         }
     }
 

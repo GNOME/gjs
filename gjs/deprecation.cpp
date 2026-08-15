@@ -10,8 +10,6 @@
 #include <unordered_set>  // for unordered_set
 #include <utility>        // for move
 
-#include <glib.h>  // for g_warning
-
 #include <js/CharacterEncoding.h>
 #include <js/Conversions.h>
 #include <js/RootingAPI.h>
@@ -22,7 +20,9 @@
 #include <js/friend/DumpFunctions.h>
 
 #include "gjs/deprecation.h"
+#include "gjs/jsapi-util.h"  // IWYU pragma: keep (for formatter)
 #include "gjs/macros.h"
+#include "util/log.h"
 
 struct DeprecationEntry {
     GjsDeprecationMessageId id;
@@ -71,6 +71,6 @@ void Gjs::detail::warn_deprecated_internal(JSContext* cx,
     if (insert_result.second) {
         JS::UniqueChars stack_dump =
             JS::FormatStackDump(cx, false, false, false);
-        g_warning("%s\n%s", msg, stack_dump.get());
+        gjs_warning("{}\n{}", msg, stack_dump);
     }
 }

@@ -146,13 +146,13 @@ bool ObjectInstance::check_gobject_disposed_or_finalized(
     if (!m_gobj_disposed)
         return true;
 
-    g_critical(
-        "Object %s (%p), has been already %s — impossible to %s it. This might "
+    gjs_critical(
+        "Object {} ({}), has been already {} — impossible to {} it. This might "
         "be caused by the object having been destroyed from C code using "
-        "something such as destroy(), dispose(), or remove() vfuncs.\n%s",
-        format_name().c_str(), m_ptr.get(),
+        "something such as destroy(), dispose(), or remove() vfuncs.\n{}",
+        format_name(), m_ptr.as<void>(),
         m_gobj_finalized ? "finalized" : "disposed", for_what,
-        gjs_dumpstack_string().c_str());
+        gjs_dumpstack_string());
     return false;
 }
 
@@ -177,11 +177,11 @@ void ObjectInstance::check_js_object_finalized() {
     if (!m_uses_toggle_ref)
         return;
     if (m_wrapper_finalized) [[unlikely]] {
-        g_critical(
-            "Object %p (a %s) resurfaced after the JS wrapper was finalized. "
+        gjs_critical(
+            "Object {} (a {}) resurfaced after the JS wrapper was finalized. "
             "This is some library doing dubious memory management inside "
             "dispose()",
-            m_ptr.get(), type_name());
+            m_ptr.as<void>(), type_name());
         m_wrapper_finalized = false;
         g_assert(!m_wrapper);  // should associate again with a new wrapper
     }
@@ -201,10 +201,10 @@ void ObjectInstance::set_object_qdata() {
         m_ptr, gjs_object_priv_quark(), this, [](void* object) {
             auto* self = static_cast<ObjectInstance*>(object);
             if (!self->m_gobj_disposed) [[unlikely]] {
-                g_warning(
-                    "Object %p (a %s) was finalized but we didn't track "
-                    "its disposal",
-                    self->m_ptr.get(), g_type_name(self->gtype()));
+                gjs_warning(
+                    "Object {} (a {}) was finalized but we didn't track its "
+                    "disposal",
+                    self->m_ptr.as<void>(), self->type_name());
                 self->m_gobj_disposed = true;
             }
             self->m_gobj_finalized = true;
@@ -1001,10 +1001,8 @@ bool ObjectInstance::field_setter_not_impl(JSContext* cx,
     /* As far as I know, GI never exposes GObject instance struct fields as
      * writable, so no need to implement this for the time being */
     if (field.is_writable()) {
-        g_message(
-            "Field %s of a GObject is writable, but setting it is not "
-            "implemented",
-            field.name());
+        gjs_message("Field {} is writable, but setting it is not implemented",
+                    field);
         return true;
     }
 
@@ -1327,12 +1325,10 @@ static JSNative get_getter_for_property(
                                              return_type, priv_out);
             }
 
-            g_warning(
-                "Type %s of property %s does not match return type %s of "
-                "getter %s. Falling back to slow path",
-                prop_type.type_string(),
-                property_info->display_string().c_str(),
-                return_type.type_string(), prop_getter->name());
+            gjs_warning(
+                "Type {} of property {} does not match return type {} of "
+                "getter {}. Falling back to slow path",
+                prop_type, *property_info, return_type, *prop_getter);
             // fall back to GValue below
         }
     }
@@ -1434,12 +1430,10 @@ static JSNative get_setter_for_property(
                                              type_info, priv_out);
             }
 
-            g_warning(
-                "Type %s of property %s does not match type %s of first "
-                "argument of setter %s. Falling back to slow path",
-                prop_type.type_string(),
-                property_info->display_string().c_str(),
-                type_info.type_string(), prop_setter->name());
+            gjs_warning(
+                "Type {} of property {} does not match type {} of first "
+                "argument of setter {}. Falling back to slow path",
+                prop_type, *property_info, type_info, *prop_setter);
             // fall back to GValue below
         }
     }
@@ -2316,10 +2310,10 @@ void ObjectInstance::release_native_object() {
     discard_wrapper();
 
     if (m_gobj_finalized) {
-        g_critical(
-            "Object %p of type %s has been finalized while it was still "
-            "owned by gjs, this is due to invalid memory management.",
-            m_ptr.get(), g_type_name(gtype()));
+        gjs_critical(
+            "Object {} of type {} has been finalized while it was still "
+            "owned by gjs, this is due to invalid memory management",
+            m_ptr.as<void>(), type_name());
         m_ptr.release();
         return;
     }
@@ -2361,8 +2355,8 @@ void ObjectInstance::release_native_object() {
             auto result =
                 destroy_func.invoke({{destroy_args}}, {}, &unused_return);
             if (result.isErr())
-                g_critical("Error destroying GdkSurface %p: %s", ptr,
-                           result.inspectErr()->message);
+                gjs_critical("Error destroying GdkSurface {}: {}",
+                             static_cast<void*>(ptr), result);
         }
     }
 
@@ -2561,10 +2555,10 @@ void ObjectInstance::disassociate_js_gobject() {
     std::tie(had_toggle_down, had_toggle_up) =
         ToggleQueue::get_default()->cancel(this);
     if (had_toggle_up && !had_toggle_down) {
-        g_error(
-            "JS object wrapper for GObject %p (%s) is being released while "
+        gjs_error(
+            "JS object wrapper for GObject {} ({}) is being released while "
             "toggle references are still pending.",
-            m_ptr.get(), type_name());
+            m_ptr.as<void>(), type_name());
     }
 
     if (!m_gobj_disposed)
@@ -2763,10 +2757,10 @@ ObjectInstance::~ObjectInstance() {
     // GObject is not already freed
     if (m_ptr) {
         if (!had_toggle_up && had_toggle_down) {
-            g_error(
+            gjs_error(
                 "Finalizing wrapper for an object that's scheduled to be "
-                "unrooted: %s",
-                format_name().c_str());
+                "unrooted: {}",
+                format_name());
         }
 
         if (!m_gobj_disposed)

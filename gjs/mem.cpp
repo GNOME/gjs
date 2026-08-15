@@ -58,7 +58,7 @@ void gjs_memory_report(const char* where, bool die_if_leaks) {
         }
 
         if (die_if_leaks)
-            g_error("%s: JavaScript objects were leaked.", where);
+            gjs_error("{}: JavaScript objects were leaked", where);
     }
 }
 

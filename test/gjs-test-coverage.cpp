@@ -27,6 +27,7 @@
 #include "gjs/context.h"
 #include "gjs/coverage.h"
 #include "gjs/gerror-result.h"
+#include "util/log.h"
 
 struct GjsCoverageFixture {
     GjsContext* gjs_context;
@@ -75,8 +76,8 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
     tmp_output_dir_name = mkdtemp(tmp_output_dir_name.release());
 
     if (!tmp_output_dir_name)
-        g_error("Failed to create temporary directory for test files: %s\n",
-                strerror(errno));
+        gjs_error("Failed to create temporary directory for test files: {}",
+                  strerror(errno));
 
     fixture->tmp_output_dir = g_file_new_for_path(tmp_output_dir_name);
     fixture->tmp_js_script = g_file_get_child(fixture->tmp_output_dir,

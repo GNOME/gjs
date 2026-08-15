@@ -22,6 +22,7 @@
 #include "gjs/auto.h"
 #include "gjs/gerror-result.h"
 #include "gjs/gjs.h"
+#include "util/log.h"
 
 static Gjs::AutoStrv include_path;
 static Gjs::AutoStrv coverage_prefixes;
@@ -170,30 +171,32 @@ static void check_script_args_for_stray_gjs_args(int argc, char* const* argv) {
     g_option_context_add_main_entries(script_options, script_check_entries,
                                       nullptr);
     if (!g_option_context_parse_strv(script_options, argv_copy.out(), &error)) {
-        g_warning("Scanning script arguments failed: %s", error->message);
+        gjs_warning("Scanning script arguments failed: {}", error);
         return;
     }
 
     if (new_coverage_prefixes) {
-        g_warning("You used the --coverage-prefix option after the script on "
-                  "the GJS command line. Support for this will be removed in a "
-                  "future version. Place the option before the script or use "
-                  "the GJS_COVERAGE_PREFIXES environment variable.");
+        gjs_warning(
+            "You used the --coverage-prefix option after the script on the GJS "
+            "command line. Support for this will be removed in a future "
+            "version. Place the option before the script or use the "
+            "GJS_COVERAGE_PREFIXES environment variable");
         coverage_prefixes = strcatv(coverage_prefixes, new_coverage_prefixes);
     }
     if (new_include_paths) {
-        g_warning("You used the --include-path option after the script on the "
-                  "GJS command line. Support for this will be removed in a "
-                  "future version. Place the option before the script or use "
-                  "the GJS_PATH environment variable.");
+        gjs_warning(
+            "You used the --include-path option after the script on the GJS "
+            "command line. Support for this will be removed in a future "
+            "version. Place the option before the script or use the GJS_PATH "
+            "environment variable");
         include_path = strcatv(include_path, new_include_paths);
     }
     if (new_coverage_output_path) {
-        g_warning(
+        gjs_warning(
             "You used the --coverage-output option after the script on "
             "the GJS command line. Support for this will be removed in a "
             "future version. Place the option before the script or use "
-            "the GJS_COVERAGE_OUTPUT environment variable.");
+            "the GJS_COVERAGE_OUTPUT environment variable");
         coverage_output_path = new_coverage_output_path;
     }
 }
@@ -210,7 +213,7 @@ int define_argv_and_eval_script(GjsContext* gjs_context, int argc,
         Gjs::AutoUnref<GFile> output{g_file_new_for_commandline_arg(filename)};
         Gjs::AutoChar uri{g_file_get_uri(output)};
         if (!gjs_context_register_module(gjs_context, uri, uri, &error)) {
-            g_critical("%s", error->message);
+            gjs_critical("{}", error);
             code = 1;
         }
 
@@ -220,12 +223,12 @@ int define_argv_and_eval_script(GjsContext* gjs_context, int argc,
             code = code_u8;
 
             if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
-                g_critical("%s", error->message);
+                gjs_critical("{}", error);
         }
     } else if (!gjs_context_eval(gjs_context, script, len, filename, &code,
                                  &error)) {
         if (!g_error_matches(error, GJS_ERROR, GJS_ERROR_SYSTEM_EXIT))
-            g_critical("%s", error->message);
+            gjs_critical("{}", error);
     }
     return code;
 }
@@ -279,7 +282,7 @@ int main(int argc, char** argv) {
 
     g_option_context_add_main_entries(context, entries, nullptr);
     if (!g_option_context_parse_strv(context, &argv_copy, &error))
-        g_error("option parsing failed: %s", error->message);
+        gjs_error("option parsing failed: {}", error);
 
     // Split options so we pass unknown ones through to the JS script
     int argc_copy = g_strv_length(argv_copy);
@@ -350,7 +353,7 @@ int main(int argc, char** argv) {
         program_name = gjs_argv[0];
     } else if (gjs_argc == 1) {
         if (exec_as_module) {
-            g_warning(
+            gjs_warning(
                 "'-m' requires a file argument.\nExample: gjs -m main.js");
             return EXIT_FAILURE;
         }
@@ -390,7 +393,7 @@ int main(int argc, char** argv) {
     }
 
     if (interactive_mode && enable_profiler) {
-        g_message("Profiler disabled in interactive mode.");
+        gjs_message("Profiler disabled in interactive mode");
         enable_profiler = false;
         g_unsetenv("GJS_ENABLE_PROFILER");  // ignore env var in eval()
         g_unsetenv("GJS_TRACE_FD");         // ignore env var in eval()
@@ -439,7 +442,7 @@ int main(int argc, char** argv) {
     Gjs::AutoUnref<GjsCoverage> coverage;
     if (coverage_prefixes) {
         if (!coverage_output_path)
-            g_error(
+            gjs_error(
                 "--coverage-output is required when taking coverage "
                 "statistics");
 

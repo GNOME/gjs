@@ -49,6 +49,7 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
+#include "gjs/gerror-result.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
@@ -258,22 +259,21 @@ static void log_exception_brief(JSContext* cx) {
     JS_ClearPendingException(cx);
 
     if (!exc.isObject()) {
-        g_warning("Value thrown while printing exception: %s",
-                  gjs_debug_value(exc).c_str());
+        gjs_warning("Value thrown while printing exception: {}", exc);
         return;
     }
 
     JS::RootedObject exc_obj{cx, &exc.toObject()};
     JSErrorReport* report = JS_ErrorFromException(cx, exc_obj);
     if (!report) {
-        g_warning("Non-Error Object thrown while printing exception: %s",
-                  gjs_debug_object(exc_obj).c_str());
+        gjs_warning("Non-Error Object thrown while printing exception: {}",
+                    exc_obj);
         return;
     }
 
-    g_warning("Exception thrown while printing exception: %s:%u:%u: %s",
-              report->filename.c_str(), report->lineno,
-              report->column.oneOriginValue(), report->message().c_str());
+    gjs_warning("Exception thrown while printing exception: {}:{}:{}: {}",
+                report->filename, report->lineno,
+                report->column.oneOriginValue(), report->message());
 }
 
 // Helper function: format the error's stack property.
@@ -559,7 +559,7 @@ void gjs_log_exception_full(JSContext* cx, JS::HandleValue exc,
                             JS::HandleString message, GLogLevelFlags level) {
     JS::AutoSaveExceptionState saved_exc(cx);
     std::string log_msg = format_exception_log_message(cx, exc, message);
-    g_log(G_LOG_DOMAIN, level, "JS ERROR: %s", log_msg.c_str());
+    gjs_log(G_LOG_DOMAIN, level, "JS ERROR: {}", log_msg);
     saved_exc.restore();
 }
 
@@ -624,16 +624,16 @@ void gjs_gc_if_needed(JSContext* cx) {
     last_gc_check_time = now;
 
     Gjs::AutoChar contents;
+    Gjs::AutoError error;
     if (!g_file_get_contents("/proc/self/statm", contents.out(), nullptr,
-                             nullptr)) {
-        g_critical("Error reading contents of /proc/self/statm");
+                             &error)) {
+        gjs_critical("Error reading contents of /proc/self/statm: {}", error);
         return;
     }
 
     Gjs::StatmParseResult result = Gjs::parse_statm_file_rss(contents);
     if (result.isErr()) {
-        std::string message{result.unwrapErr()};
-        g_critical("%s", message.c_str());
+        gjs_critical("{}", std::string{result.unwrapErr()});
         return;
     }
     uint64_t rss = result.unwrap();

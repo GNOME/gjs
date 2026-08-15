@@ -1911,3 +1911,6 @@ struct std::formatter<GI::UnownedInfo<TAG>> : Gjs::FormatterBase<'t', '?'> {
 template <GI::InfoTag TAG>
 struct std::formatter<GI::OwnedInfo<TAG>>
     : std::formatter<GI::UnownedInfo<TAG>> {};
+
+template <>
+struct std::formatter<GI::StackTypeInfo> : std::formatter<GI::TypeInfo> {};

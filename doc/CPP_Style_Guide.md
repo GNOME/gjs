@@ -805,8 +805,8 @@ Neither assertions or `g_assert_not_reached()` will abort the program on
 a release build.
 If the error condition can be triggered by user input then the
 recoverable error mechanism of `GError*` should be used instead.
-In cases where this is not practical, either use `g_critical()` and
-continue execution as best as possible, or use `g_error()` to abort with
+In cases where this is not practical, either use `gjs_critical()` and
+continue execution as best as possible, or use `gjs_error()` to abort with
 a fatal error.
 
 For this reason, don't use `g_assert()` or `g_assert_not_reached()` in unit tests!
@@ -841,6 +841,10 @@ g_assert(v.size() > 42 && "Vector smaller than it should be");
 bool new_to_set GJS_USED_ASSERT = my_set.insert(value);
 g_assert(new_to_set && "The value shouldn't be in the set yet");
 ```
+
+#### Logging
+
+Don't end log messages with a period or a newline.
 
 #### Do Not Use `using namespace std`
 

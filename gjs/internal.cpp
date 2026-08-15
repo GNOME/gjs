@@ -107,7 +107,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
 static bool handle_wrong_args(JSContext* cx) {
     gjs_log_exception(cx);
-    g_error("Wrong invocation of internal code");
+    gjs_error("Wrong invocation of internal code");
     return false;
 }
 

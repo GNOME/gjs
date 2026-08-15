@@ -8,8 +8,6 @@
 #include <unordered_map>
 #include <utility>  // for ignore
 
-#include <glib.h>
-
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
@@ -22,8 +20,8 @@ void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
     bool inserted;
     std::tie(std::ignore, inserted) = m_modules.insert({module_id, func});
     if (!inserted) {
-        g_warning("A second native module tried to register the same id '%s'",
-                  module_id);
+        gjs_warning("A second native module tried to register the same id '{}'",
+                    module_id);
         return;
     }
 
