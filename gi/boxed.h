@@ -123,7 +123,6 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
             [this](GI::ConstructorIndex ix) { return *info().methods()[ix]; });
     }
 
-    using BaseClass::format_name;
     using BaseClass::gtype;
     using BaseClass::info;
     using BaseClass::name;
@@ -275,7 +274,6 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     using BaseClass::raw_ptr;
 
  public:
-    using BaseClass::format_name;
     using BaseClass::gtype;
     using BaseClass::info;
     using BaseClass::name;

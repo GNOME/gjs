@@ -477,9 +477,7 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
     getter.load_return_type(&type_info);
     if (!simple_getters_caller(type_info, m_ptr, info_caller->native_address,
                                &ret)) {
-        const std::string& class_name = format_name();
-        gjs_throw(cx, "Wrong type for {}::{} getter", class_name,
-                  property_info.name());
+        gjs_throw(cx, "Wrong type for {} getter", property_info);
         return false;
     }
 
@@ -494,9 +492,8 @@ bool ObjectInstance::prop_getter_impl(JSContext* cx,
         GParamSpec* pspec =
             g_object_class_find_property(klass, property_info.name());
         if (!pspec) {
-            const std::string& class_name = format_name();
-            gjs_throw(cx, "Error converting value got from {}::{} getter",
-                      class_name, property_info.name());
+            gjs_throw(cx, "Error converting value got from {} getter",
+                      property_info);
             return false;
         }
         return prop_getter_impl<void>(cx, pspec, args[0]);
@@ -873,8 +870,8 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
         GParamSpec* pspec =
             g_object_class_find_property(klass, property_info.name());
         if (!pspec) {
-            gjs_throw(cx, "Error converting value to call {}::{} setter",
-                      format_name(), property_info.name());
+            gjs_throw(cx, "Error converting value to call {} setter",
+                      property_info);
             return false;
         }
         return prop_setter_impl<void>(cx, pspec, value);
@@ -882,8 +879,7 @@ bool ObjectInstance::prop_setter_impl(JSContext* cx,
 
     if (!simple_setters_caller(type_info, &arg, m_ptr,
                                info_caller->native_address)) {
-        gjs_throw(cx, "Wrong type for {}::{} setter", format_name(),
-                  property_info.name());
+        gjs_throw(cx, "Wrong type for {} setter", property_info);
         return false;
     }
 
@@ -1331,13 +1327,12 @@ static JSNative get_getter_for_property(
                                              return_type, priv_out);
             }
 
-            Maybe<GI::BaseInfo> container = prop_getter->container();
             g_warning(
-                "Type %s of property %s.%s::%s does not match return type %s "
-                "of getter %s. Falling back to slow path",
-                prop_type.type_string(), container->ns(), container->name(),
-                property_info->name(), return_type.type_string(),
-                prop_getter->name());
+                "Type %s of property %s does not match return type %s of "
+                "getter %s. Falling back to slow path",
+                prop_type.type_string(),
+                property_info->display_string().c_str(),
+                return_type.type_string(), prop_getter->name());
             // fall back to GValue below
         }
     }
@@ -1439,13 +1434,12 @@ static JSNative get_setter_for_property(
                                              type_info, priv_out);
             }
 
-            Maybe<GI::BaseInfo> container = prop_setter->container();
             g_warning(
-                "Type %s of property %s.%s::%s does not match type %s of first "
+                "Type %s of property %s does not match type %s of first "
                 "argument of setter %s. Falling back to slow path",
-                prop_type.type_string(), container->ns(), container->name(),
-                property_info->name(), type_info.type_string(),
-                prop_setter->name());
+                prop_type.type_string(),
+                property_info->display_string().c_str(),
+                type_info.type_string(), prop_setter->name());
             // fall back to GValue below
         }
     }
@@ -1934,12 +1928,11 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
     GI::AutoFunctionInfo method_info{result->first};
     GI::AutoRegisteredTypeInfo implementor_info{result->second};
 
-    method_info.log_usage();
+    gjs_debug_gi_usage("Object::uncached_resolve {:?}", method_info);
 
     if (method_info.is_method()) {
-        gjs_debug(GJS_DEBUG_GOBJECT,
-                  "Defining method {} in prototype for {} ({})",
-                  method_info.name(), type_name(), format_name());
+        gjs_debug(GJS_DEBUG_GOBJECT, "Defining method {} in prototype for {}",
+                  method_info, type_name());
         if (auto iface_info = implementor_info.as<GI::InfoTag::INTERFACE>()) {
             bool found = false;
             if (!resolve_on_interface_prototype(cx, iface_info.value(), id, obj,
@@ -3808,12 +3801,10 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             Maybe<GI::AutoVFuncInfo> parent_vfunc{interface->vfunc(name.get())};
 
             if (parent_vfunc) {
-                Gjs::AutoChar identifier{g_strdup_printf(
-                    "%s.%s", interface->ns(), interface->name())};
                 gjs_throw(cx,
                           "{0} does not implement {1}, add {1} to your "
                           "implements array",
-                          g_type_name(m_gtype), identifier);
+                          g_type_name(m_gtype), *interface);
                 return false;
             }
         }

@@ -74,11 +74,11 @@ bool BoxedPrototype<Base, Prototype, Instance>::resolve_impl(
         *resolved = false;
         return true;
     }
-    method_info->log_usage();
+    gjs_debug_gi_usage("Boxed::resolve {:?}", *method_info);
 
     if (method_info->is_method()) {
         gjs_debug(GJS_DEBUG_GBOXED, "Defining method {} in prototype for {}",
-                  method_info->name(), format_name());
+                  method_info->name(), info());
 
         // obj is the Boxed prototype
         if (!gjs_define_function(cx, obj, gtype(), *method_info))
@@ -515,8 +515,7 @@ bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
     const GI::UnownedInfo<FieldInstance::TAG>& struct_info,
     JS::MutableHandleValue value) const {
     if (!GI::struct_is_simple(struct_info)) {
-        gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
-                  field_info.name());
+        gjs_throw(cx, "Reading field {} is not supported", field_info);
 
         return false;
     }
@@ -596,8 +595,7 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
 
     GIArgument arg;
     if (field_info.read(m_ptr, &arg).isErr()) {
-        gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
-                  field_info.name());
+        gjs_throw(cx, "Reading field {} is not supported", field_info);
         return false;
     }
 
@@ -607,15 +605,14 @@ bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
         Maybe<GI::AutoFieldInfo> length_field_info{
             get_field_info(cx, length_field_ix)};
         if (!length_field_info) {
-            gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
-                      field_info.name());
+            gjs_throw(cx, "Reading field {} is not supported", field_info);
             return false;
         }
 
         GIArgument length_arg;
         if (length_field_info->read(m_ptr, &length_arg).isErr()) {
-            gjs_throw(cx, "Reading field {}.{} is not supported", format_name(),
-                      length_field_info->name());
+            gjs_throw(cx, "Reading field {} is not supported",
+                      *length_field_info);
             return false;
         }
 
@@ -650,8 +647,7 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
     JSContext* cx, const GI::FieldInfo& field_info,
     const GI::UnownedInfo<FieldBase::TAG>& boxed_info, JS::HandleValue value) {
     if (!GI::struct_is_simple(boxed_info)) {
-        gjs_throw(cx, "Writing field {}.{} is not supported", format_name(),
-                  field_info.name());
+        gjs_throw(cx, "Writing field {} is not supported", field_info);
 
         return false;
     }
@@ -675,9 +671,8 @@ bool BoxedInstance<Base, Prototype, Instance>::set_nested_interface_object(
         source_priv = FieldBase::for_js(cx, source_object);
 
         if (source_priv && source_priv->info() != boxed_info) {
-            std::string source_name{source_priv->format_name()};
-            gjs_throw(cx, "Impossible to associate a {} to a {}.{} field",
-                      source_name, name(), field_info.name());
+            gjs_throw(cx, "Impossible to associate a {} to a {} field",
+                      source_priv->info(), field_info);
             return false;
         }
     }
@@ -746,8 +741,7 @@ bool BoxedInstance<Base, Prototype, Instance>::field_setter_impl(
     });
 
     if (field_info.write(m_ptr, &arg).isErr()) {
-        gjs_throw(cx, "Writing field {}.{} is not supported", format_name(),
-                  field_info.name());
+        gjs_throw(cx, "Writing field {} is not supported", field_info);
         return false;
     }
 
@@ -828,7 +822,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
 
         gjs_debug_marshal(GJS_DEBUG_GBOXED,
                           "Defining field {} (as {}) in prototype for {}",
-                          field.name(), property_name, format_name());
+                          field.name(), property_name, info());
 
         if (!gjs_define_property_dynamic(cx, proto, property_name.c_str(), id,
                                          "boxed_field", &Base::field_getter,

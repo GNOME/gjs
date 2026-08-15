@@ -89,7 +89,7 @@ static bool param_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
         *resolved = false;
         return true;
     }
-    method_info->log_usage();
+    gjs_debug_gi_usage("Param::resolve {:?}", *method_info);
 
     if (method_info->is_method()) {
         gjs_debug(GJS_DEBUG_GOBJECT,

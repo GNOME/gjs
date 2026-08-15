@@ -35,7 +35,7 @@ bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
         out << " instance wrapper";
 
     if (info) {
-        out << " GIName:" << info->ns() << "." << info->name();
+        out << " GIName:" << info->display_string();
     } else {
         out << " GType:" << g_type_name(gtype);
     }

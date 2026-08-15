@@ -1772,7 +1772,7 @@ bool NotIntrospectable::in(JSContext* cx, GjsFunctionCallState* state,
     gjs_throw(cx,
               "Function {}() cannot be called: argument '{}' is not "
               "introspectable because it has a {}",
-              state->display_name(), m_arg_name, reason_strings[m_reason]);
+              state->info, m_arg_name, reason_strings[m_reason]);
     return false;
 }
 

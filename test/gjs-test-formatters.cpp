@@ -5,7 +5,9 @@
 #include <config.h>
 
 #include <format>
+#include <new>
 #include <string>
+#include <utility>  // for move
 
 #include <girepository/girepository.h>
 #include <glib.h>
@@ -217,28 +219,158 @@ static void test_format_gi_type_tag() {
         std::format("{:>10}", gi_type_tag_to_string(GI_TYPE_TAG_VOID)));
 }
 
-static void test_format_gi_type_info() {
+struct InfoFormatterFixture {
     GI::Repository repo;
-    g_assert_true(repo.require("GLib", "2.0").isOk());
+    GI::AutoFunctionInfo strsplit;
+    GI::AutoStructInfo gerror;
 
-    Maybe<GI::AutoFunctionInfo> func =
-        repo.find_by_name<GI::InfoTag::FUNCTION>("GLib", "strsplit");
-    g_assert_true(func.isSome());
+    // self is uninitialized memory
+    static void setup(InfoFormatterFixture* self, const void*) {
+        GI::Repository repo;
+        Gjs::GErrorResult<GITypelib*> result = repo.require("GLib", "2.0");
+        g_assert_ok(result);
 
+        Maybe<GI::AutoFunctionInfo> strsplit =
+            repo.find_by_name<GI::InfoTag::FUNCTION>("GLib", "strsplit");
+        g_assert_true(strsplit.isSome());
+
+        Maybe<GI::AutoStructInfo> error =
+            repo.find_by_name<GI::InfoTag::STRUCT>("GLib", "Error");
+        g_assert_true(error.isSome());
+
+        new (self) InfoFormatterFixture{.repo = std::move(repo),
+                                        .strsplit = std::move(*strsplit),
+                                        .gerror = std::move(*error)};
+    }
+
+    static void teardown(InfoFormatterFixture* self, const void*) {
+        self->~InfoFormatterFixture();
+    }
+};
+
+static void test_format_gi_arg_info(InfoFormatterFixture* fx, const void*) {
+    Maybe<GI::AutoArgInfo> arg = fx->strsplit.args()[0];
+    g_assert_true(arg.isSome());
+
+    assert_format_eq(std::format("{}", *arg), "GLib.strsplit.string");
+    assert_format_eq(std::format("{:t}", *arg), "GIArgInfo");
+    assert_format_matches(
+        std::format("{:?}", *arg),
+        R"(^GIArgInfo 0x[0-9a-f]+ \(GLib\.strsplit\.string\)$)");
+}
+
+static void test_format_gi_field_info(InfoFormatterFixture* fx, const void*) {
+    Maybe<GI::AutoFieldInfo> field = fx->gerror.fields()[0];
+    g_assert_true(field.isSome());
+
+    assert_format_eq(std::format("{}", *field), "GLib.Error.domain");
+    assert_format_eq(std::format("{:t}", *field), "GIFieldInfo");
+    assert_format_matches(
+        std::format("{:?}", *field),
+        R"(^GIFieldInfo 0x[0-9a-f]+ \(GLib\.Error\.domain\)$)");
+}
+
+static void test_format_gi_function_info(InfoFormatterFixture* fx,
+                                         const void*) {
+    assert_format_eq(std::format("{}", fx->strsplit), "GLib.strsplit");
+    assert_format_eq(std::format("{:t}", fx->strsplit), "GIFunctionInfo");
+    assert_format_matches(
+        std::format("{:?}", fx->strsplit),
+        R"(^GIFunctionInfo 0x[0-9a-f]+ \(GLib\.strsplit\), )"
+        R"(\.details = \{ \.func = \{ \.retval_transfer = )"
+        R"(GI_TRANSFER_EVERYTHING, \.n_args = 3, \.args = \{ )"
+        R"(\{ GI_DIRECTION_IN, GI_TRANSFER_NOTHING \}, )"
+        R"(\{ GI_DIRECTION_IN, GI_TRANSFER_NOTHING \}, )"
+        R"(\{ GI_DIRECTION_IN, GI_TRANSFER_NOTHING \} )"
+        R"(\} \} \}$)");
+}
+
+static void test_format_gi_struct_info(InfoFormatterFixture* fx, const void*) {
+    assert_format_eq(std::format("{}", fx->gerror), "GLib.Error");
+    assert_format_eq(std::format("{:t}", fx->gerror), "GIStructInfo");
+    assert_format_matches(std::format("{:?}", fx->gerror),
+                          R"(^GIStructInfo 0x[0-9a-f]+ \(GLib\.Error\)$)");
+}
+
+// A method's qualified name includes its container, and a callable with no
+// arguments still gets a (mostly empty) details block.
+static void test_format_gi_method_info(InfoFormatterFixture* fx, const void*) {
+    Maybe<GI::AutoFunctionInfo> copy = fx->gerror.method("copy");
+    g_assert_true(copy.isSome());
+    g_assert_cmpuint(copy->n_args(), ==, 0);
+
+    assert_format_eq(std::format("{}", *copy), "GLib.Error.copy");
+    assert_format_eq(std::format("{:t}", *copy), "GIFunctionInfo");
+    assert_format_matches(
+        std::format("{:?}", *copy),
+        R"(^GIFunctionInfo 0x[0-9a-f]+ \(GLib\.Error\.copy\), )"
+        R"(\.details = \{ \.func = \{ \.retval_transfer = )"
+        R"(GI_TRANSFER_EVERYTHING, \.n_args = 0, \.args = \{  \} \} \}$)");
+}
+
+static void test_format_gi_type_info(InfoFormatterFixture* fx, const void*) {
     GI::StackTypeInfo stack;
-    func->load_return_type(&stack);
+    fx->strsplit.load_return_type(&stack);
     GI::TypeInfo return_type = stack;
     g_assert_cmpint(return_type.tag(), ==, GI_TYPE_TAG_ARRAY);
 
-    assert_format_eq(std::format("{}", return_type), "array");
+    // container type
+    assert_format_eq(std::format("{}", return_type), "array<utf8>");
+    assert_format_eq(std::format("{:t}", return_type), "GITypeInfo");
     assert_format_matches(std::format("{:?}", return_type),
-                          "^GITypeInfo 0x[0-9a-f]+$");
+                          R"(^GITypeInfo 0x[0-9a-f]+ \(array<utf8>\)$)");
 
-    // GI::AutoTypeInfo should behave the same way as GI::TypeInfo
+    // basic (and also dependent) type
     GI::AutoTypeInfo element_type = return_type.element_type();
     assert_format_eq(std::format("{}", element_type), "utf8");
+    assert_format_eq(std::format("{:t}", element_type), "GITypeInfo");
     assert_format_matches(std::format("{:?}", element_type),
-                          "^GITypeInfo 0x[0-9a-f]+$");
+                          R"(^GITypeInfo 0x[0-9a-f]+ \(utf8\)$)");
+
+    // interface type
+    Maybe<GI::AutoFunctionInfo> func =
+        fx->repo.find_by_name<GI::InfoTag::FUNCTION>("GLib",
+                                                     "file_error_from_errno");
+    g_assert_true(func.isSome());
+
+    func->load_return_type(&stack);
+    GI::TypeInfo interface_type = stack;
+    g_assert_cmpint(interface_type.tag(), ==, GI_TYPE_TAG_INTERFACE);
+
+    assert_format_eq(std::format("{}", interface_type),
+                     "interface GLib.FileError");
+    assert_format_eq(std::format("{:t}", interface_type), "GITypeInfo");
+    assert_format_matches(
+        std::format("{:?}", interface_type),
+        R"(^GITypeInfo 0x[0-9a-f]+ \(interface GLib\.FileError\)$)");
+
+    // hash type with two dependent types
+    func = fx->repo.find_by_name<GI::InfoTag::FUNCTION>("GLib",
+                                                        "uri_parse_params");
+    g_assert_true(func.isSome());
+
+    func->load_return_type(&stack);
+    GI::TypeInfo hash_type = stack;
+    g_assert_cmpint(hash_type.tag(), ==, GI_TYPE_TAG_GHASH);
+
+    assert_format_eq(std::format("{}", hash_type), "ghash<utf8, utf8>");
+    assert_format_matches(std::format("{:?}", hash_type),
+                          R"(^GITypeInfo 0x[0-9a-f]+ \(ghash<utf8, utf8>\)$)");
+}
+
+// GI::Auto___Info should behave the same way as GI::___Info
+static void test_format_gi_info_owned_matches_unowned(InfoFormatterFixture* fx,
+                                                      const void*) {
+    // unowned view of fx->gerror
+    Maybe<const GI::StructInfo> unowned =
+        fx->gerror.fields()[0]->container()->as<GI::InfoTag::STRUCT>();
+
+    assert_format_eq(std::format("{}", *unowned),
+                     std::format("{}", fx->gerror));
+    assert_format_eq(std::format("{:t}", *unowned),
+                     std::format("{:t}", fx->gerror));
+    assert_format_eq(std::format("{:?}", *unowned),
+                     std::format("{:?}", fx->gerror));
 }
 
 // Gjs::GErrorResult<T>
@@ -285,8 +417,24 @@ void add_tests_for_formatters() {
 
 #undef ADD_FORMATTER_FIXTURE_TEST
 
-    g_test_add_func("/gjs/formatter/gi-type-info", test_format_gi_type_info);
     g_test_add_func("/gjs/formatter/gi-type-tag", test_format_gi_type_tag);
+
+#define ADD_GI_FORMATTER_TEST(path, func)                             \
+    g_test_add("/gjs/formatter/" path, InfoFormatterFixture, nullptr, \
+               &InfoFormatterFixture::setup, func,                    \
+               &InfoFormatterFixture::teardown)
+
+    ADD_GI_FORMATTER_TEST("gi-arg-info", test_format_gi_arg_info);
+    ADD_GI_FORMATTER_TEST("gi-field-info", test_format_gi_field_info);
+    ADD_GI_FORMATTER_TEST("gi-function-info", test_format_gi_function_info);
+    ADD_GI_FORMATTER_TEST("gi-method-info", test_format_gi_method_info);
+    ADD_GI_FORMATTER_TEST("gi-struct-info", test_format_gi_struct_info);
+    ADD_GI_FORMATTER_TEST("gi-type-info", test_format_gi_type_info);
+    ADD_GI_FORMATTER_TEST("gi-info/owned-matches-unowned",
+                          test_format_gi_info_owned_matches_unowned);
+
+#undef ADD_GI_FORMATTER_TEST
+
     g_test_add_func("/gjs/formatter/gerror-result/ok",
                     test_format_gerror_result_ok);
     g_test_add_func("/gjs/formatter/gerror-result/ok-value",

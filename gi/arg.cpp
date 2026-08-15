@@ -1004,8 +1004,7 @@ static bool throw_invalid_interface_argument(JSContext* cx,
                                              const GI::BaseInfo& interface_info,
                                              const char* arg_name,
                                              GjsArgumentType arg_type) {
-    gjs_throw(cx, "Expected type {} for {} but got type '{:t}'",
-              interface_info.type_string(),
+    gjs_throw(cx, "Expected type {} for {} but got type '{:t}'", interface_info,
               gjs_argument_display_name(arg_name, arg_type), value);
     return false;
 }
@@ -1340,7 +1339,7 @@ bool value_to_interface_gi_argument_internal(
                 gjs_throw(
                     cx,
                     "Boxed type {} registered for unexpected interface_type {}",
-                    g_type_name(gtype), interface_info.type_string());
+                    g_type_name(gtype), interface_info);
                 return false;
             }
 
@@ -3377,7 +3376,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                 // Should have been handled above
                 gjs_throw(cx,
                           "Type {} registered for unexpected interface_type {}",
-                          g_type_name(gtype), interface_info.type_string());
+                          g_type_name(gtype), interface_info);
                 return false;
             }
 

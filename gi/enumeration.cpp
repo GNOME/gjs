@@ -86,8 +86,7 @@ bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
 
     JS::RootedObject enum_obj{cx, JS_NewPlainObject(cx)};
     if (!enum_obj) {
-        gjs_throw(cx, "Could not create enumeration {}.{}", info.ns(),
-                  enum_name);
+        gjs_throw(cx, "Could not create enumeration {}", info);
         return false;
     }
 
@@ -98,8 +97,7 @@ bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
         !gjs_wrapper_define_gtype_prop(cx, enum_obj, gtype))
         return false;
 
-    gjs_debug(GJS_DEBUG_GENUM, "Defining {}.{} as {:?}", info.ns(), enum_name,
-              enum_obj);
+    gjs_debug(GJS_DEBUG_GENUM, "Defining {} as {:?}", info, enum_obj);
 
     if (!JS_DefineProperty(cx, in_object, enum_name, enum_obj,
                            GJS_MODULE_PROP_FLAGS)) {

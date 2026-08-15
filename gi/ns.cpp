@@ -117,9 +117,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             return true;
         }
 
-        gjs_debug(GJS_DEBUG_GNAMESPACE,
-                  "Found info type {} for '{}' in namespace '{}'",
-                  info->type_string(), info->name(), info->ns());
+        gjs_debug(GJS_DEBUG_GNAMESPACE, "Found info type {0:t} for {0}", *info);
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
         if (m_is_glib) {

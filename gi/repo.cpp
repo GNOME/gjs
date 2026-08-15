@@ -272,7 +272,7 @@ static bool gjs_define_constant(JSContext* cx, JS::HandleObject in_object,
 
 bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                      const GI::BaseInfo& info, bool* defined) {
-    info.log_usage();
+    gjs_debug_gi_usage("gjs_define_info {:?}", info);
 
     *defined = true;
 
@@ -338,8 +338,7 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                                                 &ignored1, &ignored2);
     }
 
-    gjs_throw(cx, "API of type {} not implemented, cannot define {}.{}",
-              info.type_string(), info.ns(), info.name());
+    gjs_throw(cx, "API of type {0:t} not implemented, cannot define {0}", info);
     return false;
 }
 
@@ -353,8 +352,7 @@ JSObject* gjs_lookup_private_namespace(JSContext* cx) {
 JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo& info) {
     const char* ns = info.ns();
     if (ns == nullptr) {
-        gjs_throw(cx, "{} '{}' does not have a namespace", info.type_string(),
-                  info.name());
+        gjs_throw(cx, "{0:t} '{0}' does not have a namespace", info);
 
         return nullptr;
     }
@@ -464,19 +462,17 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
 JSObject* gjs_lookup_generic_constructor(JSContext* cx,
                                          const GI::BaseInfo& info) {
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
-    const char* constructor_name = info.name();
-
     if (!in_object) [[unlikely]]
         return nullptr;
 
     JS::RootedValue value{cx};
-    if (!JS_GetProperty(cx, in_object, constructor_name, &value))
+    if (!JS_GetProperty(cx, in_object, info.name(), &value))
         return nullptr;
 
     if (!value.isObject()) [[unlikely]] {
         gjs_throw(cx,
-                  "Constructor of {}.{} was the wrong type, expected an object",
-                  info.ns(), constructor_name);
+                  "Constructor of {} was the wrong type, expected an object",
+                  info);
         return nullptr;
     }
 
@@ -495,9 +491,8 @@ JSObject* gjs_lookup_generic_prototype(JSContext* cx,
         return nullptr;
 
     if (!value.isObject()) [[unlikely]] {
-        gjs_throw(cx,
-                  "Prototype of {}.{} was the wrong type, expected an object",
-                  info.ns(), info.name());
+        gjs_throw(cx, "Prototype of {} was the wrong type, expected an object",
+                  info);
         return nullptr;
     }
 

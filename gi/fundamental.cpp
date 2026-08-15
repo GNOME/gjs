@@ -5,8 +5,6 @@
 
 #include <config.h>
 
-#include <string>  // for string methods
-
 #include <girepository/girepository.h>
 #include <glib.h>
 
@@ -127,21 +125,20 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     Maybe<GI::AutoFunctionInfo> method_info{info().method(prop_name.get())};
 
     if (method_info) {
-        method_info->log_usage();
+        gjs_debug_gi_usage("Fundamental::resolve {:?}", *method_info);
         if (method_info->is_method()) {
             // we do not define deprecated methods in the prototype
             if (method_info->is_deprecated()) {
-                gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                          "Ignoring definition of deprecated method {} in "
-                          "prototype {}",
-                          method_info->name(), format_name());
+                gjs_debug(
+                    GJS_DEBUG_GFUNDAMENTAL,
+                    "Ignoring definition of deprecated method {} in prototype",
+                    *method_info);
                 *resolved = false;
                 return true;
             }
 
-            gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                      "Defining method {} in prototype for {}",
-                      method_info->name(), format_name());
+            gjs_debug(GJS_DEBUG_GFUNDAMENTAL, "Defining method {} in prototype",
+                      *method_info);
 
             if (!gjs_define_function(cx, obj, gtype(), *method_info))
                 return false;
@@ -169,7 +166,7 @@ bool FundamentalInstance::invoke_constructor(JSContext* cx,
     Maybe<const GI::FunctionInfo> constructor_info =
         get_prototype()->constructor_info();
     if (!constructor_info) {
-        gjs_throw(cx, "Couldn't find a constructor for type {}", format_name());
+        gjs_throw(cx, "Couldn't find a constructor for type {}", info());
         return false;
     }
 
@@ -338,7 +335,7 @@ bool FundamentalPrototype::define_class(JSContext* cx,
         gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
                   "Fundamental type '{}' apparently has accessible fields. GJS "
                   "has no support for this yet, ignoring these.",
-                  priv->format_name());
+                  info);
     }
 
     return true;

@@ -167,8 +167,6 @@ class Function : public CWrapper<Function> {
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* create(JSContext*, GType, const GI::CallableInfo&);
 
-    [[nodiscard]] std::string format_name();
-
     GJS_JSAPI_RETURN_CONVENTION
     bool invoke(JSContext* cx, const JS::CallArgs& args,
                 JS::HandleObject this_obj = nullptr,
@@ -383,9 +381,9 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
                 gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            g_error("Call to %s (%s.%s) terminated with uncatchable exception",
-                    gjs_debug_callable(callable()).c_str(), m_info.ns(),
-                    m_info.name());
+            g_error("Call to %s (%s) terminated with uncatchable exception",
+                    gjs_debug_callable(callable()).c_str(),
+                    m_info.display_string().c_str());
         }
 
         // If the callback has a GError** argument, then make a GError from the
@@ -541,11 +539,10 @@ bool GjsCallbackTrampoline::callback_closure_inner(
             return false;
 
         if (!is_array) {
-            gjs_throw(cx,
-                      "Call to {} ({}.{}) returned unexpected value, expecting "
-                      "an Array",
-                      gjs_debug_callable(callable()), m_info.ns(),
-                      m_info.name());
+            gjs_throw(
+                cx,
+                "Call to {} ({}) returned unexpected value, expecting an Array",
+                gjs_debug_callable(callable()), m_info);
             return false;
         }
 
@@ -757,7 +754,7 @@ bool GjsCallbackTrampoline::initialize() {
                 gjs_throw(cx(),
                           "The {} {} accepts another callback as a parameter. "
                           "This is not supported",
-                          m_info.kind_string(), m_info.name());
+                          m_info.kind_string(), m_info);
                 return false;
             }
         } else if (type_tag == GI_TYPE_TAG_ARRAY) {
@@ -776,7 +773,7 @@ bool GjsCallbackTrampoline::initialize() {
                             cx(),
                             "The {} {} has an array with different-direction "
                             "length argument. This is not supported",
-                            m_info.kind_string(), m_info.name());
+                            m_info.kind_string(), m_info);
                         return false;
                     }
 
@@ -789,21 +786,6 @@ bool GjsCallbackTrampoline::initialize() {
 
     m_closure = create_closure();
     return true;
-}
-
-// Intended for error messages
-std::string Gjs::Function::format_name() {
-    bool is_method = m_info.is_method();
-    std::string retval = is_method ? "method" : "function";
-    retval += ' ';
-    retval += m_info.ns();
-    retval += '.';
-    if (is_method) {
-        retval += m_info.container()->name();
-        retval += '.';
-    }
-    retval += m_info.name();
-    return retval;
 }
 
 namespace Gjs {
@@ -867,7 +849,7 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     GjsFunctionCallState state{cx, m_info};
 
     if (state.gi_argc > Argument::MAX_ARGS) {
-        gjs_throw(cx, "Function {} has too many arguments", format_name());
+        gjs_throw(cx, "Function {} has too many arguments", m_info);
         return false;
     }
 
@@ -878,11 +860,12 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     // PARAM_SKIPPED args).
     // args.length() is the number of arguments that were actually passed.
     if (args.length() > m_js_in_argc) {
-        if (!JS::WarnUTF8(cx, "Too many arguments to %s: expected %u, got %u",
-                          format_name().c_str(), m_js_in_argc, args.length()))
+        if (!JS::WarnUTF8(
+                cx, "Too many arguments to function %s: expected %u, got %u",
+                m_info.display_string().c_str(), m_js_in_argc, args.length()))
             return false;
     } else if (args.length() < m_js_in_argc) {
-        JS::CallArgs::reportMoreArgsNeeded(cx, format_name().c_str(),
+        JS::CallArgs::reportMoreArgsNeeded(cx, m_info.display_string().c_str(),
                                            m_js_in_argc, args.length());
         return false;
     }
@@ -914,8 +897,6 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     if (!args.isConstructing() && !args.computeThis(cx, &obj))
         return false;
 
-    std::string dynamicString("(unknown)");
-
     if (state.is_method) {
         GIArgument* in_value = state.instance();
         JS::RootedValue in_js_value{cx, JS::ObjectValue(*obj)};
@@ -934,17 +915,10 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
             if (g_type_is_a(*gtype, G_TYPE_OBJECT) ||
                 g_type_is_a(*gtype, G_TYPE_INTERFACE))
                 state.instance_object = obj;
-
-            if (g_type_is_a(*gtype, G_TYPE_OBJECT)) {
-                auto* o = ObjectBase::for_js(cx, obj);
-                dynamicString =
-                    GJS_PROFILER_DYNAMIC_STRING(cx, o->format_name());
-            }
         }
     }
-    std::string full_name{
-        GJS_PROFILER_DYNAMIC_STRING(cx, dynamicString + "." + format_name())};
-    AutoProfilerLabel label{cx, "", full_name};
+    AutoProfilerLabel label{
+        cx, "", GJS_PROFILER_DYNAMIC_STRING(cx, m_info.display_string())};
 
     g_assert(std::in_range<decltype(state.processed_c_args)>(ffi_arg_pos +
                                                              state.gi_argc));
@@ -971,7 +945,7 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
                       "Error invoking {}: impossible to determine what to pass "
                       "to the '{}' argument. It may be that the function is "
                       "unsupported, or there may be a bug in its annotations.",
-                      format_name(), arg_info.name());
+                      m_info, arg_info.name());
             state.failed = true;
             break;
         }
@@ -1059,7 +1033,7 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
                     "Error invoking {}: impossible to determine what to pass "
                     "to the out '{}' argument. It may be that the function is "
                     "unsupported, or there may be a bug in its annotations.",
-                    format_name(), arg_info.name());
+                    m_info, arg_info.name());
                 state.failed = true;
                 break;
             }
@@ -1216,7 +1190,8 @@ bool Function::get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (auto func_info = priv->m_info.as<GI::InfoTag::FUNCTION>())
         return gjs_string_from_utf8(cx, func_info->symbol(), rec.rval());
 
-    return gjs_string_from_utf8(cx, priv->format_name().c_str(), rec.rval());
+    return gjs_string_from_utf8(cx, priv->m_info.display_string().c_str(),
+                                rec.rval());
 }
 
 bool Function::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -1242,12 +1217,13 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
     AutoChar descr;
     if (auto func_info = m_info.as<GI::InfoTag::FUNCTION>()) {
         descr = g_strdup_printf(
-            "%s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
-            format_name().c_str(), arg_names.c_str(), func_info->symbol());
+            "function %s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
+            m_info.display_string().c_str(), arg_names.c_str(),
+            func_info->symbol());
     } else {
-        descr =
-            g_strdup_printf("%s(%s) {\n\t/* wrapper for native symbol */\n}",
-                            format_name().c_str(), arg_names.c_str());
+        descr = g_strdup_printf(
+            "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
+            m_info.display_string().c_str(), arg_names.c_str());
     }
 
     return gjs_string_from_utf8(cx, descr, rval);

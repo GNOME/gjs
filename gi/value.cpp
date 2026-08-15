@@ -1195,8 +1195,8 @@ static bool gjs_value_from_g_value_internal(
             obj =
                 UnionInstance::new_for_c_union(cx, union_info.value(), gboxed);
         } else {
-            gjs_throw(cx, "Unexpected introspection type {} for {}",
-                      info->type_string(), g_type_name(gtype));
+            gjs_throw(cx, "Unexpected introspection type {:t} for {}", *info,
+                      g_type_name(gtype));
             return false;
         }
         if (!obj)

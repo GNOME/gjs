@@ -273,13 +273,16 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         }
     }
 
+    // This exists for genericity, but use the default formatters for info() if
+    // info() is always present (i.e. prototypes can't be JS-only)
     [[nodiscard]]
     std::string format_name() const {
-        std::string retval = ns();
-        if (!retval.empty())
-            retval += '.';
-        retval += name();
-        return retval;
+        if constexpr (Prototype::may_not_have_info) {
+            const auto i = info();
+            return i ? i->display_string() : type_name();
+        } else {
+            return info().display_string();
+        }
     }
 
  private:
@@ -718,9 +721,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return true;
 
         gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                         "Object is of type {} - cannot convert to {}.{}",
-                         priv->format_name(), expected_info.ns(),
-                         expected_info.name());
+                         "Object is of type {} - cannot convert to {}",
+                         priv->format_name(), expected_info);
         return false;
     }
     GJS_JSAPI_RETURN_CONVENTION
@@ -911,7 +913,7 @@ class GIWrapperPrototype : public Base {
         gjs_debug(
             Base::DEBUG_TOPIC,
             "Defined class for {} ({}), prototype {:?}, JSClass {}, in {:?}",
-            Base::name(), Base::type_name(), prototype,
+            Base::format_name(), Base::type_name(), prototype,
             JS::GetClass(prototype)->name, in_object);
 
         return true;

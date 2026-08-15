@@ -14,14 +14,10 @@
 #include <iterator>
 #include <ranges>
 #include <span>
+#include <string>
 #include <string_view>
 #include <type_traits>
 #include <utility>  // for pair, make_pair, move
-
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-#    include <sstream>
-#    include <string>
-#endif
 
 #include <ffi.h>
 #include <girepository/girepository.h>
@@ -36,7 +32,6 @@
 #include "gjs/auto.h"
 #include "gjs/format-utils.h"
 #include "gjs/gerror-result.h"
-#include "util/log.h"
 
 // This file is a C++ wrapper for libgirepository that attempts to be more
 // null-safe and type-safe.
@@ -486,10 +481,40 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     const char* ns() const {
         return gi_base_info_get_namespace(ptr());
     }
+    // This prints the GType name of the info, e.g. "GIFunctionInfo"
     [[nodiscard]]
     const char* type_string() const {
         return g_type_name_from_instance(
             reinterpret_cast<GTypeInstance*>(ptr()));
+    }
+    // This prints, in general, "Namespace.Container.name", with fallbacks for
+    // when any of those are null. This doesn't produce very good output for
+    // GI::TypeInfo, due to how namespace and container are defined.
+    [[nodiscard]]
+    std::string display_string() const {
+        const char* ns_str = ns();
+        const char* name_str = name();
+        if (!name_str)
+            name_str = "(null)";
+
+        // A container with no name is probably a GI::TypeInfo
+        mozilla::Maybe<GI::BaseInfo> parent = container();
+        const char* parent_str = parent ? parent->name() : nullptr;
+
+        if (ns_str && parent_str)
+            return std::format("{}.{}.{}", ns_str, parent_str, name_str);
+        if (ns_str)
+            return std::format("{}.{}", ns_str, name_str);
+        if (parent_str)
+            return std::format("{}.{}", parent_str, name_str);
+        return name_str;
+    }
+
+    // What "{:?}" appends after the qualified name. Overridden by callables,
+    // which summarize their return value and arguments.
+    [[nodiscard]]
+    std::string debug_details() const {
+        return {};
     }
 
     // Type-checking methods
@@ -544,13 +569,6 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
             return {};
         auto* checked_ptr = detail::Pointer::cast<TAG2>(ptr());
         return mozilla::Some(detail::Pointer::to_unowned<TAG2>(checked_ptr));
-    }
-
-    void log_usage() const {
-        gjs_debug_gi_usage(
-            "{{ GIInfoType {}, \"{}\", \"{}\", \"{}\" }}", type_string(), ns(),
-            container().map(std::mem_fn(&GI::BaseInfo::name)).valueOr(""),
-            name());
     }
 };
 
@@ -752,14 +770,6 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
     // Convenience methods not present in GIRepository
 
     [[nodiscard]]
-    const char* display_string() const {
-        GITypeTag type_tag = tag();
-        if (type_tag == GI_TYPE_TAG_INTERFACE)
-            return interface().type_string();
-        return gi_type_tag_to_string(type_tag);
-    }
-
-    [[nodiscard]]
     bool is_string_type() const {
         GITypeTag t = tag();
         return t == GI_TYPE_TAG_FILENAME || t == GI_TYPE_TAG_UTF8;
@@ -771,6 +781,43 @@ class InfoOperations<Wrapper, InfoTag::TYPE>
         if (t == GI_TYPE_TAG_VOID && is_pointer())
             return false;  // void* is not a basic type
         return GI_TYPE_TAG_IS_BASIC(t);
+    }
+
+    // Overrides BaseInfoOperations::display_string(). Prints a full
+    // representation of the type info
+    [[nodiscard]]
+    std::string display_string() const {
+        using std::string_literals::operator""s;
+        GITypeTag t = tag();
+        switch (t) {
+            case GI_TYPE_TAG_VOID:
+            case GI_TYPE_TAG_BOOLEAN:
+            case GI_TYPE_TAG_INT8:
+            case GI_TYPE_TAG_UINT8:
+            case GI_TYPE_TAG_INT16:
+            case GI_TYPE_TAG_UINT16:
+            case GI_TYPE_TAG_INT32:
+            case GI_TYPE_TAG_UINT32:
+            case GI_TYPE_TAG_INT64:
+            case GI_TYPE_TAG_UINT64:
+            case GI_TYPE_TAG_FLOAT:
+            case GI_TYPE_TAG_DOUBLE:
+            case GI_TYPE_TAG_GTYPE:
+            case GI_TYPE_TAG_UTF8:
+            case GI_TYPE_TAG_FILENAME:
+            case GI_TYPE_TAG_UNICHAR:
+            case GI_TYPE_TAG_ERROR:
+                return gi_type_tag_to_string(t);
+            case GI_TYPE_TAG_ARRAY:
+            case GI_TYPE_TAG_GLIST:
+            case GI_TYPE_TAG_GSLIST:
+                return std::format("{}<{}>", t, element_type());
+            case GI_TYPE_TAG_INTERFACE:
+                return std::format("{} {}", t, interface());
+            case GI_TYPE_TAG_GHASH:
+                return std::format("{}<{}, {}>", t, key_type(), value_type());
+        }
+        g_assert_not_reached();
     }
 
     // More semantic versions of param_type(), that are only intended to be
@@ -940,26 +987,9 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
 
     // Methods not in GIRepository
 
-    void log_usage() {
-#if GJS_VERBOSE_ENABLE_GI_USAGE
-        std::string args_details;
-        for (AutoArgInfo arg_info : args()) {
-            std::format_to(std::back_inserter(args_details),
-                           "{}{{ GI_DIRECTION_{}, GI_TRANSFER_{} }}, ",
-                           args_details.empty() ? "" : ", ",
-                           arg_info.direction(), arg_info.ownership_transfer());
-        }
-
-        using Base = BaseInfoOperations<Wrapper>;
-        gjs_debug_gi_usage(
-            "{{ GIInfoType {}, \"{}\", \"{}\", \"{}\", .details = {{ .func = "
-            "{{ .retval_transfer = GI_TRANSFER_{}, .n_args = {}, .args = {{ {} "
-            "}} }} }} }}",
-            Base::type_string(), Base::ns(),
-            Base::container().map(std::mem_fn(&GI::BaseInfo::name)).valueOr(""),
-            Base::name(), caller_owns(), n_args(), args_details);
-#endif  // GJS_VERBOSE_ENABLE_GI_USAGE
-    }
+    // Overrides BaseInfoOperations::debug_details(), must be defined after the
+    // GIDirection and GITransfer formatters
+    [[nodiscard]] std::string debug_details() const;
 
     // Used in exception messages
     [[nodiscard]] std::string_view kind_string() const {
@@ -1843,20 +1873,41 @@ struct std::formatter<GIDirection> : std::formatter<std::string_view> {
     }
 };
 
-template <>
-struct std::formatter<GI::TypeInfo> : Gjs::FormatterBase<'?'> {
-    auto format(const GI::TypeInfo& t, std::format_context& cx) const {
+template <class Wrapper>
+[[nodiscard]]
+std::string GI::InfoOperations<Wrapper, GI::InfoTag::CALLABLE>::debug_details()
+    const {
+    std::string args_details;
+    for (const AutoArgInfo& arg_info : args()) {
+        std::format_to(std::back_inserter(args_details),
+                       "{}{{ GI_DIRECTION_{}, GI_TRANSFER_{} }}",
+                       args_details.empty() ? "" : ", ", arg_info.direction(),
+                       arg_info.ownership_transfer());
+    }
+
+    return std::format(
+        ", .details = {{ .func = {{ .retval_transfer = GI_TRANSFER_{}, "
+        ".n_args = {}, .args = {{ {} }} }} }}",
+        caller_owns(), n_args(), args_details);
+}
+
+template <GI::InfoTag TAG>
+struct std::formatter<GI::UnownedInfo<TAG>> : Gjs::FormatterBase<'t', '?'> {
+    using Info = GI::UnownedInfo<TAG>;
+    auto format(const Info& info, std::format_context& cx) const {
+        if (spec() == 't')
+            return std::format_to(cx.out(), "{}", info.type_string());
+
         if (spec() == '?')
             return std::format_to(
-                cx.out(), "GITypeInfo {}",
-                static_cast<void*>(GI::detail::Pointer::get_from(t)));
-        return std::format_to(cx.out(), "{}", t.display_string());
+                cx.out(), "{} {} ({}){}", info.type_string(),
+                static_cast<void*>(GI::detail::Pointer::get_from(info)),
+                info.display_string(), info.debug_details());
+
+        return std::format_to(cx.out(), "{}", info.display_string());
     }
 };
 
-template <>
-struct std::formatter<GI::AutoTypeInfo> : std::formatter<GI::TypeInfo> {
-    auto format(const GI::AutoTypeInfo& t, std::format_context& cx) const {
-        return std::formatter<GI::TypeInfo>::format(t, cx);
-    }
-};
+template <GI::InfoTag TAG>
+struct std::formatter<GI::OwnedInfo<TAG>>
+    : std::formatter<GI::UnownedInfo<TAG>> {};
