@@ -1983,9 +1983,9 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Properties
         for (GI::AutoPropertyInfo prop_info : props_iter) {
-            Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
+            std::string js_name{gjs_hyphen_to_underscore(prop_info.name())};
 
-            jsid id = gjs_intern_string_to_id(cx, js_name);
+            jsid id = gjs_intern_string_to_id(cx, js_name.c_str());
             if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);
@@ -2014,8 +2014,8 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Properties
         for (GI::AutoPropertyInfo prop_info : props_iter) {
-            Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
-            jsid id = gjs_intern_string_to_id(cx, js_name);
+            std::string js_name{gjs_hyphen_to_underscore(prop_info.name())};
+            jsid id = gjs_intern_string_to_id(cx, js_name.c_str());
             if (id.isVoid())
                 return false;
             properties.infallibleAppend(id);

@@ -237,7 +237,7 @@ bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
 [[nodiscard]] std::string gjs_debug_value(JS::Value);
 [[nodiscard]] std::string gjs_debug_id(jsid);
 
-[[nodiscard]] Gjs::AutoChar gjs_hyphen_to_underscore(const char*);
+[[nodiscard]] std::string gjs_hyphen_to_underscore(std::string_view);
 [[nodiscard]] Gjs::AutoChar gjs_hyphen_to_camel(const char*);
 [[nodiscard]] std::string gjs_hyphen_from_camel(std::string_view);
 

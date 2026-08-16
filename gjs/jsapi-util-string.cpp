@@ -8,8 +8,9 @@
 #include <string.h>     // for size_t, strlen
 #include <sys/types.h>  // for ssize_t
 
-#include <algorithm>  // for copy
+#include <algorithm>  // for copy, replace
 #include <format>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -42,13 +43,10 @@
 
 class JSLinearString;
 
-Gjs::AutoChar gjs_hyphen_to_underscore(const char* str) {
-    char* s = g_strdup(str);
-    char* retval = s;
-    while (*(s++) != '\0') {
-        if (*s == '-')
-            *s = '_';
-    }
+std::string gjs_hyphen_to_underscore(std::string_view str) {
+    std::string retval{str};
+    // GObject property names can't start with a hyphen
+    std::ranges::replace(retval | std::views::drop(1), '-', '_');
     return retval;
 }
 

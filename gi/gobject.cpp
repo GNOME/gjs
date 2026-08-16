@@ -4,6 +4,7 @@
 
 #include <config.h>
 
+#include <string>
 #include <unordered_map>
 #include <utility>  // for move, pair
 
@@ -60,7 +61,7 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
     if (!gjs_value_from_g_value(cx, &jsvalue, value))
         return false;
 
-    Gjs::AutoChar underscore_name{gjs_hyphen_to_underscore(pspec->name)};
+    std::string underscore_name{gjs_hyphen_to_underscore(pspec->name)};
 
     if (pspec->flags & G_PARAM_CONSTRUCT_ONLY) {
         unsigned flags = GJS_MODULE_PROP_FLAGS | JSPROP_READONLY;
@@ -73,14 +74,16 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
             JS::RootedObject getter(cx);
 
             // Ensure to call any associated setter method
-            if (!g_str_equal(underscore_name.get(), pspec->name)) {
-                if (!JS_GetPropertyDescriptor(cx, object, underscore_name,
-                                              &jsprop, &holder)) {
+            if (underscore_name != pspec->name) {
+                if (!JS_GetPropertyDescriptor(cx, object,
+                                              underscore_name.c_str(), &jsprop,
+                                              &holder)) {
                     return false;
                 }
 
                 if (jsprop.isSome() && jsprop->setter() &&
-                    !JS_SetProperty(cx, object, underscore_name, jsvalue)) {
+                    !JS_SetProperty(cx, object, underscore_name.c_str(),
+                                    jsvalue)) {
                     return false;
                 }
                 if (jsprop.isSome() && jsprop->getter())
@@ -113,20 +116,22 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
             // If a getter is found, redefine the property with that getter
             // and no setter.
             if (getter)
-                return JS_DefineProperty(cx, object, underscore_name, getter,
-                                         nullptr, GJS_MODULE_PROP_FLAGS) &&
+                return JS_DefineProperty(cx, object, underscore_name.c_str(),
+                                         getter, nullptr,
+                                         GJS_MODULE_PROP_FLAGS) &&
                        JS_DefineProperty(cx, object, camel_name, getter,
                                          nullptr, GJS_MODULE_PROP_FLAGS) &&
                        JS_DefineProperty(cx, object, pspec->name, getter,
                                          nullptr, GJS_MODULE_PROP_FLAGS);
         }
 
-        return JS_DefineProperty(cx, object, underscore_name, jsvalue, flags) &&
+        return JS_DefineProperty(cx, object, underscore_name.c_str(), jsvalue,
+                                 flags) &&
                JS_DefineProperty(cx, object, camel_name, jsvalue, flags) &&
                JS_DefineProperty(cx, object, pspec->name, jsvalue, flags);
     }
 
-    return JS_SetProperty(cx, object, underscore_name, jsvalue);
+    return JS_SetProperty(cx, object, underscore_name.c_str(), jsvalue);
 }
 
 static void gjs_object_base_init(void* klass) {
@@ -238,8 +243,8 @@ static void gjs_object_get_gproperty(GObject* object,
     JS::RootedValue jsvalue(cx);
     JSAutoRealm ar(cx, js_obj);
 
-    Gjs::AutoChar underscore_name{gjs_hyphen_to_underscore(pspec->name)};
-    if (!JS_GetProperty(cx, js_obj, underscore_name, &jsvalue)) {
+    std::string underscore_name{gjs_hyphen_to_underscore(pspec->name)};
+    if (!JS_GetProperty(cx, js_obj, underscore_name.c_str(), &jsvalue)) {
         gjs_log_exception_uncaught(cx);
         return;
     }
