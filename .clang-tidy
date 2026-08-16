@@ -41,6 +41,7 @@ Checks:
 
   - custom-avoid-char-pointer-return
   - custom-use-likely-attribute
+  - custom-use-string-ends-with
   - custom-use-typesafe-array-size
   - custom-use-typesafe-log
   - custom-use-typesafe-min
@@ -76,9 +77,8 @@ Checks:
     # and use it as a suggestion for refactoring, but it's too much churn to
     # do all at once.
   - -readability-inconsistent-ifelse-braces
-    # False positives on every use of g_str_has_prefix/suffix. Consider enabling
-    # in C++20 and switch to using string/string_view::starts_with/ends_with.
-    # (COMPAT)
+    # False positives on every use of g_str_has_prefix. Consider enabling in
+    # C++20 and switch to using string/string_view::starts_with. (COMPAT)
   - -readability-isolate-declaration
     # False positives on g_assert_ macros. May consider enabling if it gains a
     # configuration option to ignore macros.
@@ -148,13 +148,21 @@ CustomChecks:
           isExpandedFromMacro("g_return_if_fail"),
           isExpandedFromMacro("g_return_val_if_fail"),
           isExpandedFromMacro("g_str_has_prefix"),
-          isExpandedFromMacro("g_str_has_suffix"),
           isExpandedFromMacro("g_warn_if_fail"))),
       ).bind("macro")
     Diagnostic:
       - BindName: macro
         Message: Prefer [[likely]]/[[unlikely]] instead of G_LIKELY/G_UNLIKELY
           macro for portability
+  - Name: use-string-ends-with
+    Query: |
+      match conditionalOperator(
+        isExpandedFromMacro("g_str_has_suffix"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("suffix")
+    Diagnostic:
+      - BindName: suffix
+        Message: Prefer string(_view)::ends_with() instead of g_str_has_suffix for static analyzability
   - Name: use-typesafe-array-size
     Query: |
       match binaryOperator(

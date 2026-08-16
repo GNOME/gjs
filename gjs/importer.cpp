@@ -13,6 +13,7 @@
 
 #include <format>
 #include <string>
+#include <string_view>
 #include <vector>   // for vector
 
 #include <gio/gio.h>
@@ -647,28 +648,31 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
             if (info == nullptr || file == nullptr)
                 break;
 
-            Gjs::AutoChar filename{g_file_get_basename(file)};
+            Gjs::AutoChar filename_owned{g_file_get_basename(file)};
+            g_assert(filename_owned && "enumerated file should be valid");
+            std::string_view filename{filename_owned};
 
             // skip hidden files and directories (.svn, .git, ...)
-            if (filename.get()[0] == '.')
+            if (filename.empty() || filename[0] == '.')
                 continue;
 
             // skip module init file
-            if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
+            if (filename == MODULE_INIT_FILENAME)
                 continue;
 
+            static constexpr std::string_view js_ext{".js"};
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                jsid id = gjs_intern_string_to_id(cx, filename.get());
+                jsid id = gjs_intern_string_to_id(cx, filename);
                 if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
                     JS_ReportOutOfMemory(cx);
                     return false;
                 }
-            } else if (g_str_has_suffix(filename, ".js")) {
-                Gjs::AutoChar filename_noext{
-                    g_strndup(filename, strlen(filename) - 3)};
-                jsid id = gjs_intern_string_to_id(cx, filename_noext.get());
+            } else if (filename.ends_with(js_ext)) {
+                std::string_view filename_noext = filename;
+                filename_noext.remove_suffix(js_ext.size());
+                jsid id = gjs_intern_string_to_id(cx, filename_noext);
                 if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
