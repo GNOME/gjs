@@ -40,6 +40,7 @@ Checks:
   # - bugprone-narrowing-conversions
 
   - custom-avoid-char-pointer-return
+  - custom-use-typesafe-array-size
   - custom-use-typesafe-min
   - custom-use-typesafe-max
 
@@ -125,6 +126,17 @@ CustomChecks:
         Message: >
           Return const char* or std::string_view instead of char* if the string
           is borrowed, or Gjs::AutoChar or std::string if it is owned
+  - Name: use-typesafe-array-size
+    Query: |
+      match binaryOperator(
+        hasOperatorName("/"),
+        isExpandedFromMacro("G_N_ELEMENTS"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("size")
+    Diagnostic:
+      - BindName: size
+        Message: >
+          Prefer std::size() instead of G_N_ELEMENTS macro for type safety
   - Name: use-typesafe-min
     Query: |
       match conditionalOperator(
@@ -143,17 +155,6 @@ CustomChecks:
     Diagnostic:
       - BindName: max
         Message: Prefer std::max() instead of MAX macro for type safety
-  - Name: use-typesafe-array-size
-    Query: |
-      match binaryOperator(
-        hasOperatorName("/"),
-        isExpandedFromMacro("G_N_ELEMENTS"),
-        unless(isExpansionInFileMatching("\.c$"))
-      ).bind("size")
-    Diagnostic:
-      - BindName: size
-        Message: >
-          Prefer std::size() instead of G_N_ELEMENTS macro for type safety
 ExcludeHeaderFilterRegex: /include|/subprojects|config.h
 HeaderFilterRegex: .*
 UseColor: true
