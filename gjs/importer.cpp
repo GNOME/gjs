@@ -658,7 +658,7 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
                 continue;
 
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
-                jsid id = gjs_intern_string_to_id(cx, filename);
+                jsid id = gjs_intern_string_to_id(cx, filename.get());
                 if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {
@@ -668,7 +668,7 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
             } else if (g_str_has_suffix(filename, ".js")) {
                 Gjs::AutoChar filename_noext{
                     g_strndup(filename, strlen(filename) - 3)};
-                jsid id = gjs_intern_string_to_id(cx, filename_noext);
+                jsid id = gjs_intern_string_to_id(cx, filename_noext.get());
                 if (id.isVoid())
                     return false;
                 if (!properties.append(id)) {

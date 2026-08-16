@@ -460,8 +460,9 @@ bool gjs_unichar_from_string(JSContext* cx, JS::Value string_val,
     return false;
 }
 
-jsid gjs_intern_string_to_id(JSContext* cx, const char* string) {
-    JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
+jsid gjs_intern_string_to_id(JSContext* cx, std::string_view string) {
+    JS::RootedString str{
+        cx, JS_AtomizeAndPinStringN(cx, string.data(), string.size())};
     if (!str)
         return JS::PropertyKey::Void();
     return JS::PropertyKey::fromPinnedString(str);

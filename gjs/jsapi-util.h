@@ -177,7 +177,7 @@ bool gjs_string_from_ucs4(JSContext*, const gunichar* ucs4_string,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_get_string_id(JSContext*, jsid, JS::UniqueChars* name_p);
 GJS_JSAPI_RETURN_CONVENTION
-jsid gjs_intern_string_to_id(JSContext*, const char* string);
+jsid gjs_intern_string_to_id(JSContext*, std::string_view);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_unichar_from_string(JSContext*, JS::Value string_val,

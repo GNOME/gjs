@@ -98,7 +98,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
     JS::RootedObject registry{cx, gjs_get_module_registry(internal_global)};
 
-    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path.c_str())};
+    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path)};
     if (key.isVoid())
         return false;
 
