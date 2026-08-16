@@ -414,8 +414,6 @@ static void branch_at_line_should_be_taken(const char* line,
         case TAKEN:
             g_assert_cmpint(hit_count_num, >, 0);
             break;
-        default:
-            g_assert_true(false && "Invalid branch state");
     }
 }
 

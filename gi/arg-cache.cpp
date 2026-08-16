@@ -3327,12 +3327,10 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index,
                     return;
                 }
             }
-            [[fallthrough]];
-        }
 
-        default:
             // FIXME: Falling back to the generic marshaller
             set_argument(new Arg::FallbackIn(type_info), common_args);
+        }
     }
 }
 

@@ -79,9 +79,10 @@ static const char* topic_to_prefix(GjsDebugTopic topic) {
             return "JS G IFACE";
         case GJS_DEBUG_GTYPE:
             return "JS GTYPE";
-        default:
-            return "???";
+        case GJS_DEBUG_LAST:
+            break;
     }
+    g_assert_not_reached();
 }
 
 static GjsDebugTopic prefix_to_topic(const char* prefix) {

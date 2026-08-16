@@ -2259,8 +2259,6 @@ static void toggle_handler(ObjectInstance* self,
         case ToggleQueue::DOWN:
             self->toggle_down();
             break;
-        default:
-            g_assert_not_reached();
     }
 }
 

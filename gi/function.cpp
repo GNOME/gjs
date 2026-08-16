@@ -270,7 +270,6 @@ static void set_return_ffi_arg_from_gi_argument(const GI::TypeInfo& ret_type,
         case GI_TYPE_TAG_GSLIST:
         case GI_TYPE_TAG_GHASH:
         case GI_TYPE_TAG_ERROR:
-        default:
             set_ffi_arg<void*>(result, return_value);
             break;
     }
@@ -505,7 +504,6 @@ bool GjsCallbackTrampoline::callback_closure_inner(
                  * supported, see gjs_callback_trampoline_new() */
             case PARAM_UNKNOWN:
                 // PARAM_UNKNOWN is currently not ever set on a callback's args.
-            default:
                 g_assert_not_reached();
         }
     }
@@ -1345,8 +1343,6 @@ bool Function::init(JSContext* cx, GType gtype /* = G_TYPE_NONE */) {
                 case GI_DIRECTION_OUT:
                     m_js_out_argc++;
                     break;
-                default:
-                    g_assert_not_reached();
             }
         }
     }
