@@ -42,6 +42,7 @@ Checks:
   - custom-avoid-char-pointer-return
   - custom-use-likely-attribute
   - custom-use-string-ends-with
+  - custom-use-string-starts-with
   - custom-use-typesafe-array-size
   - custom-use-typesafe-log
   - custom-use-typesafe-min
@@ -76,9 +77,6 @@ Checks:
     # It would be a good practice to enable this check locally from time to time
     # and use it as a suggestion for refactoring, but it's too much churn to
     # do all at once.
-  - -readability-inconsistent-ifelse-braces
-    # False positives on every use of g_str_has_prefix. Consider enabling in
-    # C++20 and switch to using string/string_view::starts_with. (COMPAT)
   - -readability-isolate-declaration
     # False positives on g_assert_ macros. May consider enabling if it gains a
     # configuration option to ignore macros.
@@ -163,6 +161,15 @@ CustomChecks:
     Diagnostic:
       - BindName: suffix
         Message: Prefer string(_view)::ends_with() instead of g_str_has_suffix for static analyzability
+  - Name: use-string-starts-with
+    Query: |
+      match conditionalOperator(
+        isExpandedFromMacro("g_str_has_prefix"),
+        unless(isExpansionInFileMatching("\.c$"))
+      ).bind("prefix")
+    Diagnostic:
+      - BindName: prefix
+        Message: Prefer string(_view)::starts_with() instead of g_str_has_prefix for static analyzability
   - Name: use-typesafe-array-size
     Query: |
       match binaryOperator(

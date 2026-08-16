@@ -5,7 +5,9 @@
 #include <config.h>
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
-#    include <string.h>
+#    include <format>
+#    include <string>
+#    include <string_view>
 #endif
 
 #include <girepository/girepository.h>
@@ -46,13 +48,14 @@ using mozilla::Maybe;
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
 // helper function
-static void platform_specific_warning_glib(JSContext* cx, const char* prefix,
-                                           const char* platform,
-                                           const char* resolved_name) {
-    if (!g_str_has_prefix(resolved_name, prefix))
+static void platform_specific_warning_glib(JSContext* cx,
+                                           std::string_view prefix,
+                                           std::string_view platform,
+                                           std::string_view resolved_name) {
+    if (!resolved_name.starts_with(prefix))
         return;
 
-    const char* base_name = resolved_name + strlen(prefix);
+    std::string_view base_name = resolved_name.substr(prefix.size());
     std::string old_name = std::format("GLib.{}", resolved_name);
     std::string new_name = std::format("GLib{}.{}", platform, base_name);
     gjs_warn_deprecated_once_per_callsite<
@@ -121,10 +124,11 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
         if (m_is_glib) {
-            platform_specific_warning_glib(cx, "Unix", "Unix", name.get());
-            platform_specific_warning_glib(cx, "unix_", "Unix", name.get());
-            platform_specific_warning_glib(cx, "Win32", "Win32", name.get());
-            platform_specific_warning_glib(cx, "win32_", "Win32", name.get());
+            std::string_view name_view{name.get()};
+            platform_specific_warning_glib(cx, "Unix", "Unix", name_view);
+            platform_specific_warning_glib(cx, "unix_", "Unix", name_view);
+            platform_specific_warning_glib(cx, "Win32", "Win32", name_view);
+            platform_specific_warning_glib(cx, "win32_", "Win32", name_view);
         }
 #endif
 

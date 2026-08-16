@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>  // for size_t, strlen
 
+#include <charconv>
 #include <limits>
 #include <random>
 #include <span>
@@ -1272,16 +1273,23 @@ int main(int argc, char* argv[]) {
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
 
+    static constexpr std::string_view seed_prefix{"--cpp-seed="};
     for (size_t i = 0; i < args.size(); i++) {
-        const char* seed = nullptr;
+        std::string_view seed;
 
-        if (g_str_has_prefix(args[i], "--cpp-seed=") && strlen(args[i]) > 11)
-            seed = args[i] + 11;
-        else if (i < args.size() - 1 && g_str_equal(args[i], "--cpp-seed"))
+        std::string_view arg{args[i]};
+        if (arg.starts_with(seed_prefix) && arg.size() > seed_prefix.size()) {
+            arg.remove_prefix(seed_prefix.size());
+            seed = arg;
+        } else if (i < args.size() - 1 && arg == "--cpp-seed") {
             seed = args[i + 1];
+        }
 
-        if (seed)
-            cpp_random_seed = std::stoi(seed);
+        if (!seed.empty()) {
+            // Ignore invalid values
+            std::from_chars(seed.data(), seed.data() + seed.size(),
+                            cpp_random_seed);
+        }
     }
 
     g_test_init(&argc, &argv, nullptr);

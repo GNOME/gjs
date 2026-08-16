@@ -6,7 +6,8 @@
 #include <config.h>
 
 #include <stdint.h>
-#include <string.h>  // for strlen
+
+#include <string_view>
 
 #include <format>
 #include <string>
@@ -105,9 +106,10 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
 }
 
 [[nodiscard]]
-static const char* format_dynamic_class_name(const char* name) {
-    if (g_str_has_prefix(name, "_private_"))
-        return name + strlen("_private_");
+static std::string_view format_dynamic_class_name(std::string_view name) {
+    static constexpr std::string_view private_marker{"_private_"};
+    if (name.starts_with(private_marker))
+        name.remove_prefix(private_marker.size());
     return name;
 }
 
