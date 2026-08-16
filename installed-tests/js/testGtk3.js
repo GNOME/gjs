@@ -178,7 +178,7 @@ describe('Gtk overrides', function () {
 
     it('avoid crashing when GTK vfuncs are called in garbage collection', function () {
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during garbage collection*offending callback was destroy()*');
+            '*during garbage collection*offending vfunc was destroy()*');
 
         const BadLabel = GObject.registerClass(class BadLabel extends Gtk.Label {
             vfunc_destroy() {}
@@ -205,7 +205,7 @@ describe('Gtk overrides', function () {
         expect(spy).toHaveBeenCalledTimes(1);
 
         GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_CRITICAL,
-            '*during garbage collection*offending callback was destroy()*');
+            '*during garbage collection*offending vfunc was destroy()*');
         label = null;
         System.gc();
         GLib.test_assert_expected_messages_internal('Gjs', 'testGtk3.js', 0,

@@ -46,7 +46,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     GJS_JSAPI_RETURN_CONVENTION
     static GjsCallbackTrampoline* create(JSContext*, JS::HandleObject callable,
                                          const GI::CallableInfo&, GIScopeType,
-                                         bool has_scope_object, bool is_vfunc);
+                                         bool has_scope_object);
 
     ~GjsCallbackTrampoline();
 
@@ -66,7 +66,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     GJS_JSAPI_RETURN_CONVENTION bool initialize();
     GjsCallbackTrampoline(JSContext*, JS::HandleObject callable,
                           const GI::CallableInfo&, GIScopeType,
-                          bool has_scope_object, bool is_vfunc);
+                          bool has_scope_object);
 
     static void invoke_callback_closure(ffi_cif*, void* result, void** ffi_args,
                                         void* data);
@@ -88,7 +88,9 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
     ffi_cif m_cif;
 
     GIScopeType m_scope : 3;
-    bool m_is_vfunc : 1;
+    // m_has_this_object == m_info.is_method(), but cached since we have spare
+    // bits in the struct for now
+    bool m_has_this_object : 1;
 };
 
 // Stack allocation only!

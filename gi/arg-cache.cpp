@@ -1893,8 +1893,8 @@ bool CallbackIn::in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
 
         JS::RootedObject callable(cx, &value.toObject());
         bool is_object_method = !!state->instance_object;
-        trampoline = GjsCallbackTrampoline::create(
-            cx, callable, m_info, m_scope, is_object_method, false);
+        trampoline = GjsCallbackTrampoline::create(cx, callable, m_info,
+                                                   m_scope, is_object_method);
         if (!trampoline)
             return false;
         if (m_scope == GI_SCOPE_TYPE_NOTIFIED && is_object_method) {

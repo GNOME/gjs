@@ -3866,8 +3866,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             return false;
         }
         auto* trampoline = GjsCallbackTrampoline::create(
-            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true,
-            !is_static);
+            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true);
         if (!trampoline)
             return false;
 

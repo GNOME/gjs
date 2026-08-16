@@ -283,8 +283,8 @@ void GjsCallbackTrampoline::warn_about_illegal_js_callback(const char* when,
     message << "Attempting to run a JS callback " << when << ". "
             << "This is most likely caused by " << reason << ". "
             << "Because it would crash the application, it has been blocked.\n"
-            << "The offending callback was " << m_info.name() << "()"
-            << (m_is_vfunc ? ", a vfunc." : ".");
+            << "The offending " << m_info.kind_string() << " was "
+            << m_info.name() << "().";
 
     if (dump_stack) {
         message << "\n" << gjs_dumpstack_string();
@@ -353,7 +353,7 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
     JS::RootedObject this_object{cx};
     unsigned c_args_offset = 0;
     GObject* gobj = nullptr;
-    if (m_is_vfunc) {
+    if (m_has_this_object) {
         gobj = G_OBJECT(gjs_arg_get<GObject*>(args[0]));
         if (gobj) {
             this_object = ObjectInstance::wrapper_from_gobject(cx, gobj);
@@ -665,12 +665,12 @@ bool GjsCallbackTrampoline::callback_closure_inner(
 GjsCallbackTrampoline* GjsCallbackTrampoline::create(
     JSContext* cx, JS::HandleObject callable,
     const GI::CallableInfo& callable_info, GIScopeType scope,
-    bool has_scope_object, bool is_vfunc) {
+    bool has_scope_object) {
     g_assert(JS::IsCallable(callable) &&
              "tried to create a callback trampoline for a non-callable object");
 
-    auto* trampoline = new GjsCallbackTrampoline(
-        cx, callable, callable_info, scope, has_scope_object, is_vfunc);
+    auto* trampoline = new GjsCallbackTrampoline(cx, callable, callable_info,
+                                                 scope, has_scope_object);
 
     if (!trampoline->initialize()) {
         g_closure_unref(trampoline);
@@ -687,7 +687,7 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
     // optional?
     JSContext* cx, JS::HandleObject callable,
     const GI::CallableInfo& callable_info, GIScopeType scope,
-    bool has_scope_object, bool is_vfunc)
+    bool has_scope_object)
     // The rooting rule is:
     // - notify callbacks in GObject methods are traced from the scope object
     // - async and call callbacks, and other notify callbacks, are rooted
@@ -698,7 +698,7 @@ GjsCallbackTrampoline::GjsCallbackTrampoline(
       m_info(callable_info),
       m_param_types(std::make_unique<GjsParamType[]>(callable_info.n_args())),
       m_scope(scope),
-      m_is_vfunc(is_vfunc) {
+      m_has_this_object(callable_info.is_method()) {
     add_finalize_notifier<GjsCallbackTrampoline>();
 }
 
@@ -759,9 +759,9 @@ bool GjsCallbackTrampoline::initialize() {
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
             if (type_info.interface().is_callback()) {
                 gjs_throw(cx(),
-                          "%s %s accepts another callback as a parameter. This "
-                          "is not supported",
-                          m_is_vfunc ? "VFunc" : "Callback", m_info.name());
+                          "The %s %s accepts another callback as a parameter. "
+                          "This is not supported",
+                          m_info.kind_string(), m_info.name());
                 return false;
             }
         } else if (type_tag == GI_TYPE_TAG_ARRAY) {
@@ -776,11 +776,11 @@ bool GjsCallbackTrampoline::initialize() {
                     m_info.load_arg(*array_length_pos, &length_arg_info);
 
                     if (length_arg_info.direction() != direction) {
-                        gjs_throw(cx(),
-                                  "%s %s has an array with different-direction "
-                                  "length argument. This is not supported",
-                                  m_is_vfunc ? "VFunc" : "Callback",
-                                  m_info.name());
+                        gjs_throw(
+                            cx(),
+                            "The %s %s has an array with different-direction "
+                            "length argument. This is not supported",
+                            m_info.kind_string(), m_info.name());
                         return false;
                     }
 
