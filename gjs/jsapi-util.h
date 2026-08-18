@@ -232,7 +232,7 @@ bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
 [[nodiscard]] std::string gjs_debug_id(jsid);
 
 [[nodiscard]] std::string gjs_hyphen_to_underscore(std::string_view);
-[[nodiscard]] Gjs::AutoChar gjs_hyphen_to_camel(const char*);
+[[nodiscard]] std::string gjs_hyphen_to_camel(std::string_view);
 [[nodiscard]] std::string gjs_hyphen_from_camel(std::string_view);
 
 // Custom GC reasons; SpiderMonkey includes a bunch of "Firefox reasons" which

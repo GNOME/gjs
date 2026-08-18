@@ -50,23 +50,21 @@ std::string gjs_hyphen_to_underscore(std::string_view str) {
     return retval;
 }
 
-Gjs::AutoChar gjs_hyphen_to_camel(const char* str) {
-    Gjs::AutoChar retval{static_cast<char*>(g_malloc(strlen(str) + 1))};
-    const char* input_iter = str;
-    char* output_iter = retval.get();
+std::string gjs_hyphen_to_camel(std::string_view str) {
+    std::string retval;
+    retval.reserve(str.size());  // worst case
+
     bool uppercase_next = false;
-    while (*input_iter != '\0') {
-        if (*input_iter == '-') {
+    for (const char c : str) {
+        if (c == '-') {
             uppercase_next = true;
         } else if (uppercase_next) {
-            *output_iter++ = g_ascii_toupper(*input_iter);
+            retval += g_ascii_toupper(c);
             uppercase_next = false;
         } else {
-            *output_iter++ = *input_iter;
+            retval += c;
         }
-        input_iter++;
     }
-    *output_iter = '\0';
     return retval;
 }
 

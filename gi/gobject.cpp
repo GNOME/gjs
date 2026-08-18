@@ -65,7 +65,7 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 
     if (pspec->flags & G_PARAM_CONSTRUCT_ONLY) {
         unsigned flags = GJS_MODULE_PROP_FLAGS | JSPROP_READONLY;
-        Gjs::AutoChar camel_name{gjs_hyphen_to_camel(pspec->name)};
+        std::string camel_name{gjs_hyphen_to_camel(pspec->name)};
 
         if (g_param_spec_get_qdata(pspec,
                                    ObjectBase::custom_property_quark())) {
@@ -90,14 +90,14 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
                     getter.set(jsprop->getter());
             }
 
-            if (!g_str_equal(camel_name.get(), pspec->name)) {
-                if (!JS_GetPropertyDescriptor(cx, object, camel_name, &jsprop,
-                                              &holder)) {
+            if (camel_name != pspec->name) {
+                if (!JS_GetPropertyDescriptor(cx, object, camel_name.c_str(),
+                                              &jsprop, &holder)) {
                     return false;
                 }
 
                 if (jsprop.isSome() && jsprop.value().setter() &&
-                    !JS_SetProperty(cx, object, camel_name, jsvalue)) {
+                    !JS_SetProperty(cx, object, camel_name.c_str(), jsvalue)) {
                     return false;
                 }
                 if (!getter && jsprop.isSome() && jsprop->getter())
@@ -119,7 +119,7 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
                 return JS_DefineProperty(cx, object, underscore_name.c_str(),
                                          getter, nullptr,
                                          GJS_MODULE_PROP_FLAGS) &&
-                       JS_DefineProperty(cx, object, camel_name, getter,
+                       JS_DefineProperty(cx, object, camel_name.c_str(), getter,
                                          nullptr, GJS_MODULE_PROP_FLAGS) &&
                        JS_DefineProperty(cx, object, pspec->name, getter,
                                          nullptr, GJS_MODULE_PROP_FLAGS);
@@ -127,7 +127,8 @@ static bool jsobj_set_gproperty(JSContext* cx, JS::HandleObject object,
 
         return JS_DefineProperty(cx, object, underscore_name.c_str(), jsvalue,
                                  flags) &&
-               JS_DefineProperty(cx, object, camel_name, jsvalue, flags) &&
+               JS_DefineProperty(cx, object, camel_name.c_str(), jsvalue,
+                                 flags) &&
                JS_DefineProperty(cx, object, pspec->name, jsvalue, flags);
     }
 
