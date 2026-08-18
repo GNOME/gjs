@@ -149,11 +149,8 @@ GJS_JSAPI_RETURN_CONVENTION
 JSString* gjs_lossy_string_from_utf8_n(JSContext*, const char* utf8_string,
                                        size_t len);
 GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_from_utf8(JSContext*, const char* utf8_string,
+bool gjs_string_from_utf8(JSContext*, std::string_view utf8_chars,
                           JS::MutableHandleValue);
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_from_utf8_n(JSContext*, const char* utf8_chars, size_t len,
-                            JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_to_filename(JSContext*, JS::Value,

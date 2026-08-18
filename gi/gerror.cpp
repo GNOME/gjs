@@ -146,7 +146,7 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
         descr = std::format("GLib.Error {}: {}",
                             g_quark_to_string(gerror->domain), gerror->message);
 
-        return gjs_string_from_utf8(cx, descr.c_str(), rec.rval());
+        return gjs_string_from_utf8(cx, descr, rec.rval());
     }
 
     ErrorBase* priv;
@@ -163,7 +163,7 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
             std::format("{}: {}", priv->info(), priv->to_instance()->message());
     }
 
-    return gjs_string_from_utf8(cx, descr.c_str(), rec.rval());
+    return gjs_string_from_utf8(cx, descr, rec.rval());
 }
 
 // JSNative implementation of `valueOf()`.

@@ -788,15 +788,6 @@ static void test_jsapi_util_error_throw_cause(GjsUnitTestFixture* fx,
     g_test_assert_expected_messages();
 }
 
-static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
-                                                     const void*) {
-    JS::RootedValue v_out(fx->cx);
-    bool ok = gjs_string_from_utf8_n(fx->cx, VALID_UTF8_STRING,
-                                     strlen(VALID_UTF8_STRING), &v_out);
-    g_assert_true(ok);
-    g_assert_true(v_out.isString());
-}
-
 static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
                                                const void*) {
     char16_t* chars;
@@ -1402,8 +1393,6 @@ int main(int argc, char* argv[]) {
     ADD_JSAPI_UTIL_TEST("error/throw-cause", test_jsapi_util_error_throw_cause);
     ADD_JSAPI_UTIL_TEST("string/js/string/utf8",
                         gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
-    ADD_JSAPI_UTIL_TEST("string/utf8-nchars-to-js",
-                        test_jsapi_util_string_utf8_nchars_to_js);
     ADD_JSAPI_UTIL_TEST("string/char16_data",
                         test_jsapi_util_string_char16_data);
     ADD_JSAPI_UTIL_TEST("string/to_ucs4",

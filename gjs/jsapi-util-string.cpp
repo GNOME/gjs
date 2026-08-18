@@ -199,20 +199,9 @@ JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
     return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
 }
 
-bool gjs_string_from_utf8(JSContext* cx, const char* utf8_string,
-                          JS::MutableHandleValue value_p) {
-    JS::ConstUTF8CharsZ chars{utf8_string};
-    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, chars)};
-    if (!str)
-        return false;
-
-    value_p.setString(str);
-    return true;
-}
-
-bool gjs_string_from_utf8_n(JSContext* cx, const char* utf8_chars, size_t len,
-                            JS::MutableHandleValue out) {
-    JS::UTF8Chars chars(utf8_chars, len);
+bool gjs_string_from_utf8(JSContext* cx, std::string_view utf8_chars,
+                          JS::MutableHandleValue out) {
+    JS::UTF8Chars chars{utf8_chars.data(), utf8_chars.size()};
     JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
     if (str)
         out.setString(str);
@@ -255,7 +244,7 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
         return false;
     }
 
-    return gjs_string_from_utf8_n(cx, utf8_string, written, value_p);
+    return gjs_string_from_utf8(cx, {utf8_string, written}, value_p);
 }
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer

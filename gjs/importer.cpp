@@ -149,13 +149,12 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                 return false;
             module_path_buf = std::format("{}.{}", parent_path, module_name);
         }
-        if (!gjs_string_from_utf8(cx, module_path_buf.c_str(), &module_path))
+        if (!gjs_string_from_utf8(cx, module_path_buf, &module_path))
             return false;
 
         std::string to_string_tag_buf =
             std::format("GjsModule {}", module_path_buf);
-        if (!gjs_string_from_utf8(cx, to_string_tag_buf.c_str(),
-                                  &to_string_tag))
+        if (!gjs_string_from_utf8(cx, to_string_tag_buf, &to_string_tag))
             return false;
     } else {
         to_string_tag.setString(JS_AtomizeString(cx, "GjsModule"));
