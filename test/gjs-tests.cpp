@@ -38,6 +38,7 @@
 #include "gi/arg-inl.h"
 #include "gi/js-value-inl.h"
 #include "gjs/auto.h"
+#include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/error-types.h"
 #include "gjs/gerror-result.h"
@@ -102,6 +103,21 @@ T get_random_number() {
     } else if constexpr (std::is_pointer_v<T>) {
         return reinterpret_cast<T>(get_random_number<uintptr_t>());
     }
+}
+
+static void gjstest_test_gjs_dumpstack_none() {
+    // Test for underflow when stripping the final newline
+    std::string stack = gjs_dumpstack_string();
+    g_assert_cmpstr(stack.c_str(), ==, "");
+}
+
+static void gjstest_test_gjs_dumpstack_context(GjsUnitTestFixture* fx,
+                                               const void*) {
+    std::string stack = gjs_dumpstack_string();
+    Gjs::AutoChar expected =
+        g_strdup_printf("== Stack trace for context %p ==", fx->gjs_context);
+    // No code is executing, so stack trace is blank
+    g_assert_cmpstr(stack.c_str(), ==, expected.get());
 }
 
 static void gjstest_test_func_gjs_context_construct_destroy() {
@@ -1240,6 +1256,10 @@ int main(int argc, char* argv[]) {
 
     g_message("Using C++ random seed %u\n", cpp_random_seed);
 
+    g_test_add_func("/gjs/dumpstack/none", gjstest_test_gjs_dumpstack_none);
+    g_test_add("/gjs/dumpstack/context", GjsUnitTestFixture, nullptr,
+               gjs_unit_test_fixture_setup, gjstest_test_gjs_dumpstack_context,
+               gjs_unit_test_fixture_teardown);
     g_test_add_func("/gjs/context/construct/destroy",
                     gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval",

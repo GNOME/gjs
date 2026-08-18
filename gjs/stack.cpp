@@ -6,8 +6,7 @@
 
 #include <stdio.h>  // for stderr
 
-#include <algorithm>  // for max
-#include <sstream>
+#include <algorithm>  // for min
 #include <string>
 
 #include <glib-object.h>
@@ -39,29 +38,27 @@ void gjs_dumpstack() {
 }
 
 std::string gjs_dumpstack_string() {
-    std::ostringstream all_traces;
-
     Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
     js::Sprinter printer;
+    if (!printer.init())
+        return "No stack trace: out of memory";
 
     for (GList* iter = contexts; iter; iter = iter->next) {
         Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(iter->data)};
-        if (!printer.init()) {
-            all_traces << "No stack trace for context " << gjs_context.get()
-                       << ": out of memory\n\n";
-            break;
-        }
         auto* cx = static_cast<JSContext*>(
             gjs_context_get_native_context(gjs_context));
-        js::DumpBacktrace(cx, printer);
-        JS::UniqueChars trace = printer.release();
-        all_traces << "== Stack trace for context " << gjs_context.get()
-                   << " ==\n"
-                   << trace.get() << "\n";
-    }
-    std::string out = all_traces.str();
-    // COMPAT: 0zu in C++23
-    out.resize(std::max(out.size() - 2, size_t{0}));
 
-    return out;
+        printer.printf("== Stack trace for context 0x%p ==\n",
+                       gjs_context.get());
+        js::DumpBacktrace(cx, printer);
+        printer.putChar('\n');
+    }
+
+    size_t len = printer.length();
+    JS::UniqueChars all_traces = printer.release();
+    if (!all_traces)
+        return "No stack trace: out of memory";
+
+    // COMPAT: 2zu in C++23
+    return {all_traces.get(), len - std::min(len, size_t{2})};
 }
