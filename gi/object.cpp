@@ -229,8 +229,9 @@ GParamSpec* ObjectPrototype::find_param_spec_from_id(
     if (!js_prop_name)
         return nullptr;
 
-    Gjs::AutoChar gname{gjs_hyphen_from_camel(js_prop_name.get())};
-    GParamSpec* pspec = g_object_class_find_property(object_class, gname);
+    std::string gname{gjs_hyphen_from_camel(js_prop_name.get())};
+    GParamSpec* pspec =
+        g_object_class_find_property(object_class, gname.c_str());
 
     if (!pspec) {
         gjs_wrapper_throw_nonexistent_field(cx, m_gtype, js_prop_name.get());
@@ -1065,14 +1066,12 @@ static Maybe<GI::AutoVFuncInfo> find_vfunc_on_parents(
     return vfunc;
 }
 
-// Taken from GLib
-static void canonicalize_key(const Gjs::AutoChar& key) {
-    for (char* p = key; *p != 0; p++) {
-        char c = *p;
-
+// Adapted from GLib
+static void canonicalize_key(std::string& key) {
+    for (char& c : key) {
         if (c != '-' && (c < '0' || c > '9') && (c < 'A' || c > 'Z') &&
             (c < 'a' || c > 'z'))
-            *p = '-';
+            c = '-';
     }
 }
 
@@ -1734,12 +1733,12 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
                                       JS::HandleId id, bool* resolved,
                                       const char* name,
                                       ResolveWhat resolve_props) {
-    Gjs::AutoChar canonical_name;
+    Maybe<std::string> canonical_name;
     if (resolve_props == ConsiderMethodsAndProperties) {
         // Optimization: GObject property names must start with a letter
         if (g_ascii_isalpha(name[0])) {
-            canonical_name = gjs_hyphen_from_camel(name);
-            canonicalize_key(canonical_name);
+            canonical_name.emplace(gjs_hyphen_from_camel(name));
+            canonicalize_key(*canonical_name);
         }
     }
 
@@ -1751,7 +1750,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         Gjs::AutoTypeClass<GObjectClass> oclass{m_gtype};
 
         if (GParamSpec* pspec =
-                g_object_class_find_property(oclass, canonical_name))
+                g_object_class_find_property(oclass, canonical_name->c_str()))
             return lazy_define_gobject_property(cx, obj, id, pspec, resolved,
                                                 name);
     }
@@ -1790,10 +1789,10 @@ static Maybe<GI::AutoPropertyInfo> find_gobject_property_info(
     if (!g_ascii_isalpha(name[0]))
         return {};
 
-    Gjs::AutoChar canonical_name{gjs_hyphen_from_camel(name)};
+    std::string canonical_name{gjs_hyphen_from_camel(name)};
     canonicalize_key(canonical_name);
 
-    return get_gobject_property_info(info, canonical_name);
+    return get_gobject_property_info(info, canonical_name.c_str());
 }
 
 // Override of GIWrapperBase::id_is_never_lazy()

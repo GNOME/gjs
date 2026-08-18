@@ -13,6 +13,7 @@
 
 #include <limits>
 #include <string>  // for string, u16string
+#include <string_view>
 #include <type_traits>  // for enable_if_t, add_pointer_t, add_const_t
 #include <vector>
 
@@ -211,6 +212,7 @@ bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
 
 [[nodiscard]] Gjs::AutoChar gjs_hyphen_to_underscore(const char*);
 [[nodiscard]] Gjs::AutoChar gjs_hyphen_to_camel(const char*);
+[[nodiscard]] std::string gjs_hyphen_from_camel(std::string_view);
 
 #if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
 [[nodiscard]] std::wstring gjs_win32_vc140_utf8_to_utf16(const char*);
