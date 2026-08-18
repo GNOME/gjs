@@ -300,8 +300,8 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
 
     JS::RootedString decoded(cx);
     if (!fatal) {
-        decoded.set(gjs_lossy_string_from_utf8_n(
-            cx, reinterpret_cast<char*>(data), len));
+        decoded.set(gjs_lossy_string_from_utf8(
+            cx, {reinterpret_cast<char*>(data), len}));
     } else {
         JS::UTF8Chars chars(reinterpret_cast<char*>(data), len);
         JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));

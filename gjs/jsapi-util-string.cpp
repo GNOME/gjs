@@ -154,40 +154,16 @@ bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str,
 /**
  * gjs_lossy_string_from_utf8:
  * @cx: the current #JSContext
- * @utf8_string: a zero-terminated array of UTF-8 characters to decode
+ * @utf8_string: a view of UTF-8 characters to decode
  *
  * Converts @utf8_string to a JS string. Instead of throwing, any invalid
  * characters will be converted to the UTF-8 invalid character fallback.
  *
  * Returns: The decoded string.
  */
-JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
-    JS::UTF8Chars chars{utf8_string, strlen(utf8_string)};
-    size_t outlen;
-    JS::UniqueTwoByteChars twobyte_chars(
-        JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
-                                             js::MallocArena)
-            .get());
-    if (!twobyte_chars)
-        return nullptr;
-
-    return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
-}
-
-/**
- * gjs_lossy_string_from_utf8_n:
- * @cx: the current #JSContext
- * @utf8_string: an array of UTF-8 characters to decode
- * @len: length of @utf8_string
- *
- * Provides the same conversion behavior as gjs_lossy_string_from_utf8
- * with a fixed length. See gjs_lossy_string_from_utf8().
- *
- * Returns: The decoded string.
- */
-JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
-                                       size_t len) {
-    JS::UTF8Chars chars(utf8_string, len);
+JSString* gjs_lossy_string_from_utf8(JSContext* cx,
+                                     std::string_view utf8_string) {
+    JS::UTF8Chars chars{utf8_string.data(), utf8_string.size()};
     size_t outlen;
     JS::UniqueTwoByteChars twobyte_chars(
         JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
