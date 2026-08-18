@@ -851,6 +851,13 @@ static void test_gjs_debug_string_quotes(GjsUnitTestFixture* fx, const void*) {
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
 }
 
+static void test_gjs_debug_string_two_byte_chars(GjsUnitTestFixture* fx, const void*) {
+    JSString* str = JS_NewUCStringCopyZ(fx->cx, u"\u0001\u00ff\u2212");
+    std::string debug_output = gjs_debug_string(str);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "\"\\x01\\xff\\u2212\"");
+}
+
 static void test_gjs_debug_value_bigint(GjsUnitTestFixture* fx, const void*) {
     JS::BigInt* bi = JS::NumberToBigInt(fx->cx, 42);
     std::string debug_output = gjs_debug_bigint(bi);
@@ -1377,6 +1384,8 @@ int main(int argc, char* argv[]) {
     ADD_JSAPI_UTIL_TEST("debug_id/string/no-quotes",
                         test_gjs_debug_id_string_no_quotes);
     ADD_JSAPI_UTIL_TEST("debug_string/quotes", test_gjs_debug_string_quotes);
+    ADD_JSAPI_UTIL_TEST("debug_string/two-byte-chars",
+                        test_gjs_debug_string_two_byte_chars);
     ADD_JSAPI_UTIL_TEST("debug_value/bigint", test_gjs_debug_value_bigint);
     ADD_JSAPI_UTIL_TEST("debug_value/bigint/uint64",
                         test_gjs_debug_value_bigint_uint64);
