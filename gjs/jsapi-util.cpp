@@ -12,6 +12,7 @@
 #include <algorithm>  // for min
 #include <chrono>  // for duration, operator""us
 #include <compare>  // for operator<
+#include <format>
 #include <iterator>  // for size
 #include <sstream>
 #include <string>
@@ -451,14 +452,9 @@ static std::string format_syntax_error_location(JSContext* cx,
     }
     log_exception_brief(cx);
 
-    std::ostringstream out;
-    out << " @ ";
-    if (utf8_filename)
-        out << utf8_filename.get();
-    else
-        out << "<unknown>";
-    out << ":" << line << ":" << column;
-    return out.str();
+    return std::format(" @ {}:{}:{}",
+                       utf8_filename ? utf8_filename.get() : "<unknown>", line,
+                       column);
 }
 
 using CauseSet = JS::GCHashSet<JSObject*, js::DefaultHasher<JSObject*>,

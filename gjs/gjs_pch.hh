@@ -57,7 +57,6 @@
 #include <glib-unix.h>
 #endif
 #include <inttypes.h>
-#include <iomanip>
 #include <js/AllocPolicy.h>
 #include <js/Array.h>
 #include <js/ArrayBuffer.h>

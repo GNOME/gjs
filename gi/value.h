@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #include <cstddef>  // for nullptr_t
-#include <sstream>  // for ostringstream
+#include <format>
 #include <string>   // for string
 #include <type_traits>
 #include <utility>  // for move, swap
@@ -219,12 +219,10 @@ std::string gvalue_to_string(GValue* gvalue) {
     } else if constexpr (std::is_same_v<TAG, GVariant*>) {
         AutoChar variant{g_variant_print(Gjs::gvalue_get<TAG>(gvalue), true)};
         str += "<"s + variant.get() + '>';
-    } else if constexpr (std::is_arithmetic_v<TAG>) {
-        str += std::to_string(Gjs::gvalue_get<TAG>(gvalue));
+    } else if constexpr (std::is_pointer_v<TAG>) {
+        str += std::format("{}", Gjs::gvalue_get<void*>(gvalue));
     } else {
-        std::ostringstream out;
-        out << Gjs::gvalue_get<TAG>(gvalue);
-        str += out.str();
+        str += std::format("{}", Gjs::gvalue_get<TAG>(gvalue));
     }
     return str;
 }
