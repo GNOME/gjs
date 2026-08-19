@@ -120,10 +120,12 @@ declare namespace Debugger {
 
     class Environment {
         type: "declarative" | "object" | "with";
+        scopeKind: string;
+
         parent: Debugger.Environment | null;
         // throws when type is `declarative`
         object: Debugger.Object | null;
-        callee: Debugger.Object | null;
+        calleeScript: Debugger.Script | null;
         names(): string[];
         // throws Debugger.DebuggeeWouldRun
         getVariable(name: string): Variable;

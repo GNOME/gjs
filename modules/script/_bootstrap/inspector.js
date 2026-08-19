@@ -490,27 +490,13 @@ function findNthEnvironment(n) {
 function toDapScope(environment, id = 0) {
     if (!environment) return null;
 
-    let object;
+    let script, object;
     if (environment.type !== 'declarative') {
+        script ??= environment.object?.script;
         object ??= environment.object;
-    } else {
-        object ??= environment.callee;
     }
+    script ??= environment.calleeScript;
 
-    let name;
-    if (object?.class) {
-        name = object.class;
-    } else if (object?.isPromise) {
-        name = 'Promise';
-    } else if (object?.displayName) {
-        name = object.displayName;
-    } else if (object?.name) {
-        name = object.name;
-    } else {
-        name = 'Unknown name';
-    }
-
-    const script = object?.script;
     let location;
     if (script) {
         const offsets = script.getLineOffsets(1);
@@ -523,8 +509,17 @@ function toDapScope(environment, id = 0) {
         }
     }
 
+    const name =
+        script?.displayName ??
+        object?.displayName ??
+        object?.name ??
+        object?.class;
+    const kind = environment.scopeKind || environment.type;
+
+    const displayName = kind ? (name ? `${kind}: ${name}` : kind) : 'Unknown';
+
     return {
-        name: `${environment.type}: ${name ?? 'Unknown name'}`,
+        name: displayName,
         expensive: true,
         variablesReference: id,
         line: location?.lineNumber ?? 0,
