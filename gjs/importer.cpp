@@ -96,7 +96,7 @@ static bool importer_to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                                    const char* parse_name,
-                                   const char* module_name,
+                                   std::string_view module_name,
                                    JS::HandleObject parent) {
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
@@ -113,8 +113,7 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
         parent && JS_InstanceOf(cx, parent, &gjs_importer_class, nullptr);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent {:?} of {:?} '{}' is mod {}",
-              parent, module_obj, module_name ? module_name : "<root>",
-              parent_is_module);
+              parent, module_obj, module_name, parent_is_module);
 
     if (parse_name != nullptr) {
         JS::RootedValue file{cx};
@@ -191,7 +190,7 @@ static bool import_directory(JSContext* cx, JS::HandleObject obj,
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool seal_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                        const char* name) {
+                        std::string_view name) {
     JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_descr(cx);
 
     if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &maybe_descr) ||
@@ -400,7 +399,7 @@ static bool import_symbol_from_init_js(JSContext* cx, JS::HandleObject importer,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool attempt_import(JSContext* cx, JS::HandleObject obj,
-                           JS::HandleId module_id, const char* module_name,
+                           JS::HandleId module_id, std::string_view module_name,
                            GFile* file) {
     JS::RootedObject module_obj(
         cx, gjs_module_import(cx, obj, module_id, module_name, file));

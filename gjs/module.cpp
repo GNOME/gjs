@@ -6,6 +6,8 @@
 
 #include <stddef.h>     // for size_t
 
+#include <string>
+
 #include <gio/gio.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -59,12 +61,12 @@ union Utf8Unit;
 }
 
 class GjsScriptModule {
-    Gjs::AutoChar m_name;
+    std::string m_name;
 
     // Reserved slots
     static const size_t POINTER = 0;
 
-    explicit GjsScriptModule(const char* name) : m_name(g_strdup(name)) {
+    explicit GjsScriptModule(std::string_view name) : m_name(name) {
         GJS_INC_COUNTER(module);
     }
 
@@ -80,7 +82,7 @@ class GjsScriptModule {
 
     // Creates a JS module object. Use instead of the class's constructor
     [[nodiscard]]
-    static JSObject* create(JSContext* cx, const char* name) {
+    static JSObject* create(JSContext* cx, std::string_view name) {
         JSObject* module = JS_NewObject(cx, &GjsScriptModule::klass);
         JS::SetReservedSlot(module, GjsScriptModule::POINTER,
                             JS::PrivateValue(new GjsScriptModule(name)));
@@ -226,7 +228,8 @@ class GjsScriptModule {
     // Carries out the import operation
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* import(JSContext* cx, JS::HandleObject importer,
-                            JS::HandleId id, const char* name, GFile* file) {
+                            JS::HandleId id, std::string_view name,
+                            GFile* file) {
         JS::RootedObject module(cx, GjsScriptModule::create(cx, name));
         if (!module ||
             !priv(module)->define_import(cx, module, importer, id) ||
@@ -272,7 +275,8 @@ JSObject* gjs_script_module_build_private(JSContext* cx, const char* uri) {
  * Returns: the JS module object, or nullptr on failure.
  */
 JSObject* gjs_module_import(JSContext* cx, JS::HandleObject importer,
-                            JS::HandleId id, const char* name, GFile* file) {
+                            JS::HandleId id, std::string_view name,
+                            GFile* file) {
     return GjsScriptModule::import(cx, importer, id, name, file);
 }
 
