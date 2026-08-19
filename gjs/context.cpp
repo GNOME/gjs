@@ -1411,10 +1411,8 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     if (should_exit(&code)) {
         /* exit_status_p is public API so can't be changed, but should be
          * uint8_t, not int */
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
-                    "Exit with code %d", code);
-
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                             "Exit with code {}", code};
         *exit_code = code;
         return Err(error.release());  // Don't log anything
     }
@@ -1422,9 +1420,9 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     // Once the main loop exits an exception could be pending even if the script
     // returned true synchronously
     if (JS_IsExceptionPending(m_cx)) {
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "%s %s threw an exception", source_type, identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "{} {} threw an exception", source_type,
+                             identifier};
         gjs_log_exception_uncaught(m_cx);
 
         *exit_code = 1;
@@ -1432,9 +1430,9 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     }
 
     if (m_unhandled_exception) {
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "%s %s threw an exception", source_type, identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "{} {} threw an exception", source_type,
+                             identifier};
         *exit_code = 1;
         return Err(error.release());
     }
@@ -1447,10 +1445,9 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
 
     gjs_critical("{} {} terminated with an uncatchable exception", source_type,
                  identifier);
-    Gjs::AutoError error;
-    g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                "%s %s terminated with an uncatchable exception", source_type,
-                identifier);
+    Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                         "{} {} terminated with an uncatchable exception",
+                         source_type, identifier};
 
     gjs_log_exception_uncaught(m_cx);
     // No exit code from script, but we don't want to exit(0)
@@ -1596,9 +1593,9 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
     JS::RootedId key(m_cx, gjs_intern_string_to_id(m_cx, identifier));
     JS::RootedObject obj(m_cx);
     if (!gjs_global_registry_get(m_cx, registry, key, &obj) || !obj) {
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "Cannot load module with identifier: '%s'", identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "Cannot load module with identifier: '{}'",
+                             identifier};
 
         if (exit_code_p)
             *exit_code_p = 1;
@@ -1607,9 +1604,9 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
 
     if (!JS::ModuleLink(m_cx, obj)) {
         gjs_log_exception(m_cx);
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "Failed to resolve imports for module: '%s'", identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "Failed to resolve imports for module: '{}'",
+                             identifier};
 
         if (exit_code_p)
             *exit_code_p = 1;
@@ -1686,10 +1683,9 @@ GErrorResult<> GjsContextPrivate::register_module(const char* identifier,
         JS_ClearPendingException(m_cx);
     }
 
-    Gjs::AutoError error;
-    g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                "Failed to parse module '%s': %s", identifier,
-                msg ? msg : "unknown");
+    Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                         "Failed to parse module '{}': {}", identifier,
+                         msg ? msg : "unknown"};
 
     return Err(error.release());
 }

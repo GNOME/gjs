@@ -393,8 +393,8 @@ void GjsCallbackTrampoline::callback_closure(GIArgument** args, void* result) {
         // the n_args
         GIArgument* error_argument = args[n_args + c_args_offset];
         auto* gerror = gjs_arg_get<GError**>(error_argument);
-        GError* local_error = gjs_gerror_make_from_thrown_value(cx);
-        g_propagate_error(gerror, local_error);
+        Gjs::AutoError local_error = gjs_gerror_make_from_thrown_value(cx);
+        g_propagate_error(gerror, local_error.release());
     }
 }
 

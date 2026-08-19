@@ -479,7 +479,7 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
  *
  * Returns: (transfer full): a new #GError
  */
-GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
+Gjs::AutoError gjs_gerror_make_from_thrown_value(JSContext* cx) {
     g_assert(JS_IsExceptionPending(cx) &&
              "Should be called when an exception is pending");
 
@@ -488,10 +488,8 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
     JS_ClearPendingException(cx);  // don't log
 
     if (!exc.isObject()) {
-        return g_error_new(GJS_JS_ERROR, GJS_JS_ERROR_ERROR,
-                           "Non-exception %s value %s thrown",
-                           JS::InformalValueTypeName(exc),
-                           gjs_debug_value(exc).c_str());
+        return {GJS_JS_ERROR, GJS_JS_ERROR_ERROR,
+                "Non-exception {0:t} value {0} thrown", exc};
     }
 
     JS::RootedObject obj(cx, &exc.toObject());

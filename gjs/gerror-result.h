@@ -8,6 +8,7 @@
 #include <format>
 #include <string>
 #include <type_traits>
+#include <utility>  // for forward
 
 #include <glib.h>
 
@@ -45,6 +46,13 @@ struct AutoError : AutoPointer<GError, GError, g_error_free> {
     }
     constexpr BaseType::Ptr* operator&() {  // NOLINT(runtime/operator)
         return out();
+    }
+
+    template <typename... Args>
+    AutoError(GQuark domain, int code, std::format_string<Args...> fmt,
+              Args&&... args) {
+        std::string message = std::format(fmt, std::forward<Args>(args)...);
+        g_set_error_literal(out(), domain, code, message.c_str());
     }
 };
 
