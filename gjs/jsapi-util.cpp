@@ -620,14 +620,16 @@ void gjs_gc_if_needed(JSContext* cx) {
     last_gc_check_time = now;
 
     Gjs::AutoChar contents;
+    size_t length;
     Gjs::AutoError error;
-    if (!g_file_get_contents("/proc/self/statm", contents.out(), nullptr,
+    if (!g_file_get_contents("/proc/self/statm", contents.out(), &length,
                              &error)) {
         gjs_critical("Error reading contents of /proc/self/statm: {}", error);
         return;
     }
 
-    Gjs::StatmParseResult result = Gjs::parse_statm_file_rss(contents);
+    Gjs::StatmParseResult result =
+        Gjs::parse_statm_file_rss({contents.get(), length});
     if (result.isErr()) {
         gjs_critical("{}", std::string{result.unwrapErr()});
         return;

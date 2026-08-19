@@ -15,6 +15,7 @@
 #include <chrono>
 #include <ratio>  // for micro
 #include <string>
+#include <string_view>
 
 #include <glib.h>  // for g_get_monotonic_time, g_assert
 
@@ -88,15 +89,15 @@ class StatmParseError {
 
  public:
     // NOLINTNEXTLINE(runtime/explicit) - explicit ctor won't work with Err()
-    StatmParseError(const char* message) : m_message(message) {}
-    StatmParseError(const char* message, std::from_chars_result result);
+    StatmParseError(std::string_view message) : m_message(message) {}
+    StatmParseError(std::string_view message, std::from_chars_result result);
 
     explicit operator std::string() const { return m_message; }
 };
 
 using StatmParseResult = mozilla::Result<uint64_t, StatmParseError>;
 
-StatmParseResult parse_statm_file_rss(const char* file_contents);
+StatmParseResult parse_statm_file_rss(std::string_view file_contents);
 
 }  // namespace Gjs
 

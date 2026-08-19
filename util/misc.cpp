@@ -31,30 +31,31 @@ bool gjs_environment_variable_is_set(const char* env_variable_name) {
 
 namespace Gjs {
 
-StatmParseResult parse_statm_file_rss(const char* file_contents) {
+StatmParseResult parse_statm_file_rss(std::string_view file_contents) {
+    using std::string_view_literals::operator""sv;
     auto npos = std::string_view::npos;
 
     // See "man proc_pid_statm"; RSS is the 2nd space-separated field, after
     // SIZE, which we skip.
-    std::string_view view{file_contents};
-    size_t space_index = view.find(' ');
+    size_t space_index = file_contents.find(' ');
     if (space_index == npos)
-        return Err("Unexpected missing RSS field in /proc/self/statm");
-    view.remove_prefix(space_index + 1);
+        return Err("Unexpected missing RSS field in /proc/self/statm"sv);
+    file_contents.remove_prefix(space_index + 1);
 
     uint64_t rss_size;
     auto result =
-        std::from_chars(view.data(), view.data() + view.size(), rss_size);
+        std::from_chars(file_contents.data(),
+                        file_contents.data() + file_contents.size(), rss_size);
     if (result.ec != std::errc{}) {  // COMPAT: operator bool in c++26
         return Err(StatmParseError{
             "Error reading RSS field in /proc/self/statm", result});
     }
     if (*result.ptr != ' ' && *result.ptr != '\0')
-        return Err("Badly formatted RSS field in /proc/self/statm");
+        return Err("Badly formatted RSS field in /proc/self/statm"sv);
     return rss_size;
 }
 
-StatmParseError::StatmParseError(const char* message,
+StatmParseError::StatmParseError(std::string_view message,
                                  std::from_chars_result result) {
     // COMPAT: operator bool in c++26
     g_assert(result.ec != std::errc() && "result should not be successful");
