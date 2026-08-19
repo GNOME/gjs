@@ -6,6 +6,10 @@
 
 #include <string.h>  // for strcmp
 
+#include <format>
+#include <string>
+#include <string_view>
+
 #include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -44,7 +48,6 @@
 #include "gi/struct.h"
 #include "gi/union.h"
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/gerror-result.h"
 #include "gjs/global.h"
@@ -111,13 +114,12 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
 #if (defined(G_OS_UNIX) || defined(G_OS_WIN32))
     if (strcmp(ns_name.get(), "Gio") == 0) {
 #    ifdef G_OS_UNIX
-        const char* platform = "Unix";
+        constexpr std::string_view platform = "Unix";
 #    else   // G_OS_WIN32
-        const char* platform = "Win32";
+        constexpr std::string_view platform = "Win32";
 #    endif  // G_OS_UNIX/G_OS_WIN32
-        Gjs::AutoChar platform_specific{
-            g_strconcat(ns_name.get(), platform, nullptr)};
-        auto required = repo.require(platform_specific, version.get());
+        std::string platform_specific = std::format("{}{}", ns_name, platform);
+        auto required = repo.require(platform_specific.c_str(), version.get());
         if (!required.isOk()) {
             gjs_throw(cx, "Failed to require {} {}: {}", platform_specific,
                       version, required);

@@ -28,7 +28,6 @@
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
 
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"  // IWYU pragma: associated
 #include "gjs/jsapi-util.h"
@@ -191,19 +190,19 @@ bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
                                  const char* func_namespace, JSNative getter,
                                  JS::HandleValue getter_slot, JSNative setter,
                                  JS::HandleValue setter_slot, unsigned flags) {
-    Gjs::AutoChar getter_name{
-        g_strconcat(func_namespace, "_get::", prop_name, nullptr)};
-    Gjs::AutoChar setter_name{
-        g_strconcat(func_namespace, "_set::", prop_name, nullptr)};
+    std::string getter_name =
+        std::format("{}_get::{}", func_namespace, prop_name);
+    std::string setter_name =
+        std::format("{}_set::{}", func_namespace, prop_name);
 
     JS::RootedObject getter_obj(
-        cx, define_native_accessor_wrapper(cx, getter, 0, getter_name,
+        cx, define_native_accessor_wrapper(cx, getter, 0, getter_name.c_str(),
                                            getter_slot));
     if (!getter_obj)
         return false;
 
     JS::RootedObject setter_obj(
-        cx, define_native_accessor_wrapper(cx, setter, 1, setter_name,
+        cx, define_native_accessor_wrapper(cx, setter, 1, setter_name.c_str(),
                                            setter_slot));
     if (!setter_obj)
         return false;
