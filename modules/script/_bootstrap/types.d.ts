@@ -137,6 +137,7 @@ declare namespace Debugger {
         getVariable(name: string): Debugger.Value | null;
         isPromise: boolean;
         script: Debugger.Script | null;
+        environment: Debugger.Environment | null;
         class: string | undefined;
         isBoundFunction: boolean | undefined;
         isArrowFunction: boolean | undefined;
@@ -145,6 +146,7 @@ declare namespace Debugger {
         parameterNames: any;
         isProxy: boolean;
         callable: boolean;
+
     }
 
     class Value {}

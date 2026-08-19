@@ -280,7 +280,7 @@ const handlers = {
     },
     /**
      *
-     * @param {*} seq
+     * @param {number} seq
      * @param {{granularity?: DAP.SteppingGranularity}} args
      */
     next(seq, args) {
@@ -337,6 +337,28 @@ const handlers = {
             }
         }
     },
+    /**
+     *
+     * @param {number} seq
+     * @param {{granularity?: DAP.SteppingGranularity}} args
+     */
+    stepIn(seq, args) {
+        sendResponse(seq, 'stepIn');
+
+        STATE.paused = false;
+
+        const newestFrame = dbg.getNewestFrame();
+
+        if (!newestFrame) return;
+
+        dbg.onEnterFrame = () => {
+            dbg.onEnterFrame = undefined;
+
+            pause('step');
+        };
+
+        return;
+    }
 };
 
 /**
@@ -562,7 +584,10 @@ function toDapStackFrame(frame) {
 
     return {
         id: frame.depth ?? 0,
-        name: frame.script.displayName ?? 'Unknown Frame',
+        name:
+            (frame.script.displayName ?? !frame.older)
+                ? 'Global'
+                : 'Unknown Frame',
         line: location?.lineNumber ?? 0,
         column: location?.columnNumber ?? 0,
         source: {
