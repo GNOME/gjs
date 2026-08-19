@@ -8,8 +8,10 @@
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen
 
+#include <format>
 #include <iterator>  // for size
 #include <new>
+#include <string>
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -80,8 +82,9 @@ static GErrorResult<> write_source_file_header(GOutputStream* stream,
                                                GFile* source_file) {
     Gjs::AutoChar path{get_file_identifier(source_file)};
     Gjs::AutoError error;
-    if (!g_output_stream_printf(stream, nullptr, nullptr, error.out(),
-                                "SF:%s\n", path.get()))
+    std::string header = std::format("SF:{}\n", path);
+    if (!g_output_stream_write_all(stream, header.data(), header.size(),
+                                   nullptr, nullptr, error.out()))
         return Err(error.release());
     return Ok{};
 }
