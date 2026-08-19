@@ -65,6 +65,8 @@ declare namespace DAP {
     }
 
     type Thing = Request | Response | Event;
+
+    type SteppingGranularity = "statement" | "line" | "function";
 }
 
 // Debugger API
@@ -98,6 +100,9 @@ declare namespace Debugger {
         script: Debugger.Script | null;
         offset: Debugger.Offset | null;
         environment: Debugger.Environment | null;
+
+        onStep: undefined | ((this: Debugger.Frame) => void);
+        onPop: undefined | ((this: Debugger.Frame) => void);
     }
 
     class Script {

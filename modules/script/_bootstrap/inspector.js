@@ -213,7 +213,7 @@ const handlers = {
     },
     pause(seq) {
         sendResponse(seq, 'pause');
-        pause();
+        pause('explicit');
     },
     /**
      * @param {{ source: { path: string; name: string; }; breakpoints: {line: number}[]; }} args
@@ -278,23 +278,64 @@ const handlers = {
             variables: variables,
         });
     },
-    next(seq, _args) {
+    /**
+     *
+     * @param {*} seq
+     * @param {{granularity?: DAP.SteppingGranularity}} args
+     */
+    next(seq, args) {
         sendResponse(seq, 'next');
 
         STATE.paused = false;
 
-        dbg.onEnterFrame = (frame) => {
-            dbg.onEnterFrame = undefined;
-            printerr('entered the next frame');
+        switch (args.granularity) {
+            case 'function': {
+                const newestFrame = dbg.getNewestFrame();
 
-            sendEvent('stopped', {
-                reason: 'step',
-                threadId: 0,
-                allThreadsStopped: true,
-            });
+                if (!newestFrame) break;
 
-            pause();
-        };
+                newestFrame.onPop = () => {
+                    newestFrame.onPop = undefined;
+
+                    const olderFrame = newestFrame.older;
+
+                    if (olderFrame) {
+                        olderFrame.onStep = () => {
+                            olderFrame.onStep = undefined;
+
+                            pause('step');
+                        };
+                    }
+                };
+                break;
+            }
+            case 'line': {
+                const newestFrame = dbg.getNewestFrame();
+
+                if (!newestFrame) break;
+
+                // TODO: this is stubbed out!
+                newestFrame.onPop = () => {
+                    newestFrame.onPop = undefined;
+
+                    pause('step');
+                };
+                break;
+            }
+            case 'statement':
+            default: {
+                const newestFrame = dbg.getNewestFrame();
+
+                if (!newestFrame) break;
+
+                newestFrame.onStep = () => {
+                    newestFrame.onStep = undefined;
+
+                    pause('step');
+                };
+                break;
+            }
+        }
     },
 };
 
@@ -575,7 +616,19 @@ function handleRequests(shouldContinueHandlingRequests = () => true) {
     }
 }
 
-function pause() {
+/**
+ *
+ * @param {string} reason
+ * @param {Record<string, unknown>} stopArgs
+ */
+function pause(reason, stopArgs = {}) {
+    sendEvent('stopped', {
+        reason,
+        threadId: 0,
+        allThreadsStopped: true,
+        ...stopArgs,
+    });
+
     STATE.paused = true;
     handleRequests(() => {
         printerr('paused, handling request', STATE.paused);
@@ -590,13 +643,7 @@ function onInitialEnterFrame() {
     // printerr("entered frame", frame?.callee.name);
     dbg.onEnterFrame = undefined;
 
-    sendEvent('stopped', {
-        reason: 'entry',
-        threadId: 0,
-        allThreadsStopped: true,
-    });
-
-    pause();
+    pause('entry');
 }
 
 /**
@@ -658,13 +705,7 @@ class BreakpointHandler {
      * @param {Debugger.Frame} frame
      */
     hit(frame) {
-        sendEvent('stopped', {
-            reason: 'breakpoint',
-            threadId: 0,
-            allThreadsStopped: true,
-            hitBreakpointIds: [this.entry.id],
-        });
-        pause();
+        pause('breakpoint', { hitBreakpointIds: [this.entry.id] });
     }
 }
 
@@ -677,13 +718,7 @@ dbg.onNewScript = (/** @type {Debugger.Script} */ script) => {
 };
 
 dbg.onDebuggerStatement = function (frame) {
-    sendEvent('stopped', {
-        reason: 'instruction breakpoint',
-        threadId: 0,
-        allThreadsStopped: true,
-    });
-
-    pause();
+    pause('instruction breakpoint');
 
     printerr('debugger statement done');
 };
