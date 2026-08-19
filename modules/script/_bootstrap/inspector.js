@@ -278,6 +278,24 @@ const handlers = {
             variables: variables,
         });
     },
+    next(seq, _args) {
+        sendResponse(seq, 'next');
+
+        STATE.paused = false;
+
+        dbg.onEnterFrame = (frame) => {
+            dbg.onEnterFrame = undefined;
+            printerr('entered the next frame');
+
+            sendEvent('stopped', {
+                reason: 'step',
+                threadId: 0,
+                allThreadsStopped: true,
+            });
+
+            pause();
+        };
+    },
 };
 
 /**
@@ -351,7 +369,6 @@ function toDapVariable(environment, name) {
             if (variable === null)
                 variableDescription = { type: 'null', value: 'null' };
             else if (variable instanceof Debugger.Object) {
-                printerr('got a variable', name, JSON.stringify(variable));
                 if (variable.isProxy) {
                     variableDescription = {
                         type: 'object',
@@ -552,8 +569,8 @@ function _handleRequest() {
     return true;
 }
 
-function handleRequests(shouldContinue = () => true) {
-    while (shouldContinue()) {
+function handleRequests(shouldContinueHandlingRequests = () => true) {
+    while (shouldContinueHandlingRequests()) {
         if (!_handleRequest()) break;
     }
 }
@@ -564,6 +581,7 @@ function pause() {
         printerr('paused, handling request', STATE.paused);
         return STATE.paused;
     });
+    sendEvent('continued', { threadId: 0, allThreadsContinued: true });
 }
 
 // DEBUGGER API handlers
@@ -666,11 +684,11 @@ dbg.onDebuggerStatement = function (frame) {
     });
 
     pause();
+
+    printerr('debugger statement done');
 };
 
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
-
-printerr('Hello');
 
 try {
     handleRequests();
