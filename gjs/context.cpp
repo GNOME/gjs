@@ -164,10 +164,14 @@ static GParamSpec* gjs_context_props[PROP_REPL_HISTORY_PATH + 1];
 static GMutex contexts_lock;
 static GList* all_contexts = nullptr;
 
-static Gjs::AutoChar dump_heap_output;
+#ifdef G_OS_UNIX
+static std::string& dump_heap_output() {
+    static std::string the_output;
+    return the_output;
+}
+
 static unsigned dump_heap_idle_id = 0;
 
-#ifdef G_OS_UNIX
 // Currently heap dumping via SIGUSR1 is only supported on UNIX platforms!
 // This can reduce performance. See note in system.cpp on System.dumpHeap().
 static void gjs_context_dump_heaps() {
@@ -177,7 +181,7 @@ static void gjs_context_dump_heaps() {
 
     // dump to sequential files to allow easier comparisons
     std::string filename =
-        std::format("{}.{}.{}", dump_heap_output, getpid(), counter);
+        std::format("{}.{}.{}", dump_heap_output(), getpid(), counter);
     ++counter;
 
     FILE* fp = fopen(filename.c_str(), "w");
@@ -218,7 +222,7 @@ static void setup_dump_heap() {
 #ifdef G_OS_UNIX
             struct sigaction sa;
 
-            dump_heap_output = g_strdup(heap_output);
+            dump_heap_output() = heap_output;
 
             memset(&sa, 0, sizeof(sa));
             sa.sa_handler = dump_heap_signal_handler;
