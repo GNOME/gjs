@@ -6,10 +6,12 @@
 
 #include <config.h>
 
+#include <string_view>
+
 #include "gjs/macros.h"
 
 class JSObject;
 struct JSContext;
 
 GJS_JSAPI_RETURN_CONVENTION
-JSObject* gjs_create_ns(JSContext*, const char* ns_name);
+JSObject* gjs_create_ns(JSContext*, std::string_view ns_name);
