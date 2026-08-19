@@ -465,9 +465,9 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
         return false;
     }
 
-    JS::ConstUTF8CharsZ contents_chars{contents, length};
-    JS::RootedString contents_str(cx,
-                                  JS_NewStringCopyUTF8Z(cx, contents_chars));
+    JS::UTF8Chars contents_chars{contents, length};
+    JS::RootedString contents_str{cx,
+                                  JS_NewStringCopyUTF8N(cx, contents_chars)};
     g_free(contents);
     if (!contents_str)
         return false;
@@ -497,9 +497,9 @@ bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     Gjs::AutoChar decoded =
         reinterpret_cast<char*>(g_base64_decode(text.get(), &result_len));
-    JS::ConstUTF8CharsZ contents_chars{decoded, result_len};
+    JS::UTF8Chars contents_chars{decoded, result_len};
     JS::RootedString contents_str{cx,
-                                  JS_NewStringCopyUTF8Z(cx, contents_chars)};
+                                  JS_NewStringCopyUTF8N(cx, contents_chars)};
 
     if (!contents_str)
         return false;
