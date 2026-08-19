@@ -49,7 +49,6 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <js/Warnings.h>
 #include <jsapi.h>        // for JS_GetFunctionObject, IdVector
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
@@ -2582,12 +2581,11 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
                                JS::HandleObject object) {
     g_assert(gtype() != G_TYPE_NONE);
 
-    if (args.length() > 1 &&
-        !JS::WarnUTF8(cx,
-                      "Too many arguments to the constructor of %s: expected "
-                      "1, got %u",
-                      name(), args.length()))
-        return false;
+    if (args.length() > 1) {
+        gjs_warning(
+            "Too many arguments to the constructor of {}: expected 1, got {}",
+            name(), args.length());
+    }
 
     std::vector<const char*> names;
     AutoGValueVector values;

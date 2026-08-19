@@ -35,7 +35,6 @@
 #include <js/TypeDecls.h>
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <js/Warnings.h>
 #include <jsapi.h>    // for HandleValueArray
 #include <jspubtd.h>  // for JSProtoKey
 #include <mozilla/Maybe.h>
@@ -854,10 +853,8 @@ bool Function::invoke(JSContext* cx, const JS::CallArgs& args,
     // PARAM_SKIPPED args).
     // args.length() is the number of arguments that were actually passed.
     if (args.length() > m_js_in_argc) {
-        if (!JS::WarnUTF8(
-                cx, "Too many arguments to function %s: expected %u, got %u",
-                m_info.display_string().c_str(), m_js_in_argc, args.length()))
-            return false;
+        gjs_warning("Too many arguments to function {}: expected {}, got {}",
+                    m_info, m_js_in_argc, args.length());
     } else if (args.length() < m_js_in_argc) {
         JS::CallArgs::reportMoreArgsNeeded(cx, m_info.display_string().c_str(),
                                            m_js_in_argc, args.length());

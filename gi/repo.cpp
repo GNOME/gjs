@@ -29,7 +29,6 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <js/Warnings.h>
 #include <jsapi.h>  // for JS_NewPlainObject, JS_NewObject
 #include <mozilla/Maybe.h>
 #include <mozilla/ScopeExit.h>
@@ -101,12 +100,12 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
     size_t nversions;
     (void)repo.enumerate_versions(ns_name.get(), &nversions);
     if (nversions > 1 && !version &&
-        !repo.is_registered(ns_name.get(), nullptr) &&
-        !JS::WarnUTF8(cx,
-                      "Requiring %s but it has %zu versions available; use "
-                      "imports.gi.versions to pick one",
-                      ns_name.get(), nversions))
-        return false;
+        !repo.is_registered(ns_name.get(), nullptr)) {
+        gjs_warning(
+            "Requiring {} but it has {} versions available; use "
+            "imports.gi.versions to pick one",
+            ns_name, nversions);
+    }
 
     // If resolving Gio, load the platform-specific typelib first, so that
     // GioUnix/GioWin32 GTypes get looked up in there with higher priority,
