@@ -17,6 +17,10 @@
 #include <glib.h>
 #include <glib/gstdio.h>  // for g_unlink
 
+#ifdef ENABLE_PROFILER
+#    include <sysprof-capture.h>
+#endif
+
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
@@ -960,6 +964,57 @@ static void gjstest_test_profiler_start_stop() {
         g_message("Temp profiler file not deleted");
 }
 
+static void gjstest_test_profiler_writes_counters() {
+    AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(
+        g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr))};
+    GjsProfiler* profiler = gjs_context_get_profiler(gjs_context);
+
+    gjs_profiler_set_filename(profiler,
+                              "dont-conflict-with-other-test-2.syscap");
+    gjs_profiler_start(profiler);
+
+    g_assert_true(gjs_context_eval(gjs_context, "new Date();", -1, "<input>",
+                                   nullptr, nullptr));
+
+    gjs_profiler_stop(profiler);
+
+#ifdef ENABLE_PROFILER
+    Gjs::AutoPointer<SysprofCaptureReader, SysprofCaptureReader,
+                     sysprof_capture_reader_unref>
+        reader{sysprof_capture_reader_new(
+            "dont-conflict-with-other-test-2.syscap")};
+    g_assert_nonnull(reader);
+
+    size_t n_counters = 0;
+    SysprofCaptureFrameType type;
+    while (sysprof_capture_reader_peek_type(reader, &type)) {
+        if (type != SYSPROF_CAPTURE_FRAME_CTRDEF) {
+            g_assert_true(sysprof_capture_reader_skip(reader));
+            continue;
+        }
+        const SysprofCaptureCounterDefine* def =
+            sysprof_capture_reader_read_counter_define(reader);
+        g_assert_nonnull(def);
+        for (uint32_t ix = 0; ix < def->n_counters; ix++) {
+            const SysprofCaptureCounter& c = def->counters[ix];
+            g_assert_cmpstr(c.category, ==, "GJS");
+            // The other strings must fit in the buffers with a zero byte to
+            // spare
+            g_assert_cmpuint(strnlen(c.name, sizeof c.name), <, sizeof c.name);
+            g_assert_cmpuint(strnlen(c.description, sizeof c.description), <,
+                             sizeof c.description);
+            n_counters++;
+        }
+    }
+    g_assert_cmpuint(n_counters, ==, 18);
+#else
+    g_test_skip("Profiler not enabled");
+#endif  // ENABLE_PROFILER
+
+    if (g_unlink("dont-conflict-with-other-test.syscap-2") != 0)
+        g_message("Temp profiler file not deleted");
+}
+
 static void gjstest_test_safe_integer_max(GjsUnitTestFixture* fx, const void*) {
     JS::RootedObject number_class_object(fx->cx);
     JS::RootedValue safe_value(fx->cx);
@@ -1314,6 +1369,8 @@ int main(int argc, char* argv[]) {
                     gjstest_test_func_gjs_gobject_without_introspection);
     g_test_add_func("/gjs/profiler/start_stop",
                     gjstest_test_profiler_start_stop);
+    g_test_add_func("/gjs/profiler/writes-counters",
+                    gjstest_test_profiler_writes_counters);
     g_test_add_func("/util/misc/strv/concat/null",
                     gjstest_test_func_util_misc_strv_concat_null);
     g_test_add_func("/util/misc/strv/concat/pointers",
