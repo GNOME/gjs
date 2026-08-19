@@ -1757,10 +1757,8 @@ bool gjs_context_define_string_array(GjsContext* self, const char* array_name,
     if (!gjs_define_string_array(gjs->context(), global_root, array_name,
                                  strings, JSPROP_READONLY | JSPROP_PERMANENT)) {
         gjs_log_exception(gjs->context());
-        g_set_error(error,
-                    GJS_ERROR,
-                    GJS_ERROR_FAILED,
-                    "gjs_define_string_array() failed");
+        g_set_error_literal(error, GJS_ERROR, GJS_ERROR_FAILED,
+                            "gjs_define_string_array() failed");
         return false;
     }
 
