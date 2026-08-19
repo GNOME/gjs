@@ -1053,8 +1053,7 @@ class GIWrapperPrototype : public Base {
         if (!proto->define_static_methods(cx, constructor))
             return nullptr;
 
-        Gjs::AutoChar class_name{g_strdup_printf("%s", proto->name())};
-        if (!JS_DefineProperty(cx, in_object, class_name, constructor,
+        if (!JS_DefineProperty(cx, in_object, proto->name(), constructor,
                                GJS_MODULE_PROP_FLAGS))
             return nullptr;
 
