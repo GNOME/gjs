@@ -5,7 +5,9 @@
 
 #include <stddef.h>  // for size_t
 
+#include <format>
 #include <memory>  // for unique_ptr
+#include <string>
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -66,15 +68,16 @@ union Utf8Unit;
  * Returns: whether an error occurred while loading or evaluating the module.
  */
 bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
-    Gjs::AutoChar full_path(g_strdup_printf(
-        "resource:///org/gnome/gjs/modules/internal/%s.js", identifier));
+    std::string full_path = std::format(
+        "resource:///org/gnome/gjs/modules/internal/{}.js", identifier);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Loading internal module '{}' ({})",
               identifier, full_path);
 
     Gjs::AutoChar script;
     size_t script_len;
-    if (!gjs_load_internal_source(cx, full_path, script.out(), &script_len))
+    if (!gjs_load_internal_source(cx, full_path.c_str(), script.out(),
+                                  &script_len))
         return false;
 
     JS::SourceText<mozilla::Utf8Unit> buf;
@@ -83,7 +86,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
     JS::CompileOptions options(cx);
     options.setIntroductionType("Internal Module Bootstrap");
-    options.setFileAndLine(full_path, 1);
+    options.setFileAndLine(full_path.c_str(), 1);
     options.setSelfHostingMode(false);
 
     Gjs::AutoInternalRealm ar{cx};
@@ -95,7 +98,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
     JS::RootedObject registry{cx, gjs_get_module_registry(internal_global)};
 
-    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path)};
+    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path.c_str())};
     if (key.isVoid())
         return false;
 

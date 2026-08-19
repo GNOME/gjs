@@ -23,8 +23,9 @@
 #    include <readline/history.h>
 #endif
 
-#include <new>
+#include <format>
 #include <iterator>     // for size
+#include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>
@@ -175,12 +176,11 @@ static void gjs_context_dump_heaps() {
     gjs_memory_report("signal handler", false);
 
     // dump to sequential files to allow easier comparisons
-    Gjs::AutoChar filename{g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
-                                           static_cast<intmax_t>(getpid()),
-                                           counter)};
+    std::string filename =
+        std::format("{}.{}.{}", dump_heap_output, getpid(), counter);
     ++counter;
 
-    FILE *fp = fopen(filename, "w");
+    FILE* fp = fopen(filename.c_str(), "w");
     if (!fp)
         return;
 

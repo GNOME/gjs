@@ -28,6 +28,8 @@
 
 #ifdef ENABLE_PROFILER
 #    include <algorithm>  // for min
+#    include <format>
+#    include <string>
 #    include <string_view>
 #endif
 
@@ -192,12 +194,11 @@ static bool gjs_profiler_extract_maps(GjsProfiler* self) {
 
     g_assert(self && "Profiler must be set up before extracting maps");
 
-    Gjs::AutoChar path{
-        g_strdup_printf("/proc/%jd/maps", static_cast<intmax_t>(self->pid))};
+    std::string path = std::format("/proc/{}/maps", self->pid);
 
     Gjs::AutoChar content;
     size_t len;
-    if (!g_file_get_contents(path, content.out(), &len, nullptr))
+    if (!g_file_get_contents(path.c_str(), content.out(), &len, nullptr))
         return false;
 
     Gjs::AutoStrv lines{g_strsplit(content, "\n", 0)};
@@ -557,12 +558,13 @@ void gjs_profiler_start(GjsProfiler* self) {
         self->capture = sysprof_capture_writer_new_from_fd(self->fd, 0);
         self->fd = -1;
     } else {
-        Gjs::AutoChar path{g_strdup(self->filename)};
-        if (!path)
-            path = g_strdup_printf("gjs-%jd.syscap",
-                                   static_cast<intmax_t>(self->pid));
+        std::string path;
+        if (self->filename)
+            path = self->filename;
+        else
+            path = std::format("gjs-{}.syscap", self->pid);
 
-        self->capture = sysprof_capture_writer_new(path, 0);
+        self->capture = sysprof_capture_writer_new(path.c_str(), 0);
     }
 
     if (!self->capture) {

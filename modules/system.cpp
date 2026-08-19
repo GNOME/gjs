@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include <time.h>    // for tzset
 
+#include <format>
+#include <string>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -51,8 +54,9 @@ static bool gjs_address_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "addressOf", args, "o", "object", &target_obj))
         return false;
 
-    Gjs::AutoChar pointer_string{g_strdup_printf("%p", target_obj.get())};
-    return gjs_string_from_utf8(cx, pointer_string, args.rval());
+    std::string pointer_string =
+        std::format("{}", static_cast<void*>(target_obj.get()));
+    return gjs_string_from_utf8(cx, pointer_string.c_str(), args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -71,8 +75,8 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
         return false;
     }
 
-    Gjs::AutoChar pointer_string{g_strdup_printf("%p", obj)};
-    return gjs_string_from_utf8(cx, pointer_string, args.rval());
+    std::string pointer_string = std::format("{}", static_cast<void*>(obj));
+    return gjs_string_from_utf8(cx, pointer_string.c_str(), args.rval());
 }
 
 static bool gjs_refcount(JSContext* cx, unsigned argc, JS::Value* vp) {

@@ -11,6 +11,7 @@
 #    include <windows.h>
 #endif
 
+#include <format>
 #include <string>
 #include <vector>   // for vector
 
@@ -68,7 +69,7 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool importer_to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, args, importer);
 
-    Gjs::AutoChar output;
+    std::string output;
 
     const JSClass* klass = JS::GetClass(importer);
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -77,16 +78,17 @@ static bool importer_to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
 
     if (module_path.isNull()) {
-        output = g_strdup_printf("[%s root]", klass->name);
+        output = std::format("[{} root]", klass->name);
     } else {
         g_assert(module_path.isString() && "Bad importer.__modulePath__");
         JS::UniqueChars path = gjs_string_to_utf8(cx, module_path);
         if (!path)
             return false;
-        output = g_strdup_printf("[%s %s]", klass->name, path.get());
+        output = std::format("[{} {}]", klass->name, path);
     }
 
-    args.rval().setString(JS_NewStringCopyZ(cx, output));
+    JSString* str = JS_NewStringCopyN(cx, output.data(), output.size());
+    args.rval().setString(str);
     return true;
 }
 
@@ -136,23 +138,23 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                                 &parent_module_path))
             return false;
 
-        Gjs::AutoChar module_path_buf;
+        std::string module_path_buf;
         if (parent_module_path.isNull()) {
-            module_path_buf = g_strdup(module_name);
+            module_path_buf = module_name;
         } else {
             JS::UniqueChars parent_path =
                 gjs_string_to_utf8(cx, parent_module_path);
             if (!parent_path)
                 return false;
-            module_path_buf =
-                g_strdup_printf("%s.%s", parent_path.get(), module_name);
+            module_path_buf = std::format("{}.{}", parent_path, module_name);
         }
-        if (!gjs_string_from_utf8(cx, module_path_buf, &module_path))
+        if (!gjs_string_from_utf8(cx, module_path_buf.c_str(), &module_path))
             return false;
 
-        Gjs::AutoChar to_string_tag_buf{
-            g_strdup_printf("GjsModule %s", module_path_buf.get())};
-        if (!gjs_string_from_utf8(cx, to_string_tag_buf, &to_string_tag))
+        std::string to_string_tag_buf =
+            std::format("GjsModule {}", module_path_buf);
+        if (!gjs_string_from_utf8(cx, to_string_tag_buf.c_str(),
+                                  &to_string_tag))
             return false;
     } else {
         to_string_tag.setString(JS_AtomizeString(cx, "GjsModule"));
@@ -471,7 +473,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
         return true;
     }
 
-    Gjs::AutoChar filename{g_strdup_printf("%s.js", name.get())};
+    std::string filename = std::format("{}.js", name);
     std::vector<std::string> directories;
     JS::RootedValue elem{cx};
     JS::RootedString str{cx};
@@ -533,7 +535,7 @@ static bool do_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id) {
             continue;
 
         // Third, if it's not a directory, try importing a file
-        file = g_file_get_child(directory, filename.get());
+        file = g_file_get_child(directory, filename.c_str());
         bool exists = g_file_query_exists(file, nullptr);
 
         if (!exists) {

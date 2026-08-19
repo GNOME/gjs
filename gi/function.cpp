@@ -7,6 +7,7 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
+#include <format>
 #include <memory>  // for unique_ptr
 #include <string>
 #include <string_view>
@@ -1207,19 +1208,18 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
         arg_names += gjs_arg->arg_name();
     }
 
-    AutoChar descr;
+    std::string descr;
     if (auto func_info = m_info.as<GI::InfoTag::FUNCTION>()) {
-        descr = g_strdup_printf(
-            "function %s(%s) {\n\t/* wrapper for native symbol %s() */\n}",
-            m_info.display_string().c_str(), arg_names.c_str(),
-            func_info->symbol());
+        descr = std::format(
+            "function {}({}) {{\n\t/* wrapper for native symbol {}() */\n}}",
+            m_info, arg_names, func_info->symbol());
     } else {
-        descr = g_strdup_printf(
-            "function %s(%s) {\n\t/* wrapper for native symbol */\n}",
-            m_info.display_string().c_str(), arg_names.c_str());
+        descr = std::format(
+            "function {}({}) {{\n\t/* wrapper for native symbol */\n}}", m_info,
+            arg_names);
     }
 
-    return gjs_string_from_utf8(cx, descr, rval);
+    return gjs_string_from_utf8(cx, descr.c_str(), rval);
 }
 
 const JSClassOps Function::class_ops = {.finalize = &Function::finalize,

@@ -6,7 +6,6 @@
 
 #include <errno.h>
 #include <stdio.h>   // for FILE, fprintf, fflush, fopen, fputs, fseek
-#include <string.h>  // for strchr, strcmp
 
 #ifdef _WIN32
 # include <io.h>
@@ -109,28 +108,15 @@ void gjs_log_init() {
     if (debug_output && g_str_equal(debug_output, "stderr")) {
         s_debug_log_enabled = true;
     } else if (debug_output) {
-        std::string log_file;
+        std::string log_file = debug_output;
 
-        /* Allow debug-%u.log for per-pid logfiles as otherwise log messages
-         * from multiple processes can overwrite each other.
-         *
-         * (printf below should be safe as we check '%u' is the only format
-         * string)
-         */
-        char* c = strchr(const_cast<char*>(debug_output), '%');
-        if (c && c[1] == 'u' && !strchr(c + 1, '%')) {
-            Gjs::AutoChar file_name;
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-            _Pragma("GCC diagnostic push")
-                _Pragma("GCC diagnostic ignored \"-Wformat-nonliteral\"")
-#endif
-                    file_name = g_strdup_printf(debug_output, getpid());
-#if defined(__clang__) || __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)
-            _Pragma("GCC diagnostic pop")
-#endif
-                log_file = file_name.get();
-        } else {
-            log_file = debug_output;
+        // Allow debug-%u.log for per-pid logfiles as otherwise log messages
+        // from multiple processes can overwrite each other.
+        static constexpr std::string_view marker{"%u"};
+        size_t marker_pos = log_file.find(marker);
+        if (marker_pos != std::string::npos) {
+            log_file.replace(marker_pos, marker.size(),
+                             std::to_string(getpid()));
         }
 
         // avoid truncating in case we're using shared logfile

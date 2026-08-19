@@ -5,6 +5,9 @@
 
 #include <config.h>
 
+#include <format>
+#include <string>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -23,7 +26,6 @@
 #include "gi/cwrapper.h"
 #include "gi/gtype.h"
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util-root.h"  // for WeakPtr methods
@@ -73,9 +75,9 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
         if (gtype == 0)
             return false;
 
-        Gjs::AutoChar strval{
-            g_strdup_printf("[object GType for '%s']", g_type_name(gtype))};
-        return gjs_string_from_utf8(cx, strval, rec.rval());
+        std::string strval =
+            std::format("[object GType for '{}']", g_type_name(gtype));
+        return gjs_string_from_utf8(cx, strval.c_str(), rec.rval());
     }
 
     static constexpr JSPropertySpec proto_props[] = {

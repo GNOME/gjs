@@ -6,7 +6,8 @@
 
 #include <stdint.h>
 
-#include <string>  // for string methods
+#include <format>
+#include <string>
 
 #include <girepository/girepository.h>
 #include <glib-object.h>
@@ -134,7 +135,7 @@ bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, self);
 
-    Gjs::AutoChar descr;
+    std::string descr;
 
     // An error created via `new GLib.Error` will have a Struct* private
     // pointer, not an Error*, so we can't call regular to_string() on it.
@@ -142,11 +143,10 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
         auto* gerror = StructBase::to_c_ptr<GError>(cx, self);
         if (!gerror)
             return false;
-        descr =
-            g_strdup_printf("GLib.Error %s: %s",
+        descr = std::format("GLib.Error {}: {}",
                             g_quark_to_string(gerror->domain), gerror->message);
 
-        return gjs_string_from_utf8(cx, descr, rec.rval());
+        return gjs_string_from_utf8(cx, descr.c_str(), rec.rval());
     }
 
     ErrorBase* priv;
@@ -157,13 +157,13 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     // hiding some useful information
 
     if (priv->is_prototype()) {
-        descr = g_strdup(priv->info().display_string().c_str());
+        descr = priv->info().display_string();
     } else {
-        descr = g_strdup_printf("%s: %s", priv->info().display_string().c_str(),
-                                priv->to_instance()->message());
+        descr =
+            std::format("{}: {}", priv->info(), priv->to_instance()->message());
     }
 
-    return gjs_string_from_utf8(cx, descr, rec.rval());
+    return gjs_string_from_utf8(cx, descr.c_str(), rec.rval());
 }
 
 // JSNative implementation of `valueOf()`.

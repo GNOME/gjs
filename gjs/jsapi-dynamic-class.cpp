@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include <string.h>  // for strlen
 
+#include <format>
+#include <string>
+
 #include <glib.h>
 
 #include <js/CallAndConstruct.h>
@@ -79,10 +82,10 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
     if (proto_fs && !JS_DefineFunctions(cx, prototype, proto_fs))
         return false;
 
-    Gjs::AutoChar full_function_name{
-        g_strdup_printf("%s_%s", ns_name, class_name)};
-    JSFunction* constructor_fun = JS_NewFunction(
-        cx, constructor_native, nargs, JSFUN_CONSTRUCTOR, full_function_name);
+    std::string full_function_name = std::format("{}_{}", ns_name, class_name);
+    JSFunction* constructor_fun =
+        JS_NewFunction(cx, constructor_native, nargs, JSFUN_CONSTRUCTOR,
+                       full_function_name.c_str());
     if (!constructor_fun)
         return false;
 
