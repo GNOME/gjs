@@ -54,8 +54,7 @@ static bool gjs_foreign_load_foreign_module(JSContext* cx,
     std::string script = std::format(R"js(imports.{};)js", entry->first);
     JS::RootedValue retval{cx};
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
-    if (!gjs->eval_with_scope(nullptr, script.c_str(), script.length(),
-                              "<internal>", &retval)) {
+    if (!gjs->eval_with_scope(nullptr, script, "<internal>", &retval)) {
         gjs_critical("ERROR importing foreign module {}", gi_namespace);
         return false;
     }

@@ -303,7 +303,7 @@ static bool import_module_init(JSContext* cx, GFile* file,
 
     Gjs::AutoChar full_path{g_file_get_parse_name(file)};
 
-    return gjs->eval_with_scope(module_obj, script, script_len, full_path,
+    return gjs->eval_with_scope(module_obj, {script, script_len}, full_path,
                                 &ignored);
 }
 
