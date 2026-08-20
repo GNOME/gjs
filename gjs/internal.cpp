@@ -4,7 +4,6 @@
 #include <config.h>
 
 #include <stddef.h>  // for size_t
-#include <string.h>
 
 #include <memory>  // for unique_ptr
 
@@ -360,7 +359,7 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
             const auto* key = static_cast<const char*>(key_ptr);
             const auto* value = static_cast<const char*>(value_ptr);
 
-            JS::ConstUTF8CharsZ value_chars{value, strlen(value)};
+            JS::ConstUTF8CharsZ value_chars{value};
             JS::RootedString value_str(cx,
                                        JS_NewStringCopyUTF8Z(cx, value_chars));
             if (!value_str || !JS_DefineProperty(cx, query_obj, key, value_str,

@@ -799,7 +799,7 @@ static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
     char16_t* chars;
     size_t len;
 
-    JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
+    JS::ConstUTF8CharsZ jschars{VALID_UTF8_STRING};
     JS::RootedString str(fx->cx, JS_NewStringCopyUTF8Z(fx->cx, jschars));
     g_assert_true(gjs_string_get_char16_data(fx->cx, str, &chars, &len));
     std::u16string result(chars, len);
@@ -821,7 +821,7 @@ static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
     gunichar* chars;
     size_t len;
 
-    JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
+    JS::ConstUTF8CharsZ jschars{VALID_UTF8_STRING};
     JS::RootedString str(fx->cx, JS_NewStringCopyUTF8Z(fx->cx, jschars));
     g_assert_true(gjs_string_to_ucs4(fx->cx, str, &chars, &len));
 
@@ -848,7 +848,7 @@ static void test_gjs_debug_id_string_no_quotes(GjsUnitTestFixture* fx,
 }
 
 static void test_gjs_debug_string_quotes(GjsUnitTestFixture* fx, const void*) {
-    JS::ConstUTF8CharsZ chars("a string", strlen("a string"));
+    JS::ConstUTF8CharsZ chars{"a string"};
     JSString* str = JS_NewStringCopyUTF8Z(fx->cx, chars);
     std::string debug_output = gjs_debug_string(str);
 

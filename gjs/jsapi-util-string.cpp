@@ -203,7 +203,7 @@ JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
 
 bool gjs_string_from_utf8(JSContext* cx, const char* utf8_string,
                           JS::MutableHandleValue value_p) {
-    JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
+    JS::ConstUTF8CharsZ chars{utf8_string};
     JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!str)
         return false;

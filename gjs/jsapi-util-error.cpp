@@ -103,7 +103,7 @@ static void gjs_throw_valist(JSContext* cx, JSExnType error_kind,
         JS_ReportErrorUTF8(cx, "Failed to throw exception '%s'", s.get());
     });
 
-    JS::ConstUTF8CharsZ chars{s.get(), strlen(s.get())};
+    JS::ConstUTF8CharsZ chars{s.get()};
     JS::RootedString message{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!message)
         return;
