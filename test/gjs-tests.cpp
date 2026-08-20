@@ -50,7 +50,6 @@
 #include "gjs/profiler.h"
 #include "test/gjs-test-no-introspection-object.h"
 #include "test/gjs-test-utils.h"
-#include "util/misc.h"
 
 namespace mozilla {
 union Utf8Unit;
@@ -912,35 +911,6 @@ static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
 }
 
-static void gjstest_test_func_util_misc_strv_concat_null() {
-    char** ret = gjs_g_strv_concat(nullptr, 0);
-    g_assert_nonnull(ret);
-    g_assert_null(ret[0]);
-
-    g_strfreev(ret);
-}
-
-static void gjstest_test_func_util_misc_strv_concat_pointers() {
-    const char* strv0[2] = {"foo", nullptr};
-    const char* strv1[1] = {nullptr};
-    const char** strv2 = nullptr;
-    const char* strv3[2] = {"bar", nullptr};
-    const char** stuff[4];
-
-    stuff[0] = strv0;
-    stuff[1] = strv1;
-    stuff[2] = strv2;
-    stuff[3] = strv3;
-
-    AutoStrv ret = gjs_g_strv_concat(stuff, 4);
-    g_assert_nonnull(ret);
-    g_assert_cmpstr(ret[0], ==, strv0[0]);  // same string
-    g_assert_true(ret[0] != strv0[0]);      // different pointer
-    g_assert_cmpstr(ret[1], ==, strv3[0]);
-    g_assert_true(ret[1] != strv3[0]);
-    g_assert_null(ret[2]);
-}
-
 static void gjstest_test_profiler_start_stop() {
     AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(
         g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr))};
@@ -1371,10 +1341,6 @@ int main(int argc, char* argv[]) {
                     gjstest_test_profiler_start_stop);
     g_test_add_func("/gjs/profiler/writes-counters",
                     gjstest_test_profiler_writes_counters);
-    g_test_add_func("/util/misc/strv/concat/null",
-                    gjstest_test_func_util_misc_strv_concat_null);
-    g_test_add_func("/util/misc/strv/concat/pointers",
-                    gjstest_test_func_util_misc_strv_concat_pointers);
 
     g_test_add_func("/gi/args/set-get-unset", gjstest_test_args_set_get_unset);
     g_test_add_func("/gi/args/rounded_values",
