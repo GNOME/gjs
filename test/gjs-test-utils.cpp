@@ -5,18 +5,22 @@
 
 #include <config.h>
 
+#include <string>
+
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/Context.h>  // for JS_GetContextPrivate
 #include <js/Realm.h>
 #include <js/TypeDecls.h>
+#include <mozilla/Maybe.h>
 
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "test/gjs-test-common.h"
 #include "test/gjs-test-utils.h"
+
+using mozilla::Maybe;
 
 void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
     fx->gjs_context = gjs_context_new();
@@ -28,9 +32,9 @@ void gjs_unit_test_fixture_setup(GjsUnitTestFixture* fx, const void*) {
 }
 
 void gjs_unit_test_destroy_context(GjsUnitTestFixture* fx) {
-    Gjs::AutoChar message = gjs_test_get_exception_message(fx->cx);
+    Maybe<std::string> message = gjs_test_get_exception_message(fx->cx);
     if (message)
-        g_printerr("**\n%s\n", message.get());
+        g_printerr("**\n%s\n", message->c_str());
 
     JS::LeaveRealm(fx->cx, fx->realm);
 

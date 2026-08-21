@@ -6,6 +6,10 @@
 
 #include <config.h>
 
+#include <string>
+
+#include <mozilla/Maybe.h>
+
 struct JSContext;
 
-char* gjs_test_get_exception_message(JSContext*);
+mozilla::Maybe<std::string> gjs_test_get_exception_message(JSContext*);

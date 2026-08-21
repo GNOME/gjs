@@ -6,6 +6,8 @@
 #include <stdint.h>
 #include <string.h>  // for strlen, strstr
 
+#include <string>
+
 #include <glib.h>
 
 #include <js/CallArgs.h>
@@ -20,6 +22,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
+#include <mozilla/Maybe.h>
 
 #include "gjs/auto.h"
 #include "gjs/jsapi-util-args.h"
@@ -29,6 +32,8 @@
 namespace mozilla {
 union Utf8Unit;
 }
+
+using mozilla::Maybe;
 
 #define assert_match(str, pattern)                                          \
     G_STMT_START {                                                          \
@@ -292,7 +297,7 @@ static void run_code(GjsUnitTestFixture* fx, const void* code) {
     JS::RootedValue ignored(fx->cx);
     ok = JS::Evaluate(fx->cx, options, source, &ignored);
 
-    g_assert_null(gjs_test_get_exception_message(fx->cx));
+    g_assert_true(gjs_test_get_exception_message(fx->cx).isNothing());
     g_assert_true(ok);
 }
 
@@ -311,14 +316,14 @@ static void run_code_expect_exception(GjsUnitTestFixture* fx,
     JS::RootedValue ignored(fx->cx);
     ok = JS::Evaluate(fx->cx, options, source, &ignored);
     g_assert_false(ok);
-    Gjs::AutoChar message{gjs_test_get_exception_message(fx->cx)};
-    g_assert_nonnull(message);
+    Maybe<std::string> message = gjs_test_get_exception_message(fx->cx);
+    g_assert_true(message.isSome());
 
     // Cheap way to shove an expected exception message into the data argument
     const char* expected_msg = strstr(script, "//");
     if (expected_msg != nullptr) {
         expected_msg += 2;
-        assert_match(message, expected_msg);
+        assert_match(message->c_str(), expected_msg);
     }
 }
 
