@@ -22,7 +22,6 @@
 #include "gjs/auto.h"
 #include "gjs/gerror-result.h"
 #include "gjs/gjs.h"
-#include "util/console.h"
 
 static Gjs::AutoStrv include_path;
 static Gjs::AutoStrv coverage_prefixes;
@@ -364,10 +363,19 @@ int main(int argc, char** argv) {
     if (coverage_prefixes)
         gjs_coverage_enable();
 
+    Gjs::AutoChar repl_history_path;
 #ifdef HAVE_READLINE_READLINE_H
-    Gjs::AutoChar repl_history_path = gjs_console_get_repl_history_path();
-#else
-    Gjs::AutoChar repl_history_path = nullptr;
+    const char* user_history_path = g_getenv("GJS_REPL_HISTORY");
+    bool is_write_history_disabled =
+        user_history_path && user_history_path[0] == '\0';
+    if (!is_write_history_disabled) {
+        if (user_history_path) {
+            repl_history_path = g_strdup(user_history_path);
+        } else {
+            repl_history_path = g_build_filename(g_get_user_cache_dir(),
+                                                 "gjs_repl_history", nullptr);
+        }
+    }
 #endif
 
     Gjs::AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(
