@@ -39,6 +39,7 @@ Checks:
   #   caught several real bugs. GLib might be able to fix this.
   # - bugprone-narrowing-conversions
 
+  - custom-avoid-char-pointer-return
   - custom-use-typesafe-min
   - custom-use-typesafe-max
 
@@ -109,6 +110,21 @@ CheckOptions:
   readability-uppercase-literal-suffix.NewSuffixes: L;LL
     # we only care about confusion between 1 and l
 CustomChecks:
+  - Name: avoid-char-pointer-return
+    Query: |
+      match functionDecl(
+        # hasCanonicalType() includes typedefs of char*
+        returns(hasCanonicalType(pointerType(pointee(asString("char"))))),
+        isDefinition(),  # only bodies, not declarations
+        unless(isExpansionInFileMatching("\.c$")),  # C++ only
+        # currently, too many false positives on templates
+        unless(isTemplateInstantiation())
+      ).bind("func")
+    Diagnostic:
+      - BindName: func
+        Message: >
+          Return const char* or std::string_view instead of char* if the string
+          is borrowed, or Gjs::AutoChar or std::string if it is owned
   - Name: use-typesafe-min
     Query: |
       match conditionalOperator(

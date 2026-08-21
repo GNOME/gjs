@@ -190,6 +190,8 @@ template <typename T>
 using AutoFree = AutoPointer<T>;
 
 struct AutoCharFuncs {
+    // This return type is required by AutoChar
+    // NOLINTNEXTLINE(custom-avoid-char-pointer-return)
     static char* dup(char* str) { return g_strdup(str); }
     static void free(char* str) { g_free(str); }
 };
