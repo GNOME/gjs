@@ -61,7 +61,7 @@ describe('console', function () {
         if (logLevel < GLib.LogLevelFlags.LEVEL_WARNING) {
             const [_, currentFile] = new Error().stack.split('\n').at(0).match(
                 /^[^@]*@(.*):\d+:\d+$/);
-            fields.CODE_FILE = decodedStringMatching(currentFile);
+            fields.CODE_FILE = decodedStringMatching(RegExp.escape(currentFile));
         }
 
         expect(writer_func).toHaveBeenCalledOnceWith(
@@ -168,7 +168,7 @@ describe('console', function () {
         expect(writer_func).toHaveBeenCalledOnceWith(
             GLib.LogLevelFlags.LEVEL_MESSAGE,
             objectContainingLogMessage('a trace', {
-                CODE_FILE: decodedStringMatching(currentFile),
+                CODE_FILE: decodedStringMatching(RegExp.escape(currentFile)),
                 CODE_LINE: decodedStringMatching(errorLine),
             },
             message => matchStackTrace(message, 'testConsole'))
@@ -186,7 +186,7 @@ describe('console', function () {
         expect(writer_func).toHaveBeenCalledOnceWith(
             GLib.LogLevelFlags.LEVEL_MESSAGE,
             objectContainingLogMessage('Trace', {
-                CODE_FILE: decodedStringMatching(currentFile),
+                CODE_FILE: decodedStringMatching(RegExp.escape(currentFile)),
             },
             message => matchStackTrace(message, 'testConsole'))
         );
