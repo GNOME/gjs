@@ -147,6 +147,10 @@ declare namespace Debugger {
         isProxy: boolean;
         callable: boolean;
 
+        // should we also caare about property symbols?
+        getOwnPropertyNames(): string[];
+        getOwnPropertySymbols(): symbol[];
+        getProperty(name: string | symbol): undefined | { return: any };
     }
 
     class Value {}
@@ -157,5 +161,5 @@ declare namespace Debugger {
 
     type NativeValue = string | number | boolean | null | undefined | symbol;
 
-    type Variable = Debugger.Value | OptimizedOutObject | NativeValue | null
+    type Variable = Debugger.Value | OptimizedOutObject | NativeValue | null;
 }

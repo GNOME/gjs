@@ -22,6 +22,8 @@ const Encoding = loadNative('_encodingNative');
 const STATE = {
     messageIdSeq: 0,
     paused: false,
+    /** @type {(Debugger.Object | Debugger.Environment)[]} */
+    objects: [],
     breakpointIdSeq: 0,
     /** @type {Map<string, BreakpointEntry[]>} */
     pendingBreakpoints: new Map(),
@@ -201,7 +203,7 @@ const handlers = {
     },
     continue(seq) {
         sendResponse(seq, 'continue', { allThreadsContinued: true });
-        STATE.paused = false;
+        resume();
     },
     stackTrace(seq) {
         const newestFrame = dbg.getNewestFrame();
@@ -264,16 +266,26 @@ const handlers = {
      * @param {{ variablesReference: number }} args
      */
     variables(seq, args) {
-        const nthEnvironment = findNthEnvironment(args.variablesReference);
+        let variables = [];
 
-        if (!nthEnvironment) {
-            sendResponse(seq, 'variables', {
-                variables: [],
-            });
-            return;
+        if (!args.variablesReference) {
+            let environment = dbg.getNewestFrame()?.environment ?? null;
+
+            if (!environment) {
+                variables = [];
+            } else {
+                variables = toDapVariables(environment);
+            }
+        } else {
+            const obj = STATE.objects[args.variablesReference];
+
+            if (!obj) {
+                variables = [];
+            } else {
+                variables = toDapVariables(obj);
+            }
         }
 
-        const variables = toDapVariables(nthEnvironment);
         sendResponse(seq, 'variables', {
             variables: variables,
         });
@@ -286,7 +298,7 @@ const handlers = {
     next(seq, args) {
         sendResponse(seq, 'next');
 
-        STATE.paused = false;
+        resume();
 
         switch (args.granularity) {
             case 'function': {
@@ -345,7 +357,7 @@ const handlers = {
     stepIn(seq, args) {
         sendResponse(seq, 'stepIn');
 
-        STATE.paused = false;
+        resume();
 
         const newestFrame = dbg.getNewestFrame();
 
@@ -358,41 +370,51 @@ const handlers = {
         };
 
         return;
-    }
+    },
 };
 
 /**
- * @param {Debugger.Environment} environment
+ * @param {Debugger.Environment | Debugger.Object} environment
  * @returns {any}
  */
 function toDapVariables(environment) {
-    return environment.names().map((name) => {
-        return toDapVariable(environment, name);
-    });
+    if (environment instanceof Debugger.Environment) {
+        return environment.names().map((name) => {
+            let variable;
+            try {
+                variable = environment.getVariable(name);
+            } catch {
+                variable = undefined;
+            }
+
+            return toDapVariable(name, variable);
+        });
+    } else {
+        const variables = [
+            ...environment.getOwnPropertyNames(),
+            ...environment.getOwnPropertySymbols(),
+        ];
+        return variables.map((name) => {
+            const variable = environment.getProperty(name)?.return;
+
+            return toDapVariable(name.toString(), variable);
+        });
+    }
 }
 
 /**
  * @param {string} name
- * @param {Debugger.Environment} environment
+ * @param {any} variable
  * @returns {{ name: string, type: string, value: any, evaluateName: string; variablesReference: number; }}
  */
-function toDapVariable(environment, name) {
+function toDapVariable(name, variable) {
     /** @type {{type: string, value: any}} */
-    let variableDescription;
-
-    let variable;
-
-    try {
-        variable = environment.getVariable(name);
-    } catch {
-        return {
-            name,
-            evaluateName: name,
-            type: 'undefined',
-            value: 'undefined',
-            variablesReference: 0,
-        };
-    }
+    let variableDescription = {
+        type: 'unknown',
+        value: '<unknown>',
+    };
+    /** @type {number} */
+    let variablesReference = 0;
 
     switch (typeof variable) {
         case 'bigint':
@@ -414,7 +436,7 @@ function toDapVariable(environment, name) {
             };
             break;
         case 'undefined':
-            variableDescription = { type: 'object', value: 'null' };
+            variableDescription = { type: 'undefined', value: 'undefined' };
             break;
         case 'boolean':
             variableDescription = {
@@ -432,6 +454,7 @@ function toDapVariable(environment, name) {
             if (variable === null)
                 variableDescription = { type: 'null', value: 'null' };
             else if (variable instanceof Debugger.Object) {
+                variablesReference = STATE.objects.push(variable) - 1;
                 if (variable.isProxy) {
                     variableDescription = {
                         type: 'object',
@@ -472,7 +495,6 @@ function toDapVariable(environment, name) {
                             '<unknown>',
                     };
                 }
-                variableDescription.value += `${variable.class}`;
             } else if ('optimizedOut' in variable)
                 variableDescription = {
                     type: 'object',
@@ -485,23 +507,9 @@ function toDapVariable(environment, name) {
     return {
         name,
         evaluateName: name,
-        variablesReference: 0,
+        variablesReference,
         ...variableDescription,
     };
-}
-
-/**
- * @param {number} n
- * @returns {Debugger.Environment | null}
- */
-function findNthEnvironment(n) {
-    let environment = dbg.getNewestFrame()?.environment ?? null;
-
-    for (let i = 1; i < n; i++) {
-        if (!environment) return null;
-        environment = environment.parent;
-    }
-    return environment;
 }
 
 /**
@@ -543,7 +551,7 @@ function toDapScope(environment, id = 0) {
     return {
         name: displayName,
         expensive: true,
-        variablesReference: id,
+        variablesReference: STATE.objects.push(environment) - 1,
         line: location?.lineNumber ?? 0,
         column: location?.columnNumber ?? 0,
     };
@@ -636,6 +644,11 @@ function handleRequests(shouldContinueHandlingRequests = () => true) {
     }
 }
 
+function resume() {
+    STATE.paused = false;
+    STATE.objects.length = 0;
+}
+
 /**
  *
  * @param {string} reason
@@ -651,7 +664,6 @@ function pause(reason, stopArgs = {}) {
 
     STATE.paused = true;
     handleRequests(() => {
-        printerr('paused, handling request', STATE.paused);
         return STATE.paused;
     });
     sendEvent('continued', { threadId: 0, allThreadsContinued: true });
@@ -660,7 +672,6 @@ function pause(reason, stopArgs = {}) {
 // DEBUGGER API handlers
 
 function onInitialEnterFrame() {
-    // printerr("entered frame", frame?.callee.name);
     dbg.onEnterFrame = undefined;
 
     pause('entry');
@@ -737,10 +748,8 @@ dbg.onNewScript = (/** @type {Debugger.Script} */ script) => {
     resolveBreakpointsForUrl(script.url);
 };
 
-dbg.onDebuggerStatement = function (frame) {
+dbg.onDebuggerStatement = function () {
     pause('instruction breakpoint');
-
-    printerr('debugger statement done');
 };
 
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
