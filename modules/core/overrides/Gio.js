@@ -229,47 +229,43 @@ function _addDBusConvenience(proxyInstance) {
 function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
-    return class extends Gio.DBusProxy {
-        constructor(bus, name, object, asyncCallback, cancellable = null,
-            flags = Gio.DBusProxyFlags.NONE) {
-            const obj = new Gio.DBusProxy({
-                g_connection: bus,
-                g_interface_name: iname,
-                g_interface_info: info,
-                g_name: name,
-                g_flags: flags,
-                g_object_path: object,
-            });
+    function wrapper(bus, name, object, asyncCallback, cancellable,
+        flags = Gio.DBusProxyFlags.NONE) {
+        var obj = new Gio.DBusProxy({
+            g_connection: bus,
+            g_interface_name: iname,
+            g_interface_info: info,
+            g_name: name,
+            g_flags: flags,
+            g_object_path: object,
+        });
 
-            if (asyncCallback) {
-                obj.init_async(GLib.PRIORITY_DEFAULT, cancellable)
-                    .then(() => asyncCallback(obj, null))
-                    .catch(e => asyncCallback(null, e));
-            } else {
-                obj.init(cancellable);
-            }
-            // For backwards compatibility, return a new instance of DBusProxy,
-            // overriding `this`
-            return obj;
+        if (!cancellable)
+            cancellable = null;
+        if (asyncCallback) {
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable).then(
+                () => asyncCallback(obj, null)).catch(e => asyncCallback(null, e));
+        } else {
+            obj.init(cancellable);
         }
+        return obj;
+    }
+    wrapper.newAsync = function newAsync(bus, name, object, cancellable,
+        flags = Gio.DBusProxyFlags.NONE) {
+        const obj = new Gio.DBusProxy({
+            g_connection: bus,
+            g_interface_name: info.name,
+            g_interface_info: info,
+            g_name: name,
+            g_flags: flags,
+            g_object_path: object,
+        });
 
-        static newAsync(bus, name, object, cancellable = null,
-            flags = Gio.DBusProxyFlags.NONE) {
-            const obj = new Gio.DBusProxy({
-                g_connection: bus,
-                g_interface_name: info.name,
-                g_interface_info: info,
-                g_name: name,
-                g_flags: flags,
-                g_object_path: object,
-            });
-
-            return new Promise((resolve, reject) =>
-                obj.init_async(GLib.PRIORITY_DEFAULT, cancellable)
-                    .then(() => resolve(obj))
-                    .catch(reject));
-        }
+        return new Promise((resolve, reject) =>
+            obj.init_async(GLib.PRIORITY_DEFAULT, cancellable ?? null).then(
+                () => resolve(obj)).catch(reject));
     };
+    return wrapper;
 }
 
 
