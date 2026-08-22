@@ -257,12 +257,14 @@ describe('Exported DBus object', function () {
         new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
             '/org/gnome/gjs/Test',
             (obj, error) => {
-                expect(error).toBeNull();
-                proxy = obj;
-                expect(proxy).not.toBeNull();
-                loop.quit();
-            },
-            Gio.DBusProxyFlags.NONE);
+                try {
+                    expect(error).toBeNull();
+                    proxy = obj;
+                    expect(proxy).not.toBeNull();
+                } finally {
+                    loop.quit();
+                }
+            });
         loop.run();
     });
 
@@ -974,9 +976,7 @@ describe('DBus Proxy wrapper', function () {
         const cancellable = new Gio.Cancellable();
         cancellable.cancel();
         expect(() => new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
-            '/org/gnome/gjs/Test',
-            Gio.DBusProxyFlags.NONE,
-            cancellable)).toThrow();
+            '/org/gnome/gjs/Test', undefined, cancellable)).toThrow();
     });
 
     it('init failures are reported in async mode', function () {
@@ -986,8 +986,7 @@ describe('DBus Proxy wrapper', function () {
             'init finish func', () => loop.quit());
         initDoneSpy.and.callThrough();
         new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
-            '/org/gnome/gjs/Test',
-            initDoneSpy, cancellable, Gio.DBusProxyFlags.NONE);
+            '/org/gnome/gjs/Test', initDoneSpy, cancellable);
         loop.run();
 
         expect(initDoneSpy).toHaveBeenCalledTimes(1);
@@ -999,9 +998,7 @@ describe('DBus Proxy wrapper', function () {
 
     it('can init a proxy asynchronously when promisified', function () {
         new ProxyClass(Gio.DBus.session, 'org.gnome.gjs.Test',
-            '/org/gnome/gjs/Test',
-            () => loop.quit(),
-            Gio.DBusProxyFlags.NONE);
+            '/org/gnome/gjs/Test', () => loop.quit());
         loop.run();
 
         expect(writerFunc).not.toHaveBeenCalled();
