@@ -207,7 +207,8 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         error.reset();
     }
 
-    GFile* output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
+    Gjs::AutoUnref<GFile> output_file{
+        g_file_get_child(priv->output_dir, "coverage.lcov")};
 
     size_t lcov_length;
     JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
@@ -269,7 +270,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         MOZ_TRY(write_line(ostream, *iter));
     }
 
-    return Gjs::AutoUnref<GFile>{output_file};
+    return output_file;
 }
 
 /**
