@@ -5,6 +5,7 @@ var GLib = imports.gi.GLib;
 var GjsPrivate = imports.gi.GjsPrivate;
 const Signals = imports._signals;
 const {_createWrappersForPlatformSpecificNamespace} = imports._common;
+const {warnDeprecatedOncePerCallsite, MAKE_PROXY_WRAPPER_FUNCTION_CALL} = imports._print;
 const {setMainLoopHook} = imports._promiseNative;
 var Gio;
 
@@ -231,6 +232,9 @@ function _makeProxyWrapper(interfaceXml) {
     var iname = info.name;
     function wrapper(bus, name, object, asyncCallback, cancellable = null,
         flags = Gio.DBusProxyFlags.NONE) {
+        if (new.target === undefined)
+            warnDeprecatedOncePerCallsite(MAKE_PROXY_WRAPPER_FUNCTION_CALL, name);
+
         var obj = new Gio.DBusProxy({
             g_connection: bus,
             g_interface_name: iname,
