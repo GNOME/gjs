@@ -24,12 +24,16 @@ const STATE = {
     paused: false,
     /** @type {(Debugger.Object | Debugger.Environment)[]} */
     objects: [],
+    /** @type {Debugger.Script[]} */
+    scripts: [],
     breakpointIdSeq: 0,
     /** @type {Map<string, BreakpointEntry[]>} */
     pendingBreakpoints: new Map(),
     requestIdSeq: 0,
     /** @type {string | null} */
     pendingLaunchPath: null,
+    /** @type {Array<() => void>} */
+    cleanups: [],
 };
 
 // UTILITY FUNCTIONS
@@ -142,6 +146,7 @@ const handlers = {
     initialize(seq) {
         sendResponse(seq, 'initialize', {
             supportsConfigurationDoneRequest: true,
+            supportsSteppingGranularity: true,
         });
         sendEvent('initialized');
     },
@@ -234,7 +239,7 @@ const handlers = {
          "sourceModified": false
          */
 
-        const url = `file://${args.source.path}`;
+        const url = pathToUrl(args.source.path);
 
         clearBreakpointsForUrl(url);
 
@@ -277,7 +282,7 @@ const handlers = {
                 variables = toDapVariables(environment);
             }
         } else {
-            const obj = STATE.objects[args.variablesReference];
+            const obj = STATE.objects[args.variablesReference - 1];
 
             if (!obj) {
                 variables = [];
@@ -321,21 +326,7 @@ const handlers = {
                 };
                 break;
             }
-            case 'line': {
-                const newestFrame = dbg.getNewestFrame();
-
-                if (!newestFrame) break;
-
-                // TODO: this is stubbed out!
-                newestFrame.onPop = () => {
-                    newestFrame.onPop = undefined;
-
-                    pause('step');
-                };
-                break;
-            }
-            case 'statement':
-            default: {
+            case 'statement': {
                 const newestFrame = dbg.getNewestFrame();
 
                 if (!newestFrame) break;
@@ -345,6 +336,43 @@ const handlers = {
 
                     pause('step');
                 };
+                break;
+            }
+            default:
+            case 'line': {
+                const newestFrame = dbg.getNewestFrame();
+
+                if (!newestFrame) break;
+
+                const startLine = getFrameLine(newestFrame);
+
+                /**
+                 * @this {Debugger.Frame}
+                 */
+                function onStepped() {
+                    const newLine = getFrameLine(this);
+                    if (newLine === startLine) return;
+
+                    pause('step');
+                }
+
+                setUntilNextRequest(newestFrame, 'onStep', onStepped);
+
+                setUntilNextRequest(newestFrame, 'onPop', function () {
+                    this.onPop = undefined;
+                    if (this.older)
+                        setUntilNextRequest(this.older, 'onStep', onStepped);
+                });
+
+                setUntilNextRequest(
+                    dbg,
+                    'onEnterFrame',
+                    (/** @type {Debugger.Frame} */ newFrame) => {
+                        setUntilNextRequest(newFrame, 'onStep', onStepped);
+                    },
+                );
+
+
                 break;
             }
         }
@@ -363,15 +391,98 @@ const handlers = {
 
         if (!newestFrame) return;
 
+        // whatever happens first
+
         dbg.onEnterFrame = () => {
             dbg.onEnterFrame = undefined;
+            newestFrame.onStep = undefined;
+
+            pause('step');
+        };
+
+        newestFrame.onStep = () => {
+            dbg.onEnterFrame = undefined;
+            newestFrame.onStep = undefined;
 
             pause('step');
         };
 
         return;
     },
+    /**
+     * @param {number} seq
+     * @param {{granularity?: DAP.SteppingGranularity}} args
+     */
+    stepOut(seq, args) {
+        sendResponse(seq, 'stepOut');
+
+        resume();
+
+        const newestFrame = dbg.getNewestFrame();
+
+        if (!newestFrame) return;
+
+        newestFrame.onPop = () => {
+            newestFrame.onPop = undefined;
+
+            pause('step');
+        };
+
+        return;
+    },
+    /**
+     * @param {number} seq
+     * @param {{source?:{path?:string;sourceReference?:number};sourceReference:number}} args
+     */
+    source(seq, args) {
+        const sourceReference =
+            args.source?.sourceReference ?? args.sourceReference;
+
+        /** @type {Debugger.Script | undefined} */
+        let foundScript;
+
+        if (sourceReference) {
+            foundScript = STATE.scripts[sourceReference - 1];
+        } else if (args.source?.path) {
+            [foundScript] = dbg.findScripts({
+                url: pathToUrl(args.source.path),
+            });
+        }
+
+        if (foundScript) {
+            sendResponse(seq, 'source', {
+                content: foundScript.source.text.slice(
+                    foundScript.sourceStart,
+                    foundScript.sourceStart + foundScript.sourceLength,
+                ),
+            });
+
+            return;
+        }
+
+        sendResponse(seq, 'source', {});
+    },
 };
+
+/**
+ * @param {Debugger.Frame} frame
+ * @returns {number | null}
+ */
+function getFrameLine(frame) {
+    if (!frame.script || !frame.offset) return null;
+    // 1-based
+    return frame.script.getOffsetLocation(frame.offset).lineNumber + 1;
+}
+
+/**
+ * @param {Debugger.Frame} frame
+ * @returns {number | null}
+ */
+function getFrameColumn(frame) {
+    if (!frame.script || !frame.offset) return null;
+    // already 1-based
+    return frame.script.getOffsetLocation(frame.offset).columnNumber;
+}
 
 /**
  * @param {Debugger.Environment | Debugger.Object} environment
@@ -454,7 +565,7 @@ function toDapVariable(name, variable) {
             if (variable === null)
                 variableDescription = { type: 'null', value: 'null' };
             else if (variable instanceof Debugger.Object) {
-                variablesReference = STATE.objects.push(variable) - 1;
+                variablesReference = STATE.objects.push(variable);
                 if (variable.isProxy) {
                     variableDescription = {
                         type: 'object',
@@ -551,7 +662,7 @@ function toDapScope(environment, id = 0) {
     return {
         name: displayName,
         expensive: true,
-        variablesReference: STATE.objects.push(environment) - 1,
+        variablesReference: STATE.objects.push(environment),
         line: location?.lineNumber ?? 0,
         column: location?.columnNumber ?? 0,
     };
@@ -583,12 +694,17 @@ function toDapScopes(environment) {
 function toDapStackFrame(frame) {
     if (!frame?.script) return null;
 
-    const location = frame.offset
-        ? frame.script.getOffsetLocation(frame.offset)
-        : null;
+    const url = frame.script.url;
 
-    // converting from file:///path/to/script.js to /path/to/script.js
-    const path = frame.script.url.slice(7);
+    let sourceReference = 0,
+        path;
+
+    if (!url.startsWith('file://')) {
+        sourceReference = STATE.scripts.push(frame.script);
+    } else {
+        // converting from file:///path/to/script.js to /path/to/script.js
+        path = url.slice(7);
+    }
 
     return {
         id: frame.depth ?? 0,
@@ -596,12 +712,12 @@ function toDapStackFrame(frame) {
             (frame.script.displayName ?? !frame.older)
                 ? 'Global'
                 : 'Unknown Frame',
-        line: location?.lineNumber ?? 0,
-        column: location?.columnNumber ?? 0,
+        line: getFrameLine(frame) ?? 0,
+        column: getFrameColumn(frame) ?? 0,
         source: {
-            name: path,
+            name: url,
             path,
-            sourceReference: 0,
+            sourceReference,
         },
         presentationHint: 'normal',
         // canRestart: frame.onStack,
@@ -640,6 +756,9 @@ function _handleRequest() {
 
 function handleRequests(shouldContinueHandlingRequests = () => true) {
     while (shouldContinueHandlingRequests()) {
+        STATE.cleanups.forEach((cleanup) => cleanup());
+        STATE.cleanups.length = 0;
+
         if (!_handleRequest()) break;
     }
 }
@@ -647,6 +766,7 @@ function handleRequests(shouldContinueHandlingRequests = () => true) {
 function resume() {
     STATE.paused = false;
     STATE.objects.length = 0;
+    STATE.scripts.length = 0;
 }
 
 /**
@@ -714,6 +834,28 @@ function resolveBreakpointsForUrl(url) {
             });
         });
     });
+}
+
+/**
+ *
+ * @template T
+ * @param {T} obj
+ * @param {keyof T} key
+ * @param {T[keyof T]} handler
+ */
+function setUntilNextRequest(obj, key, handler) {
+    const saved = obj[key];
+    obj[key] = handler;
+    STATE.cleanups.push(() => {
+        obj[key] = saved;
+    });
+}
+
+/**
+ * @param {string} path
+ */
+function pathToUrl(path) {
+    return path.includes('://') ? path : `file://${path}`;
 }
 
 /**

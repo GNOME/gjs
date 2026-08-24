@@ -111,11 +111,18 @@ declare namespace Debugger {
         setBreakpoint(offset: Offset, handler: BreakpointHandler): void;
         clearAllBreakpoints(offset?: Offset): void;
         getLineOffsets(line: number): Offset[];
-        getOffsetLocation(offset: Offset): null | {
+        getOffsetLocation(offset: Offset): {
             lineNumber: number;
             columnNumber: number;
             isEntryPoint: boolean;
         };
+        source: Debugger.Source;
+        sourceStart: number;
+        sourceLength: number;
+    }
+
+    class Source {
+        text: string;
     }
 
     class Environment {
@@ -151,6 +158,18 @@ declare namespace Debugger {
         getOwnPropertyNames(): string[];
         getOwnPropertySymbols(): symbol[];
         getProperty(name: string | symbol): undefined | { return: any };
+    }
+
+    class Report {
+        message: string;
+        file: string;
+        line: number;
+        lineText: string;
+        offset: number;
+        warning?: true;
+        strict?: true;
+        exception?: true;
+        arguments: Debugger.Variable[];
     }
 
     class Value {}
