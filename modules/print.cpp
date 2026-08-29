@@ -247,6 +247,9 @@ static constexpr JSPropertySpec props[] = {
         GjsDeprecationMessageId::PlatformSpecificTypelib),
     JSPropertySpec::int32Value("RENAMED", GJS_MODULE_PROP_FLAGS,
                                GjsDeprecationMessageId::Renamed),
+    JSPropertySpec::int32Value(
+        "MAKE_PROXY_WRAPPER_FUNCTION_CALL", GJS_MODULE_PROP_FLAGS,
+        GjsDeprecationMessageId::MakeProxyWrapperFunctionCall),
     JS_PS_END};
 
 bool gjs_define_print_stuff(JSContext* cx, JS::MutableHandleObject module) {

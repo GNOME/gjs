@@ -60,6 +60,10 @@ const char* messages[] = {
 
     // Renamed:
     "{} has been renamed. Please update your code to use {} instead.",
+
+    // MakeProxyWrapperFunctionCall:
+    "Gio.DBusProxy.makeProxyWrapper for '{}' returns a class expression. Do "
+    "not call it as a function without 'new'."
 };
 
 static_assert(std::size(messages) == GjsDeprecationMessageId::LastValue);

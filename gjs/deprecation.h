@@ -20,6 +20,7 @@ enum GjsDeprecationMessageId : uint8_t {
     ModuleExportedLetOrConst,
     PlatformSpecificTypelib,
     Renamed,
+    MakeProxyWrapperFunctionCall,
     LastValue,  // insert new elements before this one
 };
 
