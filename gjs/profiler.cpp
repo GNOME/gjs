@@ -550,11 +550,6 @@ void gjs_profiler_start(GjsProfiler* self) {
 
     g_return_if_fail(!self->capture);
 
-    struct sigaction sa = {{nullptr}};
-    struct sigevent sev = {{0}};
-    struct itimerspec its = {{0}};
-    struct itimerspec old_its;
-
     if (self->target_capture) {
         self->capture = sysprof_capture_writer_ref(self->target_capture);
     } else if (self->fd != -1) {
@@ -603,7 +598,7 @@ void gjs_profiler_start(GjsProfiler* self) {
     }
 
     // Setup our signal handler for SIGPROF delivery
-    sa.sa_flags = SA_RESTART | SA_SIGINFO;
+    struct sigaction sa = {.sa_flags = SA_RESTART | SA_SIGINFO};
     sa.sa_sigaction = gjs_profiler_sigprof;
     sigemptyset(&sa.sa_mask);
 
@@ -625,8 +620,8 @@ void gjs_profiler_start(GjsProfiler* self) {
      * it works for us as well and ensures that the thread is blocked while we
      * capture the stack.
      */
-    sev.sigev_notify = SIGEV_THREAD_ID;
-    sev.sigev_signo = SIGPROF;
+    struct sigevent sev = {.sigev_signo = SIGPROF,
+                           .sigev_notify = SIGEV_THREAD_ID};
     sev._sigev_un._tid = syscall(__NR_gettid);
 
     if (timer_create(CLOCK_MONOTONIC, &sev, &self->timer) == -1) {
@@ -637,10 +632,14 @@ void gjs_profiler_start(GjsProfiler* self) {
     }
 
     // Calculate sampling interval
-    its.it_interval.tv_sec = 0;
-    its.it_interval.tv_nsec = std::chrono::nanoseconds{SAMPLING_PERIOD}.count();
-    its.it_value.tv_sec = 0;
-    its.it_value.tv_nsec = std::chrono::nanoseconds{SAMPLING_PERIOD}.count();
+    struct itimerspec its = {
+        .it_interval = {.tv_sec = 0,
+                        .tv_nsec =
+                            std::chrono::nanoseconds{SAMPLING_PERIOD}.count()},
+        .it_value = {
+            .tv_sec = 0,
+            .tv_nsec = std::chrono::nanoseconds{SAMPLING_PERIOD}.count()}};
+    struct itimerspec old_its;
 
     // Now start this timer
     if (timer_settime(self->timer, 0, &its, &old_its) != 0) {
@@ -712,7 +711,7 @@ void gjs_profiler_stop(GjsProfiler* self) {
             ids.data(), values.data(), GJS_N_COUNTERS))
         g_warning("Failed to write last value of memory counters");
 
-    struct itimerspec its = {{0}};
+    struct itimerspec its = {.it_interval = {.tv_sec = 0}};
     timer_settime(self->timer, 0, &its, nullptr);
     timer_delete(self->timer);
 

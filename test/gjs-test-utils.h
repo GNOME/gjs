@@ -9,6 +9,7 @@
 
 #include <stdint.h>  // for uintptr_t
 
+#include <concepts>
 #include <limits>    // for numeric_limits
 #include <string>
 #include <type_traits>  // for is_same
@@ -23,7 +24,7 @@
 #define g_assert_ok(result)                                                  \
     G_STMT_START {                                                           \
         auto& res_inner = (result);                                          \
-        if G_UNLIKELY (res_inner.isErr()) {                                  \
+        if (res_inner.isErr()) [[unlikely]] {                                \
             std::string message{"'" #result "' should be OK but got " +      \
                                 std::string{res_inner.unwrapErr()}};         \
             g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
@@ -34,7 +35,7 @@
 
 #define g_assert_err(result)                                                 \
     G_STMT_START {                                                           \
-        if G_UNLIKELY ((result).isOk())                                      \
+        if ((result).isOk()) [[unlikely]]                                    \
             g_assertion_message(G_LOG_DOMAIN, __FILE__, __LINE__, G_STRFUNC, \
                                 "'" #result "' should be Err but got OK");   \
     }                                                                        \
@@ -66,18 +67,15 @@ void add_tests_for_misc_utils();
 void add_tests_for_toggle_queue();
 
 template <typename T1, typename T2>
-constexpr bool comparable_types() {
-    if constexpr (std::is_same_v<T1, T2>)
-        return true;
-    if constexpr (std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2> ||
-                  std::is_enum_v<T1> == std::is_enum_v<T2>)
-        return std::is_signed_v<T1> == std::is_signed_v<T2>;
-    return false;
-}
+concept ComparableTypes =
+    std::same_as<T1, T2> ||
+    ((std::is_arithmetic_v<T1> == std::is_arithmetic_v<T2> ||
+      std::is_enum_v<T1> == std::is_enum_v<T2>) &&
+     std::is_signed_v<T1> == std::is_signed_v<T2>);
 
 template <typename T, typename U>
+    requires ComparableTypes<T, U>
 constexpr void assert_equal(T a, U b) {
-    static_assert(comparable_types<T, U>());
     if constexpr (std::is_integral_v<T> || std::is_enum_v<T>) {
         if constexpr (std::is_unsigned_v<T>)
             g_assert_cmpuint(a, ==, b);

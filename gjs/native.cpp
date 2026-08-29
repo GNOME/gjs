@@ -41,7 +41,7 @@ void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
  * without starting to try and load it.
  */
 bool Gjs::NativeModuleDefineFuncs::is_registered(const char* module_id) const {
-    return m_modules.count(module_id) > 0;
+    return m_modules.contains(module_id);
 }
 
 /**

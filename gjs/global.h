@@ -9,7 +9,7 @@
 
 #include <stdint.h>
 
-#include <type_traits>
+#include <concepts>
 
 #include <js/RootingAPI.h>  // for Handle
 #include <js/TypeDecls.h>
@@ -101,24 +101,20 @@ bool gjs_define_global_properties(JSContext*, JS::HandleObject global,
 namespace detail {
 void set_global_slot(JSObject* global, uint32_t slot, JS::Value);
 JS::Value get_global_slot(JSObject* global, uint32_t slot);
-}  // namespace detail
 
 template <typename Slot>
-inline void gjs_set_global_slot(JSObject* global, Slot slot, JS::Value value) {
-    static_assert(std::is_same_v<GjsBaseGlobalSlot, Slot> ||
-                      std::is_same_v<GjsGlobalSlot, Slot> ||
-                      std::is_same_v<GjsInternalGlobalSlot, Slot> ||
-                      std::is_same_v<GjsDebuggerGlobalSlot, Slot>,
-                  "Must use a GJS global slot enum");
+concept GlobalSlot = std::same_as<Slot, GjsBaseGlobalSlot> ||
+                     std::same_as<Slot, GjsGlobalSlot> ||
+                     std::same_as<Slot, GjsInternalGlobalSlot> ||
+                     std::same_as<Slot, GjsDebuggerGlobalSlot>;
+}  // namespace detail
+
+inline void gjs_set_global_slot(JSObject* global, detail::GlobalSlot auto slot,
+                                JS::Value value) {
     detail::set_global_slot(global, static_cast<uint32_t>(slot), value);
 }
 
-template <typename Slot>
-inline JS::Value gjs_get_global_slot(JSObject* global, Slot slot) {
-    static_assert(std::is_same_v<GjsBaseGlobalSlot, Slot> ||
-                      std::is_same_v<GjsGlobalSlot, Slot> ||
-                      std::is_same_v<GjsInternalGlobalSlot, Slot> ||
-                      std::is_same_v<GjsDebuggerGlobalSlot, Slot>,
-                  "Must use a GJS global slot enum");
+inline JS::Value gjs_get_global_slot(JSObject* global,
+                                     detail::GlobalSlot auto slot) {
     return detail::get_global_slot(global, static_cast<uint32_t>(slot));
 }

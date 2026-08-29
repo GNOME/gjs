@@ -131,16 +131,19 @@ inline bool is_supported_gobject_field_type(const TypeInfo& type) {
 }
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 [[nodiscard]]
 bool struct_is_simple(const UnownedInfo<TAG>&);
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 [[nodiscard]]
 bool simple_struct_has_pointers(const UnownedInfo<TAG>&);
 
 using ConstructorIndex = unsigned;
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 [[nodiscard]]
 std::pair<mozilla::Maybe<ConstructorIndex>, mozilla::Maybe<ConstructorIndex>>
 find_boxed_constructor_indices(const UnownedInfo<TAG>&);

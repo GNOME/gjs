@@ -81,7 +81,7 @@ void gjs_test_tools_save_object_unreffed(GObject* object) {
 }
 
 void gjs_test_tools_clear_saved() {
-    if (!FinalizedObjectsLocked()->count(s_tmp_object)) {
+    if (!FinalizedObjectsLocked()->contains(s_tmp_object)) {
         GObject* object = s_tmp_object.exchange(nullptr);
         g_clear_object(&object);
     } else {
@@ -138,13 +138,13 @@ static void* ref_thread_func(void* data) {
     Gjs::AutoPointer<RefThreadData, void, g_free> ref_data{
         static_cast<RefThreadData*>(data)};
 
-    if (FinalizedObjectsLocked()->count(ref_data->object))
+    if (FinalizedObjectsLocked()->contains(ref_data->object))
         return nullptr;
 
     if (ref_data->delay > 0)
         g_usleep(ref_data->delay);
 
-    if (FinalizedObjectsLocked()->count(ref_data->object))
+    if (FinalizedObjectsLocked()->contains(ref_data->object))
         return nullptr;
 
     if (ref_data->ref_type & REF)
@@ -156,7 +156,7 @@ static void* ref_thread_func(void* data) {
     if (ref_data->ref_type & REF) {
         g_usleep(ref_data->delay);
 
-        if (FinalizedObjectsLocked()->count(ref_data->object))
+        if (FinalizedObjectsLocked()->contains(ref_data->object))
             return nullptr;
     }
 
@@ -226,7 +226,7 @@ void gjs_test_tools_run_dispose_other_thread(GObject* object, GError** error) {
  * Returns: (transfer full)
  */
 GObject* gjs_test_tools_get_saved() {
-    if (FinalizedObjectsLocked()->count(s_tmp_object))
+    if (FinalizedObjectsLocked()->contains(s_tmp_object))
         s_tmp_object = nullptr;
 
     return s_tmp_object.exchange(nullptr);
@@ -247,7 +247,7 @@ void gjs_test_tools_save_weak(GObject* object) {
  * Returns: (transfer none)
  */
 GObject* gjs_test_tools_peek_saved() {
-    if (FinalizedObjectsLocked()->count(s_tmp_object))
+    if (FinalizedObjectsLocked()->contains(s_tmp_object))
         return nullptr;
 
     return s_tmp_object;
@@ -332,7 +332,7 @@ int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
         return -1;
     }
 
-    if (static_cast<size_t>(bytes_written) != count)
+    if (std::cmp_not_equal(bytes_written, count))
         g_warning("%s: %zu bytes sent, only %zd bytes written", __func__, count,
                   bytes_written);
 

@@ -256,8 +256,7 @@ static void gjs_object_class_init(void* class_pointer, void*) {
     if (!pop_class_init_properties(gtype, &properties))
         return;
 
-    unsigned i = 0;
-    for (Gjs::AutoParam& pspec : properties) {
+    for (unsigned i = 0; Gjs::AutoParam& pspec : properties) {
         g_param_spec_set_qdata(pspec, ObjectBase::custom_property_quark(),
                                GINT_TO_POINTER(1));
         g_object_class_install_property(klass, ++i, pspec);
@@ -303,31 +302,10 @@ static void gjs_interface_init(void* g_iface, void*) {
 }
 
 constexpr GTypeInfo gjs_gobject_class_info = {
-    0,  // class_size
-
-    gjs_object_base_init,
-    gjs_object_base_finalize,
-
-    gjs_object_class_init,
-    nullptr,  // class_finalize_func
-    nullptr,  // class_data
-
-    0,  // instance_size
-    0,  // n_preallocs
-    gjs_object_custom_init,
-};
+    .base_init = gjs_object_base_init,
+    .base_finalize = gjs_object_base_finalize,
+    .class_init = gjs_object_class_init,
+    .instance_init = gjs_object_custom_init};
 
 constexpr GTypeInfo gjs_gobject_interface_info = {
-    sizeof(GTypeInterface),  // class_size
-
-    nullptr,  // base_init_func
-    nullptr,  // base_finalize_func
-
-    gjs_interface_init,
-    nullptr,  // class_finalize_func
-    nullptr,  // class_data
-
-    0,        // instance_size
-    0,        // n_preallocs
-    nullptr,  // instance_init
-};
+    .class_size = sizeof(GTypeInterface), .class_init = gjs_interface_init};

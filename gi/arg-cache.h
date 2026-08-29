@@ -96,9 +96,9 @@ struct Argument {
     // functions that call it
     struct Init {
         const char* name;
-        uint8_t index;
+        uint8_t index = Argument::ABSENT;
         GITransfer transfer : 2;
-        GjsArgumentFlags flags : 6;
+        GjsArgumentFlags flags : 6 = GjsArgumentFlags::NONE;
     };
 
     virtual ~Argument() = default;
@@ -143,7 +143,7 @@ struct Argument {
     [[nodiscard]] constexpr bool skip_out() const { return m_skip_out; }
 
  protected:
-    constexpr Argument() : m_skip_in(false), m_skip_out(false) {}
+    constexpr Argument() = default;
 
     [[nodiscard]]
     virtual mozilla::Maybe<Arg::ReturnTag> return_tag() const {
@@ -164,14 +164,14 @@ struct Argument {
     static bool invalid(JSContext*, const char* func = nullptr);
 
     const char* m_arg_name = nullptr;
-    bool m_skip_in : 1;
-    bool m_skip_out : 1;
+    bool m_skip_in : 1 = false;
+    bool m_skip_out : 1 = false;
 
  private:
     friend struct ArgsCache;
 
-    template <typename T, Arg::Kind ArgKind>
-    static void init_common(const Init&, T* arg);
+    template <Arg::Kind ArgKind>
+    static void init_common(const Init&, auto* arg);
 };
 
 using ArgumentPtr = AutoCppPointer<Argument>;
@@ -196,9 +196,6 @@ static_assert(sizeof(Argument) <= 24,
 struct ArgsCache {
     GJS_JSAPI_RETURN_CONVENTION
     bool initialize(JSContext*, const GI::CallableInfo&);
-
-    // COMPAT: in C++20, use default initializers for these bitfields
-    ArgsCache() : m_is_method(false), m_has_return(false) {}
 
     constexpr bool initialized() { return m_args != nullptr; }
     constexpr void clear() { m_args.reset(); }
@@ -228,8 +225,8 @@ struct ArgsCache {
     void build_interface_in_arg(const Argument::Init&,
                                 const GI::BaseInfo& interface_info);
 
-    template <Arg::Kind ArgKind = Arg::Kind::NORMAL, typename T>
-    constexpr void set_argument(T* arg, const Argument::Init&);
+    template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
+    constexpr void set_argument(auto* arg, const Argument::Init&);
 
     void set_array_argument(const GI::CallableInfo&, uint8_t gi_index,
                             const GI::TypeInfo&, GIDirection,
@@ -242,12 +239,10 @@ struct ArgsCache {
     void init_out_array_length_argument(const GI::ArgInfo&, GjsArgumentFlags,
                                         unsigned length_pos);
 
-    template <typename T>
-    constexpr void set_return(T* arg, GITransfer, GjsArgumentFlags);
+    constexpr void set_return(auto* arg, GITransfer, GjsArgumentFlags);
 
-    template <typename T>
     constexpr void set_instance(
-        T* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
+        auto* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
     void set_skip_all(uint8_t index, const char* name = nullptr);
 
@@ -294,8 +289,8 @@ struct ArgsCache {
  private:
     AutoCppPointer<ArgumentPtr[]> m_args;
 
-    bool m_is_method : 1;
-    bool m_has_return : 1;
+    bool m_is_method : 1 = false;
+    bool m_has_return : 1 = false;
 };
 
 }  // namespace Gjs

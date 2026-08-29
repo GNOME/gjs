@@ -5,9 +5,9 @@
 
 #include <config.h>
 
-#include <limits.h>  // for SSIZE_MAX
 #include <stdint.h>
 #include <string.h>  // for strcmp, memchr, strlen
+#include <sys/types.h>  // for ssize_t
 
 #include <algorithm>
 #include <cstddef>  // for nullptr_t, size_t
@@ -15,7 +15,7 @@
 #include <memory>    // for unique_ptr
 #include <string>    // for u16string
 #include <tuple>     // for tuple
-#include <utility>   // for move
+#include <utility>   // for in_range, move
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -205,8 +205,8 @@ static JSString* gjs_decode_from_uint8array_slow(JSContext* cx,
         return gjs_lossy_decode_from_uint8array_slow(cx, input, input_len,
                                                      encoding);
 
-    // g_convert only handles up to SSIZE_MAX bytes, but we may have SIZE_MAX
-    if (G_UNLIKELY(input_len > SSIZE_MAX)) {
+    // g_convert only handles ssize_t bytes, but we may have size_t max
+    if (!std::in_range<ssize_t>(input_len)) [[unlikely]] {
         gjs_throw(cx, "Array too big to decode: %zu bytes", input_len);
         return nullptr;
     }

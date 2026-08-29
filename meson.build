@@ -4,7 +4,7 @@
 
 project('gjs', 'cpp', 'c', version: '1.89.90', license: ['MIT', 'LGPL2+'],
     meson_version: '>= 1.4',
-    default_options: ['cpp_std=c++17', 'cpp_rtti=false', 'cpp_eh=none',
+    default_options: ['cpp_std=c++20', 'cpp_rtti=false', 'cpp_eh=none',
         'c_std=c99', 'warning_level=2', 'b_pch=true' ])
 
 # cpp_rtti: SpiderMonkey can be compiled with or without runtime type
@@ -81,7 +81,6 @@ if cc.get_argument_syntax() == 'msvc'
     add_project_arguments(cxx.get_supported_arguments([
         '-Dssize_t=gssize',  # Windows SDK/MSVC headers do not come with ssize_t
         '-DNOMINMAX',  # We don't want 'min' or 'max' to interfere
-        '-DSSIZE_MAX=G_MAXSSIZE',  # Windows SDK/MSVC headers do not come with SSIZE_MAX
         ]), language: ['cpp', 'c'])
 else
     if get_option('bsymbolic_functions')

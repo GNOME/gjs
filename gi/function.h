@@ -107,7 +107,7 @@ class GjsFunctionCallState {
     const GI::CallableInfo info;
     uint8_t gi_argc = 0;
     uint8_t processed_c_args = 0;
-    bool failed : 1;
+    bool failed : 1 = false;
     bool can_throw_gerror : 1;
     bool is_method : 1;
 
@@ -116,7 +116,6 @@ class GjsFunctionCallState {
           return_values(cx),
           info(callable),
           gi_argc(callable.n_args()),
-          failed(false),
           can_throw_gerror(callable.can_throw_gerror()),
           is_method(callable.is_method()) {
         int size = gi_argc + first_arg_offset();

@@ -8,6 +8,8 @@
 
 #include <stdint.h>
 
+#include <concepts>
+#include <limits>
 #include <type_traits>
 
 #include <girepository/girepository.h>
@@ -241,7 +243,29 @@ struct MarshallingInfo<void> {
 
 namespace Tag {
 template <typename TAG>
-using RealT = typename MarshallingInfo<TAG>::real_type;
+using RealT = MarshallingInfo<TAG>::real_type;
+
+template <typename TAG>
+concept RealType = std::same_as<TAG, RealT<TAG>>;
+
+template <typename TAG>
+concept Numeric = std::is_arithmetic_v<RealT<TAG>>;
+
+template <typename TAG>
+concept Integer = std::integral<RealT<TAG>>;
+
+// The max() check looks redundant, but it's not. digits() means different
+// things between floating-point and integer types
+template <typename TAG, typename T>
+concept CanContain =
+    std::numeric_limits<Tag::RealT<TAG>>::max() >=
+        std::numeric_limits<T>::max() &&
+    std::numeric_limits<Tag::RealT<TAG>>::digits >=
+        std::numeric_limits<T>::digits &&
+    (std::is_signed_v<Tag::RealT<TAG>> || !std::is_signed_v<T>);
+
+static_assert(!CanContain<uint64_t, int64_t>,
+              "This was a bug in a previous formulation of CanContain");
 
 // There are two ways you can unpack a C value from a JSValue.
 // The containing type is the most appropriate C type that can contain the
@@ -254,10 +278,10 @@ template <typename TAG>
 using JSValueContainingT = RealT<typename MarshallingInfo<TAG>::containing_tag>;
 
 template <typename TAG>
-using JSValueContainingTag = typename MarshallingInfo<TAG>::containing_tag;
+using JSValueContainingTag = MarshallingInfo<TAG>::containing_tag;
 
 template <typename TAG>
-using JSValuePackT = typename MarshallingInfo<TAG>::jsvalue_pack_type;
+using JSValuePackT = MarshallingInfo<TAG>::jsvalue_pack_type;
 
 template <typename TAG>
 using JSValuePackTag = std::conditional_t<

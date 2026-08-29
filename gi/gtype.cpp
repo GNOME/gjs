@@ -90,19 +90,15 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
     // clang-format on
 
     static constexpr js::ClassSpec class_spec = {
-        nullptr,  // createConstructor
-        nullptr,  // createPrototype
-        nullptr,  // constructorFunctions
-        nullptr,  // constructorProperties
-        GTypeObj::proto_funcs,
-        GTypeObj::proto_props,
-        nullptr,  // finishInit
-        js::ClassSpec::DontDefineConstructor};
+        .prototypeFunctions = GTypeObj::proto_funcs,
+        .prototypeProperties = GTypeObj::proto_props,
+        .flags = js::ClassSpec::DontDefineConstructor};
 
     static constexpr JSClass klass = {
-        "GIRepositoryGType",
-        JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-        &GTypeObj::class_ops, &GTypeObj::class_spec};
+        .name = "GIRepositoryGType",
+        .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+        .cOps = &GTypeObj::class_ops,
+        .spec = &GTypeObj::class_spec};
 
     GJS_JSAPI_RETURN_CONVENTION
     static GType value(JSContext* cx, JS::HandleObject obj,

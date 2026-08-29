@@ -180,19 +180,14 @@ JSPrincipals* get_internal_principals() {
 }
 
 static const JSSecurityCallbacks security_callbacks = {
-    /* contentSecurityPolicyAllows = */ nullptr,
-    /* codeForEvalGets = */ nullptr,
-    &ModuleLoaderPrincipals::subsumes,
-};
+    .subsumes = &ModuleLoaderPrincipals::subsumes};
 
 static bool instance_class_is_error(const JSClass* klass) {
     return klass == &ErrorBase::klass;
 }
 
-static const js::DOMCallbacks dom_callbacks = {
-    /* instanceClassHasProtoAtDepth = */ nullptr,
-    &instance_class_is_error,
-};
+static const js::DOMCallbacks dom_callbacks = {.instanceClassIsError =
+                                                   &instance_class_is_error};
 
 JSContext* gjs_create_js_context(GjsContextPrivate* uninitialized_gjs) {
     g_assert(gjs_is_inited);

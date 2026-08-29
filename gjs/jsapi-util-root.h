@@ -106,7 +106,6 @@ class GjsMaybeOwned {
             return m_root->get() == other;
         return m_heap == other;
     }
-    bool operator!=(JSObject* other) const { return !(*this == other); }
 
     // We can access the pointer without a read barrier if the only thing we are
     // are doing with it is comparing it to nullptr.
@@ -116,7 +115,6 @@ class GjsMaybeOwned {
             return m_root->get() == nullptr;
         return m_heap.unbarrieredGet() == nullptr;
     }
-    bool operator!=(std::nullptr_t) const { return !(*this == nullptr); }
 
     // Likewise the truth value does not require a read barrier
     // COMPAT: constexpr in C++23

@@ -10,6 +10,8 @@
 #include <atomic>
 #include <chrono>
 #include <cmath>
+#include <compare>
+#include <concepts>
 #include <cstddef>
 #include <deque>
 #include <functional>
@@ -18,6 +20,8 @@
 #include <memory>
 #include <new>
 #include <ratio>
+#include <ranges>
+#include <span>
 #include <sstream>
 #include <string>
 #include <string_view>

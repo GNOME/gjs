@@ -16,6 +16,7 @@
 #include <string>
 #include <string_view>
 #include <system_error>  // for errc
+#include <utility>       // for move
 #include <vector>
 
 #include <gio/gio.h>
@@ -136,14 +137,10 @@ static const char* line_starting_with(const char* data, const char* needle) {
 
 static std::string_view line_starting_with(const std::string_view& data,
                                            const std::string& needle) {
-    const size_t needle_length = needle.size();
     std::string_view iter = data;
 
     while (!iter.empty()) {
-        // COMPAT: Use starts_with in C++20
-        std::string_view prefix{iter.data(),
-                                std::min(iter.size(), needle_length)};
-        if (prefix == needle)
+        if (iter.starts_with(needle))
             return iter;
 
         size_t newline = iter.find('\n');
@@ -240,8 +237,7 @@ static void assert_coverage_data_matches_values_for_key(
     while (!line.empty() && !remaining_matches.empty()) {
         T entry = (*extract)(line);
 
-        auto found = std::find(remaining_matches.begin(),
-                               remaining_matches.end(), entry);
+        auto found = std::ranges::find(remaining_matches, entry);
         g_assert_false(found == remaining_matches.end());
         remaining_matches.erase(found);
 
@@ -376,6 +372,9 @@ struct BranchLineData {
     int expected_branch_line;
     int expected_id;
     BranchTaken taken;
+
+    BranchLineData(int line, int id, BranchTaken t)
+        : expected_branch_line(line), expected_id(id), taken(t) {}
 };
 
 static void branch_at_line_should_be_taken(const char* line,
@@ -642,7 +641,11 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
 
 struct FunctionHitCountData {
     std::string function;
-    unsigned hit_count_minimum;
+    unsigned hit_count_minimum = 0;
+
+    FunctionHitCountData() = default;
+    FunctionHitCountData(const char* f, unsigned min)
+        : function(f), hit_count_minimum(min) {}
 
     bool operator==(const FunctionHitCountData& other) const {
         return function == other.function &&
@@ -792,6 +795,9 @@ static void test_total_function_coverage_written_to_coverage_data(
 struct LineCountIsMoreThanData {
     unsigned expected_lineno;
     unsigned expected_to_be_more_than;
+
+    LineCountIsMoreThanData(unsigned line, unsigned more)
+        : expected_lineno(line), expected_to_be_more_than(more) {}
 };
 
 static void line_hit_count_is_more_than(const char* line,
@@ -964,8 +970,16 @@ static void test_multiple_source_file_records_written_to_coverage_data(
 struct ExpectedSourceFileCoverageData {
     const char* source_file_path;
     std::vector<LineCountIsMoreThanData> more_than;
-    const char expected_lines_hit_character;
-    const char expected_lines_found_character;
+    char expected_lines_hit_character;
+    char expected_lines_found_character;
+
+    ExpectedSourceFileCoverageData(const char* path,
+                                   std::vector<LineCountIsMoreThanData>&& more,
+                                   char hit, char found)
+        : source_file_path(path),
+          more_than(std::move(more)),
+          expected_lines_hit_character(hit),
+          expected_lines_found_character(found) {}
 };
 
 static void assert_coverage_data_for_source_file(
@@ -1036,10 +1050,9 @@ static void add_test_for_fixture(const char* name, FixturedTest* fixture,
 
 void gjs_test_add_tests_for_coverage() {
     FixturedTest coverage_fixture = {
-        sizeof(GjsCoverageFixture),
-        gjs_coverage_fixture_set_up,
-        gjs_coverage_fixture_tear_down
-    };
+        .fixture_size = sizeof(GjsCoverageFixture),
+        .set_up = gjs_coverage_fixture_set_up,
+        .tear_down = gjs_coverage_fixture_tear_down};
 
     add_test_for_fixture("/gjs/coverage/file_duplicated_into_output_path",
                          &coverage_fixture,
@@ -1110,9 +1123,11 @@ void gjs_test_add_tests_for_coverage() {
         &coverage_fixture, test_end_of_record_section_written_to_coverage_data);
 
     FixturedTest coverage_for_multiple_files_to_single_output_fixture = {
-        sizeof(GjsCoverageMultipleSourcesFixture),
-        gjs_coverage_multiple_source_files_to_single_output_fixture_set_up,
-        gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down};
+        .fixture_size = sizeof(GjsCoverageMultipleSourcesFixture),
+        .set_up =
+            gjs_coverage_multiple_source_files_to_single_output_fixture_set_up,
+        .tear_down =
+            gjs_coverage_multiple_source_files_to_single_output_fixture_tear_down};
 
     add_test_for_fixture(
         "/gjs/coverage/multiple_source_file_records_written_to_coverage_data",

@@ -223,22 +223,14 @@ FundamentalPrototype::~FundamentalPrototype() {
 }
 
 const struct JSClassOps FundamentalBase::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    &FundamentalBase::resolve,
-    nullptr,  // mayResolve
-    &FundamentalBase::finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    &FundamentalBase::trace};
+    .resolve = &FundamentalBase::resolve,
+    .finalize = &FundamentalBase::finalize,
+    .trace = &FundamentalBase::trace};
 
 const struct JSClass FundamentalBase::klass = {
-    "GFundamental_Object",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
-    &FundamentalBase::class_ops,
-};
+    .name = "GFundamental_Object",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_FOREGROUND_FINALIZE,
+    .cOps = &FundamentalBase::class_ops};
 
 // FIXME: assume info is non-null on main? Is it possible to have hidden
 // fundamental types?
@@ -248,7 +240,7 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
     const char* constructor_name = info.name();
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     bool found;
@@ -267,7 +259,7 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
                                                 &constructor))
             return nullptr;
     } else {
-        if (G_UNLIKELY(!value.isObject())) {
+        if (!value.isObject()) [[unlikely]] {
             gjs_throw(cx,
                       "Fundamental constructor was not an object, it was a %s",
                       JS::InformalValueTypeName(value));

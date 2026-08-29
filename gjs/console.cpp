@@ -40,36 +40,59 @@ using GjsAutoGOptionContext =
     Gjs::AutoPointer<GOptionContext, GOptionContext, g_option_context_free>;
 
 static GOptionEntry entries[] = {
-    {"version", 0, 0, G_OPTION_ARG_NONE, &print_version,
-     "Print GJS version and exit"},
-    {"jsversion", 0, 0, G_OPTION_ARG_NONE, &print_js_version,
-     "Print version of the JS engine and exit"},
-    {"command", 'c', 0, G_OPTION_ARG_STRING, command.out(),
-     "Program passed in as a string", "COMMAND"},
-    {"coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY,
-     coverage_prefixes.out(),
-     "Add the prefix PREFIX to the list of files to generate coverage info for",
-     "PREFIX"},
+    {.long_name = "version",
+     .arg = G_OPTION_ARG_NONE,
+     .arg_data = &print_version,
+     .description = "Print GJS version and exit"},
+    {.long_name = "jsversion",
+     .arg = G_OPTION_ARG_NONE,
+     .arg_data = &print_js_version,
+     .description = "Print version of the JS engine and exit"},
+    {.long_name = "command",
+     .short_name = 'c',
+     .arg = G_OPTION_ARG_STRING,
+     .arg_data = command.out(),
+     .description = "Program passed in as a string",
+     .arg_description = "COMMAND"},
+    {.long_name = "coverage-prefix",
+     .short_name = 'C',
+     .arg = G_OPTION_ARG_STRING_ARRAY,
+     .arg_data = coverage_prefixes.out(),
+     .description = "Add the prefix PREFIX to the list of files to generate "
+                    "coverage info for",
+     .arg_description = "PREFIX"},
     {
-        "coverage-output",
-        0,
-        0,
-        G_OPTION_ARG_STRING,
-        coverage_output_path.out(),
-        "Write coverage output to a directory DIR. This option is mandatory "
-        "when using --coverage-prefix",
-        "DIR",
+        .long_name = "coverage-output",
+        .arg = G_OPTION_ARG_STRING,
+        .arg_data = coverage_output_path.out(),
+        .description = "Write coverage output to a directory DIR. This option "
+                       "is mandatory when using --coverage-prefix",
+        .arg_description = "DIR",
     },
-    {"include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY, include_path.out(),
-     "Add DIR to the list of paths to search for JS files", "DIR"},
-    {"module", 'm', 0, G_OPTION_ARG_NONE, &exec_as_module,
-     "Execute the file as a module"},
-    {"profile", 0, G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
-     G_OPTION_ARG_CALLBACK, reinterpret_cast<void*>(&parse_profile_arg),
-     "Enable the profiler and write output to FILE (default: gjs-$PID.syscap)",
-     "FILE"},
-    {"debugger", 'd', 0, G_OPTION_ARG_NONE, &debugging, "Start in debug mode"},
-    {nullptr}};
+    {.long_name = "include-path",
+     .short_name = 'I',
+     .arg = G_OPTION_ARG_STRING_ARRAY,
+     .arg_data = include_path.out(),
+     .description = "Add DIR to the list of paths to search for JS files",
+     .arg_description = "DIR"},
+    {.long_name = "module",
+     .short_name = 'm',
+     .arg = G_OPTION_ARG_NONE,
+     .arg_data = &exec_as_module,
+     .description = "Execute the file as a module"},
+    {.long_name = "profile",
+     .flags = G_OPTION_FLAG_OPTIONAL_ARG | G_OPTION_FLAG_FILENAME,
+     .arg = G_OPTION_ARG_CALLBACK,
+     .arg_data = reinterpret_cast<void*>(&parse_profile_arg),
+     .description = "Enable the profiler and write output to FILE (default: "
+                    "gjs-$PID.syscap)",
+     .arg_description = "FILE"},
+    {.long_name = "debugger",
+     .short_name = 'd',
+     .arg = G_OPTION_ARG_NONE,
+     .arg_data = &debugging,
+     .description = "Start in debug mode"},
+    {}};
 
 [[nodiscard]]
 static Gjs::AutoStrv strndupv(int n, char* const* strv) {
@@ -116,13 +139,18 @@ static void check_script_args_for_stray_gjs_args(int argc, char* const* argv) {
     // previously accepted after the script name on the command line, for
     // backwards compatibility.
     GOptionEntry script_check_entries[] = {
-        {"coverage-prefix", 'C', 0, G_OPTION_ARG_STRING_ARRAY,
-         new_coverage_prefixes.out()},
-        {"coverage-output", 0, 0, G_OPTION_ARG_STRING,
-         new_coverage_output_path.out()},
-        {"include-path", 'I', 0, G_OPTION_ARG_STRING_ARRAY,
-         new_include_paths.out()},
-        {nullptr}};
+        {.long_name = "coverage-prefix",
+         .short_name = 'C',
+         .arg = G_OPTION_ARG_STRING_ARRAY,
+         .arg_data = new_coverage_prefixes.out()},
+        {.long_name = "coverage-output",
+         .arg = G_OPTION_ARG_STRING,
+         .arg_data = new_coverage_output_path.out()},
+        {.long_name = "include-path",
+         .short_name = 'I',
+         .arg = G_OPTION_ARG_STRING_ARRAY,
+         .arg_data = new_include_paths.out()},
+        {.long_name = nullptr}};
 
     Gjs::AutoStrv argv_copy{g_new(char*, argc + 2)};
     argv_copy[0] = g_strdup("dummy");  // Fake argv[0] for GOptionContext

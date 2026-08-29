@@ -314,7 +314,9 @@ static bool gjs_register_interface_with_class(JSContext* cx, unsigned argc,
 
 static inline void gjs_add_interface(GType instance_type,
                                      GType interface_type) {
-    static GInterfaceInfo interface_vtable{nullptr, nullptr, nullptr};
+    static GInterfaceInfo interface_vtable{.interface_init = nullptr,
+                                           .interface_finalize = nullptr,
+                                           .interface_data = nullptr};
     g_type_add_interface_static(instance_type, interface_type,
                                 &interface_vtable);
 }
@@ -359,8 +361,8 @@ static bool gjs_register_type_impl(JSContext* cx, const char* name,
     GTypeQuery query;
     g_type_query(parent_priv->gtype(), &query);
 
-    if (G_UNLIKELY(
-            g_type_test_flags(parent_priv->gtype(), G_TYPE_FLAG_FINAL))) {
+    if (g_type_test_flags(parent_priv->gtype(), G_TYPE_FLAG_FINAL))
+        [[unlikely]] {
         gjs_throw(cx, "Cannot inherit from a final type");
         return false;
     }

@@ -48,7 +48,8 @@
 #    define GJS_JSAPI_RETURN_CONVENTION \
         [[nodiscard]] __attribute__((annotate("jsapi_return_convention")))
 #else
-#    define GJS_JSAPI_RETURN_CONVENTION [[nodiscard]]
+#    define GJS_JSAPI_RETURN_CONVENTION \
+        [[nodiscard("must check for a pending JS exception")]]
 #endif
 
 #define GJS_ALWAYS_INLINE \

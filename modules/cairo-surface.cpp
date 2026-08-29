@@ -383,8 +383,9 @@ static bool surface_release_argument(JSContext*, GITransfer transfer,
 }
 
 void gjs_cairo_surface_init() {
-    static GjsForeignInfo foreign_info = {surface_to_gi_argument,
-                                          surface_from_gi_argument,
-                                          surface_release_argument};
+    static GjsForeignInfo foreign_info = {
+        .to_func = surface_to_gi_argument,
+        .from_func = surface_from_gi_argument,
+        .release_func = surface_release_argument};
     gjs_struct_foreign_register("cairo", "Surface", &foreign_info);
 }

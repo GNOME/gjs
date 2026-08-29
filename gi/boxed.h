@@ -165,8 +165,7 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     using BaseClass = GIWrapperInstance<Base, Prototype, Instance>;
     friend class GIWrapperBase<Base, Prototype, Instance>;
     friend class BoxedBase<Base, Prototype, Instance>;  // for field_getter, etc
-    template <class OtherInstance>
-    friend void adopt_nested_ptr(OtherInstance*, void*);
+    friend void adopt_nested_ptr(auto*, void*);
 
     using BoxedInfo = GI::UnownedInfo<Base::TAG>;
 
@@ -178,11 +177,11 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
         JS::GCHashMap<const char*, JS::Heap<JSObject*>,
                       js::DefaultHasher<const char*>, js::SystemAllocPolicy>;
     NestedObjectsMap m_nested_objects;
-    bool m_allocated_directly : 1;
-    bool m_owning_ptr : 1;  // if set, the JS wrapper owns the C memory referred
-                            // to by m_ptr.
+    bool m_allocated_directly : 1 = false;
+    bool m_owning_ptr : 1 = false;  // if set, the JS wrapper owns the C memory
+                                    // referred to by m_ptr.
 
-    explicit BoxedInstance(Prototype*, JS::HandleObject);
+    using BaseClass::BaseClass;
     ~BoxedInstance();
 
     // Don't set GIWrapperBase::m_ptr directly. Instead, use one of these
@@ -264,10 +263,9 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     bool init_from_c_struct(JSContext*, void* gboxed, Boxed::NoCopy);
 
  protected:
-    template <typename... Args>
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* new_for_c_struct_impl(JSContext*, const BoxedInfo&,
-                                           void* gboxed, Args...);
+                                           void* gboxed, auto...);
 
     using BaseClass::debug_lifecycle;
     using BaseClass::get_copy_source;

@@ -13,6 +13,7 @@
 #include <functional>  // for mem_fn
 #include <limits>
 #include <memory>  // for make_unique, unique_ptr
+#include <span>
 #include <string>
 #include <tuple>  // for tie
 #include <type_traits>
@@ -52,7 +53,6 @@
 #include <jsfriendapi.h>  // for JS_GetObjectFunction, GetFunctionNativeReserved
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 #include <mozilla/Try.h>
 
 #include "gi/arg-inl.h"
@@ -176,7 +176,7 @@ ObjectInstance* ObjectInstance::for_gobject(GObject* gobj) {
 void ObjectInstance::check_js_object_finalized() {
     if (!m_uses_toggle_ref)
         return;
-    if (G_UNLIKELY(m_wrapper_finalized)) {
+    if (m_wrapper_finalized) [[unlikely]] {
         g_critical(
             "Object %p (a %s) resurfaced after the JS wrapper was finalized. "
             "This is some library doing dubious memory management inside "
@@ -200,7 +200,7 @@ void ObjectInstance::set_object_qdata() {
     g_object_set_qdata_full(
         m_ptr, gjs_object_priv_quark(), this, [](void* object) {
             auto* self = static_cast<ObjectInstance*>(object);
-            if (G_UNLIKELY(!self->m_gobj_disposed)) {
+            if (!self->m_gobj_disposed) [[unlikely]] {
                 g_warning(
                     "Object %p (a %s) was finalized but we didn't track "
                     "its disposal",
@@ -1193,10 +1193,10 @@ static JSNative get_setter_for_type(const GI::TypeInfo& type_info,
 
 // Wrap a call to JS::NewObjectWithStashedPointer() while ensuring the pointer
 // is properly deleted if the call fails.
-template <typename T, typename... Ts>
+template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static inline JSObject* new_object_with_stashed_pointer(JSContext* cx,
-                                                        const Ts&... args) {
+                                                        const auto&... args) {
     std::unique_ptr<T> data = std::make_unique<T>(args...);
     JSObject* obj = JS::NewObjectWithStashedPointer(
         cx, data.get(), [](T* data) { delete data; });
@@ -1334,7 +1334,7 @@ static JSNative get_getter_for_property(
             prop_getter->load_return_type(&return_type);
             GI::AutoTypeInfo prop_type{property_info->type_info()};
 
-            if (G_LIKELY(type_info_compatible(return_type, prop_type))) {
+            if (type_info_compatible(return_type, prop_type)) [[likely]] {
                 return create_getter_invoker(cx, pspec, *prop_getter,
                                              return_type, priv_out);
             }
@@ -1442,7 +1442,7 @@ static JSNative get_setter_for_property(
             value_arg.load_type(&type_info);
             GI::AutoTypeInfo prop_type{property_info->type_info()};
 
-            if (G_LIKELY(type_info_compatible(type_info, prop_type))) {
+            if (type_info_compatible(type_info, prop_type)) [[likely]] {
                 return create_setter_invoker(cx, pspec, *prop_setter, value_arg,
                                              type_info, priv_out);
             }
@@ -1559,7 +1559,7 @@ bool ObjectPrototype::lazy_define_gobject_property(
                                      setter_priv, flags))
         return false;
 
-    if G_UNLIKELY (!canonical_id.isVoid()) {
+    if (!canonical_id.isVoid()) [[unlikely]] {
         debug_jsprop("Defining alias GObject property", canonical_id, obj);
 
         if (!JS_DefinePropertyById(cx, obj, canonical_id, canonical_desc))
@@ -1742,7 +1742,7 @@ bool ObjectPrototype::resolve_no_info(JSContext* cx, JS::HandleObject obj,
         }
     }
 
-    mozilla::Span<const GI::InterfaceInfo> interfaces =
+    std::span<const GI::InterfaceInfo> interfaces =
         GI::Repository{}.object_get_gtype_interfaces(m_gtype);
 
     // Fallback to GType system for non custom GObjects with no GI information
@@ -2220,7 +2220,7 @@ void ObjectInstance::toggle_down() {
 }
 
 void ObjectInstance::toggle_up() {
-    if (G_UNLIKELY(!m_ptr || m_gobj_disposed || m_gobj_finalized)) {
+    if (!m_ptr || m_gobj_disposed || m_gobj_finalized) [[unlikely]] {
         gjs_debug_lifecycle(
             GJS_DEBUG_GOBJECT,
             "Avoid toggling up a wrapper for a %s object: %p (%s)",
@@ -2416,11 +2416,7 @@ void ObjectInstance::prepare_shutdown() {
 
 ObjectInstance::ObjectInstance(ObjectPrototype* prototype,
                                JS::HandleObject object)
-    : GIWrapperInstance(prototype, object),
-      m_wrapper_finalized(false),
-      m_gobj_disposed(false),
-      m_gobj_finalized(false),
-      m_uses_toggle_ref(false) {
+    : GIWrapperInstance(prototype, object) {
     GTypeQuery query;
     g_type_query(gtype(), &query);
     g_assert(query.type);
@@ -2516,7 +2512,7 @@ void ObjectInstance::associate_js_gobject(JSContext* cx,
     ensure_weak_pointer_callback(cx);
     link();
 
-    if (!G_UNLIKELY(m_gobj_disposed))
+    if (!m_gobj_disposed) [[likely]]
         g_object_weak_ref(gobj, wrapped_gobj_dispose_notify, this);
 }
 
@@ -2550,8 +2546,7 @@ void ObjectInstance::ensure_uses_toggle_ref(JSContext* cx) {
     g_object_unref(m_ptr);
 }
 
-template <typename T>
-static void invalidate_closure_collection(T* closures, void* data,
+static void invalidate_closure_collection(auto* closures, void* data,
                                           GClosureNotify notify_func) {
     g_assert(closures);
     g_assert(notify_func);
@@ -2845,7 +2840,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
         constructor_name = g_type_name(gtype);
     }
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     bool found;
@@ -2865,7 +2860,7 @@ static JSObject* gjs_lookup_object_constructor_from_info(
                                            nullptr, 0, &constructor, &ignored))
             return nullptr;
     } else {
-        if (G_UNLIKELY (!value.isObject()))
+        if (!value.isObject()) [[unlikely]]
             return nullptr;
 
         constructor = &value.toObject();
@@ -2885,7 +2880,7 @@ static JSObject* gjs_lookup_object_prototype_from_info(
     JS::RootedObject constructor{
         cx, gjs_lookup_object_constructor_from_info(cx, info, gtype)};
 
-    if (G_UNLIKELY(!constructor))
+    if (!constructor) [[unlikely]]
         return nullptr;
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -2908,8 +2903,8 @@ void ObjectInstance::associate_closure(JSContext* cx, GClosure* closure) {
     if (!is_prototype())
         to_instance()->ensure_uses_toggle_ref(cx);
 
-    g_assert(std::find(m_closures.begin(), m_closures.end(), closure) ==
-                 m_closures.end() &&
+    // COMPAT: Use std::ranges::contains in C++23
+    g_assert(std::ranges::find(m_closures, closure) == m_closures.end() &&
              "This closure was already associated with this object");
 
     /* This is a weak reference, and will be cleared when the closure is
@@ -3385,22 +3380,16 @@ bool ObjectBase::init_gobject(JSContext* cx, unsigned argc, JS::Value* vp) {
 }
 
 const struct JSClassOps ObjectBase::class_ops = {
-    &ObjectBase::add_property,
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    &ObjectBase::new_enumerate,
-    &ObjectBase::resolve,
-    nullptr,  // mayResolve
-    &ObjectBase::finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    &ObjectBase::trace,
-};
+    .addProperty = &ObjectBase::add_property,
+    .newEnumerate = &ObjectBase::new_enumerate,
+    .resolve = &ObjectBase::resolve,
+    .finalize = &ObjectBase::finalize,
+    .trace = &ObjectBase::trace};
 
 const struct JSClass ObjectBase::klass = {
-    "GObject_Object",
-    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-    &ObjectBase::class_ops};
+    .name = "GObject_Object",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+    .cOps = &ObjectBase::class_ops};
 
 JSFunctionSpec ObjectBase::proto_methods[] = {
     JS_FN("_init", &ObjectBase::init_gobject, 0, 0),
@@ -3899,7 +3888,7 @@ bool gjs_lookup_object_constructor(JSContext* cx, GType gtype,
     JSObject* constructor = gjs_lookup_object_constructor_from_info(
         cx, repo.find_by_gtype(gtype), gtype);
 
-    if (G_UNLIKELY(constructor == nullptr))
+    if (constructor == nullptr) [[unlikely]]
         return false;
 
     value_p.setObject(*constructor);

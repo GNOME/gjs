@@ -40,6 +40,7 @@ Checks:
   # - bugprone-narrowing-conversions
 
   - custom-avoid-char-pointer-return
+  - custom-use-likely-attribute
   - custom-use-typesafe-array-size
   - custom-use-typesafe-min
   - custom-use-typesafe-max
@@ -126,6 +127,33 @@ CustomChecks:
         Message: >
           Return const char* or std::string_view instead of char* if the string
           is borrowed, or Gjs::AutoChar or std::string if it is owned
+  - Name: use-likely-attribute
+    Query: |
+      match expr(
+        unless(isExpansionInFileMatching("\.c$")),  # C++ only, until C23
+        anyOf(
+          isExpandedFromMacro("G_LIKELY"),
+          isExpandedFromMacro("G_UNLIKELY")),
+        unless(hasParent(expr(anyOf(
+          isExpandedFromMacro("G_LIKELY"),
+          isExpandedFromMacro("G_UNLIKELY"))))),  # only topmost expression
+        unless(anyOf(
+          isExpandedFromMacro("g_assert"),
+          isExpandedFromMacro("g_assert_false"),
+          isExpandedFromMacro("g_assert_nonnull"),
+          isExpandedFromMacro("g_assert_null"),
+          isExpandedFromMacro("g_assert_true"),
+          isExpandedFromMacro("G_DEFINE_QUARK"),
+          isExpandedFromMacro("g_return_if_fail"),
+          isExpandedFromMacro("g_return_val_if_fail"),
+          isExpandedFromMacro("g_str_has_prefix"),
+          isExpandedFromMacro("g_str_has_suffix"),
+          isExpandedFromMacro("g_warn_if_fail"))),
+      ).bind("macro")
+    Diagnostic:
+      - BindName: macro
+        Message: Prefer [[likely]]/[[unlikely]] instead of G_LIKELY/G_UNLIKELY
+          macro for portability
   - Name: use-typesafe-array-size
     Query: |
       match binaryOperator(

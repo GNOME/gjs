@@ -9,7 +9,9 @@
 
 #include <limits>
 #include <random>
+#include <span>
 #include <string>  // for u16string, u32string
+#include <string_view>
 #include <type_traits>
 
 #include <girepository/girepository.h>
@@ -37,7 +39,7 @@
 #include <js/Value.h>
 #include <jsapi.h>    // for JS_GetClassObject
 #include <jspubtd.h>  // for JSProto_Number
-#include <mozilla/Span.h>  // for MakeStringSpan
+#include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
 #include "gi/js-value-inl.h"
@@ -595,7 +597,7 @@ static void gjstest_test_func_gjs_context_run_in_realm() {
     struct RunInRealmData {
         int sentinel;
         bool has_run;
-    } data{42, false};
+    } data{.sentinel = 42, .has_run = false};
 
     gjs_context_run_in_realm(
         gjs_context,
@@ -887,13 +889,13 @@ static void test_gjs_debug_value_bigint_uint64(GjsUnitTestFixture* fx,
 static void test_gjs_debug_value_bigint_huge(GjsUnitTestFixture* fx,
                                              const void*) {
     JS::BigInt* bi = JS::SimpleStringToBigInt(
-        fx->cx, mozilla::MakeStringSpan("10000000000000001"), 16);
+        fx->cx, std::string_view{"10000000000000001"}, 16);
     std::string debug_output = gjs_debug_bigint(bi);
 
     g_assert_cmpstr(debug_output.c_str(), ==, "1n (modulo 2^64)");
 
-    bi = JS::SimpleStringToBigInt(
-        fx->cx, mozilla::MakeStringSpan("-10000000000000001"), 16);
+    bi = JS::SimpleStringToBigInt(fx->cx,
+                                  std::string_view{"-10000000000000001"}, 16);
     debug_output = gjs_debug_bigint(bi);
 
     g_assert_cmpstr(debug_output.c_str(), ==, "-1n (modulo 2^64)");
@@ -1261,7 +1263,7 @@ static void gjstest_test_func_gjs_context_eval_file_source_map() {
 }  // namespace Gjs::Test
 
 int main(int argc, char* argv[]) {
-    mozilla::Span<char*> args{argv, static_cast<size_t>(argc)};
+    std::span<char*> args{argv, static_cast<size_t>(argc)};
 
     using namespace Gjs::Test;  // NOLINT(build/namespaces)
 

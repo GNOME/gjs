@@ -11,6 +11,7 @@
 #include <algorithm>  // for find_if
 #include <atomic>
 #include <deque>
+#include <ranges>
 #include <utility>  // for pair
 
 #include "gi/object.h"
@@ -49,19 +50,17 @@ void ToggleQueue::maybe_unlock() {
 
 std::deque<ToggleQueue::Item>::iterator ToggleQueue::find_operation_locked(
     const ObjectInstance* obj, ToggleQueue::Direction direction) {
-    return std::find_if(
-        q.begin(), q.end(), [obj, direction](const Item& item) -> bool {
-            return item.object == obj && item.direction == direction;
-        });
+    return std::ranges::find_if(q, [obj, direction](const Item& item) -> bool {
+        return item.object == obj && item.direction == direction;
+    });
 }
 
 std::deque<ToggleQueue::Item>::const_iterator
 ToggleQueue::find_operation_locked(const ObjectInstance* obj,
                                    ToggleQueue::Direction direction) const {
-    return std::find_if(
-        q.begin(), q.end(), [obj, direction](const Item& item) -> bool {
-            return item.object == obj && item.direction == direction;
-        });
+    return std::ranges::find_if(q, [obj, direction](const Item& item) -> bool {
+        return item.object == obj && item.direction == direction;
+    });
 }
 
 void ToggleQueue::handle_all_toggles(Handler handler) {
@@ -146,7 +145,7 @@ void ToggleQueue::enqueue(ObjectInstance* obj, ToggleQueue::Direction direction,
                           ToggleQueue::Handler handler) {
     g_assert(owns_lock() && "Unsafe access to queue");
 
-    if (G_UNLIKELY(m_shutdown)) {
+    if (m_shutdown) [[unlikely]] {
         gjs_debug(GJS_DEBUG_GOBJECT,
                   "Enqueuing GObject %p to toggle %s after "
                   "shutdown, probably from another thread (%p).",

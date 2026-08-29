@@ -16,7 +16,7 @@
 #include <limits>
 #include <type_traits>
 #include <unordered_set>  // for unordered_set::erase(), insert()
-#include <utility>
+#include <utility>        // for in_range, move
 
 #include <ffi.h>
 #include <girepository/girepository.h>
@@ -169,15 +169,14 @@ struct HasTypeInfo {
 };
 
 struct Transferable {
-    constexpr Transferable() : m_transfer(GI_TRANSFER_NOTHING) {}
+    constexpr Transferable() = default;
     constexpr explicit Transferable(GITransfer transfer)
         : m_transfer(transfer) {}
-    GITransfer m_transfer : 2;
+    GITransfer m_transfer : 2 = GI_TRANSFER_NOTHING;
 };
 
 struct Nullable {
-    constexpr Nullable() : m_nullable(false) {}
-    bool m_nullable : 1;
+    bool m_nullable : 1 = false;
 
     bool handle_nullable(JSContext* cx, GIArgument* arg,
                          const char* arg_name) const;
@@ -190,7 +189,7 @@ struct Nullable {
 };
 
 struct Positioned {
-    void set_arg_pos(int pos) {
+    void set_arg_pos(uint8_t pos) {
         g_assert(pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
         m_arg_pos = pos;
@@ -220,9 +219,9 @@ struct ExplicitArray {
     uint8_t m_length_pos;
     GIDirection m_length_direction : 2;
 
-    ExplicitArray(int pos, GIDirection direction)
+    ExplicitArray(unsigned pos, GIDirection direction)
         : m_length_pos(pos), m_length_direction(direction) {
-        g_assert(pos >= 0 && pos <= Argument::MAX_ARGS &&
+        g_assert(pos <= Argument::MAX_ARGS &&
                  "No more than 253 arguments allowed");
     }
 };
@@ -339,7 +338,7 @@ struct FixedSizeArray {
     explicit FixedSizeArray(const GI::TypeInfo& type_info) {
         size_t fixed_size = type_info.array_fixed_size().value();
         g_assert(
-            fixed_size <= UINT32_MAX &&
+            std::in_range<uint32_t>(fixed_size) &&
             "4294967295 fixed array elements ought to be enough for anybody");
         m_fixed_size = fixed_size;
     }
@@ -611,9 +610,8 @@ struct FallbackReturn : FallbackOut {
     }
 };
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericOut : SkipAll, Positioned {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue) override {
         return set_out_parameter(state, arg);
@@ -627,9 +625,8 @@ struct NumericOut : SkipAll, Positioned {
 
 using BooleanOut = NumericOut<Tag::GBoolean>;
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericReturn : SkipAll {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override {
         return invalid(cx, G_STRFUNC);
@@ -1393,16 +1390,14 @@ struct BooleanIn : SkipAll {
             JS::HandleValue) override;
 };
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericIn : SkipAll {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext*, GjsFunctionCallState*, GIArgument*,
             JS::HandleValue) override;
 };
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 struct NumericInOut : NumericIn<TAG>, Positioned {
-    static_assert(std::is_arithmetic_v<Tag::RealT<TAG>>, "Not arithmetic type");
     bool in(JSContext* cx, GjsFunctionCallState* state, GIArgument* arg,
             JS::HandleValue value) override {
         if (!NumericIn<TAG>::in(cx, state, arg, value))
@@ -1971,7 +1966,7 @@ bool BooleanIn::in(JSContext*, GjsFunctionCallState*, GIArgument* arg,
     return true;
 }
 
-template <typename TAG>
+template <Tag::Numeric TAG>
 GJS_JSAPI_RETURN_CONVENTION
 bool NumericIn<TAG>::in(JSContext* cx, GjsFunctionCallState*, GIArgument* arg,
                         JS::HandleValue value) {
@@ -2619,8 +2614,9 @@ constexpr size_t argument_maximum_size() {
 }
 #endif
 
-template <typename T, Arg::Kind ArgKind>
-void Argument::init_common(const Init& init, T* arg) {
+template <Arg::Kind ArgKind>
+void Argument::init_common(const Init& init, auto* arg) {
+    using T = std::remove_reference_t<decltype(*arg)>;
 #ifdef GJS_DO_ARGUMENTS_SIZE_CHECK
     static_assert(
         sizeof(T) <= argument_maximum_size<T>(),
@@ -2668,7 +2664,7 @@ bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo& callable) {
         type_info.tag() != GI_TYPE_TAG_VOID || type_info.is_pointer();
     m_is_method = callable.is_method();
 
-    int size = callable.n_args();
+    unsigned size = callable.n_args();
     size += (m_is_method ? 1 : 0);
     size += (m_has_return ? 1 : 0);
 
@@ -2684,24 +2680,22 @@ bool ArgsCache::initialize(JSContext* cx, const GI::CallableInfo& callable) {
     return true;
 }
 
-template <Arg::Kind ArgKind, typename T>
-constexpr void ArgsCache::set_argument(T* arg, const Argument::Init& init) {
-    Argument::init_common<T, ArgKind>(init, arg);
+template <Arg::Kind ArgKind>
+constexpr void ArgsCache::set_argument(auto* arg, const Argument::Init& init) {
+    Argument::init_common<ArgKind>(init, arg);
     arg_get<ArgKind>(init.index) = arg;
 }
 
-template <typename T>
-constexpr void ArgsCache::set_return(T* arg, GITransfer transfer,
+constexpr void ArgsCache::set_return(auto* arg, GITransfer transfer,
                                      GjsArgumentFlags flags) {
     set_argument<Arg::Kind::RETURN_VALUE>(
-        arg, Argument::Init{nullptr, Argument::ABSENT, transfer, flags});
+        arg, Argument::Init{.transfer = transfer, .flags = flags});
 }
 
-template <typename T>
-constexpr void ArgsCache::set_instance(T* arg, GITransfer transfer,
+constexpr void ArgsCache::set_instance(auto* arg, GITransfer transfer,
                                        GjsArgumentFlags flags) {
     set_argument<Arg::Kind::INSTANCE>(
-        arg, Argument::Init{nullptr, Argument::ABSENT, transfer, flags});
+        arg, Argument::Init{.transfer = transfer, .flags = flags});
 }
 
 Maybe<GType> ArgsCache::instance_type() const {
@@ -2716,8 +2710,10 @@ Maybe<Arg::ReturnTag> ArgsCache::return_tag() const {
 
 void ArgsCache::set_skip_all(uint8_t index, const char* name) {
     set_argument(new Arg::SkipAll(),
-                 Argument::Init{name, index, GI_TRANSFER_NOTHING,
-                                GjsArgumentFlags::SKIP_ALL});
+                 Argument::Init{.name = name,
+                                .index = index,
+                                .transfer = GI_TRANSFER_NOTHING,
+                                .flags = GjsArgumentFlags::SKIP_ALL});
 }
 
 void ArgsCache::init_out_array_length_argument(const GI::ArgInfo& length_arg,
@@ -2728,9 +2724,10 @@ void ArgsCache::init_out_array_length_argument(const GI::ArgInfo& length_arg,
     g_assert(length_pos <= Argument::MAX_ARGS && "too many arguments");
     uint8_t validated_length_pos = length_pos;
     set_argument(new Arg::ArrayLengthOut(),
-                 Argument::Init{length_arg.name(), validated_length_pos,
-                                GI_TRANSFER_NOTHING,
-                                flags | GjsArgumentFlags::SKIP_ALL});
+                 Argument::Init{.name = length_arg.name(),
+                                .index = validated_length_pos,
+                                .transfer = GI_TRANSFER_NOTHING,
+                                .flags = flags | GjsArgumentFlags::SKIP_ALL});
 }
 
 void ArgsCache::set_array_argument(
@@ -2748,8 +2745,10 @@ void ArgsCache::set_array_argument(
     GITypeTag length_tag = length_type.tag();
     GIDirection length_direction = length_arg.direction();
 
-    Argument::Init common_args{arg.name(), gi_index, arg.ownership_transfer(),
-                               flags};
+    Argument::Init common_args{.name = arg.name(),
+                               .index = gi_index,
+                               .transfer = arg.ownership_transfer(),
+                               .flags = flags};
 
     if (direction == GI_DIRECTION_IN) {
         if (element_type.is_basic()) {
@@ -3014,7 +3013,7 @@ void ArgsCache::build_interface_in_arg(const Argument::Init& base_args,
                                        const GI::BaseInfo& interface_info) {
     // We do some transfer magic later, so let's ensure we don't mess up.
     // Should not happen in practice.
-    if (G_UNLIKELY(base_args.transfer == GI_TRANSFER_CONTAINER)) {
+    if (base_args.transfer == GI_TRANSFER_CONTAINER) [[unlikely]] {
         set_argument<ArgKind>(
             new Arg::NotIntrospectable(INTERFACE_TRANSFER_CONTAINER),
             base_args);
@@ -3173,9 +3172,11 @@ void ArgsCache::build_normal_in_arg(uint8_t gi_index,
     // - hashes
     // - sequences (null-terminated arrays, lists, etc.)
 
-    const char* name = arg.name();
     GITransfer transfer = arg.ownership_transfer();
-    Argument::Init common_args{name, gi_index, transfer, flags};
+    Argument::Init common_args{.name = arg.name(),
+                               .index = gi_index,
+                               .transfer = transfer,
+                               .flags = flags};
 
     switch (type_info.tag()) {
         case GI_TYPE_TAG_VOID:
@@ -3339,7 +3340,10 @@ void ArgsCache::build_normal_out_arg(uint8_t gi_index,
                                      const GI::ArgInfo& arg,
                                      GjsArgumentFlags flags) {
     GITransfer transfer = arg.ownership_transfer();
-    Argument::Init common_args{arg.name(), gi_index, transfer, flags};
+    Argument::Init common_args{.name = arg.name(),
+                               .index = gi_index,
+                               .transfer = transfer,
+                               .flags = flags};
     GITypeTag tag = type_info.tag();
 
     switch (tag) {
@@ -3493,7 +3497,10 @@ void ArgsCache::build_normal_inout_arg(uint8_t gi_index,
                                        const GI::ArgInfo& arg,
                                        GjsArgumentFlags flags) {
     GITransfer transfer = arg.ownership_transfer();
-    Argument::Init common_args{arg.name(), gi_index, transfer, flags};
+    Argument::Init common_args{.name = arg.name(),
+                               .index = gi_index,
+                               .transfer = transfer,
+                               .flags = flags};
     GITypeTag tag = type_info.tag();
 
     switch (tag) {
@@ -3651,9 +3658,7 @@ void ArgsCache::build_instance(const GI::CallableInfo& callable) {
     }
 
     build_interface_in_arg<Arg::Kind::INSTANCE>(
-        Argument::Init{nullptr, Argument::ABSENT, transfer,
-                       GjsArgumentFlags::NONE},
-        *interface_info);
+        Argument::Init{.transfer = transfer}, *interface_info);
 }
 
 static constexpr bool type_tag_is_scalar(GITypeTag tag) {
@@ -3685,8 +3690,10 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
         flags |= GjsArgumentFlags::SKIP_IN;
     *inc_counter_out = true;
 
-    Argument::Init common_args{arg.name(), gi_index, arg.ownership_transfer(),
-                               flags};
+    Argument::Init common_args{.name = arg.name(),
+                               .index = gi_index,
+                               .transfer = arg.ownership_transfer(),
+                               .flags = flags};
 
     GITypeTag type_tag = type_info.tag();
     if (direction == GI_DIRECTION_OUT &&

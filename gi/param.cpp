@@ -142,32 +142,20 @@ static void param_finalize(JS::GCContext*, JSObject* obj) {
  * class have.
  */
 static const struct JSClassOps gjs_param_class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    param_resolve,
-    nullptr,  // mayResolve
-    param_finalize};
+    .resolve = param_resolve, .finalize = param_finalize};
 
 static JSPropertySpec proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "GObject_ParamSpec", JSPROP_READONLY),
     JS_PS_END};
 
-static constexpr js::ClassSpec class_spec = {
-    nullptr,      // createConstructor
-    nullptr,      // createPrototype
-    nullptr,      // constructorFunctions
-    nullptr,      // constructorProperties
-    nullptr,      // prototypeFunctions
-    proto_props,  // prototypeProperties
-    nullptr       // finishInit
-};
+static constexpr js::ClassSpec class_spec = {.prototypeProperties =
+                                                 proto_props};
 
 struct JSClass gjs_param_class = {
-    "GObject_ParamSpec",
-    JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
-    &gjs_param_class_ops, &class_spec};
+    .name = "GObject_ParamSpec",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(1) | JSCLASS_BACKGROUND_FINALIZE,
+    .cOps = &gjs_param_class_ops,
+    .spec = &class_spec};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_lookup_param_prototype(JSContext* cx) {
@@ -175,19 +163,19 @@ static JSObject* gjs_lookup_param_prototype(JSContext* cx) {
     JS::RootedObject in_object{
         cx, gjs_lookup_namespace_object_by_name(cx, atoms.gobject())};
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     JS::RootedValue value{cx};
     if (!JS_GetPropertyById(cx, in_object, atoms.param_spec(), &value) ||
-        G_UNLIKELY(!value.isObject()))
+        !value.isObject()) [[unlikely]]
         return nullptr;
 
     JS::RootedObject constructor{cx, &value.toObject()};
     g_assert(constructor);
 
     if (!JS_GetPropertyById(cx, constructor, atoms.prototype(), &value) ||
-        G_UNLIKELY(!value.isObjectOrNull()))
+        !value.isObjectOrNull()) [[unlikely]]
         return nullptr;
 
     return value.toObjectOrNull();

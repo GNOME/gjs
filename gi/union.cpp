@@ -28,25 +28,19 @@ UnionInstance::UnionInstance(UnionPrototype* prototype, JS::HandleObject obj)
 UnionInstance::~UnionInstance() { GJS_DEC_COUNTER(union_instance); }
 
 const struct JSClassOps UnionBase::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    &UnionBase::BoxedBase::new_enumerate,
-    &UnionBase::BoxedBase::resolve,
-    nullptr,  // mayResolve
-    &UnionBase::BoxedBase::finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    &UnionBase::BoxedBase::trace};
+    .newEnumerate = &UnionBase::BoxedBase::new_enumerate,
+    .resolve = &UnionBase::BoxedBase::resolve,
+    .finalize = &UnionBase::BoxedBase::finalize,
+    .trace = &UnionBase::BoxedBase::trace};
 
 // We allocate 1 extra reserved slot; this is typically unused, but if the boxed
 // is for a nested structure inside a parent structure, the reserved slot is
 // used to hold onto the parent Javascript object and make sure it doesn't get
 // freed.
 const struct JSClass UnionBase::klass = {
-    "GObject_Union",
-    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-    &UnionBase::class_ops};
+    .name = "GObject_Union",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+    .cOps = &UnionBase::class_ops};
 
 bool UnionPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
                                   const GI::UnionInfo& info) {

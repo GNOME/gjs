@@ -113,7 +113,9 @@ static bool path_release_argument(JSContext*, GITransfer transfer,
 
 void gjs_cairo_path_init() {
     static GjsForeignInfo foreign_info = {
-        path_to_gi_argument, path_from_gi_argument, path_release_argument};
+        .to_func = path_to_gi_argument,
+        .from_func = path_from_gi_argument,
+        .release_func = path_release_argument};
     gjs_struct_foreign_register("cairo", "Path", &foreign_info);
 }
 

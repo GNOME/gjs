@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <string.h>  // for memcpy, size_t, strcmp
 
+#include <span>
 #include <string>
 #include <tuple>  // for tie
 #include <type_traits>
@@ -35,7 +36,6 @@
 #include <mozilla/HashTable.h>
 #include <mozilla/Result.h>
 #include <mozilla/ScopeExit.h>
-#include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg.h"
@@ -55,13 +55,6 @@
 #include "util/log.h"
 
 using mozilla::Maybe, mozilla::Some;
-
-template <class Base, class Prototype, class Instance>
-BoxedInstance<Base, Prototype, Instance>::BoxedInstance(Prototype* prototype,
-                                                        JS::HandleObject obj)
-    : BaseClass(prototype, obj),
-      m_allocated_directly(false),
-      m_owning_ptr(false) {}
 
 // See GIWrapperBase::resolve().
 template <class Base, class Prototype, class Instance>
@@ -493,8 +486,7 @@ Maybe<GI::AutoFieldInfo> BoxedBase<Base, Prototype, Instance>::get_field_info(
 // Helper function to work around -Wunsupported-friend, where it is not possible
 // for BoxedInstance<STRUCT> to be a friend of a BoxedInstance<UNION> method and
 // vice versa. This could be static for g++, but not for clang++.
-template <class OtherInstance>
-void adopt_nested_ptr(OtherInstance* priv, void* data) {
+void adopt_nested_ptr(auto* priv, void* data) {
     priv->share_ptr(data);
     priv->debug_lifecycle(
         "Boxed pointer created, pointing inside memory owned by parent");
@@ -815,8 +807,6 @@ BoxedPrototype<Base, Prototype, Instance>::find_unique_js_field_name(
 template <class Base, class Prototype, class Instance>
 bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
     JSContext* cx, JS::HandleObject proto) {
-    uint32_t count = 0;
-
     // We define all fields as read/write so that the user gets an error
     // message. If we omitted fields or defined them read-only we'd:
     //
@@ -832,7 +822,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
     //
     // At this point methods have already been defined on the prototype, so we
     // may get name conflicts which we need to check for.
-    for (const GI::AutoFieldInfo& field : info().fields()) {
+    for (uint32_t count = 0; const GI::AutoFieldInfo& field : info().fields()) {
         const std::string property_name =
             find_unique_js_field_name(info(), field.name());
         JS::RootedValue private_id{cx, JS::PrivateUint32Value(count++)};
@@ -901,9 +891,8 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_class_impl(
  * specified explicitly in the public API, but the implementation uses
  * std::forward in order to avoid duplicating code. */
 template <class Base, class Prototype, class Instance>
-template <typename... Args>
 JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
-    JSContext* cx, const BoxedInfo& info, void* gboxed, Args... args) {
+    JSContext* cx, const BoxedInfo& info, void* gboxed, auto... args) {
     if (gboxed == nullptr)
         return nullptr;
 
@@ -918,7 +907,8 @@ JSObject* BoxedInstance<Base, Prototype, Instance>::new_for_c_struct_impl(
     if (!priv)
         return nullptr;
 
-    if (!priv->init_from_c_struct(cx, gboxed, std::forward<Args>(args)...))
+    if (!priv->init_from_c_struct(cx, gboxed,
+                                  std::forward<decltype(args)>(args)...))
         return nullptr;
 
     return obj;

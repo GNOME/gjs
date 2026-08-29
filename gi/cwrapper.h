@@ -10,7 +10,6 @@
 #include <stddef.h>  // for size_t
 
 #include <string>       // for string methods
-#include <type_traits>  // for integral_constant
 
 #include <glib-object.h>  // for GType
 
@@ -27,12 +26,10 @@
 #include <jsapi.h>  // for JSFUN_CONSTRUCTOR, JS_NewPlainObject, JS_GetFuncti...
 #include <jspubtd.h>  // for JSProto_Object, JSProtoKey
 
+#include "gjs/auto.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "util/log.h"
-
-struct JSFunctionSpec;
-struct JSPropertySpec;
 
 // gi/cwrapper.h - template implementing a JS object that wraps a C pointer.
 // This template is used for many of the special objects in GJS. It contains
@@ -313,15 +310,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         CWrapperPointerOps<Base, Wrapped>::unset_private(obj);
     }
 
-    static constexpr JSClassOps class_ops = {
-        nullptr,  // addProperty
-        nullptr,  // deleteProperty
-        nullptr,  // enumerate
-        nullptr,  // newEnumerate
-        nullptr,  // resolve
-        nullptr,  // mayResolve
-        &CWrapper::finalize,
-    };
+    static constexpr JSClassOps class_ops = {.finalize = &CWrapper::finalize};
 
     /**
      * CWrapper::create_abstract_constructor:
@@ -412,45 +401,10 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
             return &v_proto.toObject();
         }
 
-        // Workaround for ubsan bug
-        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=71962
-        // Note that the corresponding function pointers in the js::ClassSpec
-        // must be initialized as nullptr, not the default initializer! (see
-        // e.g. CairoPath::class_spec.finishInit)
-        using NullOpType =
-            std::integral_constant<js::ClassObjectCreationOp, nullptr>;
-        using CreateConstructorType =
-            std::integral_constant<js::ClassObjectCreationOp,
-                                   Base::klass.spec->createConstructor>;
-        using CreatePrototypeType =
-            std::integral_constant<js::ClassObjectCreationOp,
-                                   Base::klass.spec->createPrototype>;
-        using NullFuncsType =
-            std::integral_constant<const JSFunctionSpec*, nullptr>;
-        using ConstructorFuncsType =
-            std::integral_constant<const JSFunctionSpec*,
-                                   Base::klass.spec->constructorFunctions>;
-        using PrototypeFuncsType =
-            std::integral_constant<const JSFunctionSpec*,
-                                   Base::klass.spec->prototypeFunctions>;
-        using NullPropsType =
-            std::integral_constant<const JSPropertySpec*, nullptr>;
-        using ConstructorPropsType =
-            std::integral_constant<const JSPropertySpec*,
-                                   Base::klass.spec->constructorProperties>;
-        using PrototypePropsType =
-            std::integral_constant<const JSPropertySpec*,
-                                   Base::klass.spec->prototypeProperties>;
-        using NullFinishOpType =
-            std::integral_constant<js::FinishClassInitOp, nullptr>;
-        using FinishInitType =
-            std::integral_constant<js::FinishClassInitOp,
-                                   Base::klass.spec->finishInit>;
-
         // Create the prototype. If no createPrototype function is provided,
         // then the default is to create a plain object as the prototype.
         JS::RootedObject proto(cx);
-        if constexpr (!std::is_same_v<CreatePrototypeType, NullOpType>) {
+        if constexpr (Gjs::detail::NotNull<Base::klass.spec->createPrototype>) {
             proto = Base::klass.spec->createPrototype(cx, JSProto_Object);
         } else {
             proto = JS_NewPlainObject(cx);
@@ -458,12 +412,14 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         if (!proto)
             return nullptr;
 
-        if constexpr (!std::is_same_v<PrototypePropsType, NullPropsType>) {
+        if constexpr (Gjs::detail::NotNull<
+                          Base::klass.spec->prototypeProperties>) {
             if (!JS_DefineProperties(cx, proto,
                                      Base::klass.spec->prototypeProperties))
                 return nullptr;
         }
-        if constexpr (!std::is_same_v<PrototypeFuncsType, NullFuncsType>) {
+        if constexpr (Gjs::detail::NotNull<
+                          Base::klass.spec->prototypeFunctions>) {
             if (!JS_DefineFunctions(cx, proto,
                                     Base::klass.spec->prototypeFunctions))
                 return nullptr;
@@ -478,7 +434,8 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
         JS::RootedObject ctor_obj(cx);
         if constexpr (!(Base::klass.spec->flags &
                         js::ClassSpec::DontDefineConstructor)) {
-            if constexpr (!std::is_same_v<CreateConstructorType, NullOpType>) {
+            if constexpr (Gjs::detail::NotNull<
+                              Base::klass.spec->createConstructor>) {
                 ctor_obj =
                     Base::klass.spec->createConstructor(cx, JSProto_Object);
             } else {
@@ -490,21 +447,21 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
             if (!ctor_obj ||
                 !JS_LinkConstructorAndPrototype(cx, ctor_obj, proto))
                 return nullptr;
-            if constexpr (!std::is_same_v<ConstructorPropsType,
-                                          NullPropsType>) {
+            if constexpr (Gjs::detail::NotNull<
+                              Base::klass.spec->constructorProperties>) {
                 if (!JS_DefineProperties(
                         cx, ctor_obj, Base::klass.spec->constructorProperties))
                     return nullptr;
             }
-            if constexpr (!std::is_same_v<ConstructorFuncsType,
-                                          NullFuncsType>) {
+            if constexpr (Gjs::detail::NotNull<
+                              Base::klass.spec->constructorFunctions>) {
                 if (!JS_DefineFunctions(cx, ctor_obj,
                                         Base::klass.spec->constructorFunctions))
                     return nullptr;
             }
         }
 
-        if constexpr (!std::is_same_v<FinishInitType, NullFinishOpType>) {
+        if constexpr (Gjs::detail::NotNull<Base::klass.spec->finishInit>) {
             if (!Base::klass.spec->finishInit(cx, ctor_obj, proto))
                 return nullptr;
         }

@@ -717,18 +717,10 @@ static bool importer_resolve(JSContext* cx, JS::HandleObject obj,
 }
 
 static const JSClassOps gjs_importer_class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    importer_new_enumerate,
-    importer_resolve,
-};
+    .newEnumerate = importer_new_enumerate, .resolve = importer_resolve};
 
-const JSClass gjs_importer_class = {
-    "GjsFileImporter",
-    0,
-    &gjs_importer_class_ops,
-};
+const JSClass gjs_importer_class = {.name = "GjsFileImporter",
+                                    .cOps = &gjs_importer_class_ops};
 
 static const JSPropertySpec gjs_importer_proto_props[] = {
     JS_STRING_SYM_PS(toStringTag, "GjsFileImporter", JSPROP_READONLY),

@@ -20,30 +20,20 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/mem-private.h"
 
-// clang-format off
 const struct JSClassOps StructBase::class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    &StructBase::BoxedBase::new_enumerate,
-    &StructBase::BoxedBase::resolve,
-    nullptr,  // mayResolve
-    &StructBase::BoxedBase::finalize,
-    nullptr,  // call
-    nullptr,  // construct
-    &StructBase::BoxedBase::trace
-};
+    .newEnumerate = &StructBase::BoxedBase::new_enumerate,
+    .resolve = &StructBase::BoxedBase::resolve,
+    .finalize = &StructBase::BoxedBase::finalize,
+    .trace = &StructBase::BoxedBase::trace};
 
 // We allocate 1 extra reserved slot; this is typically unused, but if the boxed
 // is for a nested structure inside a parent structure, the reserved slot is
 // used to hold onto the parent Javascript object and make sure it doesn't get
 // freed.
 const struct JSClass StructBase::klass = {
-    "GObject_Struct",
-    JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
-    &StructBase::class_ops
-};
-// clang-format on
+    .name = "GObject_Struct",
+    .flags = JSCLASS_HAS_RESERVED_SLOTS(2) | JSCLASS_FOREGROUND_FINALIZE,
+    .cOps = &StructBase::class_ops};
 
 StructPrototype::StructPrototype(const GI::StructInfo& info, GType gtype)
     : BoxedPrototype(info, gtype) {

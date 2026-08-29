@@ -149,11 +149,10 @@ class GjsGlobal : GjsBaseGlobal {
     static constexpr JSClass klass = {
         // Jasmine depends on the class name "GjsGlobal" to detect GJS' global
         // object.
-        "GjsGlobal",
-        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
+        .name = "GjsGlobal",
+        .flags = JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
             static_cast<uint32_t>(GjsGlobalSlot::LAST)),
-        &defaultclassops,
-    };
+        .cOps = &defaultclassops};
 
     // clang-format off
     static constexpr JSPropertySpec static_props[] = {
@@ -237,11 +236,10 @@ class GjsGlobal : GjsBaseGlobal {
 
 class GjsDebuggerGlobal : GjsBaseGlobal {
     static constexpr JSClass klass = {
-        "GjsDebuggerGlobal",
-        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
+        .name = "GjsDebuggerGlobal",
+        .flags = JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
             static_cast<uint32_t>(GjsDebuggerGlobalSlot::LAST)),
-        &defaultclassops,
-    };
+        .cOps = &defaultclassops};
 
     static constexpr JSFunctionSpec static_funcs[] = {
         JS_FN("loadNative", &load_native_module, 1, 0), JS_FS_END};
@@ -306,11 +304,10 @@ class GjsInternalGlobal : GjsBaseGlobal {
         JS_FS_END};
 
     static constexpr JSClass klass = {
-        "GjsInternalGlobal",
-        JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
+        .name = "GjsInternalGlobal",
+        .flags = JSCLASS_GLOBAL_FLAGS_WITH_SLOTS(
             static_cast<uint32_t>(GjsInternalGlobalSlot::LAST)),
-        &defaultclassops,
-    };
+        .cOps = &defaultclassops};
 
  public:
     GJS_JSAPI_RETURN_CONVENTION

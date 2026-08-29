@@ -11,6 +11,9 @@
 
 #include <cstddef>  // for nullptr_t
 #include <iterator>
+#include <ranges>
+#include <span>
+#include <type_traits>
 #include <utility>  // for pair, make_pair, move
 
 #if GJS_VERBOSE_ENABLE_GI_USAGE
@@ -27,7 +30,6 @@
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 
 #include "gjs/auto.h"
 #include "gjs/gerror-result.h"
@@ -42,11 +44,10 @@
 // CallableInfo.load_arg(), CallableInfo.load_return_type(), and
 // ArgInfo.load_type() methods, for performance.
 
-// COMPAT: We use Mozilla's Maybe, Result, and Span types because they are more
+// COMPAT: We use Mozilla's Maybe and Result types because they are more
 // complete than the C++ standard library types.
 // std::optional does not have transform(), and_then(), etc., until C++23.
 // std::expected does not appear until C++23.
-// std::span does not appear until C++20.
 
 // Note, only the methods actually needed in GJS are wrapped here. So if one is
 // missing, that's not for any particular reason unless noted otherwise; it just
@@ -77,6 +78,9 @@ enum class InfoTag : uint8_t {
     VALUE,
     VFUNC,
 };
+
+template <InfoTag TAG>
+concept BoxedTag = TAG == InfoTag::STRUCT || TAG == InfoTag::UNION;
 
 namespace detail {
 template <InfoTag TAG>
@@ -212,14 +216,13 @@ namespace detail {
 // declarations individually.
 struct Pointer {
     template <InfoTag TAG>
-    using CStruct = typename InfoTraits<TAG>::CStruct;
+    using CStruct = InfoTraits<TAG>::CStruct;
 
     template <InfoTag TAG>
     [[nodiscard]]
-    static constexpr
-        typename detail::InfoTraits<TAG>::CStruct* cast(GIBaseInfo* ptr) {
+    static constexpr detail::InfoTraits<TAG>::CStruct* cast(GIBaseInfo* ptr) {
         // (the following is a GI_TAG_INFO() cast but written out)
-        return reinterpret_cast<typename detail::InfoTraits<TAG>::CStruct*>(
+        return reinterpret_cast<detail::InfoTraits<TAG>::CStruct*>(
             g_type_check_instance_cast(reinterpret_cast<GTypeInstance*>(ptr),
                                        gtype_func(TAG)()));
     }
@@ -278,7 +281,7 @@ template <InfoTag TAG>
 class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     friend struct detail::Pointer;
 
-    using CStruct = typename detail::InfoTraits<TAG>::CStruct;
+    using CStruct = detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
 
     explicit UnownedInfo(CStruct* info) : m_info(info) { validate(); }
@@ -317,13 +320,11 @@ class UnownedInfo : public InfoOperations<UnownedInfo<TAG>, TAG> {
     // the lifetime of the StackInfo. Do not store the UnownedInfo, or try to
     // take ownership.
     UnownedInfo(const StackArgInfo& other)  // NOLINT(runtime/explicit)
-        : UnownedInfo(detail::Pointer::get_from(other)) {
-        static_assert(TAG == InfoTag::ARG);
-    }
+        requires(TAG == InfoTag::ARG)
+        : UnownedInfo(detail::Pointer::get_from(other)) {}
     UnownedInfo(const StackTypeInfo& other)  // NOLINT(runtime/explicit)
-        : UnownedInfo(detail::Pointer::get_from(other)) {
-        static_assert(TAG == InfoTag::TYPE);
-    }
+        requires(TAG == InfoTag::TYPE)
+        : UnownedInfo(detail::Pointer::get_from(other)) {}
 
     // Caller must take care that the lifetime of UnownedInfo does not exceed
     // the lifetime of the originating OwnedInfo. That means, if you store it,
@@ -356,7 +357,7 @@ template <InfoTag TAG>
 class OwnedInfo : public InfoOperations<OwnedInfo<TAG>, TAG> {
     friend struct detail::Pointer;
 
-    using CStruct = typename detail::InfoTraits<TAG>::CStruct;
+    using CStruct = detail::InfoTraits<TAG>::CStruct;
     CStruct* m_info;
 
     explicit OwnedInfo(CStruct* info) : m_info(info) {
@@ -464,25 +465,6 @@ class InfoOperations<Wrapper, InfoTag::BASE> {
     }
 
  public:
-    template <InfoTag TAG>
-    bool operator==(const OwnedInfo<TAG>& other) const {
-        return gi_base_info_equal(
-            ptr(), GI_BASE_INFO(detail::Pointer::get_from(other)));
-    }
-    template <InfoTag TAG>
-    bool operator==(const UnownedInfo<TAG>& other) const {
-        return gi_base_info_equal(
-            ptr(), GI_BASE_INFO(detail::Pointer::get_from(other)));
-    }
-    template <InfoTag TAG>
-    bool operator!=(const OwnedInfo<TAG>& other) const {
-        return !(*this == other);
-    }
-    template <InfoTag TAG>
-    bool operator!=(const UnownedInfo<TAG>& other) const {
-        return !(*this == other);
-    }
-
     template <InfoTag TAG = InfoTag::BASE>
     [[nodiscard]]
     mozilla::Maybe<const UnownedInfo<TAG>> container() const {
@@ -593,7 +575,7 @@ template <typename T>
 using NInfosFunc = unsigned (*)(T);
 
 template <typename T, InfoTag TAG>
-using GetInfoFunc = typename detail::InfoTraits<TAG>::CStruct* (*)(T, unsigned);
+using GetInfoFunc = detail::InfoTraits<TAG>::CStruct* (*)(T, unsigned);
 
 template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
           GetInfoFunc<T, TAG> get_info>
@@ -602,11 +584,9 @@ class InfoIterator {
     unsigned m_ix = 0;
 
  public:
-    using iterator_category = std::forward_iterator_tag;
-    using difference_type = int;
+    using iterator_concept = std::forward_iterator_tag;
+    using difference_type = std::ptrdiff_t;
     using value_type = OwnedInfo<TAG>;
-    using pointer = value_type*;
-    using reference = value_type&;
 
     InfoIterator() = default;
     explicit InfoIterator(T obj, unsigned ix) : m_obj(obj), m_ix(ix) {}
@@ -623,12 +603,7 @@ class InfoIterator {
         m_ix++;
         return tmp;
     }
-    bool operator==(const InfoIterator& other) const {
-        return m_obj == other.m_obj && m_ix == other.m_ix;
-    }
-    bool operator!=(const InfoIterator& other) const {
-        return m_obj != other.m_obj || m_ix != other.m_ix;
-    }
+    bool operator==(const InfoIterator& other) const = default;
 };
 
 template <typename T, InfoTag TAG, NInfosFunc<T> get_n_infos,
@@ -646,7 +621,20 @@ class InfoIterable {
         return detail::Pointer::nullable<TAG>(get_info(m_obj, ix));
     }
 
-    [[nodiscard]] Iterator begin() const { return Iterator{m_obj, 0}; }
+    [[nodiscard]] Iterator begin() const {
+        // It's a bit weird to have these checks inside begin(), but they need
+        // to happen at a point where all types are already complete, while also
+        // avoiding instantiating them too early (e.g. before their
+        // InfoOperations are defined), and preferably not having to specify
+        // each possible instantiation.
+        static_assert(
+            std::forward_iterator<Iterator>,
+            "InfoIterator must satisfy all the forward iterator requirements");
+        static_assert(
+            std::ranges::forward_range<InfoIterable>,
+            "InfoIterable must satisfy all the forward range requirements");
+        return Iterator{m_obj, 0};
+    }
     [[nodiscard]]
     Iterator end() const {
         unsigned n_fields = get_n_infos(m_obj);
@@ -1095,8 +1083,8 @@ class InfoOperations<Wrapper, InfoTag::FUNCTION>
 
  public:
     [[nodiscard]]
-    Gjs::GErrorResult<> invoke(const mozilla::Span<const GIArgument>& in_args,
-                               const mozilla::Span<GIArgument>& out_args,
+    Gjs::GErrorResult<> invoke(std::span<const GIArgument> in_args,
+                               std::span<GIArgument> out_args,
                                GIArgument* return_value) const {
         GError* error = nullptr;
         return this->bool_gerror(
@@ -1642,10 +1630,6 @@ class Repository {
         bool operator==(const IterableNamespace& other) const {
             return repo == other.repo && strcmp(ns, other.ns) == 0;
         }
-
-        bool operator!=(const IterableNamespace& other) const {
-            return !(*this == other);
-        }
     };
 
  public:
@@ -1654,7 +1638,7 @@ class Repository {
                                   &IterableNamespace::get_info>;
     [[nodiscard]]
     Iterable infos(const char* ns) const {
-        return Iterable{{m_ptr, ns}};
+        return Iterable{{.repo = m_ptr, .ns = ns}};
     }
 
     [[nodiscard]]
@@ -1688,7 +1672,7 @@ class Repository {
         return gi_repository_is_registered(m_ptr, ns, version);
     }
     [[nodiscard]]
-    mozilla::Span<const InterfaceInfo> object_get_gtype_interfaces(
+    std::span<const InterfaceInfo> object_get_gtype_interfaces(
         GType gtype) const {
         InterfaceInfo* interfaces;
         size_t n_interfaces;
@@ -1793,7 +1777,28 @@ inline void Pointer::to_stack(GITypeInfo* ptr, StackTypeInfo* stack) {
         static_cast<GTypeClass*>(g_type_class_ref(GI_TYPE_TYPE_INFO));
     stack_ptr->dummy0 = 0x7fff'ffff;
 }
+
+// concept detail::InfoWrapper is a shorthand for "is this type any of the above
+// defined wrapper types". is_instantiation_of seems like it should be in the
+// standard library, but isn't. It's easy to implement incorrectly:
+// https://stackoverflow.com/questions/11251376/172999#comment16238019_11251408
+template <typename T, template <auto...> class Template>
+inline constexpr bool is_instantiation_of = false;
+template <template <auto...> class Template, auto... Args>
+inline constexpr bool is_instantiation_of<Template<Args...>, Template> = true;
+template <typename T>
+concept InfoWrapper =
+    is_instantiation_of<T, OwnedInfo> || is_instantiation_of<T, UnownedInfo> ||
+    std::is_same_v<T, StackArgInfo> || std::is_same_v<T, StackTypeInfo>;
+
 }  // namespace detail
+
+[[nodiscard]]
+bool operator==(const detail::InfoWrapper auto& lhs,
+                const detail::InfoWrapper auto& rhs) {
+    return gi_base_info_equal(GI_BASE_INFO(detail::Pointer::get_from(lhs)),
+                              GI_BASE_INFO(detail::Pointer::get_from(rhs)));
+}
 
 static_assert(sizeof(StackArgInfo) == sizeof(GIArgInfo),
               "StackArgInfo should be byte-compatible with GIArgInfo");

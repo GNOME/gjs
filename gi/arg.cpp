@@ -10,9 +10,11 @@
 #include <string.h>  // for strcmp, strlen, memcpy
 
 #include <algorithm>  // for none_of
+#include <concepts>
 #include <functional>  // for mem_fn
+#include <span>
 #include <string>
-#include <utility>  // for move
+#include <utility>  // for in_range, move
 #include <vector>
 
 #include <girepository/girepository.h>
@@ -38,7 +40,6 @@
 #include <jsapi.h>  // for InformalValueTypeName, IdVector
 #include <mozilla/Maybe.h>
 #include <mozilla/Result.h>
-#include <mozilla/Span.h>
 
 #include "gi/arg-inl.h"
 #include "gi/arg-types-inl.h"
@@ -81,6 +82,9 @@ using mozilla::Maybe, mozilla::Nothing, mozilla::Some;
 // 3. "Release" marshallers - used when cleaning up GIArguments after a C
 //    function call
 
+template <typename T>
+concept GLibLinkedList = std::same_as<T, GList> || std::same_as<T, GSList>;
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_internal(JSContext*, GITransfer,
                                        const GI::TypeInfo&, GITypeTag,
@@ -96,7 +100,8 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
         Gjs::AutoTypeClass<GFlagsClass> gflags_class{gtype};
 
         // check all bits are valid bits for the flag and is a 32 bit flag
-        if ((static_cast<uint32_t>(value) & gflags_class->mask) != value) {
+        if (std::cmp_not_equal(
+                static_cast<uint32_t>(value) & gflags_class->mask, value)) {
             // Not a uint32_t with invalid mask values
             gjs_throw(cx, "0x%" PRIx64 " is not a valid value for flags %s",
                       value, g_type_name(gtype));
@@ -110,11 +115,10 @@ bool gjs_flags_value_is_valid(JSContext* cx, GType gtype, int64_t value) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_enum_value_is_valid(JSContext* cx, const GI::EnumInfo& info,
                                     int64_t value) {
-    GI::EnumInfo::ValuesIterable values = info.values();
-    if (std::none_of(values.begin(), values.end(),
-                     [value](const GI::AutoValueInfo& info) {
-                         return info.value() == value;
-                     })) {
+    if (std::ranges::none_of(info.values(),
+                             [value](const GI::AutoValueInfo& info) {
+                                 return info.value() == value;
+                             })) {
         gjs_throw(cx, "%" PRId64 " is not a valid value for enumeration %s",
                   value, info.name());
         return false;
@@ -196,14 +200,12 @@ static bool type_needs_out_release(const GI::TypeInfo& type_info,
 // These marshaller functions are responsible for converting JS values to the
 // required GIArgument type, for the in parameters of a C function call.
 
-template <typename T>
+template <GLibLinkedList T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_to_g_list(JSContext* cx, JS::HandleValue value,
                                 const GI::TypeInfo& type_info,
                                 GITransfer transfer, const char* arg_name,
                                 GjsArgumentType arg_type, T** list_p) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
-
     // While a list can be NULL in C, that means empty array in JavaScript, it
     // doesn't mean null in JavaScript.
     bool is_array;
@@ -291,12 +293,11 @@ static GHashTable* create_hash_table_for_key_type(GITypeTag key_type) {
     return g_hash_table_new(nullptr, nullptr);
 }
 
-template <typename IntTag>
+template <Gjs::Tag::Integer IntTag>
 GJS_JSAPI_RETURN_CONVENTION
 static bool hashtable_int_key(JSContext* cx, JS::HandleValue value,
                               void** pointer_out) {
     using IntType = Gjs::Tag::RealT<IntTag>;
-    static_assert(std::is_integral_v<IntType>, "Need an integer");
     bool out_of_range = false;
 
     Gjs::Tag::JSValueContainingT<IntTag> i;
@@ -1673,13 +1674,12 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
                                    GI_TYPE_TAG_INTERFACE, flags, arg);
 }
 
-template <typename T>
+template <GLibLinkedList T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool basic_array_to_linked_list(JSContext* cx, JS::HandleValue value,
                                        GITypeTag element_tag,
                                        const char* arg_name,
                                        GjsArgumentType arg_type, T** list_p) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
              "use gjs_array_to_g_list() for lists containing non-basic types");
 
@@ -2282,12 +2282,11 @@ bool gjs_array_from_strv(JSContext* cx, JS::MutableHandleValue value_out,
     return true;
 }
 
-template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_array_from_g_list(JSContext* cx, JS::MutableHandleValue value_p,
                                   const GI::TypeInfo& type_info,
-                                  GITransfer transfer, T* list) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+                                  GITransfer transfer,
+                                  GLibLinkedList auto* list) {
     JS::RootedValueVector elems(cx);
     GI::AutoTypeInfo element_type{type_info.element_type()};
 
@@ -3029,12 +3028,11 @@ bool gjs_value_from_basic_gptrarray_gi_argument(
         cx, value_out, element_tag, ptr_array->len, ptr_array->pdata);
 }
 
-template <typename T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool array_from_basic_linked_list(JSContext* cx,
                                          JS::MutableHandleValue value_out,
-                                         GITypeTag element_tag, T* list) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
+                                         GITypeTag element_tag,
+                                         GLibLinkedList auto* list) {
     g_assert(
         GI_TYPE_TAG_IS_BASIC(element_tag) &&
         "use gjs_array_from_g_list() for lists containing non-basic types");
@@ -3251,7 +3249,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 
                     if (gtype != G_TYPE_NONE) {
                         // Check to make sure 32 bit flag
-                        if (static_cast<uint32_t>(value_int64) != value_int64) {
+                        if (!std::in_range<uint32_t>(value_int64)) {
                             gjs_throw(cx,
                                       "0x%" PRIx64
                                       " is not a valid value for flags %s",
@@ -3494,12 +3492,11 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
 // These marshaller function are responsible for releasing the values stored in
 // GIArgument after a C function call succeeds or fails.
 
-template <typename T>
+template <GLibLinkedList T>
 GJS_JSAPI_RETURN_CONVENTION
 static bool gjs_g_arg_release_g_list(JSContext* cx, GITransfer transfer,
                                      const GI::TypeInfo& type_info,
                                      GjsArgumentFlags flags, GIArgument* arg) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     Gjs::SmartPointer<T> list{gjs_arg_steal<T*>(arg)};
 
     if (transfer == GI_TRANSFER_CONTAINER)
@@ -3580,7 +3577,7 @@ static inline bool gjs_gi_argument_release_array_internal(
 
     GITypeTag type_tag = element_type.tag();
     size_t element_size = gjs_type_get_element_size(type_tag, element_type);
-    if G_UNLIKELY (element_size == 0)
+    if (element_size == 0) [[unlikely]]
         return true;
 
     bool is_pointer = element_type.is_pointer();
@@ -3631,10 +3628,9 @@ static void release_basic_type_internal(GITypeTag type_tag, GIArgument* arg) {
         g_clear_pointer(&gjs_arg_member<char*>(arg), g_free);
 }
 
-template <typename T>
+template <GLibLinkedList T>
 static void basic_linked_list_release(GITransfer transfer,
                                       GITypeTag element_tag, GIArgument* arg) {
-    static_assert(std::is_same_v<T, GList> || std::is_same_v<T, GSList>);
     g_assert(GI_TYPE_TAG_IS_BASIC(element_tag) &&
              "use gjs_g_arg_release_g_list() for lists with non-basic types");
 

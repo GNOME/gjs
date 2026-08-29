@@ -740,10 +740,9 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
                          g_type_name(expected_gtype));
         return false;
     }
-    template <typename T>
     [[nodiscard]]
     static bool typecheck(JSContext* cx, JS::HandleObject object,
-                          const T& expected, GjsTypecheckNoThrow) {
+                          const auto& expected, GjsTypecheckNoThrow) {
         Base* priv = Base::for_js(cx, object);
         if (!priv || priv->is_prototype())
             return false;

@@ -192,19 +192,10 @@ static bool repo_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
     return true;
 }
 
-static const struct JSClassOps gjs_repo_class_ops = {
-    nullptr,  // addProperty
-    nullptr,  // deleteProperty
-    nullptr,  // enumerate
-    nullptr,  // newEnumerate
-    repo_resolve,
-};
+static const struct JSClassOps gjs_repo_class_ops = {.resolve = repo_resolve};
 
-struct JSClass gjs_repo_class = {
-    "GIRepository",
-    0,
-    &gjs_repo_class_ops,
-};
+struct JSClass gjs_repo_class = {.name = "GIRepository",
+                                 .cOps = &gjs_repo_class_ops};
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* repo_new(JSContext* cx) {
@@ -478,14 +469,14 @@ JSObject* gjs_lookup_generic_constructor(JSContext* cx,
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
     const char* constructor_name = info.name();
 
-    if (G_UNLIKELY (!in_object))
+    if (!in_object) [[unlikely]]
         return nullptr;
 
     JS::RootedValue value{cx};
     if (!JS_GetProperty(cx, in_object, constructor_name, &value))
         return nullptr;
 
-    if (G_UNLIKELY(!value.isObject())) {
+    if (!value.isObject()) [[unlikely]] {
         gjs_throw(cx,
                   "Constructor of %s.%s was the wrong type, expected an object",
                   info.ns(), constructor_name);
@@ -498,7 +489,7 @@ JSObject* gjs_lookup_generic_constructor(JSContext* cx,
 JSObject* gjs_lookup_generic_prototype(JSContext* cx,
                                        const GI::BaseInfo& info) {
     JS::RootedObject constructor{cx, gjs_lookup_generic_constructor(cx, info)};
-    if (G_UNLIKELY(!constructor))
+    if (!constructor) [[unlikely]]
         return nullptr;
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
@@ -506,7 +497,7 @@ JSObject* gjs_lookup_generic_prototype(JSContext* cx,
     if (!JS_GetPropertyById(cx, constructor, atoms.prototype(), &value))
         return nullptr;
 
-    if (G_UNLIKELY(!value.isObject())) {
+    if (!value.isObject()) [[unlikely]] {
         gjs_throw(cx,
                   "Prototype of %s.%s was the wrong type, expected an object",
                   info.ns(), info.name());

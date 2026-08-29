@@ -75,9 +75,7 @@ struct DeprecationEntry {
     DeprecationEntry(GjsDeprecationMessageId an_id, const char* a_loc)
         : id(an_id), loc(a_loc ? a_loc : "unknown") {}
 
-    bool operator==(const DeprecationEntry& other) const {
-        return id == other.id && loc == other.loc;
-    }
+    bool operator==(const DeprecationEntry& other) const = default;
 };
 
 namespace std {

@@ -43,20 +43,18 @@ static bool type_can_be_allocated_directly(const TypeInfo& type_info) {
  * instances without needing a constructor.
  */
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 [[nodiscard]]
 bool struct_is_simple(const UnownedInfo<TAG>& info) {
-    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
-
     typename UnownedInfo<TAG>::FieldsIterable iter = info.fields();
 
     // If it's opaque, it's not simple
     if (iter.size() == 0)
         return false;
 
-    return std::all_of(
-        iter.begin(), iter.end(), [](const AutoFieldInfo& field_info) {
-            return type_can_be_allocated_directly(field_info.type_info());
-        });
+    return std::ranges::all_of(iter, [](const AutoFieldInfo& field_info) {
+        return type_can_be_allocated_directly(field_info.type_info());
+    });
 }
 
 [[nodiscard]]
@@ -83,28 +81,23 @@ static bool direct_allocation_has_pointers(const TypeInfo& type_info) {
 }
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 bool simple_struct_has_pointers(const UnownedInfo<TAG>& info) {
-    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
-
     g_assert(struct_is_simple(info) &&
              "Don't call simple_struct_has_pointers() on a non-simple struct");
 
-    typename UnownedInfo<TAG>::FieldsIterable fields = info.fields();
-    return std::any_of(
-        fields.begin(), fields.end(), [](const AutoFieldInfo& field) {
-            return direct_allocation_has_pointers(field.type_info());
-        });
+    return std::ranges::any_of(info.fields(), [](const AutoFieldInfo& field) {
+        return direct_allocation_has_pointers(field.type_info());
+    });
 }
 
 template <InfoTag TAG>
+    requires BoxedTag<TAG>
 std::pair<Maybe<ConstructorIndex>, Maybe<ConstructorIndex>>
 find_boxed_constructor_indices(const UnownedInfo<TAG>& info) {
-    static_assert(TAG == InfoTag::STRUCT || TAG == InfoTag::UNION);
-
     if (info.gtype() == G_TYPE_NONE)
         return {};
 
-    ConstructorIndex i = 0;
     Maybe<ConstructorIndex> first_constructor;
     Maybe<ConstructorIndex> zero_args_constructor;
     Maybe<ConstructorIndex> default_constructor;
@@ -114,7 +107,8 @@ find_boxed_constructor_indices(const UnownedInfo<TAG>& info) {
      * really make sense for non-boxed types, since there is no memory
      * management for the return value.
      */
-    for (const GI::AutoFunctionInfo& func_info : info.methods()) {
+    for (ConstructorIndex i = 0;
+         const GI::AutoFunctionInfo& func_info : info.methods()) {
         if (func_info.is_constructor()) {
             if (!first_constructor)
                 first_constructor = Some(i);
