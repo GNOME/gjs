@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <utility>  // for move
+
 #include <glib.h>
 
 #include <js/CharacterEncoding.h>
@@ -12,12 +14,15 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <mozilla/Maybe.h>
 
 #include "test/gjs-test-common.h"
 
-char* gjs_test_get_exception_message(JSContext* cx) {
+using mozilla::Maybe, mozilla::Some;
+
+Maybe<std::string> gjs_test_get_exception_message(JSContext* cx) {
     if (!JS_IsExceptionPending(cx))
-        return nullptr;
+        return {};
 
     JS::RootedValue v_exc(cx);
     g_assert_true(JS_GetPendingException(cx, &v_exc));
@@ -27,8 +32,8 @@ char* gjs_test_get_exception_message(JSContext* cx) {
     JSErrorReport* report = JS_ErrorFromException(cx, exc);
     g_assert_nonnull(report);
 
-    char* retval = g_strdup(report->message().c_str());
-    g_assert_nonnull(retval);
+    g_assert_true(report->message());
+    std::string retval{report->message().c_str()};
     JS_ClearPendingException(cx);
-    return retval;
+    return Some(std::move(retval));
 }

@@ -12,6 +12,7 @@
 #include <iomanip>    // for operator<<, setfill, setw
 #include <sstream>    // for operator<<, basic_ostream, ostring...
 #include <string>     // for allocator, char_traits
+#include <string_view>
 
 #include <glib.h>
 
@@ -68,6 +69,23 @@ Gjs::AutoChar gjs_hyphen_to_camel(const char* str) {
         input_iter++;
     }
     *output_iter = '\0';
+    return retval;
+}
+
+std::string gjs_hyphen_from_camel(std::string_view camel_name) {
+    std::string retval;
+    // four hyphens should be reasonable guess
+    retval.reserve(camel_name.size() + 4);
+
+    for (const char c : camel_name) {
+        if (g_ascii_isupper(c)) {
+            retval += '-';
+            retval += g_ascii_tolower(c);
+        } else {
+            retval += c;
+        }
+    }
+
     return retval;
 }
 

@@ -964,21 +964,22 @@ static GArray* garray_new_for_basic_type(unsigned length, GITypeTag tag) {
     return g_array_sized_new(true, false, element_size, length);
 }
 
-char* gjs_argument_display_name(const char* arg_name,
-                                GjsArgumentType arg_type) {
+std::string gjs_argument_display_name(const char* arg_name,
+                                      GjsArgumentType arg_type) {
+    using std::string_literals::operator""s;
     switch (arg_type) {
         case GJS_ARGUMENT_ARGUMENT:
-            return g_strdup_printf("Argument '%s'", arg_name);
+            return "Argument '"s + (arg_name ? arg_name : "(null)") + "'";
         case GJS_ARGUMENT_RETURN_VALUE:
-            return g_strdup("Return value");
+            return "Return value";
         case GJS_ARGUMENT_FIELD:
-            return g_strdup_printf("Field '%s'", arg_name);
+            return "Field '"s + (arg_name ? arg_name : "(null)") + "'";
         case GJS_ARGUMENT_LIST_ELEMENT:
-            return g_strdup("List element");
+            return "List element";
         case GJS_ARGUMENT_HASH_ELEMENT:
-            return g_strdup("Hash element");
+            return "Hash element";
         case GJS_ARGUMENT_ARRAY_ELEMENT:
-            return g_strdup("Array element");
+            return "Array element";
         default:
             g_assert_not_reached();
     }
@@ -988,10 +989,9 @@ static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
                                    const GI::TypeInfo& arginfo,
                                    const char* arg_name,
                                    GjsArgumentType arg_type) {
-    Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
-
     gjs_throw(cx, "Expected type %s for %s but got type '%s'",
-              arginfo.display_string(), display_name.get(),
+              arginfo.display_string(),
+              gjs_argument_display_name(arg_name, arg_type).c_str(),
               JS::InformalValueTypeName(value));
 }
 
@@ -999,10 +999,9 @@ GJS_JSAPI_RETURN_CONVENTION
 static bool throw_invalid_argument_tag(JSContext* cx, JS::HandleValue value,
                                        GITypeTag type_tag, const char* arg_name,
                                        GjsArgumentType arg_type) {
-    Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
-
     gjs_throw(cx, "Expected type %s for %s but got type '%s'",
-              gi_type_tag_to_string(type_tag), display_name.get(),
+              gi_type_tag_to_string(type_tag),
+              gjs_argument_display_name(arg_name, arg_type).c_str(),
               JS::InformalValueTypeName(value));
     return false;
 }
@@ -1013,10 +1012,9 @@ static bool throw_invalid_interface_argument(JSContext* cx,
                                              const GI::BaseInfo& interface_info,
                                              const char* arg_name,
                                              GjsArgumentType arg_type) {
-    Gjs::AutoChar display_name{gjs_argument_display_name(arg_name, arg_type)};
-
     gjs_throw(cx, "Expected type %s for %s but got type '%s'",
-              interface_info.type_string(), display_name.get(),
+              interface_info.type_string(),
+              gjs_argument_display_name(arg_name, arg_type).c_str(),
               JS::InformalValueTypeName(value));
     return false;
 }
@@ -1167,10 +1165,9 @@ static bool value_to_gdk_atom_gi_argument_internal(JSContext* cx,
                                                    const char* arg_name,
                                                    GjsArgumentType arg_type) {
     if (!value.isNull() && !value.isString()) {
-        Gjs::AutoChar display_name{
-            gjs_argument_display_name(arg_name, arg_type)};
         gjs_throw(cx, "Expected type String or null for %s but got type '%s'",
-                  display_name.get(), JS::InformalValueTypeName(value));
+                  gjs_argument_display_name(arg_name, arg_type).c_str(),
+                  JS::InformalValueTypeName(value));
         return false;
     }
 
@@ -1443,21 +1440,19 @@ inline static bool gjs_arg_set_from_js_value(JSContext* cx,
 
     if (!gjs_arg_set_from_js_value<TAG>(cx, value, arg, &out_of_range)) {
         if (out_of_range) {
-            Gjs::AutoChar display_name{
-                gjs_argument_display_name(arg_name, arg_type)};
             gjs_throw(cx, "value %s is out of range for %s (type %s)",
-                      gjs_debug_value(value).c_str(), display_name.get(),
+                      gjs_debug_value(value).c_str(),
+                      gjs_argument_display_name(arg_name, arg_type).c_str(),
                       Gjs::static_type_name<TAG>());
         }
 
         return false;
     }
 
-    gjs_debug_marshal(
-        GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
-        Gjs::AutoChar{gjs_argument_display_name(arg_name, arg_type)}.get(),
-        std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
-        Gjs::static_type_name<TAG>());
+    gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "%s set to value %s (type %s)",
+                      gjs_argument_display_name(arg_name, arg_type).c_str(),
+                      std::to_string(gjs_arg_get<TAG>(arg)).c_str(),
+                      Gjs::static_type_name<TAG>());
 
     return true;
 }
@@ -1467,9 +1462,8 @@ static bool check_nullable_argument(JSContext* cx, const char* arg_name,
                                     GITypeTag type_tag, GjsArgumentFlags flags,
                                     GIArgument* arg) {
     if (!(flags & GjsArgumentFlags::MAY_BE_NULL) && !gjs_arg_get<void*>(arg)) {
-        Gjs::AutoChar display_name{
-            gjs_argument_display_name(arg_name, arg_type)};
-        gjs_throw(cx, "%s (type %s) may not be null", display_name.get(),
+        gjs_throw(cx, "%s (type %s) may not be null",
+                  gjs_argument_display_name(arg_name, arg_type).c_str(),
                   gi_type_tag_to_string(type_tag));
         return false;
     }

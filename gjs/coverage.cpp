@@ -67,8 +67,8 @@ enum GjsCoverageProps : uint8_t {
 static GParamSpec* gjs_coverage_props[PROP_OUTPUT_DIRECTORY + 1];
 
 [[nodiscard]]
-static char* get_file_identifier(GFile* source_file) {
-    char* path = g_file_get_path(source_file);
+static Gjs::AutoChar get_file_identifier(GFile* source_file) {
+    Gjs::AutoChar path{g_file_get_path(source_file)};
     if (!path)
         path = g_file_get_uri(source_file);
     return path;
@@ -108,12 +108,11 @@ static GErrorResult<> copy_source_file_to_coverage_output(
 // This function will strip a URI scheme and return the string with the URI
 // scheme stripped or nullptr if the path was not a valid URI
 [[nodiscard]]
-static char* strip_uri_scheme(const char* potential_uri) {
-    char* uri_header = g_uri_parse_scheme(potential_uri);
+static Gjs::AutoChar strip_uri_scheme(const char* potential_uri) {
+    Gjs::AutoChar uri_header{g_uri_parse_scheme(potential_uri)};
 
     if (uri_header) {
         size_t offset = strlen(uri_header);
-        g_free(uri_header);
 
         /* g_uri_parse_scheme() only parses the name of the scheme, we also need
          * to strip the characters ':///' */
@@ -138,10 +137,11 @@ static char* strip_uri_scheme(const char* potential_uri) {
  * URI path with the URI scheme and leading slash stripped out.
  */
 [[nodiscard]]
-static char* find_diverging_child_components(GFile* child, GFile* parent) {
+static Gjs::AutoChar find_diverging_child_components(GFile* child,
+                                                     GFile* parent) {
     Gjs::AutoUnref<GFile> ancestor{parent, Gjs::TakeOwnership{}};
     while (ancestor) {
-        char* relpath = g_file_get_relative_path(ancestor, child);
+        Gjs::AutoChar relpath{g_file_get_relative_path(ancestor, child)};
         if (relpath)
             return relpath;
 
@@ -152,7 +152,7 @@ static char* find_diverging_child_components(GFile* child, GFile* parent) {
      * this gives you a regular path name; getting it through the URI would give
      * a URI-encoded path (%20 for spaces, etc.) */
     Gjs::AutoUnref<GFile> root{g_file_new_for_path("/")};
-    char* child_path = g_file_get_relative_path(root, child);
+    Gjs::AutoChar child_path = g_file_get_relative_path(root, child);
     if (child_path)
         return child_path;
 

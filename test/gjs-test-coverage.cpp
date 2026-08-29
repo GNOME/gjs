@@ -153,21 +153,22 @@ static std::string_view line_starting_with(const std::string_view& data,
     return iter;
 }
 
-static char* write_statistics_and_get_coverage_data(GjsCoverage* coverage,
-                                                    GFile* lcov_output) {
+static Gjs::AutoChar write_statistics_and_get_coverage_data(
+    GjsCoverage* coverage, GFile* lcov_output) {
     gjs_coverage_write_statistics(coverage);
 
-    char* coverage_data_contents;
+    Gjs::AutoChar coverage_data_contents;
 
     g_file_load_contents(lcov_output, /* cancellable = */ nullptr,
-                         &coverage_data_contents, /* length out = */ nullptr,
+                         coverage_data_contents.out(),
+                         /* length out = */ nullptr,
                          /* etag_out = */ nullptr, /* error = */ nullptr);
 
     return coverage_data_contents;
 }
 
-static char* get_script_identifier(GFile* script) {
-    char* filename = g_file_get_path(script);
+static Gjs::AutoChar get_script_identifier(GFile* script) {
+    Gjs::AutoChar filename{g_file_get_path(script)};
     if (!filename)
         filename = g_file_get_uri(script);
     return filename;
@@ -178,10 +179,10 @@ static bool eval_script(GjsContext* gjs_context, GFile* script) {
     return gjs_context_eval_file(gjs_context, filename, nullptr, nullptr);
 }
 
-static char* eval_script_and_get_coverage_data(GjsContext* gjs_context,
-                                               GjsCoverage* coverage,
-                                               GFile* script,
-                                               GFile* lcov_output) {
+static Gjs::AutoChar eval_script_and_get_coverage_data(GjsContext* gjs_context,
+                                                       GjsCoverage* coverage,
+                                                       GFile* script,
+                                                       GFile* lcov_output) {
     eval_script(gjs_context, script);
     return write_statistics_and_get_coverage_data(coverage, lcov_output);
 }
@@ -288,8 +289,8 @@ static GFile* get_output_file_for_script_on_disk(GFile* script,
     return g_file_get_child(output_dir, base);
 }
 
-static char* get_output_path_for_script_on_disk(GFile* script,
-                                                GFile* output_dir) {
+static Gjs::AutoChar get_output_path_for_script_on_disk(GFile* script,
+                                                        GFile* output_dir) {
     Gjs::AutoUnref<GFile> output{
         get_output_file_for_script_on_disk(script, output_dir)};
     return g_file_get_path(output);
@@ -315,12 +316,11 @@ static void test_previous_contents_preserved(void* fixture_data, const void*) {
     const char* existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
     g_assert_nonnull(strstr(coverage_data_contents, existing_contents));
-    g_free(coverage_data_contents);
 }
 
 static void test_new_contents_written(void* fixture_data, const void*) {
@@ -328,30 +328,27 @@ static void test_new_contents_written(void* fixture_data, const void*) {
     const char* existing_contents = "existing_contents\n";
     replace_file(fixture->lcov_output, existing_contents);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
     // We have new content in the coverage data
     g_assert_cmpstr(existing_contents, !=, coverage_data_contents);
-    g_free(coverage_data_contents);
 }
 
 static void test_expected_source_file_name_written_to_coverage_data(
     void* fixture_data, const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
-    Gjs::AutoChar expected_source_filename{get_output_path_for_script_on_disk(
-        fixture->tmp_js_script, fixture->lcov_output_dir)};
+    Gjs::AutoChar expected_source_filename = get_output_path_for_script_on_disk(
+        fixture->tmp_js_script, fixture->lcov_output_dir);
 
     assert_coverage_data_contains_value_for_key(coverage_data_contents, "SF:",
                                                 expected_source_filename);
-
-    g_free(coverage_data_contents);
 }
 
 static void test_expected_entry_not_written_for_nonexistent_file(
@@ -365,14 +362,12 @@ static void test_expected_entry_not_written_for_nonexistent_file(
                                          fixture->lcov_output_dir);
 
     Gjs::AutoUnref<GFile> doesnotexist{g_file_new_for_path("doesnotexist")};
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, doesnotexist,
         fixture->lcov_output);
 
     const char* sf_line = line_starting_with(coverage_data_contents, "SF:");
     g_assert_null(sf_line);
-
-    g_free(coverage_data_contents);
 }
 
 enum BranchTaken : uint8_t { NOT_EXECUTED, NOT_TAKEN, TAKEN };
@@ -437,7 +432,7 @@ static void test_single_branch_coverage_written_to_coverage_data(
 
     replace_file(fixture->tmp_js_script, script_with_basic_branch);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -454,7 +449,6 @@ static void test_single_branch_coverage_written_to_coverage_data(
                                                 "BRF:", "2");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "BRH:", "1");
-    g_free(coverage_data_contents);
 }
 
 static void test_multiple_branch_coverage_written_to_coverage_data(
@@ -479,7 +473,7 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
 
     replace_file(fixture->tmp_js_script, script_with_case_statements_branch);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -493,7 +487,6 @@ static void test_multiple_branch_coverage_written_to_coverage_data(
     assert_coverage_data_matches_values_for_key(
         coverage_data_contents, "BRDA:", branch_at_line_should_be_taken,
         expected_branches);
-    g_free(coverage_data_contents);
 }
 
 static void test_branches_for_multiple_case_statements_fallthrough(
@@ -519,7 +512,7 @@ static void test_branches_for_multiple_case_statements_fallthrough(
 
     replace_file(fixture->tmp_js_script, script_with_case_statements_branch);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -533,7 +526,6 @@ static void test_branches_for_multiple_case_statements_fallthrough(
     assert_coverage_data_matches_values_for_key(
         coverage_data_contents, "BRDA:", branch_at_line_should_be_taken,
         expected_branches);
-    g_free(coverage_data_contents);
 }
 
 static void any_line_matches_not_executed_branch(const char* data) {
@@ -574,12 +566,11 @@ static void test_branch_not_hit_written_to_coverage_data(void* fixture_data,
 
     replace_file(fixture->tmp_js_script, script_with_never_executed_branch);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
     any_line_matches_not_executed_branch(coverage_data_contents);
-    g_free(coverage_data_contents);
 }
 
 static std::string extract_function_name(std::string_view& line) {
@@ -603,7 +594,7 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
     replace_file(fixture->tmp_js_script,
                  script_with_named_and_unnamed_functions);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -617,8 +608,6 @@ static void test_function_names_written_to_coverage_data(void* fixture_data,
     std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
         contents_view, "FN:", extract_function_name, expected_function_names);
-
-    g_free(coverage_data_contents);
 }
 
 static std::string extract_function_line(std::string_view& line) {
@@ -639,7 +628,7 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
 
     replace_file(fixture->tmp_js_script, script_with_functions);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
     std::vector<std::string> expected_function_lines{
@@ -651,7 +640,6 @@ static void test_function_lines_written_to_coverage_data(void* fixture_data,
     std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
         contents_view, "FN:", extract_function_line, expected_function_lines);
-    g_free(coverage_data_contents);
 }
 
 struct FunctionHitCountData {
@@ -702,7 +690,7 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
 
     replace_file(fixture->tmp_js_script, script_with_executed_functions);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -717,8 +705,6 @@ static void test_function_hit_counts_for_big_functions_written_to_coverage_data(
     std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
         contents_view, "FNDA:", extract_hit_count, expected_hit_counts);
-
-    g_free(coverage_data_contents);
 }
 
 /* For functions which start executing at a function declaration we also need to
@@ -738,7 +724,7 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
 
     replace_file(fixture->tmp_js_script, script_with_executed_functions);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -753,8 +739,6 @@ test_function_hit_counts_for_little_functions_written_to_coverage_data(
     std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
         contents_view, "FNDA:", extract_hit_count, expected_hit_counts);
-
-    g_free(coverage_data_contents);
 }
 
 static void test_function_hit_counts_written_to_coverage_data(
@@ -769,7 +753,7 @@ static void test_function_hit_counts_written_to_coverage_data(
 
     replace_file(fixture->tmp_js_script, script_with_executed_functions);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -784,8 +768,6 @@ static void test_function_hit_counts_written_to_coverage_data(
     std::string_view contents_view{coverage_data_contents};
     assert_coverage_data_matches_values_for_key(
         contents_view, "FNDA:", extract_hit_count, expected_hit_counts);
-
-    g_free(coverage_data_contents);
 }
 
 static void test_total_function_coverage_written_to_coverage_data(
@@ -799,7 +781,7 @@ static void test_total_function_coverage_written_to_coverage_data(
 
     replace_file(fixture->tmp_js_script, script_with_some_executed_functions);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -807,7 +789,6 @@ static void test_total_function_coverage_written_to_coverage_data(
                                                 "FNF:", "3");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "FNH:", "2");
-    g_free(coverage_data_contents);
 }
 
 struct LineCountIsMoreThanData {
@@ -838,7 +819,7 @@ static void test_single_line_hit_written_to_coverage_data(void* fixture_data,
                                                           const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -846,7 +827,6 @@ static void test_single_line_hit_written_to_coverage_data(void* fixture_data,
 
     assert_coverage_data_matches_value_for_key(
         coverage_data_contents, "DA:", line_hit_count_is_more_than, data);
-    g_free(coverage_data_contents);
 }
 
 static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
@@ -861,7 +841,7 @@ static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
 
     replace_file(fixture->tmp_js_script, script_with_multine_if_cond);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -870,14 +850,13 @@ static void test_hits_on_multiline_if_cond(void* fixture_data, const void*) {
 
     assert_coverage_data_matches_values_for_key(
         coverage_data_contents, "DA:", line_hit_count_is_more_than, data);
-    g_free(coverage_data_contents);
 }
 
 static void test_full_line_tally_written_to_coverage_data(void* fixture_data,
                                                           const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
@@ -885,15 +864,15 @@ static void test_full_line_tally_written_to_coverage_data(void* fixture_data,
                                                 "LF:", "1");
     assert_coverage_data_contains_value_for_key(coverage_data_contents,
                                                 "LH:", "1");
-    g_free(coverage_data_contents);
 }
 
 static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
                                                          const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    Gjs::AutoChar coverage_data_contents{write_statistics_and_get_coverage_data(
-        fixture->coverage, fixture->lcov_output)};
+    Gjs::AutoChar coverage_data_contents =
+        write_statistics_and_get_coverage_data(fixture->coverage,
+                                               fixture->lcov_output);
 
     // No files were executed, so the coverage data is empty.
     g_assert_cmpstr(coverage_data_contents, ==, "\n");
@@ -903,12 +882,11 @@ static void test_end_of_record_section_written_to_coverage_data(
     void* fixture_data, const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->tmp_js_script,
         fixture->lcov_output);
 
     g_assert_nonnull(strstr(coverage_data_contents, "end_of_record"));
-    g_free(coverage_data_contents);
 }
 
 struct GjsCoverageMultipleSourcesFixture : GjsCoverageFixture {
@@ -972,7 +950,7 @@ static void test_multiple_source_file_records_written_to_coverage_data(
     auto* fixture =
         static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->second_js_source_file,
         fixture->lcov_output);
 
@@ -983,8 +961,6 @@ static void test_multiple_source_file_records_written_to_coverage_data(
     const char* second_sf_record =
         line_starting_with(first_sf_record + 1, "SF:");
     g_assert_nonnull(second_sf_record);
-
-    g_free(coverage_data_contents);
 }
 
 struct ExpectedSourceFileCoverageData {
@@ -1025,14 +1001,15 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
     auto* fixture =
         static_cast<GjsCoverageMultipleSourcesFixture*>(fixture_data);
 
-    char* coverage_data_contents = eval_script_and_get_coverage_data(
+    Gjs::AutoChar coverage_data_contents = eval_script_and_get_coverage_data(
         fixture->gjs_context, fixture->coverage, fixture->second_js_source_file,
         fixture->lcov_output);
 
-    Gjs::AutoChar first_script_output_path{get_output_path_for_script_on_disk(
-        fixture->tmp_js_script, fixture->lcov_output_dir)};
-    Gjs::AutoChar second_script_output_path{get_output_path_for_script_on_disk(
-        fixture->second_js_source_file, fixture->lcov_output_dir)};
+    Gjs::AutoChar first_script_output_path = get_output_path_for_script_on_disk(
+        fixture->tmp_js_script, fixture->lcov_output_dir);
+    Gjs::AutoChar second_script_output_path =
+        get_output_path_for_script_on_disk(fixture->second_js_source_file,
+                                           fixture->lcov_output_dir);
 
     std::vector<ExpectedSourceFileCoverageData> expected{
         {first_script_output_path, {{1, 0}}, '1', '1'},
@@ -1045,8 +1022,6 @@ test_correct_line_coverage_data_written_for_both_source_file_sections(
     const char* second_sf_record =
         line_starting_with(first_sf_record + 3, "SF:");
     assert_coverage_data_for_source_file(expected, second_sf_record);
-
-    g_free(coverage_data_contents);
 }
 
 struct FixturedTest {

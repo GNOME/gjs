@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#include <string.h>  // for strlen
+#include <string.h>  // for strcmp
 
 #include <girepository/girepository.h>
 #include <glib-object.h>
@@ -471,22 +471,6 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
 
     g_assert(gjs_global_get_type(global) == GjsGlobalType::DEFAULT);
     return lookup_namespace(cx, global, ns_name);
-}
-
-char* gjs_hyphen_from_camel(const char* camel_name) {
-    // four hyphens should be reasonable guess
-    GString* s = g_string_sized_new(strlen(camel_name) + 4 + 1);
-
-    for (const char* p = camel_name; *p; ++p) {
-        if (g_ascii_isupper(*p)) {
-            g_string_append_c(s, '-');
-            g_string_append_c(s, g_ascii_tolower(*p));
-        } else {
-            g_string_append_c(s, *p);
-        }
-    }
-
-    return g_string_free(s, false);
 }
 
 JSObject* gjs_lookup_generic_constructor(JSContext* cx,

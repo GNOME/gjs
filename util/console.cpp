@@ -17,7 +17,6 @@
 
 #include <glib.h>
 
-#include "gjs/auto.h"
 #include "util/console.h"
 
 /**
@@ -69,20 +68,6 @@ bool gjs_console_clear() {
 }
 
 #ifdef HAVE_READLINE_READLINE_H
-char* gjs_console_get_repl_history_path() {
-    const char* user_history_path = g_getenv("GJS_REPL_HISTORY");
-    Gjs::AutoChar default_history_path =
-        g_build_filename(g_get_user_cache_dir(), "gjs_repl_history", nullptr);
-    bool is_write_history_disabled =
-        user_history_path && user_history_path[0] == '\0';
-    if (is_write_history_disabled)
-        return nullptr;
-
-    if (user_history_path)
-        return g_strdup(user_history_path);
-    return default_history_path.release();
-}
-
 void gjs_console_write_repl_history(const char* path) {
     if (path) {
         int err = write_history(path);

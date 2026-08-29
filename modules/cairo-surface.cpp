@@ -4,6 +4,8 @@
 
 #include <config.h>
 
+#include <string>
+
 #include <cairo.h>
 #include <girepository/girepository.h>
 #include <glib.h>
@@ -333,9 +335,9 @@ static bool surface_to_gi_argument(JSContext* cx, JS::Value value,
                                    GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            Gjs::AutoChar display_name{
-                gjs_argument_display_name(arg_name, argument_type)};
-            gjs_throw(cx, "%s may not be null", display_name.get());
+            gjs_throw(
+                cx, "%s may not be null",
+                gjs_argument_display_name(arg_name, argument_type).c_str());
             return false;
         }
 
@@ -344,9 +346,8 @@ static bool surface_to_gi_argument(JSContext* cx, JS::Value value,
     }
 
     if (!value.isObject()) {
-        Gjs::AutoChar display_name{
-            gjs_argument_display_name(arg_name, argument_type)};
-        gjs_throw(cx, "%s is not a Cairo.Surface", display_name.get());
+        gjs_throw(cx, "%s is not a Cairo.Surface",
+                  gjs_argument_display_name(arg_name, argument_type).c_str());
         return false;
     }
 

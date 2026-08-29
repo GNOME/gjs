@@ -33,5 +33,3 @@ JSObject* gjs_new_object_with_generic_prototype(JSContext*,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_info(JSContext*, JS::HandleObject in_object,
                      const GI::BaseInfo&, bool* defined);
-
-[[nodiscard]] char* gjs_hyphen_from_camel(const char* camel_name);
