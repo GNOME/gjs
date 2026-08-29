@@ -1,3 +1,29 @@
+Version 1.89.90
+---------------
+
+- This is the release candidate for GNOME 51. This release brings primarily
+  minor bug fixes and internal type-safety improvements.
+
+- Backwards-incompatible change: Gio.DBus.makeProxyWrapper() returns a class
+  expression, which should be called as a constructor, not as a function.
+  Calling it as a function still works, but will print a deprecation warning.
+  To migrate your code, just add `new`.
+
+- Backwards-incompatible change: Don't use the `GJS_ALWAYS_INLINE` macro from
+  gjs/macros.h. It was not meant to be public and will print a deprecation
+  warning if used.
+
+- Closed bugs and merge requests:
+  * Various maintenance [!1102, !1108, Philip Chimento]
+  * Maps are terribly slow when planning for a route [#742, !1104, Marcus
+    Lundblad]
+  * Check for char* returns of ambiguous ownership using clang-tidy [!1105,
+    Philip Chimento]
+  * testConsole fails if source directory contains + [#745, !1106, Simon
+    McVittie]
+  * Revert "Gio: Rewrite _makeProxyWrapper as a class expression" and print a
+    deprecation warning instead [!1107, Philip Chimento]
+
 Version 1.89.2
 --------------
 
