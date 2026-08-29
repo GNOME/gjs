@@ -4,7 +4,6 @@
 #include <config.h>
 
 #include <stddef.h>  // for size_t
-#include <string.h>
 
 #include <memory>  // for unique_ptr
 
@@ -360,7 +359,7 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
             const auto* key = static_cast<const char*>(key_ptr);
             const auto* value = static_cast<const char*>(value_ptr);
 
-            JS::ConstUTF8CharsZ value_chars{value, strlen(value)};
+            JS::ConstUTF8CharsZ value_chars{value};
             JS::RootedString value_str(cx,
                                        JS_NewStringCopyUTF8Z(cx, value_chars));
             if (!value_str || !JS_DefineProperty(cx, query_obj, key, value_str,
@@ -465,9 +464,9 @@ bool gjs_internal_load_resource_or_file(JSContext* cx, unsigned argc,
         return false;
     }
 
-    JS::ConstUTF8CharsZ contents_chars{contents, length};
-    JS::RootedString contents_str(cx,
-                                  JS_NewStringCopyUTF8Z(cx, contents_chars));
+    JS::UTF8Chars contents_chars{contents, length};
+    JS::RootedString contents_str{cx,
+                                  JS_NewStringCopyUTF8N(cx, contents_chars)};
     g_free(contents);
     if (!contents_str)
         return false;
@@ -497,9 +496,9 @@ bool gjs_internal_atob(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     Gjs::AutoChar decoded =
         reinterpret_cast<char*>(g_base64_decode(text.get(), &result_len));
-    JS::ConstUTF8CharsZ contents_chars{decoded, result_len};
+    JS::UTF8Chars contents_chars{decoded, result_len};
     JS::RootedString contents_str{cx,
-                                  JS_NewStringCopyUTF8Z(cx, contents_chars)};
+                                  JS_NewStringCopyUTF8N(cx, contents_chars)};
 
     if (!contents_str)
         return false;

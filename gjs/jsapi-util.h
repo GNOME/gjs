@@ -214,10 +214,6 @@ bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
 [[nodiscard]] Gjs::AutoChar gjs_hyphen_to_camel(const char*);
 [[nodiscard]] std::string gjs_hyphen_from_camel(std::string_view);
 
-#if defined(G_OS_WIN32) && (defined(_MSC_VER) && (_MSC_VER >= 1900))
-[[nodiscard]] std::wstring gjs_win32_vc140_utf8_to_utf16(const char*);
-#endif
-
 // Custom GC reasons; SpiderMonkey includes a bunch of "Firefox reasons" which
 // don't apply when embedding the JS engine, so we repurpose them for our own
 // reasons.

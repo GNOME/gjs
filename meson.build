@@ -353,6 +353,8 @@ header_conf.set('HAVE_SYS_SYSCALL_H', cxx.check_header('sys/syscall.h'))
 header_conf.set('HAVE_UNISTD_H', cxx.check_header('unistd.h'))
 header_conf.set('HAVE_SIGNAL_H', cxx.check_header('signal.h',
     required: build_profiler))
+header_conf.set('USE_GLIB_PLATFORM_COMPAT',
+    glib.version().version_compare('<2.87.3'))
 
 # enable GNU extensions on systems that have them
 header_conf.set('_GNU_SOURCE', 1)

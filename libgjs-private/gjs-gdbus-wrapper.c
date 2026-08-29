@@ -145,8 +145,9 @@ static GVariant* gjs_dbus_implementation_property_get(
     /* Marshaling GErrors is not supported, so this is the best we can do
        (GIO will assert if value is NULL and error is not set) */
     if (!value)
-        g_set_error(error, g_quark_from_static_string("gjs-error-domain"), 0,
-                    "Property retrieval failed");
+        g_set_error_literal(error,
+                            g_quark_from_static_string("gjs-error-domain"), 0,
+                            "Property retrieval failed");
 
     return value;
 }

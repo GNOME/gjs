@@ -980,9 +980,8 @@ std::string gjs_argument_display_name(const char* arg_name,
             return "Hash element";
         case GJS_ARGUMENT_ARRAY_ELEMENT:
             return "Array element";
-        default:
-            g_assert_not_reached();
     }
+    g_assert_not_reached();
 }
 
 static void throw_invalid_argument(JSContext* cx, JS::HandleValue value,
@@ -2623,7 +2622,6 @@ static bool gjs_array_from_boxed_array(JSContext* cx,
             break;
         case GI_ARRAY_TYPE_C:
             // already checked in gjs_value_from_gi_argument()
-        default:
             g_assert_not_reached();
     }
 
@@ -3832,9 +3830,8 @@ static bool gjs_g_arg_release_internal(
                     gjs_gi_argument_release_basic_gptrarray(
                         transfer, element_type.tag(), arg);
                     return true;
-                default:
-                    g_assert_not_reached();
             }
+            g_assert_not_reached();
         }
         // else fall through to generic marshaller
     }

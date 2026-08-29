@@ -4,10 +4,12 @@
 
 #include <config.h>
 
-#include <string.h>
+#ifdef USE_GLIB_PLATFORM_COMPAT
+#    include <string.h>
 
-#include <string>
-#include <vector>
+#    include <string>
+#    include <vector>
+#endif
 
 #include <girepository/girepository.h>
 #include <glib.h>
@@ -33,19 +35,23 @@
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
-#include "gjs/deprecation.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/mem-private.h"
 #include "util/log.h"
 
+#ifdef USE_GLIB_PLATFORM_COMPAT
+#    include "gjs/deprecation.h"
+#endif
+
 using mozilla::Maybe;
 
+#ifdef USE_GLIB_PLATFORM_COMPAT
 // helper function
-void platform_specific_warning_glib(JSContext* cx, const char* prefix,
-                                    const char* platform,
-                                    const char* resolved_name) {
+static void platform_specific_warning_glib(JSContext* cx, const char* prefix,
+                                           const char* platform,
+                                           const char* resolved_name) {
     if (!g_str_has_prefix(resolved_name, prefix))
         return;
 
@@ -56,6 +62,7 @@ void platform_specific_warning_glib(JSContext* cx, const char* prefix,
         cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
         {old_name.get(), new_name.get()});
 }
+#endif  // USE_GLIB_PLATFORM_COMPAT
 
 class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
@@ -68,14 +75,14 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
         GJS_INC_COUNTER(ns);
 
-#if !GLIB_CHECK_VERSION(2, 87, 3)
+#ifdef USE_GLIB_PLATFORM_COMPAT
         m_is_glib = strcmp(ns_name, "GLib") == 0;
 #endif
     }
 
     ~Ns() { GJS_DEC_COUNTER(ns); }
 
-#if !GLIB_CHECK_VERSION(2, 87, 3)
+#ifdef USE_GLIB_PLATFORM_COMPAT
     bool m_is_glib : 1;
 #endif
 
@@ -117,7 +124,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                   "Found info type %s for '%s' in namespace '%s'",
                   info->type_string(), info->name(), info->ns());
 
-#if !GLIB_CHECK_VERSION(2, 87, 3)
+#ifdef USE_GLIB_PLATFORM_COMPAT
         if (m_is_glib) {
             platform_specific_warning_glib(cx, "Unix", "Unix", name.get());
             platform_specific_warning_glib(cx, "unix_", "Unix", name.get());

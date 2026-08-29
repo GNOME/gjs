@@ -207,10 +207,14 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         error.reset();
     }
 
-    GFile* output_file = g_file_get_child(priv->output_dir, "coverage.lcov");
+    Gjs::AutoUnref<GFile> output_file{
+        g_file_get_child(priv->output_dir, "coverage.lcov")};
 
     size_t lcov_length;
     JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
+    if (!lcov)
+        return Err(g_error_new_literal(G_IO_ERROR, G_IO_ERROR_MESSAGE_TOO_LARGE,
+                                       "LCOV data too large"));
 
     Gjs::AutoUnref<GOutputStream> ostream{G_OUTPUT_STREAM(g_file_append_to(
         output_file, G_FILE_CREATE_NONE, nullptr, error.out()))};
@@ -266,7 +270,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         MOZ_TRY(write_line(ostream, *iter));
     }
 
-    return Gjs::AutoUnref<GFile>{output_file};
+    return output_file;
 }
 
 /**

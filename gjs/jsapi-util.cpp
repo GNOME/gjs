@@ -205,9 +205,9 @@ JSObject* gjs_build_string_array(JSContext* cx,
     }
 
     for (const std::string& string : strings) {
-        JS::ConstUTF8CharsZ chars(string.c_str(), string.size());
+        JS::UTF8Chars chars{string.c_str(), string.size()};
         JS::RootedValue element{
-            cx, JS::StringValue(JS_NewStringCopyUTF8Z(cx, chars))};
+            cx, JS::StringValue(JS_NewStringCopyUTF8N(cx, chars))};
         elems.infallibleAppend(element);
     }
 

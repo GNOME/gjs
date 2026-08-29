@@ -44,8 +44,6 @@
 
 bool gjs_environment_variable_is_set(const char* env_variable_name);
 
-char** gjs_g_strv_concat(const char** strv_array[], int len);
-
 /**
  * LogFile:
  *

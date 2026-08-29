@@ -17,6 +17,10 @@
 #include <glib.h>
 #include <glib/gstdio.h>  // for g_unlink
 
+#ifdef ENABLE_PROFILER
+#    include <sysprof-capture.h>
+#endif
+
 #include <js/BigInt.h>
 #include <js/CharacterEncoding.h>
 #include <js/CompilationAndEvaluation.h>
@@ -38,6 +42,7 @@
 #include "gi/arg-inl.h"
 #include "gi/js-value-inl.h"
 #include "gjs/auto.h"
+#include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/error-types.h"
 #include "gjs/gerror-result.h"
@@ -45,7 +50,6 @@
 #include "gjs/profiler.h"
 #include "test/gjs-test-no-introspection-object.h"
 #include "test/gjs-test-utils.h"
-#include "util/misc.h"
 
 namespace mozilla {
 union Utf8Unit;
@@ -102,6 +106,21 @@ T get_random_number() {
     } else if constexpr (std::is_pointer_v<T>) {
         return reinterpret_cast<T>(get_random_number<uintptr_t>());
     }
+}
+
+static void gjstest_test_gjs_dumpstack_none() {
+    // Test for underflow when stripping the final newline
+    std::string stack = gjs_dumpstack_string();
+    g_assert_cmpstr(stack.c_str(), ==, "");
+}
+
+static void gjstest_test_gjs_dumpstack_context(GjsUnitTestFixture* fx,
+                                               const void*) {
+    std::string stack = gjs_dumpstack_string();
+    Gjs::AutoChar expected =
+        g_strdup_printf("== Stack trace for context %p ==", fx->gjs_context);
+    // No code is executing, so stack trace is blank
+    g_assert_cmpstr(stack.c_str(), ==, expected.get());
 }
 
 static void gjstest_test_func_gjs_context_construct_destroy() {
@@ -779,7 +798,7 @@ static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
     char16_t* chars;
     size_t len;
 
-    JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
+    JS::ConstUTF8CharsZ jschars{VALID_UTF8_STRING};
     JS::RootedString str(fx->cx, JS_NewStringCopyUTF8Z(fx->cx, jschars));
     g_assert_true(gjs_string_get_char16_data(fx->cx, str, &chars, &len));
     std::u16string result(chars, len);
@@ -801,7 +820,7 @@ static void test_jsapi_util_string_to_ucs4(GjsUnitTestFixture* fx,
     gunichar* chars;
     size_t len;
 
-    JS::ConstUTF8CharsZ jschars(VALID_UTF8_STRING, strlen(VALID_UTF8_STRING));
+    JS::ConstUTF8CharsZ jschars{VALID_UTF8_STRING};
     JS::RootedString str(fx->cx, JS_NewStringCopyUTF8Z(fx->cx, jschars));
     g_assert_true(gjs_string_to_ucs4(fx->cx, str, &chars, &len));
 
@@ -828,11 +847,18 @@ static void test_gjs_debug_id_string_no_quotes(GjsUnitTestFixture* fx,
 }
 
 static void test_gjs_debug_string_quotes(GjsUnitTestFixture* fx, const void*) {
-    JS::ConstUTF8CharsZ chars("a string", strlen("a string"));
+    JS::ConstUTF8CharsZ chars{"a string"};
     JSString* str = JS_NewStringCopyUTF8Z(fx->cx, chars);
     std::string debug_output = gjs_debug_string(str);
 
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
+}
+
+static void test_gjs_debug_string_two_byte_chars(GjsUnitTestFixture* fx, const void*) {
+    JSString* str = JS_NewUCStringCopyZ(fx->cx, u"\u0001\u00ff\u2212");
+    std::string debug_output = gjs_debug_string(str);
+
+    g_assert_cmpstr(debug_output.c_str(), ==, "\"\\x01\\xff\\u2212\"");
 }
 
 static void test_gjs_debug_value_bigint(GjsUnitTestFixture* fx, const void*) {
@@ -885,35 +911,6 @@ static void test_gjs_debug_value_string_quotes(GjsUnitTestFixture* fx,
     g_assert_cmpstr(debug_output.c_str(), ==, "\"a string\"");
 }
 
-static void gjstest_test_func_util_misc_strv_concat_null() {
-    char** ret = gjs_g_strv_concat(nullptr, 0);
-    g_assert_nonnull(ret);
-    g_assert_null(ret[0]);
-
-    g_strfreev(ret);
-}
-
-static void gjstest_test_func_util_misc_strv_concat_pointers() {
-    const char* strv0[2] = {"foo", nullptr};
-    const char* strv1[1] = {nullptr};
-    const char** strv2 = nullptr;
-    const char* strv3[2] = {"bar", nullptr};
-    const char** stuff[4];
-
-    stuff[0] = strv0;
-    stuff[1] = strv1;
-    stuff[2] = strv2;
-    stuff[3] = strv3;
-
-    AutoStrv ret = gjs_g_strv_concat(stuff, 4);
-    g_assert_nonnull(ret);
-    g_assert_cmpstr(ret[0], ==, strv0[0]);  // same string
-    g_assert_true(ret[0] != strv0[0]);      // different pointer
-    g_assert_cmpstr(ret[1], ==, strv3[0]);
-    g_assert_true(ret[1] != strv3[0]);
-    g_assert_null(ret[2]);
-}
-
 static void gjstest_test_profiler_start_stop() {
     AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(
         g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr))};
@@ -934,6 +931,57 @@ static void gjstest_test_profiler_start_stop() {
     gjs_profiler_stop(profiler);
 
     if (g_unlink("dont-conflict-with-other-test.syscap") != 0)
+        g_message("Temp profiler file not deleted");
+}
+
+static void gjstest_test_profiler_writes_counters() {
+    AutoUnref<GjsContext> gjs_context{GJS_CONTEXT(
+        g_object_new(GJS_TYPE_CONTEXT, "profiler-enabled", TRUE, nullptr))};
+    GjsProfiler* profiler = gjs_context_get_profiler(gjs_context);
+
+    gjs_profiler_set_filename(profiler,
+                              "dont-conflict-with-other-test-2.syscap");
+    gjs_profiler_start(profiler);
+
+    g_assert_true(gjs_context_eval(gjs_context, "new Date();", -1, "<input>",
+                                   nullptr, nullptr));
+
+    gjs_profiler_stop(profiler);
+
+#ifdef ENABLE_PROFILER
+    Gjs::AutoPointer<SysprofCaptureReader, SysprofCaptureReader,
+                     sysprof_capture_reader_unref>
+        reader{sysprof_capture_reader_new(
+            "dont-conflict-with-other-test-2.syscap")};
+    g_assert_nonnull(reader);
+
+    size_t n_counters = 0;
+    SysprofCaptureFrameType type;
+    while (sysprof_capture_reader_peek_type(reader, &type)) {
+        if (type != SYSPROF_CAPTURE_FRAME_CTRDEF) {
+            g_assert_true(sysprof_capture_reader_skip(reader));
+            continue;
+        }
+        const SysprofCaptureCounterDefine* def =
+            sysprof_capture_reader_read_counter_define(reader);
+        g_assert_nonnull(def);
+        for (uint32_t ix = 0; ix < def->n_counters; ix++) {
+            const SysprofCaptureCounter& c = def->counters[ix];
+            g_assert_cmpstr(c.category, ==, "GJS");
+            // The other strings must fit in the buffers with a zero byte to
+            // spare
+            g_assert_cmpuint(strnlen(c.name, sizeof c.name), <, sizeof c.name);
+            g_assert_cmpuint(strnlen(c.description, sizeof c.description), <,
+                             sizeof c.description);
+            n_counters++;
+        }
+    }
+    g_assert_cmpuint(n_counters, ==, 18);
+#else
+    g_test_skip("Profiler not enabled");
+#endif  // ENABLE_PROFILER
+
+    if (g_unlink("dont-conflict-with-other-test.syscap-2") != 0)
         g_message("Temp profiler file not deleted");
 }
 
@@ -1240,6 +1288,10 @@ int main(int argc, char* argv[]) {
 
     g_message("Using C++ random seed %u\n", cpp_random_seed);
 
+    g_test_add_func("/gjs/dumpstack/none", gjstest_test_gjs_dumpstack_none);
+    g_test_add("/gjs/dumpstack/context", GjsUnitTestFixture, nullptr,
+               gjs_unit_test_fixture_setup, gjstest_test_gjs_dumpstack_context,
+               gjs_unit_test_fixture_teardown);
     g_test_add_func("/gjs/context/construct/destroy",
                     gjstest_test_func_gjs_context_construct_destroy);
     g_test_add_func("/gjs/context/construct/eval",
@@ -1287,10 +1339,8 @@ int main(int argc, char* argv[]) {
                     gjstest_test_func_gjs_gobject_without_introspection);
     g_test_add_func("/gjs/profiler/start_stop",
                     gjstest_test_profiler_start_stop);
-    g_test_add_func("/util/misc/strv/concat/null",
-                    gjstest_test_func_util_misc_strv_concat_null);
-    g_test_add_func("/util/misc/strv/concat/pointers",
-                    gjstest_test_func_util_misc_strv_concat_pointers);
+    g_test_add_func("/gjs/profiler/writes-counters",
+                    gjstest_test_profiler_writes_counters);
 
     g_test_add_func("/gi/args/set-get-unset", gjstest_test_args_set_get_unset);
     g_test_add_func("/gi/args/rounded_values",
@@ -1357,6 +1407,8 @@ int main(int argc, char* argv[]) {
     ADD_JSAPI_UTIL_TEST("debug_id/string/no-quotes",
                         test_gjs_debug_id_string_no_quotes);
     ADD_JSAPI_UTIL_TEST("debug_string/quotes", test_gjs_debug_string_quotes);
+    ADD_JSAPI_UTIL_TEST("debug_string/two-byte-chars",
+                        test_gjs_debug_string_two_byte_chars);
     ADD_JSAPI_UTIL_TEST("debug_value/bigint", test_gjs_debug_value_bigint);
     ADD_JSAPI_UTIL_TEST("debug_value/bigint/uint64",
                         test_gjs_debug_value_bigint_uint64);

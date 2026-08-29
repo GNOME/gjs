@@ -2259,8 +2259,6 @@ static void toggle_handler(ObjectInstance* self,
         case ToggleQueue::DOWN:
             self->toggle_down();
             break;
-        default:
-            g_assert_not_reached();
     }
 }
 
@@ -3868,8 +3866,7 @@ bool ObjectPrototype::hook_up_vfunc_impl(JSContext* cx,
             return false;
         }
         auto* trampoline = GjsCallbackTrampoline::create(
-            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true,
-            !is_static);
+            cx, callable, vfunc.ref(), GI_SCOPE_TYPE_NOTIFIED, true);
         if (!trampoline)
             return false;
 

@@ -203,7 +203,7 @@ JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
 
 bool gjs_string_from_utf8(JSContext* cx, const char* utf8_string,
                           JS::MutableHandleValue value_p) {
-    JS::ConstUTF8CharsZ chars(utf8_string, strlen(utf8_string));
+    JS::ConstUTF8CharsZ chars{utf8_string};
     JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!str)
         return false;
@@ -513,10 +513,10 @@ static std::string gjs_debug_linear_string(JSLinearString* str, Quotes quotes) {
         else if (c >= 32 && c < 127)
             out << static_cast<char>(c);
         else if (c <= 255)
-            out << "\\x" << std::setfill('0') << std::setw(2)
+            out << "\\x" << std::setfill('0') << std::setw(2) << std::hex
                 << static_cast<unsigned>(c);
         else
-            out << "\\x" << std::setfill('0') << std::setw(4)
+            out << "\\u" << std::setfill('0') << std::setw(4) << std::hex
                 << static_cast<unsigned>(c);
     }
     if (quotes == DoubleQuotes)

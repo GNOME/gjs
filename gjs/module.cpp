@@ -5,7 +5,6 @@
 #include <config.h>
 
 #include <stddef.h>     // for size_t
-#include <string.h>
 
 #include <string>
 #include <vector>  // for vector
@@ -365,8 +364,8 @@ JSObject* gjs_module_load(JSContext* cx, const char* identifier,
     g_assert(v_loader.isObject());
     JS::RootedObject loader(cx, &v_loader.toObject());
 
-    JS::ConstUTF8CharsZ id_chars(identifier, strlen(identifier));
-    JS::ConstUTF8CharsZ uri_chars(file_uri, strlen(file_uri));
+    JS::ConstUTF8CharsZ id_chars{identifier};
+    JS::ConstUTF8CharsZ uri_chars{file_uri};
     JS::RootedString id(cx, JS_NewStringCopyUTF8Z(cx, id_chars));
     if (!id)
         return nullptr;
@@ -518,7 +517,7 @@ static bool canonicalize_specifier(JSContext* cx,
     Gjs::AutoChar canonical_specifier{
         g_uri_join(G_URI_FLAGS_NONE, scheme.get(), nullptr, host.get(), -1,
                    path.get(), query.get(), nullptr)};
-    JS::ConstUTF8CharsZ chars{canonical_specifier, strlen(canonical_specifier)};
+    JS::ConstUTF8CharsZ chars{canonical_specifier};
     JS::RootedString new_specifier{cx, JS_NewStringCopyUTF8Z(cx, chars)};
     if (!new_specifier)
         return false;

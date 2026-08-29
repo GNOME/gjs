@@ -384,9 +384,8 @@ JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
             case GjsGlobalType::INTERNAL:
                 return GjsInternalGlobal::create_with_compartment(
                     cx, existing_global);
-            default:
-                return nullptr;
         }
+        g_assert_not_reached();
     }
 
     switch (global_type) {
@@ -396,9 +395,8 @@ JSObject* gjs_create_global_object(JSContext* cx, GjsGlobalType global_type,
             return GjsDebuggerGlobal::create(cx);
         case GjsGlobalType::INTERNAL:
             return GjsInternalGlobal::create(cx);
-        default:
-            return nullptr;
     }
+    g_assert_not_reached();
 }
 
 /**

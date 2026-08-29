@@ -990,6 +990,17 @@ class InfoOperations<Wrapper, InfoTag::CALLABLE>
             Base::name(), details.c_str());
 #endif  // GJS_VERBOSE_ENABLE_GI_USAGE
     }
+
+    // Used in exception messages
+    [[nodiscard]] const char* kind_string() const {
+        if (this->is_callback())
+            return "callback";
+        if (this->is_function())
+            return "function";
+        if (this->is_vfunc())
+            return "vfunc";
+        return "signal";
+    }
 };
 
 template <class Wrapper>
