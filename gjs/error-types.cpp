@@ -41,6 +41,9 @@ GType gjs_js_error_get_type() {
                                         {.value = GJS_JS_ERROR_URI_ERROR,
                                          .value_name = "URIError",
                                          .value_nick = "uri-error"},
+                                        {.value = GJS_JS_ERROR_AGGREGATE_ERROR,
+                                         .value_name = "AggregateError",
+                                         .value_nick = "aggregate-error"},
                                         {}};
     // Initialization of static local variable guaranteed only once in C++11
     static GType g_type_id = g_enum_register_static("GjsJSError", errors);
