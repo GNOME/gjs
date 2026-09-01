@@ -19,6 +19,10 @@ const Encoding = loadNative('_encodingNative');
  * @property {boolean} verified
  */
 
+/**
+ * @typedef {{ url: string, line: number, column: number } | null} Location
+ */
+
 const STATE = {
     messageIdSeq: 0,
     paused: false,
@@ -34,6 +38,8 @@ const STATE = {
     pendingLaunchPath: null,
     /** @type {Array<() => void>} */
     cleanups: [],
+    /** @type {Location | null} */
+    lastLocation: null,
 };
 
 // UTILITY FUNCTIONS
@@ -416,10 +422,44 @@ const handlers = {
 };
 
 /**
+ * @param {Debugger.Frame} frame
+ * @returns {Location | null}
+ */
+function getFrameLocation(frame) {
+    if (!frame.script || !frame.offset) return null;
+    const { lineNumber, columnNumber } = frame.script.getOffsetLocation(
+        frame.offset,
+    );
+    return { url: frame.script.url, line: lineNumber, column: columnNumber };
+}
+
+
+/**
+ * @param {Location} location1
+ * @param {Location} location2
+ * @returns {boolean}
+ */
+function isSameLocation(location1, location2) {
+    return (
+        location1?.url === location2?.url &&
+        location1?.line === location2?.line
+        // TODO: here we are assuming line granularity
+        // && location1?.column === location2?.column
+    );
+}
+
+/**
  * @this {Debugger.Frame}
  */
 function onStepped() {
     if (!isDebugeeFrame(this)) return;
+
+    const location = getFrameLocation(this);
+    printerr("stepped, current location: ", JSON.stringify(location))
+    printerr("last location: ", JSON.stringify(STATE.lastLocation))
+
+    if (isSameLocation(location, STATE.lastLocation)) return;
+    STATE.lastLocation = location;
 
     pause('step');
 }
@@ -732,6 +772,7 @@ function resume() {
     STATE.paused = false;
     STATE.objects.length = 0;
     STATE.scripts.length = 0;
+    // STATE.lastLocation = null;
 }
 
 /**
