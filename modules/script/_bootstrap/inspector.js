@@ -158,7 +158,7 @@ const handlers = {
         const filePath = cwd + '/' + args.program;
 
         if (args.stopOnEntry) {
-            dbg.onEnterFrame = onInitialEnterFrame;
+            setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
         }
 
         STATE.pendingLaunchPath = filePath;
@@ -305,77 +305,20 @@ const handlers = {
 
         resume();
 
-        switch (args.granularity) {
-            case 'function': {
-                const newestFrame = dbg.getNewestFrame();
+        const newestFrame = dbg.getNewestFrame();
 
-                if (!newestFrame) break;
+        if (!newestFrame) return;
 
-                newestFrame.onPop = () => {
-                    newestFrame.onPop = undefined;
+        setUntilNextRequest(newestFrame, 'onStep', onStepped);
 
-                    const olderFrame = newestFrame.older;
-
-                    if (olderFrame) {
-                        olderFrame.onStep = () => {
-                            olderFrame.onStep = undefined;
-
-                            pause('step');
-                        };
-                    }
-                };
-                break;
+        setUntilNextRequest(newestFrame, 'onPop', function () {
+            this.onPop = undefined;
+            if (this.older) {
+                setUntilNextRequest(this.older, 'onStep', onStepped);
+            } else {
+                resume();
             }
-            case 'statement': {
-                const newestFrame = dbg.getNewestFrame();
-
-                if (!newestFrame) break;
-
-                newestFrame.onStep = () => {
-                    newestFrame.onStep = undefined;
-
-                    pause('step');
-                };
-                break;
-            }
-            default:
-            case 'line': {
-                const newestFrame = dbg.getNewestFrame();
-
-                if (!newestFrame) break;
-
-                const startLine = getFrameLine(newestFrame);
-
-                /**
-                 * @this {Debugger.Frame}
-                 */
-                function onStepped() {
-                    const newLine = getFrameLine(this);
-                    if (newLine === startLine) return;
-
-                    pause('step');
-                }
-
-                setUntilNextRequest(newestFrame, 'onStep', onStepped);
-
-                setUntilNextRequest(newestFrame, 'onPop', function () {
-                    this.onPop = undefined;
-                    if (this.older)
-                        setUntilNextRequest(this.older, 'onStep', onStepped);
-                });
-
-                setUntilNextRequest(
-                    dbg,
-                    'onEnterFrame',
-                    (/** @type {Debugger.Frame} */ newFrame) => {
-                        setUntilNextRequest(newFrame, 'onStep', onStepped);
-                    },
-                );
-
-
-                break;
-            }
-        }
+        });
     },
     /**
      *
@@ -393,19 +336,24 @@ const handlers = {
 
         // whatever happens first
 
-        dbg.onEnterFrame = () => {
-            dbg.onEnterFrame = undefined;
-            newestFrame.onStep = undefined;
+        setUntilNextRequest(
+            dbg,
+            'onEnterFrame',
+            (/** @type {Debugger.Frame} */ newFrame) => {
+                setUntilNextRequest(newFrame, 'onStep', onStepped);
+            },
+        );
 
-            pause('step');
-        };
+        setUntilNextRequest(newestFrame, 'onStep', onStepped);
 
-        newestFrame.onStep = () => {
-            dbg.onEnterFrame = undefined;
-            newestFrame.onStep = undefined;
-
-            pause('step');
-        };
+        setUntilNextRequest(newestFrame, 'onPop', function () {
+            this.onPop = undefined;
+            if (this.older) {
+                setUntilNextRequest(this.older, 'onStep', onStepped);
+            } else {
+                resume();
+            }
+        });
 
         return;
     },
@@ -422,11 +370,14 @@ const handlers = {
 
         if (!newestFrame) return;
 
-        newestFrame.onPop = () => {
-            newestFrame.onPop = undefined;
-
-            pause('step');
-        };
+        setUntilNextRequest(newestFrame, 'onPop', function () {
+            this.onPop = undefined;
+            if (this.older) {
+                setUntilNextRequest(this.older, 'onStep', onStepped);
+            } else {
+                resume();
+            }
+        });
 
         return;
     },
@@ -465,13 +416,30 @@ const handlers = {
 };
 
 /**
+ * @this {Debugger.Frame}
+ */
+function onStepped() {
+    if (!isDebugeeFrame(this)) return;
+
+    pause('step');
+}
+
+/**
+ * @param {Debugger.Frame} frame
+ * @returns {boolean}
+ */
+function isDebugeeFrame(frame) {
+    return !!frame.script && !!frame.offset;
+}
+
+/**
  * @param {Debugger.Frame} frame
  * @returns {number | null}
  */
 function getFrameLine(frame) {
     if (!frame.script || !frame.offset) return null;
     // 1-based
-    return frame.script.getOffsetLocation(frame.offset).lineNumber + 1;
+    return frame.script.getOffsetLocation(frame.offset).lineNumber;
 }
 
 /**
@@ -708,11 +676,8 @@ function toDapStackFrame(frame) {
 
     return {
         id: frame.depth ?? 0,
-        name:
-            (frame.script.displayName ?? !frame.older)
-                ? 'Global'
-                : 'Unknown Frame',
-        line: getFrameLine(frame) ?? 0,
+        name: frame.script.displayName ?? '<anonymous>',
+        line: getFrameLine(frame) ?? 2,
         column: getFrameColumn(frame) ?? 0,
         source: {
             name: url,
@@ -792,8 +757,6 @@ function pause(reason, stopArgs = {}) {
 // DEBUGGER API handlers
 
 function onInitialEnterFrame() {
-    dbg.onEnterFrame = undefined;
-
     pause('entry');
 }
 
