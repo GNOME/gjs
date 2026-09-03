@@ -76,6 +76,8 @@ declare class Debugger {
     onNewScript: undefined | ((script: Debugger.Script) => void);
     onEnterFrame: undefined | ((frame: Debugger.Frame) => void);
     onDebuggerStatement: undefined | ((frame: Debugger.Frame) => void);
+    onExceptionUnwind:
+        undefined | ((frame: Debugger.Frame, value: Debugger.Value) => void);
 
     // methods
     addDebuggee(debugee: any): void;
@@ -119,6 +121,7 @@ declare namespace Debugger {
         source: Debugger.Source;
         sourceStart: number;
         sourceLength: number;
+        isInCatchScope(offset?: Offset): boolean;
     }
 
     class Source {

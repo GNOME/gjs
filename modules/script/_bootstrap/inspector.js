@@ -21,6 +21,7 @@ const Encoding = loadNative('_encodingNative');
 
 /**
  * @typedef {{ url: string, line: number, column: number } | null} Location
+ * @typedef {"all" | "uncaught"} ExceptionBreakpointFilter
  */
 
 const STATE = {
@@ -40,6 +41,8 @@ const STATE = {
     cleanups: [],
     /** @type {Location | null} */
     lastLocation: null,
+    /** @type {Array<ExceptionBreakpointFilter>} */
+    exceptionBreakpointFilters: [],
 };
 
 // UTILITY FUNCTIONS
@@ -152,7 +155,23 @@ const handlers = {
     initialize(seq) {
         sendResponse(seq, 'initialize', {
             supportsConfigurationDoneRequest: true,
-            supportsSteppingGranularity: true,
+            // supportsSteppingGranularity: true,
+            exceptionBreakpointFilters: [
+                {
+                    filter: 'all',
+                    label: 'Caught Exceptions',
+                    default: false,
+                    description:
+                        "Breaks on all throw errors, even if they're caught later.",
+                },
+                {
+                    filter: 'uncaught',
+                    label: 'Uncaught Exceptions',
+                    default: false,
+                    description:
+                        'Breaks only on errors or promise rejections that are not handled.',
+                },
+            ],
         });
         sendEvent('initialized');
     },
@@ -171,9 +190,11 @@ const handlers = {
         sendResponse(seq, 'launch');
     },
     /**
-     * @param {{filters: any[]; filterOptions: any[]}} _args
+     * @param {{filters: Array<ExceptionBreakpointFilter>}} args
      */
-    setExceptionBreakpoints(seq, _args) {
+    setExceptionBreakpoints(seq, args) {
+        printerr('setExceptionBreakpoints', JSON.stringify(args));
+        STATE.exceptionBreakpointFilters = args.filters ?? [];
         sendResponse(seq, 'setExceptionBreakpoints');
     },
     configurationDone(seq) {
@@ -433,7 +454,6 @@ function getFrameLocation(frame) {
     return { url: frame.script.url, line: lineNumber, column: columnNumber };
 }
 
-
 /**
  * @param {Location} location1
  * @param {Location} location2
@@ -441,8 +461,7 @@ function getFrameLocation(frame) {
  */
 function isSameLocation(location1, location2) {
     return (
-        location1?.url === location2?.url &&
-        location1?.line === location2?.line
+        location1?.url === location2?.url && location1?.line === location2?.line
         // TODO: here we are assuming line granularity
         // && location1?.column === location2?.column
     );
@@ -455,8 +474,6 @@ function onStepped() {
     if (!isDebugeeFrame(this)) return;
 
     const location = getFrameLocation(this);
-    printerr("stepped, current location: ", JSON.stringify(location))
-    printerr("last location: ", JSON.stringify(STATE.lastLocation))
 
     if (isSameLocation(location, STATE.lastLocation)) return;
     STATE.lastLocation = location;
@@ -896,6 +913,36 @@ dbg.onNewScript = (/** @type {Debugger.Script} */ script) => {
 
 dbg.onDebuggerStatement = function () {
     pause('instruction breakpoint');
+};
+
+/**
+ * @param {Debugger.Frame | null} frame
+ * @returns {boolean}
+ */
+function willBeCaught(frame) {
+    while (frame) {
+        if (frame.script?.isInCatchScope(frame.offset ?? undefined))
+            return true;
+        frame = frame.older;
+    }
+    return false;
+}
+
+dbg.onExceptionUnwind = function (frame, value) {
+    const willBeCaughtResult = willBeCaught(frame);
+
+    /** @type {ExceptionBreakpointFilter} */
+    const check = willBeCaughtResult ? 'all' : 'uncaught';
+
+    printerr(
+        'exception unwind',
+        willBeCaughtResult,
+        check,
+        JSON.stringify(STATE.exceptionBreakpointFilters),
+    );
+    if (STATE.exceptionBreakpointFilters.includes(check)) {
+        pause('exception');
+    }
 };
 
 const debuggeeGlobalWrapper = dbg.addDebuggee(debuggee);
