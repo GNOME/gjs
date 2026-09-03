@@ -697,7 +697,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     if (!gjs_define_global_properties(m_cx, internal_global,
                                       GjsGlobalType::INTERNAL,
-                                      "GJS internal global", "nullptr")) {
+                                      "GJS internal global", nullptr)) {
         gjs_log_exception(m_cx);
         gjs_error("Failed to define properties on internal global object");
     }
