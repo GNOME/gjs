@@ -7,11 +7,8 @@
         "adapter": "gjs",
         "label": "test.js (gjs)",
 
-        // I added these myself, we need to configure them correctly otherwise
-        "type": "pwa-node",
-        "request": "launch",
         "program": "test.js",
-        "stopOnEntry": true,
+        "stopOnEntry": false,
         "cwd": "/home/alien/sites/gsoc/gjs",
         "gjsPath": "flatpak-spawn --host meson devenv -C /home/alien/sites/gsoc/gjs/_build  --workdir . gjs-console",
     },
@@ -23,5 +20,23 @@
         "program": "test.js",
         "stopOnEntry": false,
         "cwd": "/home/alien/sites/gsoc/gjs",
+    },
+    {
+        "adapter": "gjs",
+        "label": "test2.js (gjs)",
+        "args": [],
+        "cwd": "/home/alien/sites/gsoc/gjs",
+        "program": "test2.js",
+        "stopOnEntry": false,
+        "gjsPath": "flatpak-spawn --host meson devenv -C /home/alien/sites/gsoc/gjs/_build  --workdir . gjs-console",
+    },
+    {
+        "adapter": "gjs",
+        "label": "test3.js (gjs)",
+        "args": [],
+        "cwd": "/home/alien/sites/gsoc/gjs",
+        "program": "test3.js",
+        "stopOnEntry": true,
+        "gjsPath": "flatpak-spawn --host meson devenv -C /home/alien/sites/gsoc/gjs/_build  --workdir . gjs-console",
     },
 ]
