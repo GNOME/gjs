@@ -239,6 +239,28 @@ void gjs_g_binding_group_bind_full(
                                        to_closure, from_closure);
 }
 
+void gjs_g_settings_bind_with_mapping(
+    GSettings* settings, const char* key, GObject* object,
+    const char* property, GSettingsBindFlags flags,
+    GjsSettingsBindGetMapping get_mapping, void* get_data,
+    GDestroyNotify get_notify, GSettingsBindSetMapping set_mapping,
+    void* set_data, GDestroyNotify set_notify) {
+    GClosure* get_closure = NULL;
+    GClosure* set_closure = NULL;
+
+    if (get_mapping)
+        get_closure = g_cclosure_new(G_CALLBACK(get_mapping), get_data,
+                                     G_CLOSURE_NOTIFY(get_notify));
+
+    if (set_mapping)
+        set_closure = g_cclosure_new(G_CALLBACK(set_mapping), set_data,
+                                     G_CLOSURE_NOTIFY(set_notify));
+
+    g_settings_bind_with_mapping_closures(settings, key, object,
+                                          property, flags,
+                                          get_closure, set_closure);
+}
+
 #undef G_CLOSURE_NOTIFY
 
 static GParamSpec* gjs_gtk_container_class_find_child_property(

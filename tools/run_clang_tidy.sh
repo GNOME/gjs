@@ -28,7 +28,9 @@ done
 
 BUILD="${BUILDDIR:-_build}"
 pushd "${BUILD}" > /dev/null || exit 1
-if ! ninja -t compdb > compile_commands.json; then
+# Delete custom commands from the compilation database. They mess up clang-tidy.
+mapfile -t RULES < <(ninja -t rules | grep -v CUSTOM_COMMAND)
+if ! ninja -t compdb "${RULES[@]}" > compile_commands.json; then
     echo 'Generating compile_commands.json failed.'
     exit 1
 fi
@@ -46,3 +48,9 @@ else
         /usr/share/clang/clang-tidy-diff.py -clang-tidy-binary tools/ctx.sh \
             -p1 -path "${BUILD}" "${CHECKS_OVERRIDE[@]}"
 fi
+
+pushd "${BUILD}" > /dev/null || return
+# Regenerate the full compilation database including custom commands
+ninja -t compdb > compile_commands.json || \
+    echo 'Restoring compile_commands.json failed.'
+popd > /dev/null || return
