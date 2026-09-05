@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
+// SPDX-FileCopyrightText: 2026 Angelo Verlain <hey@vixalien.com>
+
 /// @ts-check
 
 declare type debuggee = { __internal: never };
