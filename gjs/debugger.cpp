@@ -6,7 +6,6 @@
 
 #include <stdint.h>
 #include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
-#include <cstdint>
 
 #ifdef HAVE_READLINE_READLINE_H
 #    include <readline/history.h>
@@ -42,8 +41,6 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/module.h"
-
-#include "gi/gerror.h"
 
 #include "util/console.h"
 
