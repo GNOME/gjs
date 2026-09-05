@@ -137,9 +137,6 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
                              &filename))
         return false;
 
-    // Here we ALWAYS load the file as an ES module
-    Gjs::AutoError error;
-
     Gjs::AutoUnref<GFile> output{
         g_file_new_for_commandline_arg(filename.get())};
     Gjs::AutoChar uri{g_file_get_uri(output)};
