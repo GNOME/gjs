@@ -296,14 +296,14 @@ void gjs_context_setup_inspector(GjsContext* self) {
         cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER));
 
     // Enter realm of the inspector and initialize it with the debuggee
-    JSAutoRealm ar(cx, inspector_global);
+    JSAutoRealm ar{cx, inspector_global};
     JS::RootedObject debuggee{cx, gjs->global()};
     if (!JS_WrapObject(cx, &debuggee)) {
         gjs_log_exception(cx);
         return;
     }
 
-    JS::RootedValue v_debuggee(cx, JS::ObjectValue(*debuggee));
+    JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
     if (!JS_SetPropertyById(cx, inspector_global, gjs->atoms().debuggee(),
                             v_debuggee) ||
         !JS_DefineFunctions(cx, inspector_global, inspector_funcs) ||

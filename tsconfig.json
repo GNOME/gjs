@@ -11,7 +11,7 @@
     "installed-tests/js/testTweener.js",
     "modules/internal/internalLoader.js",
     "modules/internal/loader.js",
-      "modules/script/_bootstrap/inspector.js",
+    "modules/script/_bootstrap/inspector.js",
   ],
   "include": ["./types/gjs.d.ts"],
   "compilerOptions": {
