@@ -13,7 +13,7 @@
 #endif
 
 #include <gio/gio.h>
-#include <gio/gunixinputstream.h>
+#include <gio/gunixinputstream.h>  // for g_unix_input_stream_new
 #include <glib-object.h>
 #include <glib.h>
 
@@ -30,6 +30,7 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_WrapObject
+#include <mozilla/Result.h>  // for Ok
 
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
