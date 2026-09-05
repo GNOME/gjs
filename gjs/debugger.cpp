@@ -13,7 +13,7 @@
 #endif
 
 #include <gio/gio.h>
-#include <gio/gunixinputstream.h>  // for g_unix_input_stream_new
+#include <gio/gunixinputstream.h> /* IWYU pragma: keep */
 #include <glib-object.h>
 #include <glib.h>
 
