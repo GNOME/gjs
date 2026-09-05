@@ -1,6 +1,6 @@
 /// @ts-check
 
-declare const debuggee = "__DEBUGEE__OPAQUE__";
+declare type debuggee = { __internal: never };
 declare function loadNative(name: "_print"): {
     print: (...args: unknown[]) => void;
     printerr: (...args: unknown[]) => void;
@@ -13,7 +13,7 @@ declare function loadNative(name: string): unknown;
 
 // Exposed functions
 
-type InputStream = "__INPUT_STREAM__OPAQUE__";
+type InputStream = { __internal: never };
 
 declare function openInputStream(stream: number): InputStream;
 declare function readLine(stream: InputStream): string;
@@ -80,7 +80,7 @@ declare class Debugger {
         undefined | ((frame: Debugger.Frame, value: Debugger.Value) => void);
 
     // methods
-    addDebuggee(debugee: any): void;
+    addDebuggee(debuggee: debuggee): void;
     findScripts(condition?: Partial<{ url: string }>): Debugger.Script[];
     getNewestFrame(): Debugger.Frame | null;
 }
@@ -90,8 +90,7 @@ declare namespace Debugger {
         hit(frame: Debugger.Frame): void;
     }
 
-    // opaque
-    class Offset {}
+    type Offset = { __internal: never };
 
     class Frame {
         older: Debugger.Frame | null;
