@@ -196,7 +196,7 @@ static bool read_line(JSContext* cx, unsigned argc, JS::Value* vp) {
     auto* stream = JS::ObjectGetStashedPointer<GDataInputStream>(cx, obj);
 
     size_t len;
-    Gjs::AutoError error = nullptr;
+    Gjs::AutoError error;
     Gjs::AutoChar line = g_data_input_stream_read_line_utf8(
         stream, &len, /* cancellable = */ nullptr, error.out());
     if (!line) {
@@ -228,7 +228,7 @@ static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     auto* stream = JS::ObjectGetStashedPointer<GInputStream>(cx, obj);
 
-    Gjs::AutoError error = nullptr;
+    Gjs::AutoError error;
     AutoBytes bytes = g_input_stream_read_bytes(
         stream, nbytes, /* cancellable = */ nullptr, error.out());
     if (!bytes) {
