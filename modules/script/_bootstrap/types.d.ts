@@ -3,7 +3,9 @@
 
 /// @ts-check
 
-declare type debuggee = { __internal: never };
+type Debuggee = { __internal: never };
+
+declare const debuggee: Debuggee;
 declare function loadNative(name: "_print"): {
     print: (...args: unknown[]) => void;
     printerr: (...args: unknown[]) => void;
@@ -21,6 +23,7 @@ type InputStream = { __internal: never };
 declare function openInputStream(stream: number): InputStream;
 declare function readLine(stream: InputStream): string;
 declare function readBytes(stream: InputStream, bytes: number): string;
+declare function peekBuffered(stream: InputStream): string;
 declare function launchFile(path: string): void;
 declare function quit(exitCode: number): void;
 
@@ -83,7 +86,7 @@ declare class Debugger {
         undefined | ((frame: Debugger.Frame, value: Debugger.Value) => void);
 
     // methods
-    addDebuggee(debuggee: debuggee): void;
+    addDebuggee(debuggee: Debuggee): void;
     findScripts(condition?: Partial<{ url: string }>): Debugger.Script[];
     getNewestFrame(): Debugger.Frame | null;
 }

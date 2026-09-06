@@ -43,6 +43,8 @@ const STATE = {
     lastLocation: null,
     /** @type {Array<ExceptionBreakpointFilter>} */
     exceptionBreakpointFilters: [],
+    // Some clients (e.g. Zed) use an extra \r\n when sending/receiving messages
+    extraCrlf: true
 };
 
 // UTILITY FUNCTIONS
@@ -60,19 +62,31 @@ const input = openInputStream(STDIN);
 
 function readMessage() {
     let contentLength = 0;
+    let sawHeader = false;
 
     while (true) {
         const line = readLine(input);
-        if (line == '' || line == '\r') break;
+        if (line == '' || line == '\r') {
+            if (sawHeader) break;
+            continue;
+        }
 
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
         if (match !== null) {
             contentLength = parseInt(match[1]);
+            sawHeader = true;
             break;
         }
     }
 
-    const body = readBytes(input, contentLength + 2);
+    let body = readBytes(input, contentLength);
+
+    if (body.startsWith('\r\n')) {
+        STATE.extraCrlf = true;
+        // remove the `\r\n` prefix if it was sent, and instead get the remaining body
+        body = body.slice(2) + readBytes(input, 2);
+    }
+
     return JSON.parse(body);
 }
 
@@ -84,7 +98,9 @@ function sendMessage(message) {
 
     const body = JSON.stringify({ seq: newSeq, ...message });
     // Add extra length bytes for \r\n at the end of body. print() auto-adds \n
-    print(`Content-Length: ${encode(body).length + 2}\r\n\r\n${body}\r`);
+    print(
+        `Content-Length: ${encode(body).length + (STATE.extraCrlf ? 2 : 0)}\r\n\r\n${body}\r`,
+    );
 }
 
 /**
@@ -193,7 +209,6 @@ const handlers = {
      * @param {{filters: Array<ExceptionBreakpointFilter>}} args
      */
     setExceptionBreakpoints(seq, args) {
-        printerr('setExceptionBreakpoints', JSON.stringify(args));
         STATE.exceptionBreakpointFilters = args.filters ?? [];
         sendResponse(seq, 'setExceptionBreakpoints');
     },
