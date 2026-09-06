@@ -749,7 +749,7 @@ function toDapStackFrame(frame) {
     return {
         id: frame.depth ?? 0,
         name: frame.script.displayName ?? '<anonymous>',
-        line: getFrameLine(frame) ?? 2,
+        line: getFrameLine(frame) ?? 1,
         column: getFrameColumn(frame) ?? 0,
         source: {
             name: url,
