@@ -444,10 +444,7 @@ const handlers = {
 
         if (foundScript) {
             sendResponse(seq, 'source', {
-                content: foundScript.source.text.slice(
-                    foundScript.sourceStart,
-                    foundScript.sourceStart + foundScript.sourceLength,
-                ),
+                content: foundScript.source.text,
             });
 
             return;
