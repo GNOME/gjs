@@ -32,6 +32,8 @@ build-alpine-image:
     - .fdo.container-build@alpine@x86_64
     - .gjs-alpine
   stage: prepare
+  rules:
+    - if: '$CRON_TASK != "BUILD_CI_IMAGES"'
   variables:
     FDO_DISTRIBUTION_PACKAGES: |
       bash git grep npm py3-codespell python3 shellcheck reuse
