@@ -607,20 +607,22 @@ fedora.mozjs140:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
+    ARGS: --build-arg HOST=--host=x86_64-unknown-linux-gnu
     IMAGE_NAME: fedora.mozjs140
 
-.fedora.mozjs140-debug: &fedora_mozjs140_debug
+fedora.mozjs140-debug_x86_64:
+  <<: *create_docker_image
+  variables:
+    <<: *docker_variables
+    ARGS: --build-arg BUILD_OPTS=--enable-debug --build-arg HOST=--host=x86_64-unknown-linux-gnu
+    IMAGE_NAME: fedora.mozjs140-debug
+
+fedora.mozjs140-debug_aarch64:
   <<: *create_docker_image
   variables:
     <<: *docker_variables
     ARGS: --build-arg BUILD_OPTS=--enable-debug
     IMAGE_NAME: fedora.mozjs140-debug
-
-fedora.mozjs140-debug_x86_64:
-  <<: *fedora_mozjs140_debug
-
-fedora.mozjs140-debug_aarch64:
-  <<: *fedora_mozjs140_debug
   tags:
     - aarch64
 

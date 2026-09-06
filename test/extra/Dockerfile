@@ -7,6 +7,7 @@ FROM registry.fedoraproject.org/fedora:44 AS mozjs-build
 ARG MOZJS_BRANCH=mozjs140
 ARG MOZJS_BUILDDEPS=${MOZJS_BRANCH}
 ARG BUILD_OPTS=
+ARG HOST=
 
 ENV SHELL=/bin/bash
 
@@ -30,7 +31,7 @@ RUN mkdir -p mozjs/_build
 WORKDIR /root/mozjs/_build
 
 RUN ../js/src/configure --prefix=/usr --libdir=/usr/lib64 --disable-jemalloc \
-    --with-system-zlib --with-intl-api ${BUILD_OPTS}
+    --with-system-zlib --with-intl-api ${HOST} ${BUILD_OPTS}
 RUN make -j$(nproc)
 RUN DESTDIR=/root/mozjs-install make install
 RUN rm -f /root/mozjs-install/usr/lib64/libjs_static.ajs
