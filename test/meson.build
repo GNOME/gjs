@@ -22,8 +22,12 @@ gjs_tests_sources = [
     'gjs-test-no-introspection-object.cpp', 'gjs-test-no-introspection-object.h',
 ]
 
+gjs_tests_deps = [libgjs_dep]
+if build_profiler
+    gjs_tests_deps += sysprof_capture
+endif
 gjs_tests = executable('gjs-tests', gjs_tests_sources, mock_js_resources_files,
-    include_directories: top_include, dependencies: libgjs_dep,
+    include_directories: top_include, dependencies: gjs_tests_deps,
     link_whole: [module_resource_lib],
     link_with: [libgjs_tests_common, libgjs_internal])
 
