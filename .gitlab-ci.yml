@@ -42,6 +42,19 @@ build-alpine-image:
       apk add cpplint \
         --repository=http://dl-cdn.alpinelinux.org/alpine/edge/testing/
 
+# Use `rules: *rules_default` to run a job in most pipelines (except in the
+# scheduled CI image build jobs) and if you don't need anything more complicated like file filters.
+.rules-default: &rules_default
+  - if: $CI_PIPELINE_SOURCE == 'schedule'
+    when: never
+  - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+  - if: $CI_COMMIT_TAG
+  - if: $CI_COMMIT_BRANCH
+
+# Use `rules: *rules_ci_images` for the CI image build jobs.
+.rules-ci-images: &rules_ci_images
+  - if: $CRON_TASK == "BUILD_CI_IMAGES"
+
 .coverage: &coverage
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
   variables:
@@ -102,8 +115,7 @@ build_recommended:
   variables:
     GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --verbose --no-stdsplit --print-errorlogs
-  except:
-    - schedules
+  rules: *rules_default
 
 sanitizer_gcc:
   <<: *build
@@ -117,8 +129,7 @@ sanitizer_gcc:
     TEST_OPTS: --timeout-multiplier=3
     # Override these during build, but they are overridden by meson anyways
     ASAN_OPTIONS: start_deactivated=true,detect_leaks=0
-  except:
-    - schedules
+  rules: *rules_default
 
 # There are a lot of debug log statements that are ifdef'd out in normal usage.
 # These sometimes get invalid expressions in them, leading to annoyance the
@@ -134,8 +145,7 @@ sanitizer_gcc:
     CONFIG_OPTS: >-
       -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true -Db_pch=false
     ENABLE_GTK: "yes"
-  except:
-    - schedules
+  rules: *rules_default
   script:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
@@ -172,8 +182,7 @@ build_minimal:
     GIT_SUBMODULE_STRATEGY: normal
     CONFIG_OPTS: -Dbuildtype=release -Dreadline=disabled -Dprofiler=disabled
     TEST_OPTS: --setup=verbose
-  except:
-    - schedules
+  rules: *rules_default
 
 build_unity:
   <<: *build
@@ -188,8 +197,7 @@ build_unity:
       -Dprofiler=disabled
       --unity on --unity-size=10000
     TEST_OPTS: --setup=verbose
-  except:
-    - schedules
+  rules: *rules_default
 
 # Generates
 # The Code Coverage Report
@@ -230,16 +238,20 @@ cpplint:
   script:
     - cpplint --version
     - tools/run_cpplint.sh
-  except:
-    refs:
-      - schedules
-      - tags
-  only:
-    changes:
-      - "**/*.c"
-      - "**/*.cpp"
-      - "**/*.h"
-      - "**/*.hh"
+  # Always run on branch pushes because the job is cheap and file filters are
+  # only reliable in merge requests.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
+    - if: $CI_COMMIT_BRANCH
 
 shellcheck:
   when: on_success
@@ -250,14 +262,18 @@ shellcheck:
   script:
     - shellcheck --version
     - tools/run_shellcheck.sh
-  except:
-    refs:
-      - schedules
-      - tags
-  only:
-    changes:
-      - "**.sh"
-      - ".gitlab-ci.yml"
+  # Always run on branch pushes because the job is cheap and file filters are
+  # only reliable in merge requests.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**.sh"
+        - ".gitlab-ci.yml"
+    - if: $CI_COMMIT_BRANCH
 
 eslint:
   when: on_success
@@ -268,16 +284,20 @@ eslint:
   script:
     - ./tools/run_eslint.sh --version
     - ./tools/run_eslint.sh
-  except:
-    refs:
-      - schedules
-      - tags
-  only:
-    changes:
-      - "**/*.js"
-      - .eslintignore
-      - .eslintrc.yml
-      - '**/.eslintrc.yml'
+  # Always run on branch pushes because the job is cheap and file filters are
+  # only reliable in merge requests.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**/*.js"
+        - .eslintignore
+        - .eslintrc.yml
+        - '**/.eslintrc.yml'
+    - if: $CI_COMMIT_BRANCH
 
 typecheck:
   when: on_success
@@ -288,15 +308,19 @@ typecheck:
   script:
     - ./tools/run_typecheck.sh --version
     - ./tools/run_typecheck.sh
-  except:
-    refs:
-      - schedules
-      - tags
-  only:
-    changes:
-      - modules/internal/*.js
-      - tools/package-lock.json
-      - tsconfig.json
+  # Always run on branch pushes because the job is cheap and file filters are
+  # only reliable in merge requests.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - modules/internal/*.js
+        - tools/package-lock.json
+        - tsconfig.json
+    - if: $CI_COMMIT_BRANCH
 
 headers_check:
   when: on_success
@@ -309,18 +333,22 @@ headers_check:
     - env SELFTEST=1 test/check-headers.sh
     - test/check-pch.sh
     - test/check-headers.sh
-  except:
-    refs:
-      - schedules
-      - tags
-  only:
-    changes:
-      - "**/*.c"
-      - "**/*.cpp"
-      - "**/*.h"
-      - "**/*.hh"
-      - test/check-pch.sh
-      - test/check-headers.sh
+  # Always run on branch pushes because the job is cheap and file filters are
+  # only reliable in merge requests.
+  rules:
+    - if: $CI_PIPELINE_SOURCE == 'schedule'
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
+      changes:
+        - "**/*.c"
+        - "**/*.cpp"
+        - "**/*.h"
+        - "**/*.hh"
+        - test/check-pch.sh
+        - test/check-headers.sh
+    - if: $CI_COMMIT_BRANCH
 
 iwyu:
   when: on_success
@@ -334,24 +362,14 @@ iwyu:
     - include-what-you-use --version
     - ./tools/run_iwyu.sh ci-upstream-base
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
-      when: never
-    - if: $CI_COMMIT_BRANCH
-      changes:
-        - "**/*.c"
-        - "**/*.cpp"
-        - "**/*.h"
-        - "**/*.hh"
-      when: on_success
+    # Merge requests only; file filters are only reliable on merge requests and
+    # iwyu-full is for checking the whole codebase.
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       changes:
         - "**/*.c"
         - "**/*.cpp"
         - "**/*.h"
         - "**/*.hh"
-      when: on_success
 
 clang-tidy:
   when: on_success
@@ -365,24 +383,14 @@ clang-tidy:
     - clang-tidy --version
     - ./tools/run_clang_tidy.sh ci-upstream-base
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
-      when: never
-    - if: $CI_COMMIT_BRANCH
-      changes:
-        - "**/*.c"
-        - "**/*.cpp"
-        - "**/*.h"
-        - "**/*.hh"
-      when: on_success
+    # Merge requests only; file filters are only reliable on merge requests and
+    # clang-tidy-full is for checking the whole codebase.
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       changes:
         - "**/*.c"
         - "**/*.cpp"
         - "**/*.h"
         - "**/*.hh"
-      when: on_success
 
 clang-static-analyzer:
   when: on_success
@@ -396,24 +404,14 @@ clang-static-analyzer:
     - clang-tidy --version
     - ./tools/run_clang_tidy.sh --analyzer ci-upstream-base
   rules:
-    - if: $CI_PIPELINE_SOURCE == "schedule"
-      when: never
-    - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
-      when: never
-    - if: $CI_COMMIT_BRANCH
-      changes:
-        - "**/*.c"
-        - "**/*.cpp"
-        - "**/*.h"
-        - "**/*.hh"
-      when: on_success
+    # Merge requests only; file filters are only reliable on merge requests and
+    # clang-static-analyzer-full is for checking the whole codebase.
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       changes:
         - "**/*.c"
         - "**/*.cpp"
         - "**/*.h"
         - "**/*.hh"
-      when: on_success
 
 codespell:
   when: on_success
@@ -428,8 +426,7 @@ codespell:
         --builtin "code,usage,clear" \
         --skip="./build/maintainer-tag-release.sh,./installed-tests/js/jasmine.js,./README.md,./build/flatpak/*.json,./tools/package-lock.json,./modules/internal/source-map/*" \
         --ignore-words-list="aas,afterall,deque,falsy,files',filetest,gir,inout,lets,musl,nmake,ObjectIn,stdio,uint,upto,ws,xdescribe"
-  except:
-    - schedules
+  rules: *rules_default
 
 license-check:
   when: on_success
@@ -440,8 +437,7 @@ license-check:
   script:
     - reuse --version
     - reuse lint
-  except:
-    - schedules
+  rules: *rules_default
 
 #############################################
 #                Manual Jobs                #
@@ -465,8 +461,7 @@ iwyu-full:
   script:
     - meson setup _build -Db_pch=false -Dbuildtype=release
     - ./tools/run_iwyu.sh
-  except:
-    - schedules
+  rules: *rules_default
 
 clang-tidy-full:
   when: manual
@@ -477,8 +472,7 @@ clang-tidy-full:
   script:
     - meson setup _build -Db_pch=false -Dbuildtype=release
     - ./tools/run_clang_tidy.sh
-  except:
-    - schedules
+  rules: *rules_default
 
 clang-static-analyzer-full:
   when: manual
@@ -489,8 +483,7 @@ clang-static-analyzer-full:
   script:
     - meson setup _build -Db_pch=false -Dbuildtype=debugoptimized
     - ./tools/run_clang_tidy.sh --analyzer
-  except:
-    - schedules
+  rules: *rules_default
 
 installed_tests:
   <<: *build
@@ -501,8 +494,7 @@ installed_tests:
     CONFIG_OPTS: -Dinstalled_tests=true -Dprefix=/usr
     TEST: skip
   when: manual
-  except:
-    - schedules
+  rules: *rules_default
   script:
     - test/test-ci.sh SETUP
     - test/test-ci.sh BUILD
@@ -518,8 +510,7 @@ valgrind:
     TEST_OPTS: --setup=valgrind
   allow_failure: true
   when: manual
-  except:
-    - schedules
+  rules: *rules_default
 
 # SpiderMonkey GC Tests (weekly)
 zeal_2:
@@ -530,8 +521,7 @@ zeal_2:
     GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=extra_gc
   when: manual
-  except:
-    - schedules
+  rules: *rules_default
 
 zeal_4:
   <<: *build
@@ -541,8 +531,7 @@ zeal_4:
     GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=pre_verify
   when: manual
-  except:
-    - schedules
+  rules: *rules_default
 
 zeal_11:
   <<: *build
@@ -552,8 +541,7 @@ zeal_11:
     GIT_SUBMODULE_STRATEGY: normal
     TEST_OPTS: --setup=post_verify
   when: manual
-  except:
-    - schedules
+  rules: *rules_default
 
 #############################################
 #          Create CI Docker Images          #
@@ -561,9 +549,7 @@ zeal_11:
 .Docker image template: &create_docker_image
   image: quay.io/freedesktop.org/ci-templates:container-build-base-2023-06-27.1
   stage: deploy
-  only:
-    variables:
-      - $CRON_TASK == "BUILD_CI_IMAGES"
+  rules: *rules_ci_images
 
   script:
     # Newer versions of podman/buildah try to set overlayfs mount options when
@@ -642,9 +628,7 @@ build-manifest-debug:
   needs: ["fedora.mozjs140-debug_x86_64", "fedora.mozjs140-debug_aarch64"]
   image: quay.io/freedesktop.org/ci-templates:container-build-base-2023-06-27.1
   stage: deploy
-  only:
-    variables:
-      - $CRON_TASK == "BUILD_CI_IMAGES"
+  rules: *rules_ci_images
   variables:
     IMAGE_NAME: fedora.mozjs140-debug
 
@@ -666,9 +650,7 @@ build-manifest-debug153:
   needs: ["fedora.mozjs153-debug_x86_64", "fedora.mozjs153-debug_aarch64"]
   image: quay.io/freedesktop.org/ci-templates:container-build-base-2023-06-27.1
   stage: deploy
-  only:
-    variables:
-      - $CRON_TASK == "BUILD_CI_IMAGES"
+  rules: *rules_ci_images
   variables:
     IMAGE_NAME: fedora.mozjs153-debug
 
