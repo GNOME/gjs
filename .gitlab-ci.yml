@@ -234,8 +234,6 @@ cpplint:
     refs:
       - schedules
       - tags
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip cpplint\]/
   only:
     changes:
       - "**/*.cpp"
@@ -255,8 +253,6 @@ shellcheck:
     refs:
       - schedules
       - tags
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip shellcheck\]/
   only:
     changes:
       - "**.sh"
@@ -275,8 +271,6 @@ eslint:
     refs:
       - schedules
       - tags
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip eslint\]/
   only:
     changes:
       - "**/*.js"
@@ -318,8 +312,6 @@ headers_check:
     refs:
       - schedules
       - tags
-    variables:
-      - $CI_COMMIT_MESSAGE =~ /\[skip headers_check\]/
   only:
     changes:
       - "**/*.c"
@@ -344,8 +336,6 @@ iwyu:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
     - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
-      when: never
-    - if: $CI_COMMIT_MESSAGE =~ /\[skip iwyu\]/
       when: never
     - if: $CI_COMMIT_BRANCH
       changes:
@@ -378,8 +368,6 @@ clang-tidy:
       when: never
     - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
       when: never
-    - if: $CI_COMMIT_MESSAGE =~ /\[skip clang-tidy\]/
-      when: never
     - if: $CI_COMMIT_BRANCH
       changes:
         - "**/*.c"
@@ -410,8 +398,6 @@ clang-static-analyzer:
     - if: $CI_PIPELINE_SOURCE == "schedule"
       when: never
     - if: $CI_COMMIT_BRANCH =~ /^gnome-[-\d]+$/
-      when: never
-    - if: $CI_COMMIT_MESSAGE =~ /\[skip clang-tidy\]/
       when: never
     - if: $CI_COMMIT_BRANCH
       changes:
