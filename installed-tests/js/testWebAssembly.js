@@ -3,6 +3,8 @@
 // SPDX-FileContributor: Angelo Verlain <hey@vixalien.com>
 
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
+
 const wasmFile = Gio.File.new_for_uri('resource:///org/gjs/jsunit/wasm/add.wasm');
 
 describe('WebAssembly', function () {
@@ -23,16 +25,25 @@ describe('WebAssembly', function () {
 
         const order = [];
 
-        const p1 = WebAssembly.instantiate(bytes).then(() => order.push('wasm1'));
-        const p2 = WebAssembly.instantiate(bytes).then(() => order.push('wasm2'));
+        async function addMicrotask(name) {
+            order.push(name);
+            await Promise.resolve();
+            // A plain resolved promise should interleave between wasm
+            // completions if microtasks are drained after each WASM job
+            order.push(`${name}-microtask`);
+        }
+        const pA = WebAssembly.instantiate(bytes).then(() => addMicrotask('wasmA'));
+        const pB = WebAssembly.instantiate(bytes).then(() => addMicrotask('wasmB'));
 
-        // A plain resolved promise should interleave between wasm completions
-        // if microtasks are drained after each WASM job
-        const p3 = Promise.resolve().then(() => order.push('microtask'));
+        // Block the main thread so the two jobs are dispatched in one batch
+        GLib.usleep(1e6);
 
-        await Promise.all([p1, p2, p3]);
+        await Promise.all([pA, pB]);
 
-        // microtask must not be deferred until after both WASM jobs complete
-        expect(order.indexOf('microtask')).toBeLessThan(order.indexOf('wasm2'));
+        // The WASM microtasks run in completion order, not launch order, so not
+        // deterministic. Each Promise microtask should run immediately after
+        // the WASM microtask that queued it
+        expect(order.indexOf('wasmA-microtask')).toBe(order.indexOf('wasmA') + 1);
+        expect(order.indexOf('wasmB-microtask')).toBe(order.indexOf('wasmB') + 1);
     });
 });
