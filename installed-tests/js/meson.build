@@ -4,8 +4,11 @@
 
 ### Jasmine tests ##############################################################
 
+subdir('wasm')
+
 jsunit_resources_files = gnome.compile_resources('jsunit-resources',
-    'jsunit.gresources.xml', c_name: 'jsunit_resources')
+    'jsunit.gresources.xml', c_name: 'jsunit_resources',
+    dependencies: [wasm_add], source_dir: ['.', meson.current_build_dir()])
 
 minijasmine = executable('minijasmine', '../minijasmine.cpp',
     jsunit_resources_files, dependencies: libgjs_dep,
@@ -50,6 +53,7 @@ jasmine_tests = [
     'Utility',
     'WarnLib',
     'WeakRef',
+    'WebAssembly',
 ]
 
 if not get_option('skip_gtk_tests')

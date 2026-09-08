@@ -417,6 +417,8 @@ void GjsContextPrivate::dispose() {
     if (m_cx) {
         stop_draining_job_queue();
 
+        shutdown_wasm_job_queue();
+
         gjs_debug(GJS_DEBUG_CONTEXT,
                   "Notifying reference holders of GjsContext dispose");
 
@@ -956,6 +958,17 @@ void GjsContextPrivate::stop_draining_job_queue() {
     m_dispatcher.stop();
 }
 
+void GjsContextPrivate::shutdown_wasm_job_queue() {
+    WasmJobQueueStorage pending;
+    {
+        std::scoped_lock lock(m_wasm_job_queue_mutex);
+        std::swap(pending, m_wasm_job_queue);
+    }
+    for (auto& d : pending)
+        JS::Dispatchable::Run(m_cx, std::move(d),
+                              JS::Dispatchable::ShuttingDown);
+}
+
 bool GjsContextPrivate::getHostDefinedData(JSContext* cx,
                                            JS::MutableHandleObject data) const {
     // This is equivalent to SpiderMonkey's behavior.
@@ -988,6 +1001,21 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
     return true;
 }
 
+bool GjsContextPrivate::dispatch_wasm_job(WasmJob&& d) {
+    // This callback is invoked from a non-JS thread
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Enqueue Wasm Dispatchable %p", d.get());
+
+    {
+        std::scoped_lock lock(m_wasm_job_queue_mutex);
+        m_wasm_job_queue.push_back(std::move(d));
+    }
+
+    // Schedule wasm jobs to be dispatched on the JS thread with a thread-safe
+    // wakeup
+    m_dispatcher.wakeup();
+    return true;
+}
+
 // Override of JobQueue::runJobs(). Called by js::RunJobs(), and when execution
 // of the job queue was interrupted by the debugger and is resuming.
 void GjsContextPrivate::runJobs(JSContext* cx) {
@@ -995,6 +1023,41 @@ void GjsContextPrivate::runJobs(JSContext* cx) {
     g_assert(from_cx(cx) == this);
     if (!run_jobs_fallible())
         gjs_log_exception(cx);
+}
+
+/**
+ * GjsContext::run_single_job:
+ *
+ * Runs a single job from the promise callback queue.
+ */
+bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
+    JS::HandleValueArray args{JS::HandleValueArray::empty()};
+    JS::RootedValue rval{m_cx};
+
+    JSAutoRealm ar{m_cx, job};
+    gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
+              gjs_debug_object(job).c_str());
+
+    if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
+        /* Uncatchable exception - return false so that System.exit()
+         * works in the interactive shell and when exiting the
+         * interpreter. */
+        if (!JS_IsExceptionPending(m_cx)) {
+            /* System.exit() is an uncatchable exception, but does not
+             * indicate a bug. Log everything else. */
+            if (!should_exit(nullptr))
+                g_critical(
+                    "Promise callback terminated with uncatchable "
+                    "exception");
+            return false;
+        }
+
+        // There's nowhere for the exception to go at this point
+        gjs_log_exception_uncaught(m_cx);
+    }
+
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
+    return true;
 }
 
 /**
@@ -1018,8 +1081,6 @@ bool GjsContextPrivate::run_jobs_fallible() {
     m_draining_job_queue = true;  // Ignore reentrant calls
 
     JS::RootedObject job(m_cx);
-    JS::HandleValueArray args(JS::HandleValueArray::empty());
-    JS::RootedValue rval(m_cx);
 
     if (m_job_queue.empty()) {
         // Check FinalizationRegistry cleanup tasks at least once if there are
@@ -1049,35 +1110,55 @@ bool GjsContextPrivate::run_jobs_fallible() {
             continue;
 
         m_job_queue[ix] = nullptr;
-        {
-            JSAutoRealm ar(m_cx, job);
-            gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
-                      gjs_debug_object(job).c_str());
-            if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
-                /* Uncatchable exception - return false so that System.exit()
-                 * works in the interactive shell and when exiting the
-                 * interpreter. */
-                if (!JS_IsExceptionPending(m_cx)) {
-                    /* System.exit() is an uncatchable exception, but does not
-                     * indicate a bug. Log everything else. */
-                    if (!should_exit(nullptr))
-                        g_critical(
-                            "Promise callback terminated with uncatchable "
-                            "exception");
-                    retval = false;
-                    continue;
-                }
 
-                // There's nowhere for the exception to go at this point
-                gjs_log_exception_uncaught(m_cx);
-            }
+        if (!run_single_job(job, ix)) {
+            retval = false;
+            continue;
         }
-        gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
 
         // Run FinalizationRegistry cleanup tasks after each job. Cleanup tasks
         // may enqueue more microtasks, which will be appended to m_job_queue.
         if (!run_finalization_registry_cleanup())
             retval = false;
+    }
+
+    /**
+     * Run pending WASM jobs.
+     */
+    while (!m_should_exit && m_dispatcher.is_running()) {
+        WasmJobQueueStorage pending;
+        {
+            std::scoped_lock lock(m_wasm_job_queue_mutex);
+            std::swap(pending, m_wasm_job_queue);
+        }
+
+        if (pending.empty())
+            break;
+
+        for (auto& d : pending) {
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable %p",
+                      d.get());
+            JS::Dispatchable::Run(m_cx, std::move(d),
+                                  JS::Dispatchable::NotShuttingDown);
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Completed Wasm Dispatchable");
+
+            // Drain promise jobs after each individual WASM job
+            for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
+                job = m_job_queue[ix];
+                if (!job)
+                    continue;
+
+                m_job_queue[ix] = nullptr;
+                if (!run_single_job(job, ix)) {
+                    retval = false;
+                    continue;
+                }
+
+                if (!run_finalization_registry_cleanup())
+                    retval = false;
+            }
+            m_job_queue.clear();
+        }
     }
 
     m_draining_job_queue = false;

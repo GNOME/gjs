@@ -194,6 +194,14 @@ void PromiseJobDispatcher::stop() {
     m_source->cancel();
 }
 
+void PromiseJobDispatcher::wakeup() {
+    g_assert(is_running());
+
+    // Dispatch the source on the next main loop iteration
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Waking up promise job dispatcher");
+    g_source_set_ready_time(m_source.get(), 0);
+}
+
 };  // namespace Gjs
 
 GJS_JSAPI_RETURN_CONVENTION
