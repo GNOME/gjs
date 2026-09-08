@@ -178,6 +178,15 @@ report "interpreter should run dispatched WASM jobs before finishing"
 test -n "${output##*Should not be printed*}"
 report "interpreter should stop running dispatched WASM jobs when one calls System.exit()"
 
+# interpreter exits cleanly with a WASM compilation still pending
+$gjs -m "$fixtures/wasmpending.js"
+test $? -eq 0
+report "interpreter should not hang when a WASM job is pending at exit"
+
+$gjs -m "$fixtures/wasmpending.js" exit
+test $? -eq 42
+report "interpreter should not hang when System.exit() is called with a WASM job pending"
+
 $gjs -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q 'Gjs-WARNING.*Unhandled promise rejection.*[sS]tack trace'
 report "unhandled promise rejection should be reported"
 test -z "$($gjs "$fixtures/awaitcatch.js")"

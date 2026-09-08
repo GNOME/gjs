@@ -996,6 +996,9 @@ void GjsContextPrivate::shutdown_wasm_job_queue() {
     WasmJobQueueStorage pending;
     {
         std::scoped_lock lock(m_wasm_job_queue_mutex);
+        // Shutting down is a one-way transition, it is not allowed to accept
+        // jobs after this
+        m_wasm_job_queue_closed = true;
         std::swap(pending, m_wasm_job_queue);
     }
     for (auto& d : pending)
@@ -1039,9 +1042,21 @@ bool GjsContextPrivate::dispatch_wasm_job(WasmJob&& d) {
     gjs_debug(GJS_DEBUG_MAINLOOP, "Enqueue Wasm Dispatchable {}",
               static_cast<void*>(d.get()));
 
+    bool success = false;
     {
         std::scoped_lock lock(m_wasm_job_queue_mutex);
-        m_wasm_job_queue.push_back(std::move(d));
+        if (!m_wasm_job_queue_closed) {
+            m_wasm_job_queue.push_back(std::move(d));
+            success = true;
+        }
+    }
+
+    if (!success) {
+        // This job cannot be run, so hand it back to the JS engine
+        gjs_debug(GJS_DEBUG_MAINLOOP, "Reject Wasm Dispatchable {}",
+                  static_cast<void*>(d.get()));
+        JS::Dispatchable::ReleaseFailedTask(std::move(d));
+        return false;
     }
 
     // Schedule wasm jobs to be dispatched on the JS thread with a thread-safe

@@ -66,6 +66,7 @@ install_data(
   'scripts' / 'promiseexit.js',
   'scripts' / 'signalexit.js',
   'scripts' / 'wasmexit.js',
+  'scripts' / 'wasmpending.js',
   install_dir: installed_tests_execdir / 'scripts')
 
 # Jasmine tests #
