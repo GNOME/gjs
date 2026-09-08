@@ -3,17 +3,7 @@
 // SPDX-FileContributor: Angelo Verlain <hey@vixalien.com>
 
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
-
-const thisFile = Gio.File.new_for_uri(import.meta.url);
-let wasmFile = thisFile.get_parent().resolve_relative_path('wasm/add.wasm');
-
-// while building
-if (!wasmFile.query_exists(null)) {
-    const buildDir = GLib.getenv('TOP_BUILDDIR');
-    if (buildDir)
-        wasmFile = Gio.File.new_for_path(buildDir).resolve_relative_path('installed-tests/js/wasm/add.wasm');
-}
+const wasmFile = Gio.File.new_for_uri('resource:///org/gjs/jsunit/wasm/add.wasm');
 
 describe('WebAssembly', function () {
     it('can instantiate a module', async function () {

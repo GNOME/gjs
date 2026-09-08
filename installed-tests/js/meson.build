@@ -4,8 +4,11 @@
 
 ### Jasmine tests ##############################################################
 
+subdir('wasm')
+
 jsunit_resources_files = gnome.compile_resources('jsunit-resources',
-    'jsunit.gresources.xml', c_name: 'jsunit_resources')
+    'jsunit.gresources.xml', c_name: 'jsunit_resources',
+    dependencies: [wasm_add], source_dir: ['.', meson.current_build_dir()])
 
 minijasmine = executable('minijasmine', '../minijasmine.cpp',
     jsunit_resources_files, dependencies: libgjs_dep,
@@ -66,8 +69,6 @@ endif
 
 installed_js_tests_dir = installed_tests_execdir / 'js'
 
-subdir('wasm')
-
 gschemas_compiled = gnome.compile_schemas(
     depend_files: 'org.gnome.GjsTest.gschema.xml')
 
@@ -86,13 +87,8 @@ tests_dependencies = [
 foreach test : jasmine_tests
     test_file = files('test@0@.js'.format(test))
 
-    test_dependencies = tests_dependencies
-    if test == 'WebAssembly'
-        test_dependencies += wasm_add
-    endif
-
     test(test, minijasmine, args: [test_file, '-m'],
-        depends: test_dependencies, env: tests_environment, protocol: 'tap',
+        depends: tests_dependencies, env: tests_environment, protocol: 'tap',
         suite: 'JS')
 
     test_description_subst = {

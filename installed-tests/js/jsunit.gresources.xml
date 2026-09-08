@@ -44,5 +44,6 @@
     <file>modules/subBadInit/__init__.js</file>
     <file>modules/subErrorInit/__init__.js</file>
     <file preprocess="xml-stripblanks">org.gnome.gjs.Test.xml</file>
+    <file>wasm/add.wasm</file>
   </gresource>
 </gresources>

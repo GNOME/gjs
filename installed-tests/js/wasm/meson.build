@@ -11,7 +11,4 @@ wasm_add = custom_target('wasm-add',
         '@INPUT@',
         '-o', '@OUTPUT@',
     ],
-    build_by_default: true,
-    install: get_option('installed_tests'),
-    install_dir: installed_js_tests_dir / 'wasm',
 )
