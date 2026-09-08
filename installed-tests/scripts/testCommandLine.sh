@@ -169,6 +169,15 @@ report "interpreter should run queued promise jobs before finishing"
 test -n "${output##*Should not be printed*}"
 report "interpreter should stop running jobs when one calls System.exit()"
 
+# Same but for WASM dispatched jobs
+output=$($gjs -m "$fixtures/wasmexit.js")
+test $? -eq 42
+report "interpreter should exit with the correct exit code from a dispatched WASM job"
+test -n "$output" -a -z "${output##*Should be printed*}"
+report "interpreter should run dispatched WASM jobs before finishing"
+test -n "${output##*Should not be printed*}"
+report "interpreter should stop running dispatched WASM jobs when one calls System.exit()"
+
 $gjs -c "Promise.resolve().then(() => { throw new Error(); });" 2>&1 | grep -q 'Gjs-WARNING.*Unhandled promise rejection.*[sS]tack trace'
 report "unhandled promise rejection should be reported"
 test -z "$($gjs "$fixtures/awaitcatch.js")"

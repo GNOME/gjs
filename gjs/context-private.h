@@ -156,6 +156,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void stop_draining_job_queue();
     void shutdown_wasm_job_queue();
     [[nodiscard]] bool run_single_job(JS::HandleObject job, size_t ix);
+    [[nodiscard]] bool drain_promise_jobs();
 
     void warn_about_unhandled_promise_rejections();
 

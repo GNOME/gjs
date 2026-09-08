@@ -1094,34 +1094,17 @@ bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
 }
 
 /**
- * GjsContext::run_jobs_fallible:
+ * GjsContext::drain_promise_jobs:
  *
- * Drains the queue of promise callbacks that the JS engine has reported
- * finished, calling each one and logging any exceptions that it throws.
- *
- * Adapted from js::RunJobs() in SpiderMonkey's default job queue
- * implementation.
+ * Runs queued microtasks in a loop. Run once when finishing a JS script, and
+ * additionally after each dispatched WASM microtask.
  *
  * Returns: false if one of the jobs threw an uncatchable exception; otherwise
  * true.
  */
-bool GjsContextPrivate::run_jobs_fallible() {
+bool GjsContextPrivate::drain_promise_jobs() {
+    JS::RootedObject job{m_cx};
     bool retval = true;
-
-    if (m_draining_job_queue || m_should_exit)
-        return true;
-
-    m_draining_job_queue = true;  // Ignore reentrant calls
-
-    JS::RootedObject job(m_cx);
-
-    if (m_job_queue.empty()) {
-        // Check FinalizationRegistry cleanup tasks at least once if there are
-        // no microtasks queued. This may enqueue more microtasks, which will be
-        // appended to m_job_queue.
-        if (!run_finalization_registry_cleanup())
-            retval = false;
-    }
 
     /* Execute jobs in a loop until we've reached the end of the queue. Since
      * executing a job can trigger enqueueing of additional jobs, it's crucial
@@ -1155,6 +1138,41 @@ bool GjsContextPrivate::run_jobs_fallible() {
             retval = false;
     }
 
+    m_job_queue.clear();
+    return retval;
+}
+
+/**
+ * GjsContext::run_jobs_fallible:
+ *
+ * Drains the queue of promise callbacks that the JS engine has reported
+ * finished, calling each one and logging any exceptions that it throws.
+ *
+ * Adapted from js::RunJobs() in SpiderMonkey's default job queue
+ * implementation.
+ *
+ * Returns: false if one of the jobs threw an uncatchable exception; otherwise
+ * true.
+ */
+bool GjsContextPrivate::run_jobs_fallible() {
+    bool retval = true;
+
+    if (m_draining_job_queue || m_should_exit)
+        return true;
+
+    m_draining_job_queue = true;  // Ignore reentrant calls
+
+    if (m_job_queue.empty()) {
+        // Check FinalizationRegistry cleanup tasks at least once if there are
+        // no microtasks queued. This may enqueue more microtasks, which will be
+        // appended to m_job_queue.
+        if (!run_finalization_registry_cleanup())
+            retval = false;
+    }
+
+    if (!drain_promise_jobs())
+        retval = false;
+
     /**
      * Run pending WASM jobs.
      */
@@ -1176,26 +1194,12 @@ bool GjsContextPrivate::run_jobs_fallible() {
             gjs_debug(GJS_DEBUG_MAINLOOP, "Completed Wasm Dispatchable");
 
             // Drain promise jobs after each individual WASM job
-            for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
-                job = m_job_queue[ix];
-                if (!job)
-                    continue;
-
-                m_job_queue[ix] = nullptr;
-                if (!run_single_job(job, ix)) {
-                    retval = false;
-                    continue;
-                }
-
-                if (!run_finalization_registry_cleanup())
-                    retval = false;
-            }
-            m_job_queue.clear();
+            if (!drain_promise_jobs())
+                retval = false;
         }
     }
 
     m_draining_job_queue = false;
-    m_job_queue.clear();
     warn_about_unhandled_promise_rejections();
     JS::JobQueueIsEmpty(m_cx);
     return retval;
