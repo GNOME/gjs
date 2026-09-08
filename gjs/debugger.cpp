@@ -29,7 +29,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_WrapObject
+#include <jsapi.h>           // for JS_WrapObject
 #include <mozilla/Result.h>  // for Ok
 
 #include "gjs/atoms.h"
@@ -155,6 +155,33 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+static bool build_filename(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::UniqueChars cwd, path;
+    if (!gjs_parse_call_args(cx, "buildFilename", args, "ss", "cwd", &cwd,
+                             "path", &path))
+        return false;
+
+    const char *real_cwd = cwd.get(), *real_path = path.get();
+
+    const char* filename = g_build_filename(real_cwd, real_path, nullptr);
+    if (!filename) {
+        gjs_throw(cx, "Error building filename from cwd '%s' and path '%s'",
+                  real_cwd, real_path);
+        return false;
+    }
+
+    JS::UTF8Chars filename_chars{
+        filename, static_cast<size_t>(g_utf8_strlen(filename, -1))};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, filename_chars)};
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
+}
+
 static bool open_input_stream(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
@@ -277,6 +304,7 @@ static JSFunctionSpec inspector_funcs[] = {
     JS_FN("openInputStream", open_input_stream, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readLine", read_line, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readBytes", read_bytes, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("buildFilename", build_filename, 1, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 void gjs_context_setup_inspector(GjsContext* self) {

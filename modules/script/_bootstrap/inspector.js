@@ -199,8 +199,7 @@ const handlers = {
      * @param {{ cwd: string; program: string; stopOnEntry: boolean; }} args
      */
     launch(seq, args) {
-        const cwd = args.cwd || '.';
-        const filePath = `${cwd}/${args.program}`;
+        const filePath = buildFilename(args.cwd || '.', args.program);
 
         if (args.stopOnEntry)
             setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
