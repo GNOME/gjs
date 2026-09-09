@@ -39,6 +39,7 @@
 #include <errno.h>
 #include <ffi.h>
 #include <gio/gio.h>
+#include <gio/gunixinputstream.h>
 #include <girepository/girepository.h>
 #include <girepository/girffi.h>
 #include <gjs/context.h>

@@ -12,10 +12,15 @@
 #    include <readline/readline.h>
 #endif
 
+#include <gio/gio.h>
+#include <gio/gunixinputstream.h> /* IWYU pragma: keep */
+#include <glib-object.h>
 #include <glib.h>
 
 #include <js/CallArgs.h>
+#include <js/CharacterEncoding.h>
 #include <js/ErrorReport.h>  // for ReportUncatchableException
+#include <js/ObjectWithStashedPointer.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertySpec.h>
 #include <js/Realm.h>
@@ -25,11 +30,13 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <jsapi.h>  // for JS_WrapObject
+#include <mozilla/Result.h>  // for Ok
 
 #include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
+#include "gjs/gerror-result.h"  // for AutoError
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
@@ -119,6 +126,121 @@ static bool get_source_map_registry(JSContext* cx, unsigned argc,
     return true;
 }
 
+static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+    GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
+
+    JS::UniqueChars filename;
+    if (!gjs_parse_call_args(cx, "launchFile", args, "s", "filename",
+                             &filename))
+        return false;
+
+    Gjs::AutoUnref<GFile> output{
+        g_file_new_for_commandline_arg(filename.get())};
+    Gjs::AutoChar uri{g_file_get_uri(output)};
+    auto result = gjs->register_module(uri, uri);
+    if (result.isErr()) {
+        gjs_throw(cx, "Error loading file: %s", result.inspectErr()->message);
+        return false;
+    }
+
+    uint8_t exit_code;
+    result = gjs->eval_module(uri, &exit_code);
+    if (result.isErr()) {
+        gjs_throw(cx, "Error evaluating file: %s",
+                  result.inspectErr()->message);
+        return false;
+    }
+
+    args.rval().setUndefined();
+    return true;
+}
+
+static bool open_input_stream(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    int32_t fd;
+    if (!gjs_parse_call_args(cx, "openInputStream", args, "i", "fd", &fd))
+        return false;
+
+    Gjs::AutoUnref<GInputStream> base_stream =
+        g_unix_input_stream_new(fd, /* close_fd = */ false);
+    Gjs::AutoUnref<GDataInputStream> stream =
+        g_data_input_stream_new(base_stream);
+    g_filter_input_stream_set_close_base_stream(stream.as<GFilterInputStream>(),
+                                                false);
+
+    JS::RootedObject obj{
+        cx, JS::NewObjectWithStashedPointer(
+                cx, static_cast<void*>(stream.release()), g_object_unref)};
+    if (!obj)
+        return false;
+
+    args.rval().setObject(*obj);
+    return true;
+}
+
+static bool read_line(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject obj{cx};
+    if (!gjs_parse_call_args(cx, "readLine", args, "o", "stream", &obj))
+        return false;
+
+    auto* stream = JS::ObjectGetStashedPointer<GDataInputStream>(cx, obj);
+
+    size_t len;
+    Gjs::AutoError error;
+    Gjs::AutoChar line = g_data_input_stream_read_line_utf8(
+        stream, &len, /* cancellable = */ nullptr, error.out());
+    if (!line) {
+        gjs_throw(cx, "Error reading DAP Content-Length header: %s",
+                  error->message);
+        return false;
+    }
+
+    JS::UTF8Chars chars{line, len};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, chars)};
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
+}
+
+static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
+    using AutoBytes =
+        Gjs::AutoPointer<GBytes, GBytes, g_bytes_unref, g_bytes_ref>;
+
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::RootedObject obj{cx};
+    uint32_t nbytes;
+    if (!gjs_parse_call_args(cx, "readBytes", args, "ou", "stream", &obj,
+                             "nbytes", &nbytes))
+        return false;
+
+    auto* stream = JS::ObjectGetStashedPointer<GInputStream>(cx, obj);
+
+    Gjs::AutoError error;
+    AutoBytes bytes = g_input_stream_read_bytes(
+        stream, nbytes, /* cancellable = */ nullptr, error.out());
+    if (!bytes) {
+        gjs_throw(cx, "Error reading DAP message body: %s", error->message);
+        return false;
+    }
+
+    size_t len;
+    const void* pointer = g_bytes_get_data(bytes, &len);
+    JS::UTF8Chars chars{static_cast<const char*>(pointer), len};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, chars)};
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
+}
+
 static JSFunctionSpec debugger_funcs[] = {
     JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readline", do_readline, 1, GJS_MODULE_PROP_FLAGS),
@@ -148,5 +270,38 @@ void gjs_context_setup_debugger_console(GjsContext* self) {
         !gjs_define_global_properties(cx, debugger_global,
                                       GjsGlobalType::DEBUGGER, "GJS debugger",
                                       "debugger"))
+        gjs_log_exception(cx);
+}
+
+static JSFunctionSpec inspector_funcs[] = {
+    JS_FN("quit", quit, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("launchFile", launch_file, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("openInputStream", open_input_stream, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("readLine", read_line, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("readBytes", read_bytes, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FS_END};
+
+void gjs_context_setup_inspector(GjsContext* self) {
+    auto* gjs = GjsContextPrivate::from_object(self);
+    JSContext* cx = gjs->context();
+
+    JS::RootedObject inspector_global{
+        cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER)};
+
+    // Enter realm of the inspector and initialize it with the debuggee
+    JSAutoRealm ar{cx, inspector_global};
+    JS::RootedObject debuggee{cx, gjs->global()};
+    if (!JS_WrapObject(cx, &debuggee)) {
+        gjs_log_exception(cx);
+        return;
+    }
+
+    JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
+    if (!JS_SetPropertyById(cx, inspector_global, gjs->atoms().debuggee(),
+                            v_debuggee) ||
+        !JS_DefineFunctions(cx, inspector_global, inspector_funcs) ||
+        !gjs_define_global_properties(cx, inspector_global,
+                                      GjsGlobalType::DEBUGGER, "GJS inspector",
+                                      "inspector"))
         gjs_log_exception(cx);
 }
