@@ -1,3 +1,13 @@
+Version 1.90.0
+--------------
+
+- First release in the GNOME 51 series. The only change since the release
+  candidate 1.89.90 is a build fix.
+
+- Closed bugs and merge requests:
+  * build failure: tests don't specify dependency on sysprof_capture [#750,
+    !1114, Philip Chimento]
+
 Version 1.89.90
 ---------------
 
