@@ -123,7 +123,6 @@ class BoxedPrototype : public GIWrapperPrototype<Base, Prototype, Instance,
             [this](GI::ConstructorIndex ix) { return *info().methods()[ix]; });
     }
 
-    using BaseClass::format_name;
     using BaseClass::gtype;
     using BaseClass::info;
     using BaseClass::name;
@@ -231,7 +230,7 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
             return g_boxed_copy(gtype, ptr);
 
         gjs_throw(cx,
-                  "Can't transfer ownership of a %s type not registered as "
+                  "Can't transfer ownership of a {} type not registered as "
                   "boxed",
                   Base::DEBUG_TAG);
         return nullptr;
@@ -275,7 +274,6 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     using BaseClass::raw_ptr;
 
  public:
-    using BaseClass::format_name;
     using BaseClass::gtype;
     using BaseClass::info;
     using BaseClass::name;

@@ -5,7 +5,8 @@
 #include <config.h>
 
 #include <algorithm>
-#include <sstream>
+#include <format>
+#include <functional>  // for mem_fn
 
 #include <glib-object.h>
 
@@ -27,37 +28,32 @@ bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                                 const Maybe<const GI::BaseInfo>& info,
                                 GType gtype, const void* native_address,
                                 JS::MutableHandleValue rval) {
-    std::ostringstream out;
-    out << '[' << objtype;
-    if (!native_address)
-        out << " prototype of";
-    else
-        out << " instance wrapper";
-
-    if (info) {
-        out << " GIName:" << info->ns() << "." << info->name();
+    std::string out;
+    if (native_address) {
+        out = std::format("[{} instance wrapper {}:{} jsobj@{} native@{}]",
+                          objtype, info ? "GIName" : "GType",
+                          info.map(std::mem_fn(&GI::BaseInfo::display_string))
+                              .valueOr(g_type_name(gtype)),
+                          static_cast<void*>(this_obj), native_address);
     } else {
-        out << " GType:" << g_type_name(gtype);
+        out = std::format("[{} prototype of {}:{} jsobj@{}]", objtype,
+                          info ? "GIName" : "GType",
+                          info.map(std::mem_fn(&GI::BaseInfo::display_string))
+                              .valueOr(g_type_name(gtype)),
+                          static_cast<void*>(this_obj));
     }
-
-    out << " jsobj@" << this_obj;
-    if (native_address)
-        out << " native@" << native_address;
-
-    out << ']';
-
-    return gjs_string_from_utf8(cx, out.str().c_str(), rval);
+    return gjs_string_from_utf8(cx, out.c_str(), rval);
 }
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,
                                          const char* field_name) {
-    gjs_throw(cx, "No property %s on %s", field_name, g_type_name(gtype));
+    gjs_throw(cx, "No property {} on {}", field_name, g_type_name(gtype));
     return false;
 }
 
 bool gjs_wrapper_throw_readonly_field(JSContext* cx, GType gtype,
                                       const char* field_name) {
-    gjs_throw(cx, "Property %s.%s is not writable", g_type_name(gtype),
+    gjs_throw(cx, "Property {}.{} is not writable", g_type_name(gtype),
               field_name);
     return false;
 }

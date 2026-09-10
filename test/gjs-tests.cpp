@@ -52,6 +52,7 @@
 #include "gjs/profiler.h"
 #include "test/gjs-test-no-introspection-object.h"
 #include "test/gjs-test-utils.h"
+#include "util/log.h"
 
 namespace mozilla {
 union Utf8Unit;
@@ -142,7 +143,7 @@ static void gjstest_test_func_gjs_context_construct_eval() {
 
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     if (!gjs_context_eval(gjs_context, "1+1", -1, "<input>", &estatus, &error))
-        g_error("%s", error->message);
+        gjs_error("{}", error);
 }
 
 static void gjstest_test_func_gjs_context_eval_dynamic_import() {
@@ -718,7 +719,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     // Test that we can throw
 
-    gjs_throw(fx->cx, "This is an exception %d", 42);
+    gjs_throw(fx->cx, "This is an exception {}", 42);
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
 
@@ -746,7 +747,7 @@ static void gjstest_test_func_gjs_jsapi_util_error_throw(GjsUnitTestFixture* fx,
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
 
-    gjs_throw(fx->cx, "Second different exception %s", "foo");
+    gjs_throw(fx->cx, "Second different exception {}", "foo");
 
     g_assert_true(JS_IsExceptionPending(fx->cx));
 
@@ -933,7 +934,7 @@ static void gjstest_test_profiler_start_stop() {
     gjs_profiler_stop(profiler);
 
     if (g_unlink("dont-conflict-with-other-test.syscap") != 0)
-        g_message("Temp profiler file not deleted");
+        gjs_message("Temp profiler file not deleted");
 }
 
 static void gjstest_test_profiler_writes_counters() {
@@ -984,7 +985,7 @@ static void gjstest_test_profiler_writes_counters() {
 #endif  // ENABLE_PROFILER
 
     if (g_unlink("dont-conflict-with-other-test.syscap-2") != 0)
-        g_message("Temp profiler file not deleted");
+        gjs_message("Temp profiler file not deleted");
 }
 
 static void gjstest_test_safe_integer_max(GjsUnitTestFixture* fx, const void*) {
@@ -1288,7 +1289,7 @@ int main(int argc, char* argv[]) {
     if (!cpp_random_seed)
         cpp_random_seed = g_test_rand_int();
 
-    g_message("Using C++ random seed %u\n", cpp_random_seed);
+    gjs_message("Using C++ random seed {}", cpp_random_seed);
 
     g_test_add_func("/gjs/dumpstack/none", gjstest_test_gjs_dumpstack_none);
     g_test_add("/gjs/dumpstack/context", GjsUnitTestFixture, nullptr,

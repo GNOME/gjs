@@ -8,7 +8,10 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
+#include <format>
 #include <string>
+#include <string_view>
+#include <utility>  // for move
 #include <vector>
 
 #include <glib.h>
@@ -30,9 +33,10 @@
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "modules/print.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
-static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
+static bool log_native(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     if (argc != 1) {
@@ -47,7 +51,7 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     exc_state.restore();
 
     if (!jstr) {
-        g_message("JS LOG: <cannot convert value to string>");
+        gjs_message("JS LOG: <cannot convert value to string>");
         return true;
     }
 
@@ -55,7 +59,7 @@ static bool gjs_log(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!s)
         return false;
 
-    g_message("JS LOG: %s", s.get());
+    gjs_message("JS LOG: {}", s);
 
     args.rval().setUndefined();
     return true;
@@ -187,6 +191,34 @@ static bool get_pretty_print_function(JSContext*, unsigned argc,
     return true;
 }
 
+// Helper function for determining how many format arguments are needed.
+// Currently, only {} placeholders are supported for deprecation messages
+// printed dynamically from JS.
+constexpr size_t count_placeholders(std::string_view msg) {
+    size_t count = 0;
+    for (size_t pos = 0;
+         (pos = msg.find_first_of("{}", pos)) != std::string_view::npos;
+         pos += 2) {
+        std::string_view rest = msg.substr(pos, 2);
+        if (rest == "{}")
+            count++;
+        else if (rest != "{{" && rest != "}}")
+            return SIZE_MAX;  // lone brace, or a non-{} placeholder
+    }
+    return count;
+}
+
+// Quick inline tests
+static_assert(count_placeholders("no placeholders") == 0);
+static_assert(count_placeholders("{} and {}") == 2);
+static_assert(count_placeholders("{{}} is a literal brace pair") == 0);
+static_assert(count_placeholders("{{{}}}") == 1);
+static_assert(count_placeholders("unmatched {") == SIZE_MAX);
+static_assert(count_placeholders("unmatched }") == SIZE_MAX);
+static_assert(count_placeholders("unsupported {:?}") == SIZE_MAX);
+static_assert(count_placeholders("unsupported {:{}}") == SIZE_MAX);
+static_assert(count_placeholders("unsupported {0}") == SIZE_MAX);
+
 GJS_JSAPI_RETURN_CONVENTION
 static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
                                               JS::Value* vp) {
@@ -205,13 +237,7 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
             GjsDeprecationMessageId::LastValue &&
         "warnDeprecatedOncePerCallsite argument 1 must be a message ID number");
 
-    if (args.length() == 1) {
-        gjs_warn_deprecated_once_per_callsite(
-            cx, GjsDeprecationMessageId(message_id), 2);
-        return true;
-    }
-
-    std::vector<std::string> format_args;
+    std::vector<JS::UniqueChars> format_args;
     for (size_t ix = 1; ix < args.length(); ix++) {
         g_assert(args[ix].isString() &&
                  "warnDeprecatedOncePerCallsite subsequent arguments must be "
@@ -220,16 +246,52 @@ static bool warn_deprecated_once_per_callsite(JSContext* cx, unsigned argc,
         JS::UniqueChars format_arg = JS_EncodeStringToUTF8(cx, v_format_arg);
         if (!format_arg)
             return false;
-        format_args.emplace_back(format_arg.get());
+        format_args.emplace_back(std::move(format_arg));
     }
 
-    gjs_warn_deprecated_once_per_callsite(
-        cx, GjsDeprecationMessageId(message_id), format_args, 2);
+    size_t expected_args =
+        count_placeholders(Gjs::detail::messages[message_id]);
+    g_assert(expected_args <= 2 &&
+             "Deprecation messages must take only plain '{}' placeholders, at "
+             "most 2. To allow more, extend the switch in "
+             "warn_deprecated_once_per_callsite() in modules/print.cpp");
+
+    if (format_args.size() != expected_args) {
+        gjs_throw(cx,
+                  "Deprecation message {} takes {} format arguments, got {}",
+                  message_id, expected_args, format_args.size());
+        return false;
+    }
+
+    std::string_view format_string = Gjs::detail::messages[message_id];
+    std::string message_formatted;
+
+    // COMPAT: use std::dynamic_format in C++26
+    switch (format_args.size()) {
+        case 0:
+            message_formatted =
+                std::vformat(format_string, std::make_format_args());
+            break;
+        case 1:
+            message_formatted = std::vformat(
+                format_string, std::make_format_args(format_args[0]));
+            break;
+        case 2:
+            message_formatted = std::vformat(
+                format_string,
+                std::make_format_args(format_args[0], format_args[1]));
+            break;
+        default:
+            g_assert_not_reached();
+    }
+
+    Gjs::detail::warn_deprecated_internal(
+        cx, GjsDeprecationMessageId(message_id), message_formatted.c_str(), 2);
     return true;
 }
 
 static constexpr JSFunctionSpec funcs[] = {
-    JS_FN("log", gjs_log, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("log", log_native, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("logError", gjs_log_error, 2, GJS_MODULE_PROP_FLAGS),
     JS_FN("print", gjs_print, 0, GJS_MODULE_PROP_FLAGS),
     JS_FN("printerr", gjs_printerr, 0, GJS_MODULE_PROP_FLAGS),

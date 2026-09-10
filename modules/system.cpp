@@ -11,6 +11,9 @@
 #include <stdio.h>
 #include <time.h>    // for tzset
 
+#include <format>
+#include <string>
+
 #include <glib-object.h>
 #include <glib.h>
 
@@ -51,8 +54,9 @@ static bool gjs_address_of(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (!gjs_parse_call_args(cx, "addressOf", args, "o", "object", &target_obj))
         return false;
 
-    Gjs::AutoChar pointer_string{g_strdup_printf("%p", target_obj.get())};
-    return gjs_string_from_utf8(cx, pointer_string, args.rval());
+    std::string pointer_string =
+        std::format("{}", static_cast<void*>(target_obj.get()));
+    return gjs_string_from_utf8(cx, pointer_string.c_str(), args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -67,12 +71,12 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
 
     GObject* obj;
     if (!ObjectBase::to_c_ptr(cx, target_obj, &obj)) {
-        gjs_throw(cx, "Object %p is not a GObject", &target_obj);
+        gjs_throw(cx, "{:?} is not a GObject", target_obj);
         return false;
     }
 
-    Gjs::AutoChar pointer_string{g_strdup_printf("%p", obj)};
-    return gjs_string_from_utf8(cx, pointer_string, args.rval());
+    std::string pointer_string = std::format("{}", static_cast<void*>(obj));
+    return gjs_string_from_utf8(cx, pointer_string.c_str(), args.rval());
 }
 
 static bool gjs_refcount(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -117,13 +121,12 @@ static bool gjs_dump_heap(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     LogFile file(filename);
     if (file.has_error()) {
-        gjs_throw(cx, "Cannot dump heap to %s: %s", filename.get(),
-                  file.errmsg());
+        gjs_throw(cx, "Cannot dump heap to {}: {}", filename, file.errmsg());
         return false;
     }
     js::DumpHeap(cx, file.fp(), js::CollectNurseryBeforeDump);
 
-    gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to %s",
+    gjs_debug(GJS_DEBUG_CONTEXT, "Heap dumped to {}",
               filename ? filename.get() : "stdout");
 
     args.rval().setUndefined();
@@ -233,7 +236,7 @@ static bool gjs_dump_memory_info(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     LogFile file(filename);
     if (file.has_error()) {
-        gjs_throw(cx, "Cannot dump memory info to %s: %s", filename.get(),
+        gjs_throw(cx, "Cannot dump memory info to {}: {}", filename,
                   file.errmsg());
         return false;
     }

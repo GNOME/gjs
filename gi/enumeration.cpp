@@ -44,17 +44,16 @@ static bool gjs_define_enum_value(JSContext* cx, JS::HandleObject in_object,
             fixed_name[i] = '_';
     }
 
-    gjs_debug(GJS_DEBUG_GENUM,
-              "Defining enum value %s (fixed from %s) %" PRId64,
-              fixed_name.get(), value_name, value_val);
+    gjs_debug(GJS_DEBUG_GENUM, "Defining enum value {} (fixed from {}) {}",
+              fixed_name, value_name, value_val);
 
     if (!JS_DefineProperty(cx, in_object, fixed_name,
                            static_cast<double>(value_val),
                            GJS_MODULE_PROP_FLAGS)) {
-        gjs_throw(cx,
-                  "Unable to define enumeration value %s %" PRId64
-                  " (no memory most likely)",
-                  fixed_name.get(), value_val);
+        gjs_throw(
+            cx,
+            "Unable to define enumeration value {} {} (no memory most likely)",
+            fixed_name, value_val);
         return false;
     }
 
@@ -87,8 +86,7 @@ bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
 
     JS::RootedObject enum_obj{cx, JS_NewPlainObject(cx)};
     if (!enum_obj) {
-        gjs_throw(cx, "Could not create enumeration %s.%s", info.ns(),
-                  enum_name);
+        gjs_throw(cx, "Could not create enumeration {}", info);
         return false;
     }
 
@@ -99,8 +97,7 @@ bool gjs_define_enumeration(JSContext* cx, JS::HandleObject in_object,
         !gjs_wrapper_define_gtype_prop(cx, enum_obj, gtype))
         return false;
 
-    gjs_debug(GJS_DEBUG_GENUM, "Defining %s.%s as %p", info.ns(), enum_name,
-              enum_obj.get());
+    gjs_debug(GJS_DEBUG_GENUM, "Defining {} as {:?}", info, enum_obj);
 
     if (!JS_DefineProperty(cx, in_object, enum_name, enum_obj,
                            GJS_MODULE_PROP_FLAGS)) {

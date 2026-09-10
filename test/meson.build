@@ -38,6 +38,7 @@ test('API tests', gjs_tests, args: ['--tap', '--keep-going', '--verbose'],
 gjs_tests_internal = executable('gjs-tests-internal',
     sources: [
         'gjs-test-call-args.cpp',
+        'gjs-test-formatters.cpp',
         'gjs-test-jsapi-utils.cpp',
         'gjs-test-misc.cpp',
         'gjs-test-rooting.cpp',

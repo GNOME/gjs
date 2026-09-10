@@ -6,9 +6,6 @@
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
 #    include <string.h>
-
-#    include <string>
-#    include <vector>
 #endif
 
 #include <girepository/girepository.h>
@@ -56,11 +53,11 @@ static void platform_specific_warning_glib(JSContext* cx, const char* prefix,
         return;
 
     const char* base_name = resolved_name + strlen(prefix);
-    Gjs::AutoChar old_name{g_strdup_printf("GLib.%s", resolved_name)};
-    Gjs::AutoChar new_name{g_strdup_printf("GLib%s.%s", platform, base_name)};
-    gjs_warn_deprecated_once_per_callsite(
-        cx, GjsDeprecationMessageId::PlatformSpecificTypelib,
-        {old_name.get(), new_name.get()});
+    std::string old_name = std::format("GLib.{}", resolved_name);
+    std::string new_name = std::format("GLib{}.{}", platform, base_name);
+    gjs_warn_deprecated_once_per_callsite<
+        GjsDeprecationMessageId::PlatformSpecificTypelib>(cx, old_name,
+                                                          new_name);
 }
 #endif  // USE_GLIB_PLATFORM_COMPAT
 
@@ -120,9 +117,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
             return true;
         }
 
-        gjs_debug(GJS_DEBUG_GNAMESPACE,
-                  "Found info type %s for '%s' in namespace '%s'",
-                  info->type_string(), info->name(), info->ns());
+        gjs_debug(GJS_DEBUG_GNAMESPACE, "Found info type {0:t} for {0}", *info);
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
         if (m_is_glib) {
@@ -135,7 +130,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
         bool defined;
         if (!gjs_define_info(cx, obj, info.ref(), &defined)) {
-            gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '%s'",
+            gjs_debug(GJS_DEBUG_GNAMESPACE, "Failed to define info '{}'",
                       info->name());
             return false;
         }
@@ -226,7 +221,8 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         Ns::init_private(ns, priv);
 
         gjs_debug_lifecycle(GJS_DEBUG_GNAMESPACE,
-                            "ns constructor, obj %p priv %p", ns.get(), priv);
+                            "ns constructor, {:?} priv {}", ns,
+                            static_cast<void*>(priv));
 
         return ns;
     }

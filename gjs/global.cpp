@@ -9,6 +9,9 @@
 
 #include <stddef.h>  // for size_t
 
+#include <format>
+#include <string>
+
 #include <glib.h>
 
 #include <js/CallArgs.h>           // for CallArgs, CallArgsFromVp
@@ -33,7 +36,6 @@
 #include <jsapi.h>       // for JS_IdToValue, JS_InitReflectParse
 
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/engine.h"
 #include "gjs/global.h"
@@ -91,18 +93,18 @@ class GjsBaseGlobal {
     GJS_JSAPI_RETURN_CONVENTION
     static bool run_bootstrap(JSContext* cx, const char* bootstrap_script,
                               JS::HandleObject global) {
-        Gjs::AutoChar uri{g_strdup_printf(
-            "resource:///org/gnome/gjs/modules/script/_bootstrap/%s.js",
-            bootstrap_script)};
+        std::string uri = std::format(
+            "resource:///org/gnome/gjs/modules/script/_bootstrap/{}.js",
+            bootstrap_script);
 
         JSAutoRealm ar(cx, global);
 
         JS::CompileOptions options(cx);
-        options.setFileAndLine(uri, 1).setSourceIsLazy(true);
+        options.setFileAndLine(uri.c_str(), 1).setSourceIsLazy(true);
 
         char* script;
         size_t script_len;
-        if (!gjs_load_internal_source(cx, uri, &script, &script_len))
+        if (!gjs_load_internal_source(cx, uri.c_str(), &script, &script_len))
             return false;
 
         JS::SourceText<mozilla::Utf8Unit> source;
@@ -134,7 +136,7 @@ class GjsBaseGlobal {
 
         if (!Gjs::NativeModuleDefineFuncs::get().define(m_cx, id.get(),
                                                         &native_obj)) {
-            gjs_throw(m_cx, "Failed to load native module: %s", id.get());
+            gjs_throw(m_cx, "Failed to load native module: {}", id);
             return false;
         }
 

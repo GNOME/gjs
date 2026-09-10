@@ -66,9 +66,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool path_to_gi_argument(
     GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            gjs_throw(
-                cx, "%s may not be null",
-                gjs_argument_display_name(arg_name, argument_type).c_str());
+            gjs_throw(cx, "{} may not be null",
+                      gjs_argument_display_name(arg_name, argument_type));
             return false;
         }
 
@@ -77,8 +76,8 @@ GJS_JSAPI_RETURN_CONVENTION static bool path_to_gi_argument(
     }
 
     if (!value.isObject()) {
-        gjs_throw(cx, "%s is not a Cairo.Path",
-                  gjs_argument_display_name(arg_name, argument_type).c_str());
+        gjs_throw(cx, "{} is not a Cairo.Path",
+                  gjs_argument_display_name(arg_name, argument_type));
         return false;
     }
 

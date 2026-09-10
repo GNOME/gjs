@@ -15,13 +15,11 @@
 #include <ffi.h>
 #include <girepository/girepository.h>
 #include <glib-object.h>
-#include <glib.h>
 
 #include <js/GCVector.h>
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
-#include <mozilla/Maybe.h>
 
 #include "gi/closure.h"
 #include "gi/info.h"
@@ -158,16 +156,6 @@ class GjsFunctionCallState {
 
     constexpr unsigned last_processed_index() const {
         return first_arg_offset() + processed_c_args;
-    }
-
-    [[nodiscard]]
-    Gjs::AutoChar display_name() {
-        mozilla::Maybe<const GI::BaseInfo> container = info.container();
-        if (container) {
-            return g_strdup_printf("%s.%s.%s", container->ns(),
-                                   container->name(), info.name());
-        }
-        return g_strdup_printf("%s.%s", info.ns(), info.name());
     }
 };
 

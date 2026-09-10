@@ -78,8 +78,23 @@ JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(bool, "b");
 JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(int, "i");
+JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(unsigned, "u");
+JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(double, "f");
+JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC(int64_t, "t");
 
 #undef JSNATIVE_NO_ASSERT_TYPE_TEST_FUNC
+
+JSNATIVE_TEST_FUNC_BEGIN(string_arg_no_assert)
+    JS::UniqueChars val;
+    bool retval =
+        gjs_parse_call_args(cx, "stringArgNoAssert", args, "s", "val", &val);
+JSNATIVE_TEST_FUNC_END
+
+JSNATIVE_TEST_FUNC_BEGIN(filename_arg_no_assert)
+    Gjs::AutoChar val;
+    bool retval =
+        gjs_parse_call_args(cx, "filenameArgNoAssert", args, "F", "val", &val);
+JSNATIVE_TEST_FUNC_END
 
 JSNATIVE_TEST_FUNC_BEGIN(object_arg_no_assert)
     JS::RootedObject val(cx);
@@ -248,6 +263,11 @@ static JSFunctionSpec native_test_funcs[] = {
     JS_FN("noArgsIgnoreTrailing", no_args_ignore_trailing, 0, 0),
     JS_FN("boolArgNoAssert", bool_arg_no_assert, 0, 0),
     JS_FN("intArgNoAssert", int_arg_no_assert, 0, 0),
+    JS_FN("unsignedArgNoAssert", unsigned_arg_no_assert, 0, 0),
+    JS_FN("doubleArgNoAssert", double_arg_no_assert, 0, 0),
+    JS_FN("int64_tArgNoAssert", int64_t_arg_no_assert, 0, 0),
+    JS_FN("stringArgNoAssert", string_arg_no_assert, 0, 0),
+    JS_FN("filenameArgNoAssert", filename_arg_no_assert, 0, 0),
     JS_FN("objectArgNoAssert", object_arg_no_assert, 0, 0),
     JS_FN("optionalIntArgsNoAssert", optional_int_args_no_assert, 0, 0),
     JS_FN("argsIgnoreTrailing", args_ignore_trailing, 0, 0),
@@ -420,9 +440,29 @@ void gjs_test_add_tests_for_parse_call_args() {
         "objectInvalidType(1)"
         "//*Wrong type for i, got JS::MutableHandleObject");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-boolean",
-                             "boolArgNoAssert({})//*Not a boolean");
+                             "boolArgNoAssert({})"
+                             "//*Not a boolean, got <object Object*");
     ADD_CALL_ARGS_TEST_XFAIL("invalid-object",
-                             "objectArgNoAssert(3)//*Not an object");
+                             "objectArgNoAssert(3)//*Not an object, got 3");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-string",
+                             "stringArgNoAssert(Symbol('foo'))"
+                             "//*Couldn't convert Symbol(\"foo\") to string");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-filename",
+                             "filenameArgNoAssert(Symbol('foo'))"
+                             "//*Couldn't convert Symbol(\"foo\") to filename");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-int",
+                             "intArgNoAssert(Symbol('foo'))"
+                             "//*Couldn't convert Symbol(\"foo\") to integer");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-unsigned",
+                             "unsignedArgNoAssert(false)"
+                             "//*Couldn't convert false to unsigned integer");
+    ADD_CALL_ARGS_TEST_XFAIL(
+        "invalid-int64",
+        "int64_tArgNoAssert(Symbol('foo'))"
+        "//*Couldn't convert Symbol(\"foo\") to 64-bit integer");
+    ADD_CALL_ARGS_TEST_XFAIL("invalid-double",
+                             "doubleArgNoAssert(Symbol('foo'))"
+                             "//*Couldn't convert Symbol(\"foo\") to double");
 
 #undef ADD_CALL_ARGS_TEST_XFAIL
 #undef ADD_CALL_ARGS_TEST

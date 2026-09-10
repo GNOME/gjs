@@ -4,8 +4,6 @@
 
 #include <config.h>
 
-#include <inttypes.h>
-
 #include <iterator>  // for size
 #include <span>
 
@@ -36,9 +34,7 @@ static Gjs::Memory::Counter* counters[] = {
     GJS_FOR_EACH_COUNTER(GJS_LIST_COUNTER)};
 
 void gjs_memory_report(const char* where, bool die_if_leaks) {
-    gjs_debug(GJS_DEBUG_MEMORY,
-              "Memory report: %s",
-              where);
+    gjs_debug(GJS_DEBUG_MEMORY, "Memory report: {}", where);
 
     size_t n_counters = std::size(counters);
 
@@ -52,17 +48,17 @@ void gjs_memory_report(const char* where, bool die_if_leaks) {
                   "Object counts don't add up!");
     }
 
-    gjs_debug(GJS_DEBUG_MEMORY, "  %" PRId64 " objects currently alive",
+    gjs_debug(GJS_DEBUG_MEMORY, "  {} objects currently alive",
               GJS_GET_COUNTER(everything));
 
     if (GJS_GET_COUNTER(everything) != 0) {
         for (size_t i = 0; i < n_counters; ++i) {
-            gjs_debug(GJS_DEBUG_MEMORY, "    %24s = %" PRId64,
-                      counters[i]->name, counters[i]->value.load());
+            gjs_debug(GJS_DEBUG_MEMORY, "    {:>24} = {}", counters[i]->name,
+                      counters[i]->value.load());
         }
 
         if (die_if_leaks)
-            g_error("%s: JavaScript objects were leaked.", where);
+            gjs_error("{}: JavaScript objects were leaked", where);
     }
 }
 

@@ -273,13 +273,16 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
         }
     }
 
+    // This exists for genericity, but use the default formatters for info() if
+    // info() is always present (i.e. prototypes can't be JS-only)
     [[nodiscard]]
     std::string format_name() const {
-        std::string retval = ns();
-        if (!retval.empty())
-            retval += '.';
-        retval += name();
-        return retval;
+        if constexpr (Prototype::may_not_have_info) {
+            const auto i = info();
+            return i ? i->display_string() : type_name();
+        } else {
+            return info().display_string();
+        }
     }
 
  private:
@@ -294,25 +297,26 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
  protected:
     void debug_lifecycle(const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(Base::DEBUG_TOPIC,
-                            "[%p: %s pointer %p - %s (%s)] %s", this,
-                            Base::DEBUG_TAG, ptr_addr(), format_name().c_str(),
-                            type_name(), message);
+                            "[{}: {} pointer {} - {} ({})] {}",
+                            static_cast<const void*>(this), Base::DEBUG_TAG,
+                            ptr_addr(), format_name(), type_name(), message);
     }
     void debug_lifecycle(const void* obj GJS_USED_VERBOSE_LIFECYCLE,
                          const char* message GJS_USED_VERBOSE_LIFECYCLE) const {
         gjs_debug_lifecycle(Base::DEBUG_TOPIC,
-                            "[%p: %s pointer %p - JS wrapper %p - %s (%s)] %s",
-                            this, Base::DEBUG_TAG, ptr_addr(), obj,
-                            format_name().c_str(), type_name(), message);
+                            "[{}: {} pointer {} - JS wrapper {} - {} ({})] {}",
+                            static_cast<const void*>(this), Base::DEBUG_TAG,
+                            ptr_addr(), obj, format_name(), type_name(),
+                            message);
     }
     void debug_jsprop(const char* message GJS_USED_VERBOSE_PROPS,
                       const char* id GJS_USED_VERBOSE_PROPS,
                       const void* obj GJS_USED_VERBOSE_PROPS) const {
         gjs_debug_jsprop(
             Base::DEBUG_TOPIC,
-            "[%p: %s pointer %p - JS wrapper %p - %s (%s)] %s '%s'", this,
-            Base::DEBUG_TAG, ptr_addr(), obj, format_name().c_str(),
-            type_name(), message, id);
+            "[{}: {} pointer {} - JS wrapper {} - {} ({})] {} '{}'",
+            static_cast<const void*>(this), Base::DEBUG_TAG, ptr_addr(), obj,
+            format_name(), type_name(), message, id);
     }
     void debug_jsprop(const char* message, jsid id, const void* obj) const {
         if constexpr (GJS_VERBOSE_ENABLE_PROPS)
@@ -327,9 +331,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
                                     jsid id GJS_USED_VERBOSE_PROPS,
                                     const void* obj GJS_USED_VERBOSE_PROPS) {
         gjs_debug_jsprop(Base::DEBUG_TOPIC,
-                         "[%s JS wrapper %p] %s '%s', no instance associated",
-                         Base::DEBUG_TAG, obj, message,
-                         gjs_debug_id(id).c_str());
+                         "[{} JS wrapper {}] {} '{}', no instance associated",
+                         Base::DEBUG_TAG, obj, message, id);
     }
 
     // JS class operations, used only in the JSClassOps struct
@@ -574,8 +577,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
 
         static_cast<GIWrapperBase*>(priv)->debug_lifecycle(obj,
                                                            "JSObject created");
-        gjs_debug_lifecycle(Base::DEBUG_TOPIC, "m_proto is %p",
-                            priv->get_prototype());
+        gjs_debug_lifecycle(Base::DEBUG_TOPIC, "m_proto is {}",
+                            static_cast<void*>(priv->get_prototype()));
 
         // We may need to return a value different from obj (for example because
         // we delegate to another constructor)
@@ -612,8 +615,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
     bool check_is_instance(JSContext* cx, const char* for_what) const {
         if (!is_prototype())
             return true;
-        gjs_throw(cx, "Can't %s on %s.prototype; only on instances", for_what,
-                  format_name().c_str());
+        gjs_throw(cx, "Can't {} on {}.prototype; only on instances", for_what,
+                  format_name());
         return false;
     }
 
@@ -718,9 +721,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return true;
 
         gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                         "Object is of type %s - cannot convert to %s.%s",
-                         priv->format_name().c_str(),
-                         expected_info.ns(), expected_info.name());
+                         "Object is of type {} - cannot convert to {}",
+                         priv->format_name(), expected_info);
         return false;
     }
     GJS_JSAPI_RETURN_CONVENTION
@@ -735,9 +737,8 @@ class GIWrapperBase : public CWrapperPointerOps<Base> {
             return true;
 
         gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                         "Object is of type %s - cannot convert to %s",
-                         priv->format_name().c_str(),
-                         g_type_name(expected_gtype));
+                         "Object is of type {} - cannot convert to {}",
+                         priv->format_name(), g_type_name(expected_gtype));
         return false;
     }
     [[nodiscard]]
@@ -909,11 +910,11 @@ class GIWrapperPrototype : public Base {
                 constructor))
             return false;
 
-        gjs_debug(Base::DEBUG_TOPIC,
-                  "Defined class for %s (%s), prototype %p, "
-                  "JSClass %p, in object %p",
-                  Base::name(), Base::type_name(), prototype.get(),
-                  JS::GetClass(prototype), in_object.get());
+        gjs_debug(
+            Base::DEBUG_TOPIC,
+            "Defined class for {} ({}), prototype {:?}, JSClass {}, in {:?}",
+            Base::format_name(), Base::type_name(), prototype,
+            JS::GetClass(prototype)->name, in_object);
 
         return true;
     }

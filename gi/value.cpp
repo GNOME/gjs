@@ -7,7 +7,8 @@
 #include <limits.h>  // for INT_MAX
 #include <stdint.h>
 
-#include <sstream>
+#include <format>
+#include <iterator>  // for back_inserter
 #include <string>
 
 #include <girepository/girepository.h>
@@ -28,7 +29,6 @@
 #include <js/Value.h>
 #include <js/ValueArray.h>
 #include <js/experimental/TypedData.h>
-#include <jsapi.h>  // for InformalValueTypeName, JS_Get...
 #include <mozilla/Maybe.h>
 
 #include "gi/arg-inl.h"
@@ -141,7 +141,7 @@ static bool gjs_arg_set_from_gvalue(JSContext* cx, GIArgument* arg,
         }
     }
 
-    gjs_throw(cx, "No known GIArgument conversion for %s",
+    gjs_throw(cx, "No known GIArgument conversion for {}",
               G_VALUE_TYPE_NAME(value));
     return false;
 }
@@ -161,7 +161,7 @@ static bool maybe_release_signal_value(JSContext* cx,
 
     if (!gjs_gi_argument_release(cx, transfer, type_info, &arg,
                                  GjsArgumentFlags::ARG_OUT)) {
-        gjs_throw(cx, "Cannot release argument %s value, we're gonna leak!",
+        gjs_throw(cx, "Cannot release argument {} value, we're gonna leak!",
                   arg_info.name());
         return false;
     }
@@ -229,7 +229,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                            void* marshal_data) {
     GSignalQuery signal_query = {.signal_id = 0};
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure %p", this);
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Marshal closure {}", debug_addr());
 
     // False positive https://github.com/llvm/llvm-project/issues/195557
     // NOLINTBEGIN(clang-analyzer-cplusplus.NewDeleteLeaks)
@@ -242,33 +242,35 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(m_cx);
     if (!gjs->is_owner_thread() || JS::RuntimeHeapIsCollecting()) [[unlikely]] {
         auto* hint = static_cast<GSignalInvocationHint*>(invocation_hint);
-        std::ostringstream message;
+        std::string message;
 
         if (!gjs->is_owner_thread()) {
-            message << "Attempting to call back into JSAPI on a different "
-                       "thread. This is most likely caused by an API not "
-                       "intended to be used in JS. Because it would crash the "
-                       "application, it has been blocked.";
+            message =
+                "Attempting to call back into JSAPI on a different thread. "
+                "This is most likely caused by an API not intended to be used "
+                "in JS. Because it would crash the application, it has been "
+                "blocked.";
         } else {
-            message
-                << "Attempting to call back into JSAPI during the sweeping "
-                   "phase of GC. This is most likely caused by not destroying "
-                   "a Clutter actor or Gtk+ widget with ::destroy signals "
-                   "connected, but can also be caused by using the destroy(), "
-                   "dispose(), or remove() vfuncs. Because it would crash the "
-                   "application, it has been blocked and the JS callback not "
-                   "invoked.";
-            message << "\n" << gjs_dumpstack_string();
+            message =
+                "Attempting to call back into JSAPI during the sweeping phase "
+                "of GC. This is most likely caused by not destroying a Clutter "
+                "actor or Gtk+ widget with ::destroy signals connected, but "
+                "can also be caused by using the destroy(), dispose(), or "
+                "remove() vfuncs. Because it would crash the application, it "
+                "has been blocked and the JS callback not invoked.\n" +
+                gjs_dumpstack_string();
         }
         if (hint) {
             g_signal_query(hint->signal_id, &signal_query);
 
             void* instance = g_value_peek_pointer(&param_values[0]);
-            message << "\nThe offending signal was " << signal_query.signal_name
-                    << " on " << g_type_name(G_TYPE_FROM_INSTANCE(instance))
-                    << " " << instance << ".";
+            std::format_to(std::back_inserter(message),
+                           "\nThe offending signal was {} on {} {}.",
+                           signal_query.signal_name,
+                           g_type_name(G_TYPE_FROM_INSTANCE(instance)),
+                           instance);
         }
-        g_critical("%s", message.str().c_str());
+        gjs_critical("{}", message);
         return;
     }
 
@@ -342,7 +344,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
     JS::RootedValueVector argv{m_cx};
     // May end up being less
     if (!argv.reserve(n_param_values))
-        g_error("Unable to reserve space");
+        gjs_error("Unable to reserve space");
     JS::RootedValue argv_to_append{m_cx};
     bool is_introspected_signal = !!signal_info;
     for (unsigned i = 0; i < n_param_values; ++i) {
@@ -378,8 +380,7 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
 
         if (!res) {
             gjs_debug(GJS_DEBUG_GCLOSURE,
-                      "Unable to convert arg %d in order to invoke closure",
-                      i);
+                      "Unable to convert arg {} in order to invoke closure", i);
             gjs_log_exception(m_cx);
             return;
         }
@@ -400,8 +401,8 @@ void Gjs::Closure::marshal(GValue* return_value, unsigned n_param_values,
                 gjs->exit_immediately(code);
 
             // Some other uncatchable exception, e.g. out of memory
-            g_error("Call to %s terminated with uncatchable exception",
-                    gjs_debug_callable(callable()).c_str());
+            gjs_error("Call to {} terminated with uncatchable exception",
+                      gjs_debug_callable(callable()));
         }
     }
 
@@ -501,9 +502,8 @@ static bool throw_expect_type(JSContext* cx, JS::HandleValue value,
             val_str = JS_EncodeStringToUTF8(cx, str);
     }
 
-    gjs_throw(cx, "Wrong type %s; %s%s%s expected%s%s",
-              JS::InformalValueTypeName(value), expected_type, gtype ? " " : "",
-              gtype ? g_type_name(gtype) : "",
+    gjs_throw(cx, "Wrong type {:t}; {}{}{} expected{}{}", value, expected_type,
+              gtype ? " " : "", gtype ? g_type_name(gtype) : "",
               out_of_range ? ". But it's out of range: " : "",
               out_of_range ? val_str.get() : "");
     return false;  // for convenience
@@ -545,7 +545,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
 
             GType dest_gtype = G_VALUE_TYPE(gvalue);
             if (!g_value_type_compatible(source_gtype, dest_gtype)) {
-                gjs_throw(cx, "GObject.Value expected GType %s, found %s",
+                gjs_throw(cx, "GObject.Value expected GType {}, found {}",
                           g_type_name(dest_gtype), g_type_name(source_gtype));
                 return false;
             }
@@ -565,16 +565,14 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
         }
 
         gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                          "Guessed GValue type %s from JS Value",
+                          "Guessed GValue type {} from JS Value",
                           g_type_name(gtype));
 
         g_value_init(gvalue, gtype);
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Converting JS::Value to gtype %s",
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Converting JS::Value to gtype {}",
                       g_type_name(gtype));
-
 
     if (gtype == G_TYPE_STRING) {
         /* Don't use ValueToString since we don't want to just toString()
@@ -769,8 +767,8 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
 
             if (gtype == G_TYPE_ARRAY || gtype == G_TYPE_PTR_ARRAY ||
                 gtype == G_TYPE_HASH_TABLE) {
-                gjs_throw(cx, "Converting %s to %s is not supported",
-                          JS::InformalValueTypeName(value), g_type_name(gtype));
+                gjs_throw(cx, "Converting {:t} to {} is not supported", value,
+                          g_type_name(gtype));
                 return false;
             }
 
@@ -870,7 +868,7 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
             GEnumValue* v =
                 g_enum_get_value(enum_class, static_cast<int>(value_int64));
             if (v == nullptr) {
-                gjs_throw(cx, "%d is not a valid value for enumeration %s",
+                gjs_throw(cx, "{} is not a valid value for enumeration {}",
                           value.toInt32(), g_type_name(gtype));
                 return false;
             }
@@ -961,13 +959,13 @@ static bool gjs_value_to_g_value_internal(JSContext* cx, JS::HandleValue value,
     }
 
     gjs_debug(GJS_DEBUG_GCLOSURE,
-              "JS::Value is number %d gtype fundamental %d transformable to "
-              "int %d from int %d",
+              "JS::Value is number {} gtype fundamental {} transformable to "
+              "int {} from int {}",
               value.isNumber(), G_TYPE_IS_FUNDAMENTAL(gtype),
               g_value_type_transformable(gtype, G_TYPE_INT),
               g_value_type_transformable(G_TYPE_INT, gtype));
 
-    gjs_throw(cx, "Don't know how to convert JavaScript object to GType %s",
+    gjs_throw(cx, "Don't know how to convert JavaScript object to GType {}",
               g_type_name(gtype));
     return false;
 }
@@ -1015,8 +1013,7 @@ static bool gjs_value_from_g_value_internal(
         introspection_info) {
     GType gtype = G_VALUE_TYPE(gvalue);
 
-    gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                      "Converting gtype %s to JS::Value",
+    gjs_debug_marshal(GJS_DEBUG_GCLOSURE, "Converting gtype {} to JS::Value",
                       g_type_name(gtype));
 
     if (gtype != G_TYPE_STRV && g_value_fits_pointer(gvalue) &&
@@ -1025,7 +1022,7 @@ static bool gjs_value_from_g_value_internal(
         // however most signals don't explicitly mark themselves as nullable,
         // so better to avoid this.
         gjs_debug_marshal(GJS_DEBUG_GCLOSURE,
-                          "Converting NULL %s to JS::NullValue()",
+                          "Converting NULL {} to JS::NullValue()",
                           g_type_name(gtype));
         value_p.setNull();
         return true;
@@ -1175,7 +1172,7 @@ static bool gjs_value_from_g_value_internal(
         GI::Repository repo;
         Maybe<GI::AutoRegisteredTypeInfo> info{repo.find_by_gtype(gtype)};
         if (!info) {
-            gjs_throw(cx, "No introspection information found for %s",
+            gjs_throw(cx, "No introspection information found for {}",
                       g_type_name(gtype));
             return false;
         }
@@ -1201,8 +1198,8 @@ static bool gjs_value_from_g_value_internal(
             obj =
                 UnionInstance::new_for_c_union(cx, union_info.value(), gboxed);
         } else {
-            gjs_throw(cx, "Unexpected introspection type %s for %s",
-                      info->type_string(), g_type_name(gtype));
+            gjs_throw(cx, "Unexpected introspection type {:t} for {}", *info,
+                      g_type_name(gtype));
             return false;
         }
         if (!obj)
@@ -1297,7 +1294,7 @@ static bool gjs_value_from_g_value_internal(
         return true;
     }
 
-    gjs_throw(cx, "Don't know how to convert GType %s to JavaScript object",
+    gjs_throw(cx, "Don't know how to convert GType {} to JavaScript object",
               g_type_name(gtype));
     return false;
 }

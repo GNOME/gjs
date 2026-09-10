@@ -140,15 +140,14 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     Gjs::AutoChar uri{g_file_get_uri(output)};
     auto result = gjs->register_module(uri, uri);
     if (result.isErr()) {
-        gjs_throw(cx, "Error loading file: %s", result.inspectErr()->message);
+        gjs_throw(cx, "Error loading file: {}", result);
         return false;
     }
 
     uint8_t exit_code;
     result = gjs->eval_module(uri, &exit_code);
     if (result.isErr()) {
-        gjs_throw(cx, "Error evaluating file: %s",
-                  result.inspectErr()->message);
+        gjs_throw(cx, "Error evaluating file: {}", result);
         return false;
     }
 
@@ -194,8 +193,7 @@ static bool read_line(JSContext* cx, unsigned argc, JS::Value* vp) {
     Gjs::AutoChar line = g_data_input_stream_read_line_utf8(
         stream, &len, /* cancellable = */ nullptr, error.out());
     if (!line) {
-        gjs_throw(cx, "Error reading DAP Content-Length header: %s",
-                  error->message);
+        gjs_throw(cx, "Error reading DAP Content-Length header: {}", error);
         return false;
     }
 
@@ -215,7 +213,7 @@ static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     JS::RootedObject obj{cx};
-    uint32_t nbytes;
+    uint32_t nbytes = 0;
     if (!gjs_parse_call_args(cx, "readBytes", args, "ou", "stream", &obj,
                              "nbytes", &nbytes))
         return false;
@@ -226,7 +224,7 @@ static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
     AutoBytes bytes = g_input_stream_read_bytes(
         stream, nbytes, /* cancellable = */ nullptr, error.out());
     if (!bytes) {
-        gjs_throw(cx, "Error reading DAP message body: %s", error->message);
+        gjs_throw(cx, "Error reading DAP message body: {}", error);
         return false;
     }
 

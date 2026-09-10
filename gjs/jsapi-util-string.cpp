@@ -9,9 +9,8 @@
 #include <sys/types.h>  // for ssize_t
 
 #include <algorithm>  // for copy
-#include <iomanip>    // for operator<<, setfill, setw
-#include <sstream>    // for operator<<, basic_ostream, ostring...
-#include <string>     // for allocator, char_traits
+#include <format>
+#include <string>
 #include <string_view>
 #include <type_traits>
 
@@ -247,13 +246,14 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
     Gjs::AutoChar utf8_string{g_filename_to_utf8(filename_string, n_bytes,
                                                  nullptr, &written, &error)};
     if (error) {
+        // COMPAT: use {:?} for escaping in C++23
         Gjs::AutoChar escaped_char{g_strescape(filename_string, nullptr)};
         gjs_throw(
             cx,
-            "Could not convert filename string to UTF-8 for string: %s. If "
+            "Could not convert filename string to UTF-8 for string: {}. If "
             "string is invalid UTF-8 and used for display purposes, try GLib "
-            "attribute standard::display-name. The reason is: %s. ",
-            escaped_char.get(), error->message);
+            "attribute standard::display-name. The reason is: {}. ",
+            escaped_char, error);
         return false;
     }
 
@@ -362,8 +362,8 @@ bool gjs_string_to_ucs4(JSContext* cx, JS::HandleString str,
             g_utf16_to_ucs4(reinterpret_cast<const gunichar2*>(utf16), len,
                             nullptr, &length, &error);
         if (*ucs4_string_p == nullptr) {
-            gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: %s",
-                      error->message);
+            gjs_throw(cx, "Failed to convert UTF-16 string to UCS-4: {}",
+                      error);
             return false;
         }
         if (len_p != nullptr)
@@ -396,8 +396,7 @@ bool gjs_string_from_ucs4(JSContext* cx, const gunichar* ucs4_string,
     gunichar2* u16_string = g_ucs4_to_utf16(ucs4_string, n_chars, nullptr,
                                             &u16_string_length, &error);
     if (!u16_string) {
-        gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: %s",
-                  error->message);
+        gjs_throw(cx, "Failed to convert UCS-4 string to UTF-16: {}", error);
         return false;
     }
 
@@ -473,13 +472,9 @@ jsid gjs_intern_string_to_id(JSContext* cx, const char* string) {
 std::string gjs_debug_bigint(JS::BigInt* bi) {
     // technically this prints the value % INT64_MAX, cast into an int64_t if
     // the value is negative, otherwise cast into uint64_t
-    std::ostringstream out;
     if (JS::BigIntIsNegative(bi))
-        out << JS::ToBigInt64(bi);
-    else
-        out << JS::ToBigUint64(bi);
-    out << "n (modulo 2^64)";
-    return out.str();
+        return std::format("{}n (modulo 2^64)", JS::ToBigInt64(bi));
+    return std::format("{}n (modulo 2^64)", JS::ToBigUint64(bi));
 }
 
 enum Quotes : uint8_t {
@@ -491,48 +486,45 @@ enum Quotes : uint8_t {
 static std::string gjs_debug_linear_string(JSLinearString* str, Quotes quotes) {
     size_t len = JS::GetLinearStringLength(str);
 
-    std::ostringstream out;
-    if (quotes == DoubleQuotes)
-        out << '"';
-
     JS::AutoCheckCannotGC nogc;
     if (JS::LinearStringHasLatin1Chars(str)) {
         const JS::Latin1Char* chars = JS::GetLatin1LinearStringChars(nogc, str);
-        out << std::string(reinterpret_cast<const char*>(chars), len);
+        std::string_view view{reinterpret_cast<const char*>(chars), len};
         if (quotes == DoubleQuotes)
-            out << '"';
-        return out.str();
+            return std::format("\"{}\"", view);
+        return std::string{view};
     }
+
+    std::string out;
+    out.reserve(len + quotes == DoubleQuotes ? 2 : 0);  // best case, no escapes
+    if (quotes == DoubleQuotes)
+        out += '"';
 
     const char16_t* chars = JS::GetTwoByteLinearStringChars(nogc, str);
     for (size_t ix = 0; ix < len; ix++) {
         char16_t c = chars[ix];
         if (c == '\n')
-            out << "\\n";
+            out += "\\n";
         else if (c == '\t')
-            out << "\\t";
+            out += "\\t";
         else if (c >= 32 && c < 127)
-            out << static_cast<char>(c);
+            out += static_cast<char>(c);
         else if (c <= 255)
-            out << "\\x" << std::setfill('0') << std::setw(2) << std::hex
-                << static_cast<unsigned>(c);
+            out += std::format("\\x{:02x}", static_cast<unsigned>(c));
         else
-            out << "\\u" << std::setfill('0') << std::setw(4) << std::hex
-                << static_cast<unsigned>(c);
+            out += std::format("\\u{:04x}", static_cast<unsigned>(c));
     }
     if (quotes == DoubleQuotes)
-        out << '"';
-    return out.str();
+        out += '"';
+    return out;
 }
 
 std::string gjs_debug_string(JSString* str) {
     if (!str)
         return "<null string>";
     if (!JS_StringIsLinear(str)) {
-        std::ostringstream out("<non-flat string of length ",
-                               std::ios_base::ate);
-        out << JS_GetStringLength(str) << '>';
-        return out.str();
+        return std::format("<non-flat string of length {}>",
+                           JS_GetStringLength(str));
     }
     return gjs_debug_linear_string(JS_ASSERT_STRING_IS_LINEAR(str),
                                    DoubleQuotes);
@@ -551,75 +543,61 @@ std::string gjs_debug_symbol(JS::Symbol* const sym) {
     if (static_cast<size_t>(code) < JS::WellKnownSymbolLimit)
         return gjs_debug_string(descr);
 
-    std::ostringstream out;
-    if (code == JS::SymbolCode::InSymbolRegistry) {
-        out << "Symbol.for(";
-        if (descr)
-            out << gjs_debug_string(descr);
-        else
-            out << "undefined";
-        out << ")";
-        return out.str();
-    }
+    if (code == JS::SymbolCode::InSymbolRegistry)
+        return std::format("Symbol.for({})", descr);
     if (code == JS::SymbolCode::UniqueSymbol) {
         if (descr)
-            out << "Symbol(" << gjs_debug_string(descr) << ")";
-        else
-            out << "<Symbol at " << sym << ">";
-        return out.str();
+            return std::format("Symbol({})", descr);
+        return std::format("<Symbol at {}>", static_cast<void*>(sym));
     }
 
-    out << "<unexpected symbol code " << static_cast<uint32_t>(code) << ">";
-    return out.str();
+    return std::format("<unexpected symbol code {}>",
+                       static_cast<uint32_t>(code));
 }
 
 std::string gjs_debug_object(JSObject* const obj) {
     if (!obj)
         return "<null object>";
 
-    std::ostringstream out;
-
     if (js::IsFunctionObject(obj)) {
         JSFunction* fun = JS_GetObjectFunction(obj);
         JSString* display_name = JS_GetMaybePartialFunctionDisplayId(fun);
-        if (display_name && JS_GetStringLength(display_name))
-            out << "<function " << gjs_debug_string(display_name);
-        else
-            out << "<anonymous function";
-        out << " at " << fun << '>';
-        return out.str();
+        if (display_name && JS_GetStringLength(display_name)) {
+            return std::format("<function {} at {}>", display_name,
+                               static_cast<void*>(fun));
+        }
+        return std::format("<anonymous function at {}>",
+                           static_cast<void*>(fun));
     }
 
     // This is OK because the promise methods can't cause a garbage collection
     JS::HandleObject handle = JS::HandleObject::fromMarkedLocation(&obj);
     if (JS::IsPromiseObject(handle)) {
-        out << '<';
         JS::PromiseState state = JS::GetPromiseState(handle);
-        if (state == JS::PromiseState::Pending)
-            out << "pending ";
-        out << "promise " << JS::GetPromiseID(handle) << " at " << obj;
-        if (state != JS::PromiseState::Pending) {
-            out << ' ';
-            out << (state == JS::PromiseState::Rejected ? "rejected"
-                                                        : "resolved");
-            out << " with " << gjs_debug_value(JS::GetPromiseResult(handle));
+        if (state == JS::PromiseState::Pending) {
+            return std::format("<pending promise {} at {}>",
+                               JS::GetPromiseID(handle),
+                               static_cast<void*>(obj));
         }
-        out << '>';
-        return out.str();
+        return std::format(
+            "<promise {} at {} re{}ed with {}>", JS::GetPromiseID(handle),
+            static_cast<void*>(obj),
+            (state == JS::PromiseState::Rejected ? "ject" : "solv"),
+            JS::GetPromiseResult(handle));
     }
 
     const JSClass* clasp = JS::GetClass(obj);
-    out << "<object " << clasp->name << " at " << obj <<  '>';
-    return out.str();
+    return std::format("<object {} at {}>", clasp->name,
+                       static_cast<void*>(obj));
 }
 
 std::string gjs_debug_callable(JSObject* callable) {
     if (JSFunction* fn = JS_GetObjectFunction(callable)) {
         if (JSString* display_id = JS_GetMaybePartialFunctionDisplayId(fn))
-            return {"function " + gjs_debug_string(display_id)};
-        return {"unnamed function"};
+            return std::format("function {}", display_id);
+        return "unnamed function";
     }
-    return {"callable object " + gjs_debug_object(callable)};
+    return std::format("callable object {}", callable);
 }
 
 std::string gjs_debug_value(JS::Value v) {
@@ -627,16 +605,11 @@ std::string gjs_debug_value(JS::Value v) {
         return "null";
     if (v.isUndefined())
         return "undefined";
-    if (v.isInt32()) {
-        std::ostringstream out;
-        out << v.toInt32();
-        return out.str();
-    }
-    if (v.isDouble()) {
-        std::ostringstream out;
-        out << v.toDouble();
-        return out.str();
-    }
+    if (v.isInt32())
+        return std::to_string(v.toInt32());
+    // COMPAT: pre-C++26 to_string(double) is weird
+    if (v.isDouble())
+        return std::format("{}", v.toDouble());
     if (v.isBigInt())
         return gjs_debug_bigint(v.toBigInt());
     if (v.isString())

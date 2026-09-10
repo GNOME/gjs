@@ -998,9 +998,8 @@ static bool context_to_gi_argument(JSContext* cx, JS::Value value,
                                    GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            gjs_throw(
-                cx, "%s may not be null",
-                gjs_argument_display_name(arg_name, argument_type).c_str());
+            gjs_throw(cx, "{} may not be null",
+                      gjs_argument_display_name(arg_name, argument_type));
             return false;
         }
 

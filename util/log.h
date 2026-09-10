@@ -8,6 +8,13 @@
 
 #include <stdint.h>
 
+#include <format>
+#include <string>
+#include <type_traits>  // for type_identity
+#include <utility>      // for forward
+
+#include <glib.h>
+
 /* The idea of this is to be able to have one big log file for the entire
  * environment, and grep out what you care about. So each module or app should
  * have its own entry in the enum. Be sure to add new enum entries to the switch
@@ -150,5 +157,37 @@ enum GjsDebugTopic : uint8_t {
 void gjs_log_init();
 void gjs_log_cleanup();
 
-[[gnu::format(printf, 2, 3)]]
-void gjs_debug(GjsDebugTopic, const char* format, ...);
+namespace Gjs::detail {
+void debug_impl(GjsDebugTopic, const std::string&);
+bool topic_enabled(GjsDebugTopic topic);
+}  // namespace Gjs::detail
+
+template <typename... Args>
+void gjs_debug(GjsDebugTopic topic, std::format_string<Args...> fmt,
+               Args&&... args) {
+    if (!Gjs::detail::topic_enabled(topic))
+        return;
+
+    Gjs::detail::debug_impl(topic,
+                            std::format(fmt, std::forward<Args>(args)...));
+}
+
+#define gjs_message(...) gjs_log(G_LOG_DOMAIN, G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
+#define gjs_warning(...) gjs_log(G_LOG_DOMAIN, G_LOG_LEVEL_WARNING, __VA_ARGS__)
+#define gjs_critical(...) \
+    gjs_log(G_LOG_DOMAIN, G_LOG_LEVEL_CRITICAL, __VA_ARGS__)
+// g_abort() ensures the compiler treats it as [[noreturn]]
+#define gjs_error(...)                                         \
+    G_STMT_START {                                             \
+        gjs_log(G_LOG_DOMAIN, G_LOG_LEVEL_ERROR, __VA_ARGS__); \
+        g_abort();                                             \
+    }                                                          \
+    G_STMT_END
+
+template <typename... Args>
+void gjs_log(const char* domain, GLogLevelFlags level,
+             std::format_string<Args...> fmt, Args&&... args) {
+    // NOLINTNEXTLINE(custom-use-typesafe-log) only place where this is allowed
+    g_log(domain, level, "%s",
+          std::format(fmt, std::forward<Args>(args)...).c_str());
+}

@@ -28,6 +28,8 @@
 
 #ifdef ENABLE_PROFILER
 #    include <algorithm>  // for min
+#    include <format>
+#    include <string>
 #    include <string_view>
 #endif
 
@@ -53,6 +55,7 @@
 #include "gjs/mem-private.h"
 #include "gjs/profiler-private.h"  // IWYU pragma: associated
 #include "gjs/profiler.h"
+#include "util/log.h"
 #include "util/misc.h"
 
 using mozilla::Maybe, mozilla::Nothing, mozilla::Some,
@@ -191,12 +194,11 @@ static bool gjs_profiler_extract_maps(GjsProfiler* self) {
 
     g_assert(self && "Profiler must be set up before extracting maps");
 
-    Gjs::AutoChar path{
-        g_strdup_printf("/proc/%jd/maps", static_cast<intmax_t>(self->pid))};
+    std::string path = std::format("/proc/{}/maps", self->pid);
 
     Gjs::AutoChar content;
     size_t len;
-    if (!g_file_get_contents(path, content.out(), &len, nullptr))
+    if (!g_file_get_contents(path.c_str(), content.out(), &len, nullptr))
         return false;
 
     Gjs::AutoStrv lines{g_strsplit(content, "\n", 0)};
@@ -321,15 +323,15 @@ GjsProfiler* gjs_profiler_new(GjsContext* gjs_context) {
     g_return_val_if_fail(gjs_context, nullptr);
 
     if (profiling_context == gjs_context) {
-        g_critical("You can only create one profiler at a time.");
+        gjs_critical("You can only create one profiler at a time");
         return nullptr;
     }
 
     if (profiling_context) {
-        g_message(
-            "Not going to profile GjsContext %p; you can only profile one "
-            "context at a time.",
-            gjs_context);
+        gjs_message(
+            "Not going to profile GjsContext {}; you can only profile one "
+            "context at a time",
+            static_cast<void*>(gjs_context));
         return nullptr;
     }
 
@@ -556,16 +558,17 @@ void gjs_profiler_start(GjsProfiler* self) {
         self->capture = sysprof_capture_writer_new_from_fd(self->fd, 0);
         self->fd = -1;
     } else {
-        Gjs::AutoChar path{g_strdup(self->filename)};
-        if (!path)
-            path = g_strdup_printf("gjs-%jd.syscap",
-                                   static_cast<intmax_t>(self->pid));
+        std::string path;
+        if (self->filename)
+            path = self->filename;
+        else
+            path = std::format("gjs-{}.syscap", self->pid);
 
-        self->capture = sysprof_capture_writer_new(path, 0);
+        self->capture = sysprof_capture_writer_new(path.c_str(), 0);
     }
 
     if (!self->capture) {
-        g_warning("Failed to open profile capture");
+        gjs_warning("Failed to open profile capture");
         return;
     }
 
@@ -584,14 +587,14 @@ void gjs_profiler_start(GjsProfiler* self) {
     }
 
     if (!gjs_profiler_extract_maps(self)) {
-        g_warning("Failed to extract proc maps");
+        gjs_warning("Failed to extract proc maps");
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
     }
 
     if (!gjs_profiler_define_counters(self)) {
-        g_warning("Failed to define sysprof counters");
+        gjs_warning("Failed to define sysprof counters");
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
@@ -603,8 +606,8 @@ void gjs_profiler_start(GjsProfiler* self) {
     sigemptyset(&sa.sa_mask);
 
     if (sigaction(SIGPROF, &sa, nullptr) == -1) {
-        g_warning("Failed to register sigaction handler: %s",
-                  g_strerror(errno));
+        gjs_warning("Failed to register sigaction handler: {}",
+                    g_strerror(errno));
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
@@ -625,7 +628,7 @@ void gjs_profiler_start(GjsProfiler* self) {
     sev._sigev_un._tid = syscall(__NR_gettid);
 
     if (timer_create(CLOCK_MONOTONIC, &sev, &self->timer) == -1) {
-        g_warning("Failed to create profiler timer: %s", g_strerror(errno));
+        gjs_warning("Failed to create profiler timer: {}", g_strerror(errno));
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
         return;
@@ -643,7 +646,7 @@ void gjs_profiler_start(GjsProfiler* self) {
 
     // Now start this timer
     if (timer_settime(self->timer, 0, &its, &old_its) != 0) {
-        g_warning("Failed to enable profiler timer: %s", g_strerror(errno));
+        gjs_warning("Failed to enable profiler timer: {}", g_strerror(errno));
         timer_delete(self->timer);
         g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
         g_clear_pointer(&self->periodic_flush, g_source_destroy);
@@ -658,12 +661,12 @@ void gjs_profiler_start(GjsProfiler* self) {
     // Start recording stack info
     js::EnableContextProfilingStack(self->cx, true);
 
-    g_message("Profiler started");
+    gjs_message("Profiler started");
 
 #else  // !ENABLE_PROFILER
 
     self->running = true;
-    g_message("Profiler is disabled. Recompile with it enabled to use.");
+    gjs_message("Profiler is disabled. Recompile with it enabled to use");
 
 #endif  // ENABLE_PROFILER
 }
@@ -709,7 +712,7 @@ void gjs_profiler_stop(GjsProfiler* self) {
     if (!sysprof_capture_writer_set_counters(
             self->capture, now.time_since_epoch().count(), -1, self->pid,
             ids.data(), values.data(), GJS_N_COUNTERS))
-        g_warning("Failed to write last value of memory counters");
+        gjs_warning("Failed to write last value of memory counters");
 
     struct itimerspec its = {.it_interval = {.tv_sec = 0}};
     timer_settime(self->timer, 0, &its, nullptr);
@@ -723,7 +726,7 @@ void gjs_profiler_stop(GjsProfiler* self) {
     g_clear_pointer(&self->capture, sysprof_capture_writer_unref);
     g_clear_pointer(&self->periodic_flush, g_source_destroy);
 
-    g_message("Profiler stopped");
+    gjs_message("Profiler stopped");
 
 #endif  // ENABLE_PROFILER
 
@@ -774,7 +777,7 @@ void gjs_profiler_setup_signals(GjsProfiler* self, GjsContext* gjs_context) {
 
 #else  // !ENABLE_PROFILER
 
-    g_message("Profiler is disabled. Not setting up signals.");
+    gjs_message("Profiler is disabled. Not setting up signals");
     (void)self;
 
 #endif  // ENABLE_PROFILER

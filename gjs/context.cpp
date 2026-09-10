@@ -4,7 +4,6 @@
 
 #include <config.h>
 
-#include <inttypes.h>  // for PRIu64
 #include <signal.h>  // for sigaction, SIGUSR1, sa_handler
 #include <stdint.h>
 #include <stdio.h>   // for FILE, fclose, size_t
@@ -24,8 +23,9 @@
 #    include <readline/history.h>
 #endif
 
-#include <new>
+#include <format>
 #include <iterator>     // for size
+#include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
 #include <unordered_map>
@@ -176,12 +176,11 @@ static void gjs_context_dump_heaps() {
     gjs_memory_report("signal handler", false);
 
     // dump to sequential files to allow easier comparisons
-    Gjs::AutoChar filename{g_strdup_printf("%s.%jd.%u", dump_heap_output.get(),
-                                           static_cast<intmax_t>(getpid()),
-                                           counter)};
+    std::string filename =
+        std::format("{}.{}.{}", dump_heap_output, getpid(), counter);
     ++counter;
 
-    FILE *fp = fopen(filename, "w");
+    FILE* fp = fopen(filename.c_str(), "w");
     if (!fp)
         return;
 
@@ -225,7 +224,7 @@ static void setup_dump_heap() {
             sa.sa_handler = dump_heap_signal_handler;
             sigaction(SIGUSR1, &sa, nullptr);
 #else
-            g_message(
+            gjs_message(
                 "heap dump is currently only supported on UNIX platforms");
 #endif
         }
@@ -356,10 +355,10 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
 void GjsContextPrivate::warn_about_unhandled_promise_rejections() {
     for (auto& kv : m_unhandled_rejection_stacks) {
         const char* stack = kv.second.get();
-        g_warning(
+        gjs_warning(
             "Unhandled promise rejection. To suppress this warning, add an "
             "error handler to your promise chain with .catch() or a try-catch "
-            "block around your await expression. %s%s",
+            "block around your await expression. {}{}",
             stack ? "Stack trace of the failed promise:\n"
                   : "Unfortunately there is no stack trace of the failed "
                     "promise.",
@@ -512,7 +511,7 @@ static void gjs_context_constructed(GObject* object) {
     GjsContextPrivate* gjs_location = GjsContextPrivate::from_object(object);
     JSContext* cx = gjs_create_js_context(gjs_location);
     if (!cx)
-        g_error("Failed to create javascript context");
+        gjs_error("Failed to create javascript context");
 
     new (gjs_location) GjsContextPrivate(cx, self);
 
@@ -528,8 +527,8 @@ static void gjs_context_constructed(GObject* object) {
     if (path) {
         int err = read_history(path);
         if (err != 0 && g_getenv("GJS_REPL_HISTORY"))
-            g_warning("Could not read REPL history file %s: %s", path,
-                      g_strerror(err));
+            gjs_warning("Could not read REPL history file {}: {}", path,
+                        g_strerror(err));
     }
 #endif
 }
@@ -539,8 +538,8 @@ static bool on_context_module_rejected_log_exception(JSContext* cx,
                                                      JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise rejected: %s",
-              gjs_debug_callable(&args.callee()).c_str());
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise rejected: {}",
+              gjs_debug_callable(&args.callee()));
 
     JS::HandleValue error = args.get(0);
 
@@ -559,8 +558,8 @@ static bool on_context_module_resolved(JSContext* cx, unsigned argc,
                                        JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
-    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise resolved: %s",
-              gjs_debug_callable(&args.callee()).c_str());
+    gjs_debug(GJS_DEBUG_IMPORTER, "Module evaluation promise resolved: {}",
+              gjs_debug_callable(&args.callee()));
 
     args.rval().setUndefined();
 
@@ -601,18 +600,18 @@ static void load_context_module(JSContext* cx, const char* uri,
 
     if (!loader) {
         gjs_log_exception(cx);
-        g_error("Failed to load %s module.", debug_identifier);
+        gjs_error("Failed to load {} module", debug_identifier);
     }
 
     if (!JS::ModuleLink(cx, loader)) {
         gjs_log_exception(cx);
-        g_error("Failed to instantiate %s module.", debug_identifier);
+        gjs_error("Failed to instantiate {} module", debug_identifier);
     }
 
     JS::RootedValue evaluation_promise(cx);
     if (!JS::ModuleEvaluate(cx, loader, &evaluation_promise)) {
         gjs_log_exception(cx);
-        g_error("Failed to evaluate %s module.", debug_identifier);
+        gjs_error("Failed to evaluate {} module", debug_identifier);
     }
 
     GjsContextPrivate::from_cx(cx)->main_loop_hold();
@@ -622,8 +621,8 @@ static void load_context_module(JSContext* cx, const char* uri,
             JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
             gjs_debug(GJS_DEBUG_IMPORTER,
-                      "Module evaluation promise rejected: %s",
-                      gjs_debug_callable(&args.callee()).c_str());
+                      "Module evaluation promise rejected: {}",
+                      gjs_debug_callable(&args.callee()));
 
             JS::HandleValue error = args.get(0);
             // Abort because this module is required.
@@ -636,7 +635,7 @@ static void load_context_module(JSContext* cx, const char* uri,
 
     if (!ok) {
         gjs_log_exception(cx);
-        g_error("Failed to load %s module.", debug_identifier);
+        gjs_error("Failed to load {} module", debug_identifier);
     }
 }
 
@@ -677,14 +676,14 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     m_atoms = new GjsAtoms();
 
     if (ObjectBox::gtype() == 0)
-        g_error("Failed to initialize JSObject GType");
+        gjs_error("Failed to initialize JSObject GType");
 
     JS::RootedObject internal_global(
         m_cx, gjs_create_global_object(cx, GjsGlobalType::INTERNAL));
 
     if (!internal_global) {
         gjs_log_exception(m_cx);
-        g_error("Failed to initialize internal global object");
+        gjs_error("Failed to initialize internal global object");
     }
 
     m_internal_global = internal_global;
@@ -693,14 +692,14 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     if (!m_atoms->init_atoms(m_cx)) {
         gjs_log_exception(m_cx);
-        g_error("Failed to initialize global strings");
+        gjs_error("Failed to initialize global strings");
     }
 
     if (!gjs_define_global_properties(m_cx, internal_global,
                                       GjsGlobalType::INTERNAL,
                                       "GJS internal global", "nullptr")) {
         gjs_log_exception(m_cx);
-        g_error("Failed to define properties on internal global object");
+        gjs_error("Failed to define properties on internal global object");
     }
 
     JS::RootedObject global(
@@ -709,7 +708,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
 
     if (!global) {
         gjs_log_exception(m_cx);
-        g_error("Failed to initialize global object");
+        gjs_error("Failed to initialize global object");
     }
 
     m_global = global;
@@ -724,7 +723,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         JS::RootedObject importer(m_cx, gjs_create_root_importer(m_cx, paths));
         if (!importer) {
             gjs_log_exception(cx);
-            g_error("Failed to create root importer");
+            gjs_error("Failed to create root importer");
         }
 
         g_assert(
@@ -737,7 +736,7 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
         if (!gjs_define_global_properties(m_cx, global, GjsGlobalType::DEFAULT,
                                           "GJS", "default")) {
             gjs_log_exception(m_cx);
-            g_error("Failed to define properties on global object");
+            gjs_error("Failed to define properties on global object");
         }
     }
 
@@ -748,12 +747,12 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
     if (!JS_DefineProperty(m_cx, internal_global, "moduleGlobalThis", global,
                            JSPROP_PERMANENT)) {
         gjs_log_exception(m_cx);
-        g_error("Failed to define module global in internal global.");
+        gjs_error("Failed to define module global in internal global");
     }
 
     if (!gjs_load_internal_module(cx, "internalLoader")) {
         gjs_log_exception(cx);
-        g_error("Failed to load internal module loaders.");
+        gjs_error("Failed to load internal module loaders");
     }
 
     load_context_module(cx,
@@ -913,7 +912,7 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status,
     switch (status) {
         case JSGC_BEGIN:
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT,
-                                "Begin garbage collection because of %s",
+                                "Begin garbage collection because of {}",
                                 gjs_explain_gc_reason(reason));
 
             // We finalize any pending toggle refs before doing any garbage
@@ -987,9 +986,8 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
     g_assert(from_cx(cx) == this);
 
     gjs_debug(GJS_DEBUG_MAINLOOP,
-              "Enqueue job %s, promise=%s, allocation site=%s",
-              gjs_debug_object(job).c_str(), gjs_debug_object(promise).c_str(),
-              gjs_debug_object(allocation_site).c_str());
+              "Enqueue job {}, promise={}, allocation site={}", job, promise,
+              allocation_site);
 
     if (!m_job_queue.append(job)) {
         JS_ReportOutOfMemory(m_cx);
@@ -1003,7 +1001,8 @@ bool GjsContextPrivate::enqueuePromiseJob(JSContext* cx [[maybe_unused]],
 
 bool GjsContextPrivate::dispatch_wasm_job(WasmJob&& d) {
     // This callback is invoked from a non-JS thread
-    gjs_debug(GJS_DEBUG_MAINLOOP, "Enqueue Wasm Dispatchable %p", d.get());
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Enqueue Wasm Dispatchable {}",
+              static_cast<void*>(d.get()));
 
     {
         std::scoped_lock lock(m_wasm_job_queue_mutex);
@@ -1035,8 +1034,7 @@ bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
     JS::RootedValue rval{m_cx};
 
     JSAutoRealm ar{m_cx, job};
-    gjs_debug(GJS_DEBUG_MAINLOOP, "handling job %zu, %s", ix,
-              gjs_debug_object(job).c_str());
+    gjs_debug(GJS_DEBUG_MAINLOOP, "handling job {}, {}", ix, job);
 
     if (!JS::Call(m_cx, JS::UndefinedHandleValue, job, args, &rval)) {
         /* Uncatchable exception - return false so that System.exit()
@@ -1045,10 +1043,10 @@ bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
         if (!JS_IsExceptionPending(m_cx)) {
             /* System.exit() is an uncatchable exception, but does not
              * indicate a bug. Log everything else. */
-            if (!should_exit(nullptr))
-                g_critical(
-                    "Promise callback terminated with uncatchable "
-                    "exception");
+            if (!should_exit(nullptr)) {
+                gjs_critical(
+                    "Promise callback terminated with uncatchable exception");
+            }
             return false;
         }
 
@@ -1056,7 +1054,7 @@ bool GjsContextPrivate::run_single_job(JS::HandleObject job, size_t ix) {
         gjs_log_exception_uncaught(m_cx);
     }
 
-    gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job %zu", ix);
+    gjs_debug(GJS_DEBUG_MAINLOOP, "Completed job {}", ix);
     return true;
 }
 
@@ -1096,7 +1094,7 @@ bool GjsContextPrivate::run_jobs_fallible() {
     for (size_t ix = 0; ix < m_job_queue.length(); ix++) {
         // A previous job might have set this flag. e.g., System.exit().
         if (m_should_exit || !m_dispatcher.is_running()) {
-            gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of %s",
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Stopping jobs because of {}",
                       m_should_exit ? "exit" : "main loop cancel");
             break;
         }
@@ -1136,8 +1134,8 @@ bool GjsContextPrivate::run_jobs_fallible() {
             break;
 
         for (auto& d : pending) {
-            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable %p",
-                      d.get());
+            gjs_debug(GJS_DEBUG_MAINLOOP, "Running Wasm Dispatchable {}",
+                      static_cast<void*>(d.get()));
             JS::Dispatchable::Run(m_cx, std::move(d),
                                   JS::Dispatchable::NotShuttingDown);
             gjs_debug(GJS_DEBUG_MAINLOOP, "Completed Wasm Dispatchable");
@@ -1190,7 +1188,7 @@ bool GjsContextPrivate::run_finalization_registry_cleanup() {
             // Same logic as above
             if (!JS_IsExceptionPending(m_cx)) {
                 if (!should_exit(nullptr))
-                    g_critical(
+                    gjs_critical(
                         "FinalizationRegistry callback terminated with "
                         "uncatchable exception");
                 retval = false;
@@ -1254,10 +1252,10 @@ void GjsContextPrivate::register_unhandled_promise_rejection(
 void GjsContextPrivate::unregister_unhandled_promise_rejection(uint64_t id) {
     size_t erased = m_unhandled_rejection_stacks.erase(id);
     if (erased != 1) {
-        g_critical(
-            "Promise %" PRIu64
-            " handler attached to rejected promise that wasn't previously "
-            "marked as unhandled or that we wrongly reported as unhandled",
+        gjs_critical(
+            "Promise {} handler attached to rejected promise that wasn't "
+            "previously marked as unhandled or that we wrongly reported as "
+            "unhandled",
             id);
     }
 }
@@ -1413,10 +1411,8 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     if (should_exit(&code)) {
         /* exit_status_p is public API so can't be changed, but should be
          * uint8_t, not int */
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
-                    "Exit with code %d", code);
-
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_SYSTEM_EXIT,
+                             "Exit with code {}", code};
         *exit_code = code;
         return Err(error.release());  // Don't log anything
     }
@@ -1424,9 +1420,9 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     // Once the main loop exits an exception could be pending even if the script
     // returned true synchronously
     if (JS_IsExceptionPending(m_cx)) {
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "%s %s threw an exception", source_type, identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "{} {} threw an exception", source_type,
+                             identifier};
         gjs_log_exception_uncaught(m_cx);
 
         *exit_code = 1;
@@ -1434,9 +1430,9 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
     }
 
     if (m_unhandled_exception) {
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "%s %s threw an exception", source_type, identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "{} {} threw an exception", source_type,
+                             identifier};
         *exit_code = 1;
         return Err(error.release());
     }
@@ -1447,12 +1443,11 @@ GErrorResult<> GjsContextPrivate::handle_exit_code(bool no_sync_error_pending,
         return Ok{};
     }
 
-    g_critical("%s %s terminated with an uncatchable exception", source_type,
-               identifier);
-    Gjs::AutoError error;
-    g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                "%s %s terminated with an uncatchable exception", source_type,
-                identifier);
+    gjs_critical("{} {} terminated with an uncatchable exception", source_type,
+                 identifier);
+    Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                         "{} {} terminated with an uncatchable exception",
+                         source_type, identifier};
 
     gjs_log_exception_uncaught(m_cx);
     // No exit code from script, but we don't want to exit(0)
@@ -1575,8 +1570,8 @@ GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
     if (exit_status_p) {
         if (result.isOk() && retval.isInt32()) {
             int code = retval.toInt32();
-            gjs_debug(GJS_DEBUG_CONTEXT,
-                      "Script returned integer code %d", code);
+            gjs_debug(GJS_DEBUG_CONTEXT, "Script returned integer code {}",
+                      code);
             *exit_status_p = code;
         } else {
             *exit_status_p = out_code;
@@ -1598,9 +1593,9 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
     JS::RootedId key(m_cx, gjs_intern_string_to_id(m_cx, identifier));
     JS::RootedObject obj(m_cx);
     if (!gjs_global_registry_get(m_cx, registry, key, &obj) || !obj) {
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "Cannot load module with identifier: '%s'", identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "Cannot load module with identifier: '{}'",
+                             identifier};
 
         if (exit_code_p)
             *exit_code_p = 1;
@@ -1609,9 +1604,9 @@ GErrorResult<> GjsContextPrivate::eval_module(const char* identifier,
 
     if (!JS::ModuleLink(m_cx, obj)) {
         gjs_log_exception(m_cx);
-        Gjs::AutoError error;
-        g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                    "Failed to resolve imports for module: '%s'", identifier);
+        Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                             "Failed to resolve imports for module: '{}'",
+                             identifier};
 
         if (exit_code_p)
             *exit_code_p = 1;
@@ -1688,10 +1683,9 @@ GErrorResult<> GjsContextPrivate::register_module(const char* identifier,
         JS_ClearPendingException(m_cx);
     }
 
-    Gjs::AutoError error;
-    g_set_error(error.out(), GJS_ERROR, GJS_ERROR_FAILED,
-                "Failed to parse module '%s': %s", identifier,
-                msg ? msg : "unknown");
+    Gjs::AutoError error{GJS_ERROR, GJS_ERROR_FAILED,
+                         "Failed to parse module '{}': {}", identifier,
+                         msg ? msg : "unknown"};
 
     return Err(error.release());
 }
@@ -1738,7 +1732,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
                                         JS::MutableHandleValue retval) {
     // log and clear exception if it's set (should not be, normally...)
     if (JS_IsExceptionPending(m_cx)) {
-        g_warning("eval_with_scope() called with a pending exception");
+        gjs_warning("eval_with_scope() called with a pending exception");
         return false;
     }
 
@@ -1777,7 +1771,7 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
     schedule_gc_if_needed();
 
     if (JS_IsExceptionPending(m_cx)) {
-        g_warning(
+        gjs_warning(
             "JS::Evaluate() returned true but exception was pending; "
             "did somebody call gjs_throw() without returning false?");
         return false;

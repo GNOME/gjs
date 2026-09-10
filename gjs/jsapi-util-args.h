@@ -9,6 +9,8 @@
 
 #include <stdint.h>
 
+#include <format>
+#include <string>
 #include <type_traits>  // for is_enum, is_same
 #include <utility>      // for move
 
@@ -43,26 +45,13 @@ static inline bool check_nullable(const char*& fchar, const char*& fmt_string) {
     return true;
 }
 
-class ParseArgsErr {
-    Gjs::AutoChar m_message;
-
- public:
-    explicit ParseArgsErr(const char* literal_msg)
-        : m_message(literal_msg, Gjs::TakeOwnership{}) {}
-    template <typename F>
-    ParseArgsErr(const char* format_string, F param)
-        : m_message(g_strdup_printf(format_string, param)) {}
-
-    [[nodiscard]] const char* message() const { return m_message.get(); }
-};
-
 template <typename... Args>
-constexpr auto Err(Args... args) {
+auto Err(std::format_string<Args...> format_string, Args&&... args) {
     return mozilla::GenericErrorResult{
-        ParseArgsErr{std::forward<Args>(args)...}};
+        std::format(format_string, std::forward<Args>(args)...)};
 }
 
-using ParseArgsResult = JS::Result<JS::Ok, ParseArgsErr>;
+using ParseArgsResult = JS::Result<JS::Ok, std::string>;
 
 /* This preserves the previous behaviour of gjs_parse_args(), but maybe we want
  * to use JS::ToBoolean instead? */
@@ -70,9 +59,9 @@ using ParseArgsResult = JS::Result<JS::Ok, ParseArgsErr>;
 static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
                                      JS::HandleValue value, bool* ref) {
     if (c != 'b')
-        return Err("Wrong type for %c, got bool*", c);
+        return Err("Wrong type for {}, got bool*", c);
     if (!value.isBoolean())
-        return Err("Not a boolean");
+        return Err("Not a boolean, got {}", value);
     if (nullable)
         return Err("Invalid format string combination ?b");
     *ref = value.toBoolean();
@@ -84,13 +73,13 @@ static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
                                      JS::HandleValue value,
                                      JS::MutableHandleObject ref) {
     if (c != 'o')
-        return Err("Wrong type for %c, got JS::MutableHandleObject", c);
+        return Err("Wrong type for {}, got JS::MutableHandleObject", c);
     if (nullable && value.isNull()) {
         ref.set(nullptr);
         return JS::Ok();
     }
     if (!value.isObject())
-        return Err("Not an object");
+        return Err("Not an object, got {}", value);
     ref.set(&value.toObject());
     return JS::Ok();
 }
@@ -100,14 +89,14 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value,
                                      JS::UniqueChars* ref) {
     if (c != 's')
-        return Err("Wrong type for %c, got JS::UniqueChars*", c);
+        return Err("Wrong type for {}, got JS::UniqueChars*", c);
     if (nullable && value.isNull()) {
         ref->reset();
         return JS::Ok();
     }
     JS::UniqueChars tmp = gjs_string_to_utf8(cx, value);
     if (!tmp)
-        return Err("Couldn't convert to string");
+        return Err("Couldn't convert {} to string", value);
     *ref = std::move(tmp);
     return JS::Ok();
 }
@@ -117,13 +106,13 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value,
                                      Gjs::AutoChar* ref) {
     if (c != 'F')
-        return Err("Wrong type for %c, got Gjs::AutoChar*", c);
+        return Err("Wrong type for {}, got Gjs::AutoChar*", c);
     if (nullable && value.isNull()) {
         ref->release();
         return JS::Ok();
     }
     if (!gjs_string_to_filename(cx, value, ref))
-        return Err("Couldn't convert to filename");
+        return Err("Couldn't convert {} to filename", value);
     return JS::Ok();
 }
 
@@ -132,13 +121,13 @@ static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
                                      JS::HandleValue value,
                                      JS::MutableHandleString ref) {
     if (c != 'S')
-        return Err("Wrong type for %c, got JS::MutableHandleString", c);
+        return Err("Wrong type for {}, got JS::MutableHandleString", c);
     if (nullable && value.isNull()) {
         ref.set(nullptr);
         return JS::Ok();
     }
     if (!value.isString())
-        return Err("Not a string");
+        return Err("Not a string, got {}", value);
     ref.set(value.toString());
     return JS::Ok();
 }
@@ -147,11 +136,11 @@ static inline ParseArgsResult assign(JSContext*, char c, bool nullable,
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, int32_t* ref) {
     if (c != 'i')
-        return Err("Wrong type for %c, got int32_t*", c);
+        return Err("Wrong type for {}, got int32_t*", c);
     if (nullable)
         return Err("Invalid format string combination ?i");
     if (!JS::ToInt32(cx, value, ref))
-        return Err("Couldn't convert to integer");
+        return Err("Couldn't convert {} to integer", value);
     return JS::Ok();
 }
 
@@ -161,13 +150,13 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
     double num;
 
     if (c != 'u')
-        return Err("Wrong type for %c, got uint32_t*", c);
+        return Err("Wrong type for {}, got uint32_t*", c);
     if (nullable)
         return Err("Invalid format string combination ?u");
     if (!value.isNumber() || !JS::ToNumber(cx, value, &num))
-        return Err("Couldn't convert to unsigned integer");
+        return Err("Couldn't convert {} to unsigned integer", value);
     if (num > INT32_MAX || num < 0)
-        return Err("Value %f is out of range", num);
+        return Err("Value {} is out of range", num);
     *ref = num;
     return JS::Ok();
 }
@@ -176,11 +165,11 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, int64_t* ref) {
     if (c != 't')
-        return Err("Wrong type for %c, got int64_t*", c);
+        return Err("Wrong type for {}, got int64_t*", c);
     if (nullable)
         return Err("Invalid format string combination ?t");
     if (!JS::ToInt64(cx, value, ref))
-        return Err("Couldn't convert to 64-bit integer");
+        return Err("Couldn't convert {} to 64-bit integer", value);
     return JS::Ok();
 }
 
@@ -188,11 +177,11 @@ static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
 static inline ParseArgsResult assign(JSContext* cx, char c, bool nullable,
                                      JS::HandleValue value, double* ref) {
     if (c != 'f')
-        return Err("Wrong type for %c, got double*", c);
+        return Err("Wrong type for {}, got double*", c);
     if (nullable)
         return Err("Invalid format string combination ?f");
     if (!JS::ToNumber(cx, value, ref))
-        return Err("Couldn't convert to double");
+        return Err("Couldn't convert {} to double", value);
     return JS::Ok();
 }
 
@@ -256,10 +245,9 @@ static bool parse_call_args_helper(JSContext* cx, const char* function_name,
     if (res.isErr()) {
         /* Our error messages are going to be more useful than whatever was
          * thrown by the various conversion functions */
-        const char* message = res.inspectErr().message();
         JS_ClearPendingException(cx);
-        gjs_throw(cx, "Error invoking %s, at argument %d (%s): %s",
-                  function_name, param_ix, param_name, message);
+        gjs_throw(cx, "Error invoking {}, at argument {} ({}): {}",
+                  function_name, param_ix, param_name, res.inspectErr());
         return false;
     }
 
@@ -303,7 +291,7 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
              "Wrong number of parameters passed to gjs_parse_call_args()");
 
     if (!ignore_trailing_args && args.length() > 0) {
-        gjs_throw(cx, "Error invoking %s: Expected 0 arguments, got %d",
+        gjs_throw(cx, "Error invoking {}: Expected 0 arguments, got {}",
                   function_name, args.length());
         return false;
     }
@@ -383,12 +371,12 @@ static bool gjs_parse_call_args(JSContext* cx, const char* function_name,
         return false;
     if (!ignore_trailing_args && args.length() > n_total) {
         if (n_required == n_total) {
-            gjs_throw(cx, "Error invoking %s: Expected %d arguments, got %d",
+            gjs_throw(cx, "Error invoking {}: Expected {} arguments, got {}",
                       function_name, n_required, args.length());
         } else {
             gjs_throw(cx,
-                      "Error invoking %s: Expected minimum %d arguments (and "
-                      "%d optional), got %d",
+                      "Error invoking {}: Expected minimum {} arguments (and "
+                      "{} optional), got {}",
                       function_name, n_required, n_total - n_required,
                       args.length());
         }

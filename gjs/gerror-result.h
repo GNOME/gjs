@@ -5,6 +5,11 @@
 
 #include <config.h>
 
+#include <format>
+#include <string>
+#include <type_traits>
+#include <utility>  // for forward
+
 #include <glib.h>
 
 #include <mozilla/Result.h>
@@ -42,6 +47,13 @@ struct AutoError : AutoPointer<GError, GError, g_error_free> {
     constexpr BaseType::Ptr* operator&() {  // NOLINT(runtime/operator)
         return out();
     }
+
+    template <typename... Args>
+    AutoError(GQuark domain, int code, std::format_string<Args...> fmt,
+              Args&&... args) {
+        std::string message = std::format(fmt, std::forward<Args>(args)...);
+        g_set_error_literal(out(), domain, code, message.c_str());
+    }
 };
 
 template <>
@@ -53,6 +65,13 @@ struct SmartPointer<GError> : AutoError {
 
 template <typename T = mozilla::Ok>
 using GErrorResult = mozilla::Result<T, AutoError>;
+
+// Used below in the formatter
+namespace detail {
+template <typename T>
+concept HasPointerGet =
+    requires(T p) { requires std::is_pointer_v<decltype(p.get())>; };
+}  // namespace detail
 
 }  // namespace Gjs
 
@@ -93,3 +112,40 @@ class SelectResultImpl<T*, Gjs::AutoError> {
 };
 
 }  // namespace mozilla::detail
+
+// Formatters
+
+template <>
+struct std::formatter<Gjs::AutoError> : std::formatter<const char*> {
+    auto format(const Gjs::AutoError& err, std::format_context& cx) const {
+        if (!err)
+            return formatter<const char*>::format("(null error)", cx);
+        return formatter<const char*>::format(err->message, cx);
+    }
+};
+
+template <typename T>
+struct std::formatter<Gjs::GErrorResult<T>> : std::formatter<std::string> {
+    auto format(const Gjs::GErrorResult<T>& result,
+                std::format_context& cx) const {
+        if (result.isOk()) {
+            if constexpr (std::is_same_v<T, mozilla::Ok>) {
+                return std::formatter<std::string>::format("Ok", cx);
+            } else if constexpr (std::is_pointer_v<T>) {
+                return std::formatter<std::string>::format(
+                    std::format("Ok({})", static_cast<void*>(result.inspect())),
+                    cx);
+            } else if constexpr (Gjs::detail::HasPointerGet<T>) {
+                return std::formatter<std::string>::format(
+                    std::format("Ok({})",
+                                static_cast<void*>(result.inspect().get())),
+                    cx);
+            } else {
+                return std::formatter<std::string>::format(
+                    std::format("Ok({})", result.inspect()), cx);
+            }
+        }
+        return std::formatter<std::string>::format(result.inspectErr()->message,
+                                                   cx);
+    }
+};

@@ -8,6 +8,9 @@
 #include <stdint.h>
 #include <string.h>  // for strlen
 
+#include <format>
+#include <string>
+
 #include <glib.h>
 
 #include <js/CallAndConstruct.h>
@@ -25,7 +28,6 @@
 #include <jsfriendapi.h>  // for GetFunctionNativeReserved, NewFun...
 
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-class.h"  // IWYU pragma: associated
 #include "gjs/jsapi-util.h"
@@ -79,10 +81,10 @@ bool gjs_init_class_dynamic(JSContext* cx, JS::HandleObject in_object,
     if (proto_fs && !JS_DefineFunctions(cx, prototype, proto_fs))
         return false;
 
-    Gjs::AutoChar full_function_name{
-        g_strdup_printf("%s_%s", ns_name, class_name)};
-    JSFunction* constructor_fun = JS_NewFunction(
-        cx, constructor_native, nargs, JSFUN_CONSTRUCTOR, full_function_name);
+    std::string full_function_name = std::format("{}_{}", ns_name, class_name);
+    JSFunction* constructor_fun =
+        JS_NewFunction(cx, constructor_native, nargs, JSFUN_CONSTRUCTOR,
+                       full_function_name.c_str());
     if (!constructor_fun)
         return false;
 
@@ -116,8 +118,8 @@ bool gjs_typecheck_instance(JSContext* cx, JS::HandleObject obj,
             const JSClass* obj_class = JS::GetClass(obj);
 
             gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
-                             "Object %p is not a subclass of %s, it's a %s",
-                             obj.get(), static_clasp->name,
+                             "{:?} is not a subclass of {}, it's a {}", obj,
+                             static_clasp->name,
                              format_dynamic_class_name(obj_class->name));
         }
 
@@ -188,19 +190,19 @@ bool gjs_define_property_dynamic(JSContext* cx, JS::HandleObject proto,
                                  const char* func_namespace, JSNative getter,
                                  JS::HandleValue getter_slot, JSNative setter,
                                  JS::HandleValue setter_slot, unsigned flags) {
-    Gjs::AutoChar getter_name{
-        g_strconcat(func_namespace, "_get::", prop_name, nullptr)};
-    Gjs::AutoChar setter_name{
-        g_strconcat(func_namespace, "_set::", prop_name, nullptr)};
+    std::string getter_name =
+        std::format("{}_get::{}", func_namespace, prop_name);
+    std::string setter_name =
+        std::format("{}_set::{}", func_namespace, prop_name);
 
     JS::RootedObject getter_obj(
-        cx, define_native_accessor_wrapper(cx, getter, 0, getter_name,
+        cx, define_native_accessor_wrapper(cx, getter, 0, getter_name.c_str(),
                                            getter_slot));
     if (!getter_obj)
         return false;
 
     JS::RootedObject setter_obj(
-        cx, define_native_accessor_wrapper(cx, setter, 1, setter_name,
+        cx, define_native_accessor_wrapper(cx, setter, 1, setter_name.c_str(),
                                            setter_slot));
     if (!setter_obj)
         return false;

@@ -13,6 +13,7 @@
 
 #include <algorithm>  // for find, min
 #include <charconv>   // for from_chars
+#include <format>
 #include <string>
 #include <string_view>
 #include <system_error>  // for errc
@@ -27,6 +28,7 @@
 #include "gjs/context.h"
 #include "gjs/coverage.h"
 #include "gjs/gerror-result.h"
+#include "util/log.h"
 
 struct GjsCoverageFixture {
     GjsContext* gjs_context;
@@ -75,8 +77,8 @@ static void gjs_coverage_fixture_set_up(void* fixture_data, const void*) {
     tmp_output_dir_name = mkdtemp(tmp_output_dir_name.release());
 
     if (!tmp_output_dir_name)
-        g_error("Failed to create temporary directory for test files: %s\n",
-                strerror(errno));
+        gjs_error("Failed to create temporary directory for test files: {}",
+                  strerror(errno));
 
     fixture->tmp_output_dir = g_file_new_for_path(tmp_output_dir_name);
     fixture->tmp_js_script = g_file_get_child(fixture->tmp_output_dir,
@@ -927,16 +929,13 @@ static void gjs_coverage_multiple_source_files_to_single_output_fixture_set_up(
     Gjs::AutoChar base_name{g_file_get_basename(fixture->tmp_js_script)};
     Gjs::AutoChar base_name_without_extension{
         g_strndup(base_name, strlen(base_name) - 3)};
-    char* mock_script = g_strconcat("const FirstScript = imports.",
-                                    base_name_without_extension.get(),
-                                    ";\n"
-                                    "let a = FirstScript.f;\n"
-                                    "\n",
-                                    nullptr);
+    std::string mock_script = std::format(
+        "const FirstScript = imports.{};\n"
+        "let a = FirstScript.f;\n"
+        "\n",
+        base_name_without_extension);
 
-    replace_file(fixture->second_js_source_file, mock_script);
-
-    g_free(mock_script);
+    replace_file(fixture->second_js_source_file, mock_script.c_str());
 }
 
 static void

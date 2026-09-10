@@ -14,6 +14,7 @@
 #include <concepts>
 #include <cstddef>
 #include <deque>
+#include <format>
 #include <functional>
 #include <iterator>
 #include <limits>
@@ -56,7 +57,6 @@
 #include <glib-unix.h>
 #endif
 #include <inttypes.h>
-#include <iomanip>
 #include <js/AllocPolicy.h>
 #include <js/Array.h>
 #include <js/ArrayBuffer.h>
@@ -144,7 +144,6 @@
 #ifndef _WIN32
 #include <signal.h>
 #endif
-#include <stdarg.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

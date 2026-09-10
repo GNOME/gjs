@@ -11,7 +11,6 @@
 #include <glib.h>
 
 #include <js/CallArgs.h>
-#include <js/Class.h>
 #include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
@@ -120,8 +119,8 @@ JSObject* gjs_cairo_pattern_from_pattern(JSContext* cx,
         case CAIRO_PATTERN_TYPE_RASTER_SOURCE:
         default:
             gjs_throw(cx,
-                      "failed to create pattern, unsupported pattern type %d",
-                      cairo_pattern_get_type(pattern));
+                      "failed to create pattern, unsupported pattern type {}",
+                      static_cast<unsigned>(cairo_pattern_get_type(pattern)));
             return nullptr;
     }
 }
@@ -145,8 +144,7 @@ cairo_pattern_t* CairoPattern::for_js(JSContext* cx,
                                        &is_pattern_subclass))
         return nullptr;
     if (!is_pattern_subclass) {
-        gjs_throw(cx, "Expected Cairo.Pattern but got %s",
-                  JS::GetClass(pattern_wrapper)->name);
+        gjs_throw(cx, "Expected Cairo.Pattern but got {}", pattern_wrapper);
         return nullptr;
     }
 
@@ -162,9 +160,8 @@ static bool pattern_to_gi_argument(JSContext* cx, JS::Value value,
                                    GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            gjs_throw(
-                cx, "%s may not be null",
-                gjs_argument_display_name(arg_name, argument_type).c_str());
+            gjs_throw(cx, "{} may not be null",
+                      gjs_argument_display_name(arg_name, argument_type));
             return false;
         }
 
@@ -173,8 +170,8 @@ static bool pattern_to_gi_argument(JSContext* cx, JS::Value value,
     }
 
     if (!value.isObject()) {
-        gjs_throw(cx, "%s is not a Cairo.Pattern",
-                  gjs_argument_display_name(arg_name, argument_type).c_str());
+        gjs_throw(cx, "{} is not a Cairo.Pattern",
+                  gjs_argument_display_name(arg_name, argument_type));
         return false;
     }
 

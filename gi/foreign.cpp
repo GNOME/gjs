@@ -7,12 +7,12 @@
 #include <stddef.h>  // for size_t
 #include <stdint.h>
 
+#include <format>
 #include <string>
 #include <unordered_map>
 #include <utility>  // for pair
 
 #include <girepository/girepository.h>
-#include <glib.h>
 
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
@@ -22,6 +22,7 @@
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 enum LoadedStatus : uint8_t { NotLoaded, Loaded };
 static std::unordered_map<std::string, LoadedStatus> foreign_modules{
@@ -50,12 +51,12 @@ static bool gjs_foreign_load_foreign_module(JSContext* cx,
 
     // FIXME: Find a way to check if a module is imported and only execute this
     // statement if it isn't
-    std::string script = "imports." + entry->first + ';';
+    std::string script = std::format(R"js(imports.{};)js", entry->first);
     JS::RootedValue retval{cx};
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     if (!gjs->eval_with_scope(nullptr, script.c_str(), script.length(),
                               "<internal>", &retval)) {
-        g_critical("ERROR importing foreign module %s\n", gi_namespace);
+        gjs_critical("ERROR importing foreign module {}", gi_namespace);
         return false;
     }
     entry->second = Loaded;
@@ -78,8 +79,8 @@ static GjsForeignInfo* gjs_struct_foreign_lookup(JSContext* cx,
     }
 
     if (entry == foreign_structs_table.end()) {
-        gjs_throw(cx, "Unable to find module implementing foreign type %s.%s",
-                  key.first.c_str(), key.second.c_str());
+        gjs_throw(cx, "Unable to find module implementing foreign type {}.{}",
+                  key.first, key.second);
         return nullptr;
     }
 

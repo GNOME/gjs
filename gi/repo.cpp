@@ -6,6 +6,10 @@
 
 #include <string.h>  // for strcmp
 
+#include <format>
+#include <string>
+#include <string_view>
+
 #include <girepository/girepository.h>
 #include <glib-object.h>
 #include <glib.h>
@@ -25,7 +29,6 @@
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
 #include <js/ValueArray.h>
-#include <js/Warnings.h>
 #include <jsapi.h>  // for JS_NewPlainObject, JS_NewObject
 #include <mozilla/Maybe.h>
 #include <mozilla/ScopeExit.h>
@@ -44,7 +47,6 @@
 #include "gi/struct.h"
 #include "gi/union.h"
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/gerror-result.h"
 #include "gjs/global.h"
@@ -98,12 +100,12 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
     size_t nversions;
     (void)repo.enumerate_versions(ns_name.get(), &nversions);
     if (nversions > 1 && !version &&
-        !repo.is_registered(ns_name.get(), nullptr) &&
-        !JS::WarnUTF8(cx,
-                      "Requiring %s but it has %zu versions available; use "
-                      "imports.gi.versions to pick one",
-                      ns_name.get(), nversions))
-        return false;
+        !repo.is_registered(ns_name.get(), nullptr)) {
+        gjs_warning(
+            "Requiring {} but it has {} versions available; use "
+            "imports.gi.versions to pick one",
+            ns_name, nversions);
+    }
 
     // If resolving Gio, load the platform-specific typelib first, so that
     // GioUnix/GioWin32 GTypes get looked up in there with higher priority,
@@ -111,17 +113,15 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
 #if (defined(G_OS_UNIX) || defined(G_OS_WIN32))
     if (strcmp(ns_name.get(), "Gio") == 0) {
 #    ifdef G_OS_UNIX
-        const char* platform = "Unix";
+        constexpr std::string_view platform = "Unix";
 #    else   // G_OS_WIN32
-        const char* platform = "Win32";
+        constexpr std::string_view platform = "Win32";
 #    endif  // G_OS_UNIX/G_OS_WIN32
-        Gjs::AutoChar platform_specific{
-            g_strconcat(ns_name.get(), platform, nullptr)};
-        auto required = repo.require(platform_specific, version.get());
+        std::string platform_specific = std::format("{}{}", ns_name, platform);
+        auto required = repo.require(platform_specific.c_str(), version.get());
         if (!required.isOk()) {
-            gjs_throw(cx, "Failed to require %s %s: %s",
-                      platform_specific.get(), version.get(),
-                      required.inspectErr()->message);
+            gjs_throw(cx, "Failed to require {} {}: {}", platform_specific,
+                      version, required);
             return false;
         }
     }
@@ -129,9 +129,8 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
 
     auto required = repo.require(ns_name.get(), version.get());
     if (!required.isOk()) {
-        gjs_throw(cx, "Requiring %s, version %s: %s", ns_name.get(),
-                  version ? version.get() : "none",
-                  required.inspectErr()->message);
+        gjs_throw(cx, "Requiring {}, version {}: {}", ns_name,
+                  version ? version.get() : "none", required);
         return false;
     }
 
@@ -155,8 +154,8 @@ static bool resolve_namespace_object(JSContext* cx, JS::HandleObject repo_obj,
         return false;
 
     gjs_debug(GJS_DEBUG_GNAMESPACE,
-              "Defined namespace '%s' %p in GIRepository %p", ns_name.get(),
-              gi_namespace.get(), repo_obj.get());
+              "Defined namespace '{}' {:?} in GIRepository {:?}", ns_name,
+              gi_namespace, repo_obj);
 
     GjsContextPrivate* gjs = GjsContextPrivate::from_cx(cx);
     gjs->schedule_gc_if_needed();
@@ -182,8 +181,8 @@ static bool repo_resolve(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
         return true;
     }
 
-    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '%s' hook, obj %s",
-                     gjs_debug_id(id).c_str(), gjs_debug_object(obj).c_str());
+    gjs_debug_jsprop(GJS_DEBUG_GREPO, "Resolve prop '{}' hook, obj {}", id,
+                     obj);
 
     if (!resolve_namespace_object(cx, obj, id))
         return false;
@@ -203,8 +202,7 @@ static JSObject* repo_new(JSContext* cx) {
     if (repo == nullptr)
         return nullptr;
 
-    gjs_debug_lifecycle(GJS_DEBUG_GREPO, "repo constructor, obj %p",
-                        repo.get());
+    gjs_debug_lifecycle(GJS_DEBUG_GREPO, "repo constructor, {:?}", repo);
 
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
     JS::RootedObject versions{cx, JS_NewPlainObject(cx)};
@@ -275,7 +273,7 @@ static bool gjs_define_constant(JSContext* cx, JS::HandleObject in_object,
 
 bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                      const GI::BaseInfo& info, bool* defined) {
-    info.log_usage();
+    gjs_debug_gi_usage("gjs_define_info {:?}", info);
 
     *defined = true;
 
@@ -301,7 +299,7 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                 cx, in_object, object_info.value(), &ignored);
         }
 
-        gjs_throw(cx, "Unsupported type %s, deriving from fundamental %s",
+        gjs_throw(cx, "Unsupported type {}, deriving from fundamental {}",
                   g_type_name(gtype), g_type_name(g_type_fundamental(gtype)));
         return false;
     }
@@ -341,8 +339,7 @@ bool gjs_define_info(JSContext* cx, JS::HandleObject in_object,
                                                 &ignored1, &ignored2);
     }
 
-    gjs_throw(cx, "API of type %s not implemented, cannot define %s.%s",
-              info.type_string(), info.ns(), info.name());
+    gjs_throw(cx, "API of type {0:t} not implemented, cannot define {0}", info);
     return false;
 }
 
@@ -356,8 +353,7 @@ JSObject* gjs_lookup_private_namespace(JSContext* cx) {
 JSObject* gjs_lookup_namespace_object(JSContext* cx, const GI::BaseInfo& info) {
     const char* ns = info.ns();
     if (ns == nullptr) {
-        gjs_throw(cx, "%s '%s' does not have a namespace", info.type_string(),
-                  info.name());
+        gjs_throw(cx, "{0:t} '{0}' does not have a namespace", info);
 
         return nullptr;
     }
@@ -467,19 +463,17 @@ JSObject* gjs_lookup_namespace_object_by_name(JSContext* cx,
 JSObject* gjs_lookup_generic_constructor(JSContext* cx,
                                          const GI::BaseInfo& info) {
     JS::RootedObject in_object{cx, gjs_lookup_namespace_object(cx, info)};
-    const char* constructor_name = info.name();
-
     if (!in_object) [[unlikely]]
         return nullptr;
 
     JS::RootedValue value{cx};
-    if (!JS_GetProperty(cx, in_object, constructor_name, &value))
+    if (!JS_GetProperty(cx, in_object, info.name(), &value))
         return nullptr;
 
     if (!value.isObject()) [[unlikely]] {
         gjs_throw(cx,
-                  "Constructor of %s.%s was the wrong type, expected an object",
-                  info.ns(), constructor_name);
+                  "Constructor of {} was the wrong type, expected an object",
+                  info);
         return nullptr;
     }
 
@@ -498,9 +492,8 @@ JSObject* gjs_lookup_generic_prototype(JSContext* cx,
         return nullptr;
 
     if (!value.isObject()) [[unlikely]] {
-        gjs_throw(cx,
-                  "Prototype of %s.%s was the wrong type, expected an object",
-                  info.ns(), info.name());
+        gjs_throw(cx, "Prototype of {} was the wrong type, expected an object",
+                  info);
         return nullptr;
     }
 

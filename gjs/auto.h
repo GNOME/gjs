@@ -11,6 +11,7 @@
 #include <stdlib.h>
 
 #include <concepts>  // for same_as
+#include <format>
 #include <type_traits>
 #include <utility>
 
@@ -270,3 +271,10 @@ struct SmartPointer<GSList> : AutoPointer<GSList, GSList, g_slist_free> {
 };
 
 }  // namespace Gjs
+
+template <>
+struct std::formatter<Gjs::AutoChar> : std::formatter<const char*> {
+    auto format(const Gjs::AutoChar& str, std::format_context& cx) const {
+        return formatter<const char*>::format(str ? str.get() : "(null)", cx);
+    }
+};

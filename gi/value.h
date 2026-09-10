@@ -9,7 +9,7 @@
 #include <stdint.h>
 
 #include <cstddef>  // for nullptr_t
-#include <sstream>  // for ostringstream
+#include <format>
 #include <string>   // for string
 #include <type_traits>
 #include <utility>  // for move, swap
@@ -211,20 +211,17 @@ void gvalue_take(GValue* gvalue, Tag::RealT<TAG> value) {
 
 template <typename TAG>
 std::string gvalue_to_string(GValue* gvalue) {
-    using std::string_literals::operator""s;
-    std::string str{"GValue of type "s + G_VALUE_TYPE_NAME(gvalue) + ": "};
+    std::string str = std::format("GValue of type {}: ", G_VALUE_TYPE_NAME(gvalue));
 
     if constexpr (std::is_same_v<TAG, char*>) {
-        str += "\""s + Gjs::gvalue_get<TAG>(gvalue) + '"';
+        str += std::format("\"{}\"", Gjs::gvalue_get<TAG>(gvalue));
     } else if constexpr (std::is_same_v<TAG, GVariant*>) {
         AutoChar variant{g_variant_print(Gjs::gvalue_get<TAG>(gvalue), true)};
-        str += "<"s + variant.get() + '>';
-    } else if constexpr (std::is_arithmetic_v<TAG>) {
-        str += std::to_string(Gjs::gvalue_get<TAG>(gvalue));
+        str += std::format("<{}>", variant);
+    } else if constexpr (std::is_pointer_v<TAG>) {
+        str += std::format("{}", Gjs::gvalue_get<void*>(gvalue));
     } else {
-        std::ostringstream out;
-        out << Gjs::gvalue_get<TAG>(gvalue);
-        str += out.str();
+        str += std::format("{}", Gjs::gvalue_get<TAG>(gvalue));
     }
     return str;
 }

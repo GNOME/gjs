@@ -162,7 +162,7 @@ class ErrorInstance : public GIWrapperInstance<ErrorBase, ErrorPrototype,
 };
 
 GJS_JSAPI_RETURN_CONVENTION
-GError* gjs_gerror_make_from_thrown_value(JSContext*);
+Gjs::AutoError gjs_gerror_make_from_thrown_value(JSContext*);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_define_error_properties(JSContext*, JS::HandleObject);

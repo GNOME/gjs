@@ -17,6 +17,7 @@
 #endif
 
 #include "gjs/auto.h"
+#include "util/log.h"
 
 static std::atomic<GObject*> s_tmp_object = nullptr;
 static GWeakRef s_tmp_weak;
@@ -333,8 +334,8 @@ int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
     }
 
     if (std::cmp_not_equal(bytes_written, count))
-        g_warning("%s: %zu bytes sent, only %zd bytes written", __func__, count,
-                  bytes_written);
+        gjs_warning("{}: {} bytes sent, only {} bytes written", __func__, count,
+                    bytes_written);
 
     int result = close(pipefd[1]);
     if (result == -1) {
@@ -344,7 +345,7 @@ int gjs_test_tools_open_bytes(GBytes* bytes, GError** error) {
 
     return pipefd[0];
 #else
-    g_error("%s is currently supported on UNIX only", __func__);
+    gjs_error("{} is currently supported on UNIX only", __func__);
 #endif
 }
 

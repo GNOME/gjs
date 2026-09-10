@@ -5,8 +5,6 @@
 
 #include <config.h>
 
-#include <string>  // for string methods
-
 #include <girepository/girepository.h>
 #include <glib.h>
 
@@ -127,21 +125,20 @@ bool FundamentalPrototype::resolve_impl(JSContext* cx, JS::HandleObject obj,
     Maybe<GI::AutoFunctionInfo> method_info{info().method(prop_name.get())};
 
     if (method_info) {
-        method_info->log_usage();
+        gjs_debug_gi_usage("Fundamental::resolve {:?}", *method_info);
         if (method_info->is_method()) {
             // we do not define deprecated methods in the prototype
             if (method_info->is_deprecated()) {
-                gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                          "Ignoring definition of deprecated method %s in "
-                          "prototype %s",
-                          method_info->name(), format_name().c_str());
+                gjs_debug(
+                    GJS_DEBUG_GFUNDAMENTAL,
+                    "Ignoring definition of deprecated method {} in prototype",
+                    *method_info);
                 *resolved = false;
                 return true;
             }
 
-            gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                      "Defining method %s in prototype for %s",
-                      method_info->name(), format_name().c_str());
+            gjs_debug(GJS_DEBUG_GFUNDAMENTAL, "Defining method {} in prototype",
+                      *method_info);
 
             if (!gjs_define_function(cx, obj, gtype(), *method_info))
                 return false;
@@ -169,8 +166,7 @@ bool FundamentalInstance::invoke_constructor(JSContext* cx,
     Maybe<const GI::FunctionInfo> constructor_info =
         get_prototype()->constructor_info();
     if (!constructor_info) {
-        gjs_throw(cx, "Couldn't find a constructor for type %s",
-                  format_name().c_str());
+        gjs_throw(cx, "Couldn't find a constructor for type {}", info());
         return false;
     }
 
@@ -260,9 +256,9 @@ static JSObject* gjs_lookup_fundamental_prototype(JSContext* cx,
             return nullptr;
     } else {
         if (!value.isObject()) [[unlikely]] {
-            gjs_throw(cx,
-                      "Fundamental constructor was not an object, it was a %s",
-                      JS::InformalValueTypeName(value));
+            gjs_throw(
+                cx, "Fundamental constructor was not an object, it was a {:t}",
+                value);
             return nullptr;
         }
 
@@ -337,9 +333,9 @@ bool FundamentalPrototype::define_class(JSContext* cx,
 
     if (info.fields().size() > 0) {
         gjs_debug(GJS_DEBUG_GFUNDAMENTAL,
-                  "Fundamental type '%s' apparently has accessible fields. GJS "
+                  "Fundamental type '{}' apparently has accessible fields. GJS "
                   "has no support for this yet, ignoring these.",
-                  priv->format_name().c_str());
+                  info);
     }
 
     return true;
@@ -364,7 +360,7 @@ JSObject* FundamentalInstance::object_for_c_ptr(JSContext* cx,
         return p->value();
 
     gjs_debug_marshal(GJS_DEBUG_GFUNDAMENTAL,
-                      "Wrapping fundamental %p with JSObject", gfundamental);
+                      "Wrapping fundamental {} with JSObject", gfundamental);
 
     JS::RootedObject proto{cx, gjs_lookup_fundamental_prototype_from_gtype(
                                    cx, G_TYPE_FROM_INSTANCE(gfundamental))};
@@ -410,7 +406,7 @@ bool FundamentalInstance::object_for_gvalue(
     if (!proto_priv->call_get_value_function(value, &fobj)) {
         if (!G_VALUE_HOLDS(value, gtype) || !g_value_fits_pointer(value)) {
             gjs_throw(cx,
-                      "Failed to convert GValue of type %s to a fundamental %s "
+                      "Failed to convert GValue of type {} to a fundamental {} "
                       "instance",
                       G_VALUE_TYPE_NAME(value), g_type_name(gtype));
             return false;
@@ -452,8 +448,8 @@ bool FundamentalBase::to_gvalue(JSContext* cx, JS::HandleObject obj,
         }
 
         gjs_throw(cx,
-                  "Fundamental object of type %s does not support conversion "
-                  "to a GValue of type %s",
+                  "Fundamental object of type {} does not support conversion "
+                  "to a GValue of type {}",
                   instance->type_name(), G_VALUE_TYPE_NAME(gvalue));
         return false;
     }

@@ -12,7 +12,6 @@
 
 #include <js/Array.h>
 #include <js/CallArgs.h>
-#include <js/Class.h>
 #include <js/Object.h>              // for GetClass
 #include <js/PropertyDescriptor.h>  // for JSPROP_READONLY
 #include <js/PropertySpec.h>
@@ -318,8 +317,7 @@ cairo_surface_t* CairoSurface::for_js(JSContext* cx,
                                        &is_surface_subclass))
         return nullptr;
     if (!is_surface_subclass) {
-        gjs_throw(cx, "Expected Cairo.Surface but got %s",
-                  JS::GetClass(surface_wrapper)->name);
+        gjs_throw(cx, "Expected Cairo.Surface but got {}", surface_wrapper);
         return nullptr;
     }
 
@@ -335,9 +333,8 @@ static bool surface_to_gi_argument(JSContext* cx, JS::Value value,
                                    GIArgument* arg) {
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
-            gjs_throw(
-                cx, "%s may not be null",
-                gjs_argument_display_name(arg_name, argument_type).c_str());
+            gjs_throw(cx, "{} may not be null",
+                      gjs_argument_display_name(arg_name, argument_type));
             return false;
         }
 
@@ -346,8 +343,8 @@ static bool surface_to_gi_argument(JSContext* cx, JS::Value value,
     }
 
     if (!value.isObject()) {
-        gjs_throw(cx, "%s is not a Cairo.Surface",
-                  gjs_argument_display_name(arg_name, argument_type).c_str());
+        gjs_throw(cx, "{} is not a Cairo.Surface",
+                  gjs_argument_display_name(arg_name, argument_type));
         return false;
     }
 

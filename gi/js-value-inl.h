@@ -11,7 +11,6 @@
 #include <cmath>  // for isnan
 #include <concepts>  // for integral
 #include <limits>
-#include <string>
 #include <type_traits>
 #include <utility>  // for move
 
@@ -33,6 +32,7 @@
 #include "gjs/auto.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 namespace Gjs {
 
@@ -423,10 +423,10 @@ inline bool c_value_to_js_checked(JSContext* cx [[maybe_unused]],
     if constexpr (std::is_same_v<T, int64_t> || std::is_same_v<T, uint64_t>) {
         if (value < Gjs::min_safe_big_number<T>() ||
             value > Gjs::max_safe_big_number<T>()) {
-            g_warning(
-                "Value %s cannot be safely stored in a JS Number "
-                "and may be rounded",
-                std::to_string(value).c_str());
+            gjs_warning(
+                "Value {} cannot be safely stored in a JS Number and may be "
+                "rounded",
+                value);
         }
     }
 

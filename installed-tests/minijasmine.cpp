@@ -31,6 +31,7 @@ static void bail_out(GjsContext* gjs_context, GError* error) {
 
 int main(int argc, char** argv) {
     if (argc < 2)
+        // NOLINTNEXTLINE(custom-use-typesafe-log) no internal header use here
         g_error("Need a test file");
 
     g_setenv("GJS_DEBUG_OUTPUT", "stderr", false);

@@ -65,8 +65,8 @@ class GjsMaybeOwned {
     // No-op unless GJS_VERBOSE_ENABLE_LIFECYCLE is defined to 1.
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     void debug(const char* what GJS_USED_VERBOSE_LIFECYCLE) {
-        gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned %p %s", this,
-                            what);
+        gjs_debug_lifecycle(GJS_DEBUG_KEEP_ALIVE, "GjsMaybeOwned {} {}",
+                            static_cast<void*>(this), what);
     }
 
     void teardown_rooting() {

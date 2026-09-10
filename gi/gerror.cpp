@@ -6,7 +6,8 @@
 
 #include <stdint.h>
 
-#include <string>  // for string methods
+#include <format>
+#include <string>
 
 #include <girepository/girepository.h>
 #include <glib-object.h>
@@ -134,7 +135,7 @@ bool ErrorBase::get_code(JSContext* cx, unsigned argc, JS::Value* vp) {
 bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     GJS_GET_THIS(cx, argc, vp, rec, self);
 
-    Gjs::AutoChar descr;
+    std::string descr;
 
     // An error created via `new GLib.Error` will have a Struct* private
     // pointer, not an Error*, so we can't call regular to_string() on it.
@@ -142,11 +143,10 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
         auto* gerror = StructBase::to_c_ptr<GError>(cx, self);
         if (!gerror)
             return false;
-        descr =
-            g_strdup_printf("GLib.Error %s: %s",
+        descr = std::format("GLib.Error {}: {}",
                             g_quark_to_string(gerror->domain), gerror->message);
 
-        return gjs_string_from_utf8(cx, descr, rec.rval());
+        return gjs_string_from_utf8(cx, descr.c_str(), rec.rval());
     }
 
     ErrorBase* priv;
@@ -157,13 +157,13 @@ bool ErrorBase::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
     // hiding some useful information
 
     if (priv->is_prototype()) {
-        descr = g_strdup(priv->format_name().c_str());
+        descr = priv->info().display_string();
     } else {
-        descr = g_strdup_printf("%s: %s", priv->format_name().c_str(),
-                                priv->to_instance()->message());
+        descr =
+            std::format("{}: {}", priv->info(), priv->to_instance()->message());
     }
 
-    return gjs_string_from_utf8(cx, descr, rec.rval());
+    return gjs_string_from_utf8(cx, descr.c_str(), rec.rval());
 }
 
 // JSNative implementation of `valueOf()`.
@@ -357,7 +357,7 @@ JSObject* ErrorInstance::object_for_c_ptr(JSContext* cx, GError* gerror) {
         return StructInstance::new_for_c_struct(cx, glib_boxed, gerror);
     }
 
-    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct %s with JSObject",
+    gjs_debug_marshal(GJS_DEBUG_GBOXED, "Wrapping struct {} with JSObject",
                       info->name());
 
     JS::RootedObject obj{cx, gjs_new_object_with_generic_prototype(cx, *info)};
@@ -479,7 +479,7 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
  *
  * Returns: (transfer full): a new #GError
  */
-GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
+Gjs::AutoError gjs_gerror_make_from_thrown_value(JSContext* cx) {
     g_assert(JS_IsExceptionPending(cx) &&
              "Should be called when an exception is pending");
 
@@ -488,10 +488,8 @@ GError* gjs_gerror_make_from_thrown_value(JSContext* cx) {
     JS_ClearPendingException(cx);  // don't log
 
     if (!exc.isObject()) {
-        return g_error_new(GJS_JS_ERROR, GJS_JS_ERROR_ERROR,
-                           "Non-exception %s value %s thrown",
-                           JS::InformalValueTypeName(exc),
-                           gjs_debug_value(exc).c_str());
+        return {GJS_JS_ERROR, GJS_JS_ERROR_ERROR,
+                "Non-exception {0:t} value {0} thrown", exc};
     }
 
     JS::RootedObject obj(cx, &exc.toObject());

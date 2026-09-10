@@ -11,24 +11,31 @@
 #include <stdlib.h>     // for free
 #include <sys/types.h>  // for ssize_t
 
+#include <concepts>  // for semiregular
+#include <format>
 #include <limits>
 #include <string>  // for string, u16string
 #include <string_view>
 #include <type_traits>  // for add_pointer_t, add_const_t
+#include <utility>      // for forward
 #include <vector>
 
 #include <glib-object.h>
 #include <glib.h>
 
 #include <js/BigInt.h>
+#include <js/CharacterEncoding.h>  // for ConstUTF8CharsZ
 #include <js/ErrorReport.h>  // for JSExnType
 #include <js/GCAPI.h>
 #include <js/GCPolicyAPI.h>  // for IgnoreGCPolicy
 #include <js/Id.h>
+#include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
+#include <jsapi.h>       // for InformalValueTypeName
 
 #include "gjs/auto.h"
+#include "gjs/format-utils.h"
 #include "gjs/gerror-result.h"
 #include "gjs/macros.h"
 #include "util/log.h"
@@ -94,12 +101,32 @@ JSObject* gjs_define_string_array(JSContext*, JS::HandleObject,
                                   const std::vector<std::string>&,
                                   unsigned attrs);
 
-[[gnu::format(printf, 2, 3)]]
-void gjs_throw(JSContext*, const char* format, ...);
-[[gnu::format(printf, 4, 5)]]
-void gjs_throw_custom(JSContext*, JSExnType, const char* error_name,
-                      const char* format, ...);
-void gjs_throw_literal(JSContext*, const char* string);
+void gjs_throw_full(JSContext* cx, JSExnType error_kind, const char* error_name,
+                    std::string_view msg);
+
+/* Throws an exception, like "throw new Error(message)"
+ *
+ * If an exception is already set in the context, this will NOT overwrite it.
+ * That's an important semantic since we want the "root cause" exception. To
+ * overwrite, use JS_ClearPendingException() first.
+ */
+template <typename... Args>
+void gjs_throw(JSContext* cx, std::format_string<Args...> format,
+               Args&&... args) {
+    gjs_throw_full(cx, JSEXN_ERR, nullptr,
+                   std::format(format, std::forward<Args>(args)...));
+}
+
+/* Like gjs_throw, but allows to customize the error class and 'name' property.
+ * Mainly used for throwing TypeError instead of error.
+ */
+template <typename... Args>
+void gjs_throw_custom(JSContext* cx, JSExnType kind, const char* error_name,
+                      std::format_string<Args...> format, Args&&... args) {
+    gjs_throw_full(cx, kind, error_name,
+                   std::format(format, std::forward<Args>(args)...));
+}
+
 bool gjs_throw_gerror_message(JSContext*, Gjs::AutoError const&);
 
 bool gjs_log_exception(JSContext*);
@@ -249,13 +276,13 @@ bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
     g_assert(clamped && "forgot out parameter");
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "Checking if BigInt %s is out of range for type %s",
-                      gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>());
+                      "Checking if BigInt {} is out of range for type {}", bi,
+                      Gjs::static_type_name<T>());
 
     if (JS::BigIntFits(bi, clamped)) {
-        gjs_debug_marshal(
-            GJS_DEBUG_GFUNCTION, "BigInt %s is in the range of type %s",
-            std::to_string(*clamped).c_str(), Gjs::static_type_name<T>());
+        gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
+                          "BigInt {} is in the range of type {}", *clamped,
+                          Gjs::static_type_name<T>());
         return false;
     }
 
@@ -266,12 +293,107 @@ bool bigint_is_out_of_range(JS::BigInt* bi, T* clamped) {
     }
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
-                      "BigInt %s is not in the range of type %s, clamped to %s",
-                      gjs_debug_bigint(bi).c_str(), Gjs::static_type_name<T>(),
-                      std::to_string(*clamped).c_str());
+                      "BigInt {} is not in the range of type {}, clamped to {}",
+                      bi, Gjs::static_type_name<T>(), *clamped);
     return true;
 }
 
 }  // namespace Gjs
 
 [[nodiscard]] const char* gjs_explain_gc_reason(JS::GCReason);
+
+// Formatters for various JSAPI types
+
+template <>
+struct std::formatter<JS::UniqueChars> : std::formatter<const char*> {
+    auto format(const JS::UniqueChars& str, std::format_context& cx) const {
+        return formatter<const char*>::format(str ? str.get() : "(null)", cx);
+    }
+};
+
+template <>
+struct std::formatter<JS::ConstUTF8CharsZ> : std::formatter<const char*> {
+    auto format(JS::ConstUTF8CharsZ str, std::format_context& cx) const {
+        return formatter<const char*>::format(str ? str.c_str() : "(null)", cx);
+    }
+};
+
+template <>
+struct std::formatter<JS::Value> : Gjs::FormatterBase<'t', '?'> {
+    auto format(JS::Value v, std::format_context& cx) const {
+        switch (spec()) {
+            case 't':
+                return std::format_to(cx.out(), "{}",
+                                      JS::InformalValueTypeName(v));
+            case '?':
+                return std::format_to(cx.out(), "JS::Value {:#x}",
+                                      v.asRawBits());
+            default:
+                return std::format_to(cx.out(), "{}", gjs_debug_value(v));
+        }
+    }
+};
+
+template <>
+struct std::formatter<JSString*> : Gjs::FormatterBase<'?'> {
+    auto format(JSString* s, std::format_context& cx) const {
+        if (spec() == '?')
+            return std::format_to(cx.out(), "JSString {}",
+                                  static_cast<void*>(s));
+        return std::format_to(cx.out(), "{}", gjs_debug_string(s));
+    }
+};
+
+template <>
+struct std::formatter<JS::PropertyKey> : Gjs::FormatterBase<'?'> {
+    auto format(JS::PropertyKey id, std::format_context& cx) const {
+        if (spec() == '?')
+            return std::format_to(cx.out(), "JSID {:#x}", id.asRawBits());
+        return std::format_to(cx.out(), "{}", gjs_debug_id(id));
+    }
+};
+
+template <>
+struct std::formatter<JSObject*> : Gjs::FormatterBase<'?'> {
+    auto format(JSObject* o, std::format_context& cx) const {
+        if (spec() == '?')
+            return std::format_to(cx.out(), "Object {}", static_cast<void*>(o));
+        return std::format_to(cx.out(), "{}", gjs_debug_object(o));
+    }
+};
+
+template <>
+struct std::formatter<JS::BigInt*> : Gjs::FormatterBase<'?'> {
+    auto format(JS::BigInt* bi, std::format_context& cx) const {
+        if (spec() == '?')
+            return std::format_to(cx.out(), "JS::BigInt {}",
+                                  static_cast<void*>(bi));
+        return std::format_to(cx.out(), "{}", gjs_debug_bigint(bi));
+    }
+};
+
+// Limit the Rooted/Handle/MutableHandle templates to types that can already be
+// formatted. COMPAT: Replace with std::formattable in C++23
+template <typename T>
+concept RootedFormattable = std::semiregular<std::formatter<T>>;
+
+template <RootedFormattable T>
+struct std::formatter<JS::Rooted<T>> : std::formatter<T> {
+    auto format(const JS::Rooted<T>& v, std::format_context& cx) const {
+        return formatter<T>::format(v.get(), cx);
+    }
+};
+
+template <RootedFormattable T>
+struct std::formatter<JS::Handle<T>> : std::formatter<T> {
+    auto format(JS::Handle<T> v, std::format_context& cx) const {
+        return formatter<T>::format(v.get(), cx);
+    }
+};
+
+template <RootedFormattable T>
+struct std::formatter<JS::MutableHandle<T>> : std::formatter<T> {
+    auto format(JS::MutableHandle<T> v, std::format_context& cx) const {
+        return formatter<T>::format(v.get(), cx);
+    }
+};

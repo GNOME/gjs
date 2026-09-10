@@ -8,8 +8,6 @@
 #include <unordered_map>
 #include <utility>  // for ignore
 
-#include <glib.h>
-
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 
@@ -22,14 +20,12 @@ void Gjs::NativeModuleDefineFuncs::add(const char* module_id,
     bool inserted;
     std::tie(std::ignore, inserted) = m_modules.insert({module_id, func});
     if (!inserted) {
-        g_warning("A second native module tried to register the same id '%s'",
-                  module_id);
+        gjs_warning("A second native module tried to register the same id '{}'",
+                    module_id);
         return;
     }
 
-    gjs_debug(GJS_DEBUG_NATIVE,
-              "Registered native JS module '%s'",
-              module_id);
+    gjs_debug(GJS_DEBUG_NATIVE, "Registered native JS module '{}'", module_id);
 }
 
 /**
@@ -58,12 +54,12 @@ bool Gjs::NativeModuleDefineFuncs::is_registered(const char* module_id) const {
 bool Gjs::NativeModuleDefineFuncs::define(
     JSContext* cx, const char* module_id,
     JS::MutableHandleObject module_out) const {
-    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '%s'", module_id);
+    gjs_debug(GJS_DEBUG_NATIVE, "Defining native module '{}'", module_id);
 
     const auto& iter = m_modules.find(module_id);
 
     if (iter == m_modules.end()) {
-        gjs_throw(cx, "No native module '%s' has registered itself", module_id);
+        gjs_throw(cx, "No native module '{}' has registered itself", module_id);
         return false;
     }
 

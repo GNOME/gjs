@@ -19,6 +19,10 @@
 
 #include "util/console.h"
 
+#ifdef HAVE_READLINE_READLINE_H
+#    include "util/log.h"
+#endif
+
 /**
  * ANSI escape code sequences to manipulate terminals.
  *
@@ -72,8 +76,8 @@ void gjs_console_write_repl_history(const char* path) {
     if (path) {
         int err = write_history(path);
         if (err != 0)
-            g_warning("Could not persist history to defined file %s: %s", path,
-                      g_strerror(err));
+            gjs_warning("Could not persist history to defined file {}: {}",
+                        path, g_strerror(err));
     }
 }
 #endif

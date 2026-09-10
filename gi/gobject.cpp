@@ -29,6 +29,7 @@
 #include "gjs/context.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
+#include "util/log.h"
 
 static std::unordered_map<GType, AutoParamArray> class_init_properties;
 
@@ -205,8 +206,9 @@ static void gjs_object_set_gproperty(GObject* object,
                                      const GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
     if (!priv || !priv->wrapper()) {
-        g_warning("Wrapper for GObject %p was disposed, cannot set property %s",
-                  object, g_param_spec_get_name(pspec));
+        gjs_warning(
+            "Wrapper for GObject {} was disposed, cannot set property {}",
+            static_cast<void*>(object), g_param_spec_get_name(pspec));
         return;
     }
 
@@ -224,8 +226,9 @@ static void gjs_object_get_gproperty(GObject* object,
                                      GValue* value, GParamSpec* pspec) {
     auto* priv = ObjectInstance::for_gobject(object);
     if (!priv || !priv->wrapper()) {
-        g_warning("Wrapper for GObject %p was disposed, cannot get property %s",
-                  object, g_param_spec_get_name(pspec));
+        gjs_warning(
+            "Wrapper for GObject {} was disposed, cannot get property {}",
+            static_cast<void*>(object), g_param_spec_get_name(pspec));
         return;
     }
 

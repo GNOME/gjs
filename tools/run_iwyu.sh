@@ -73,9 +73,9 @@ EXIT=0
 # database, so iwyu_tool cannot process them
 for FILE in $SRCDIR/gi/arg-types-inl.h $SRCDIR/gi/js-value-inl.h \
     $SRCDIR/gi/info.h $SRCDIR/gi/utils-inl.h $SRCDIR/gjs/auto.h \
-    $SRCDIR/gjs/enum-utils.h $SRCDIR/gjs/gerror-result.h \
-    $SRCDIR/gjs/jsapi-util-args.h $SRCDIR/gjs/jsapi-util-root.h \
-    $SRCDIR/modules/cairo-module.h
+    $SRCDIR/gjs/enum-utils.h $SRCDIR/gjs/format-utils.h \
+    $SRCDIR/gjs/gerror-result.h $SRCDIR/gjs/jsapi-util-args.h \
+    $SRCDIR/gjs/jsapi-util-root.h $SRCDIR/modules/cairo-module.h
 do
     if should_analyze "$FILE"; then
         if ! "${IWYU_RAW[@]}" "${PRIVATE_MAPPING[@]}" \

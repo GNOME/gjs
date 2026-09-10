@@ -319,7 +319,7 @@ describe('GObject class with decorator', function () {
     });
 
     it('warns if more than one argument passed to the default constructor', function () {
-        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_MESSAGE,
+        GLib.test_expect_message('Gjs', GLib.LogLevelFlags.LEVEL_WARNING,
             '*Too many arguments*');
 
         new ObjectWithDefaultConstructor({}, 'this is ignored', 123);

@@ -4,9 +4,12 @@
 
 #include <config.h>
 
-#include <stdarg.h>
+#include <limits.h>  // for INT_MAX
 #include <stdint.h>
 #include <string.h>
+
+#include <algorithm>  // for min
+#include <string_view>
 
 #include <glib.h>
 
@@ -28,7 +31,6 @@
 #include <mozilla/ScopeExit.h>
 
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/gerror-result.h"
 #include "gjs/jsapi-util.h"
@@ -92,19 +94,19 @@ static bool append_new_cause(JSContext* cx, JS::HandleValue thrown,
     return true;
 }
 
-[[gnu::format(printf, 4, 0)]]
-static void gjs_throw_valist(JSContext* cx, JSExnType error_kind,
-                             const char* error_name, const char* format,
-                             va_list args) {
-    Gjs::AutoChar s{g_strdup_vprintf(format, args)};
-    auto fallback = mozilla::MakeScopeExit([cx, &s]() {
-        // try just reporting it to error handler? should not
-        // happen though pretty much
-        JS_ReportErrorUTF8(cx, "Failed to throw exception '%s'", s.get());
+void gjs_throw_full(JSContext* cx, JSExnType error_kind, const char* error_name,
+                    std::string_view msg) {
+    auto fallback = mozilla::MakeScopeExit([cx, msg]() {
+        // Try just reporting it to error handler? Should not happen though
+        // pretty much. Avoid allocation by using %.*s
+        JS_ReportErrorUTF8(cx, "Failed to throw exception '%.*s'",
+                           static_cast<int>(std::min(
+                               msg.size(), static_cast<size_t>(INT_MAX))),
+                           msg.data());
     });
 
-    JS::ConstUTF8CharsZ chars{s.get()};
-    JS::RootedString message{cx, JS_NewStringCopyUTF8Z(cx, chars)};
+    JS::UTF8Chars chars{msg.data(), msg.size()};
+    JS::RootedString message{cx, JS_NewStringCopyUTF8N(cx, chars)};
     if (!message)
         return;
 
@@ -149,52 +151,13 @@ static void gjs_throw_valist(JSContext* cx, JSExnType error_kind,
         if (!append_new_cause(cx, pending, v_exc, &appended))
             saved_exc.restore();
         if (!appended)
-            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '%s'",
-                      s.get());
+            gjs_debug(GJS_DEBUG_CONTEXT, "Ignoring second exception: '{}'",
+                      msg);
     } else {
         JS_SetPendingException(cx, v_exc);
     }
 
     fallback.release();
-}
-
-// COMPAT: Replace with a format string in C++20.
-/* Throws an exception, like "throw new Error(message)"
- *
- * If an exception is already set in the context, this will NOT overwrite it.
- * That's an important semantic since we want the "root cause" exception. To
- * overwrite, use JS_ClearPendingException() first.
- */
-// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
-void gjs_throw(JSContext* cx, const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    gjs_throw_valist(cx, JSEXN_ERR, nullptr, format, args);
-    va_end(args);
-}
-
-// COMPAT: Replace with a format string in C++20.
-/* Like gjs_throw, but allows to customize the error class and 'name' property.
- * Mainly used for throwing TypeError instead of error.
- */
-// NOLINTNEXTLINE(modernize-avoid-variadic-functions)
-void gjs_throw_custom(JSContext* cx, JSExnType kind, const char* error_name,
-                      const char* format, ...) {
-    va_list args;
-
-    va_start(args, format);
-    gjs_throw_valist(cx, kind, error_name, format, args);
-    va_end(args);
-}
-
-/**
- * gjs_throw_literal:
- *
- * Similar to gjs_throw(), but does not treat its argument as a format string.
- */
-void gjs_throw_literal(JSContext* cx, const char* string) {
-    gjs_throw(cx, "%s", string);
 }
 
 /**
@@ -210,7 +173,7 @@ void gjs_throw_literal(JSContext* cx, const char* string) {
  */
 bool gjs_throw_gerror_message(JSContext* cx, Gjs::AutoError const& error) {
     g_return_val_if_fail(error, false);
-    gjs_throw_literal(cx, error->message);
+    gjs_throw_full(cx, JSEXN_ERR, nullptr, error->message);
     return false;
 }
 
@@ -248,8 +211,8 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
     if (gjs_environment_variable_is_set("GJS_ABORT_ON_OOM") &&
         !report->isWarning() && report->errorNumber == 137) {
         // 137, JSMSG_OUT_OF_MEMORY
-        g_error("GJS ran out of memory at %s:%u:%u.", report->filename.c_str(),
-                report->lineno, report->column.oneOriginValue());
+        gjs_error("GJS ran out of memory at {}:{}:{}", report->filename,
+                  report->lineno, report->column.oneOriginValue());
     }
 
     const char* warning;
@@ -270,7 +233,7 @@ void gjs_warning_reporter(JSContext*, JSErrorReport* report) {
         level = G_LOG_LEVEL_WARNING;
     }
 
-    g_log(G_LOG_DOMAIN, level, "JS %s: %s:%u:%u: %s", warning,
-          report->filename.c_str(), report->lineno,
-          report->column.oneOriginValue(), report->message().c_str());
+    gjs_log(G_LOG_DOMAIN, level, "JS {}: {}:{}:{}: {}", warning,
+            report->filename, report->lineno, report->column.oneOriginValue(),
+            report->message());
 }
