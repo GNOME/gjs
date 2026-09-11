@@ -18,6 +18,11 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
     include_directories: top_include,
     install: get_option('installed_tests'), install_dir: installed_tests_execdir)
 
+miniinspector = executable('miniinspector', '../miniinspector.cpp',
+    dependencies: libgjs_dep, include_directories: top_include,
+    install: get_option('installed_tests'),
+    install_dir: installed_tests_execdir)
+
 subdir('libgjstesttools')
 
 jasmine_tests = [
@@ -42,6 +47,7 @@ jasmine_tests = [
     'GObjectInterface',
     'GObjectValue',
     'GTypeClass',
+    'Inspector',
     'Introspection',
     'Namespace',
     'ParamSpec',
@@ -82,6 +88,7 @@ tests_dependencies = [
     gi_tests.get_variable('regress_unix_typelib'),
     gi_tests.get_variable('warnlib_typelib'),
     gi_tests.get_variable('utility_typelib'),
+    miniinspector
 ]
 
 foreach test : jasmine_tests
