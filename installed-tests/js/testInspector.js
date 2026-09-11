@@ -92,6 +92,29 @@ describe('Inspector', function () {
         sendRequest('configurationDone');
     });
 
+    describe('once initialized', function () {
+        beforeEach(function () {
+            sendRequest('initialize', {
+                adapterID: 'miniinspector',
+                clientID: 'jasmine',
+                clientName: 'GJS Unit Tests',
+                locale: 'en-CA',
+                pathFormat: 'uri',
+            });
+            expectEvent('initialized');
+        });
+
+        it('can launch a file', function () {
+            sendRequest('launch', {
+                cwd: 'resource:///org/gjs/jsunit/inspector',
+                program: 'sample.js',
+            });
+            sendRequest('configurationDone');
+            const stopped = expectEvent('stopped');
+            expect(stopped.reason).toBe('instruction breakpoint');
+        });
+    });
+
     afterEach(function () {
         cancel.cancel();
         miniinspector.force_exit();

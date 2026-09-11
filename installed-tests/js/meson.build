@@ -19,7 +19,8 @@ minijasmine = executable('minijasmine', '../minijasmine.cpp',
     install: get_option('installed_tests'), install_dir: installed_tests_execdir)
 
 miniinspector = executable('miniinspector', '../miniinspector.cpp',
-    dependencies: libgjs_dep, include_directories: top_include,
+    jsunit_resources_files, dependencies: libgjs_dep,
+    include_directories: top_include,
     install: get_option('installed_tests'),
     install_dir: installed_tests_execdir)
 
