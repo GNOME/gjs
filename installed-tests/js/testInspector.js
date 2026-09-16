@@ -130,6 +130,15 @@ describe('Inspector', function () {
                 'resource:///org/gjs/jsunit/inspector/nested dir#/% hello.js',
             );
         });
+
+        it('can launch a file without cwd', function () {
+            sendRequest('launch', {
+                program: 'resource:///org/gjs/jsunit/inspector/sample.js',
+            });
+            sendRequest('configurationDone');
+            const stopped = expectEvent('stopped');
+            expect(stopped.reason).toBe('instruction breakpoint');
+        });
     });
 
     afterEach(function () {
