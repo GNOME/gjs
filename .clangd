@@ -1,6 +1,10 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2024 Philip Chimento <philip.chimento@gmail.com>
 
+CompileFlags:
+  CompilationDatabase: _build
+  Remove: [-fpch-preprocess, -include]
+
 Diagnostics:
   ClangTidy:
     Remove: none*
