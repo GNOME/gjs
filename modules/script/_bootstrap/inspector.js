@@ -204,7 +204,7 @@ const handlers = {
         if (args.stopOnEntry)
             setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
 
-        STATE.pendingLaunchPath = filePath;
+        STATE.pendingLaunchPath = encodeURI(filePath);
         sendResponse(seq, 'launch');
     },
     /**
