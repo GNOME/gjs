@@ -8,8 +8,9 @@
 #include <string.h>     // for size_t, strlen
 #include <sys/types.h>  // for ssize_t
 
-#include <algorithm>  // for copy
+#include <algorithm>  // for copy, replace
 #include <format>
+#include <ranges>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -42,33 +43,28 @@
 
 class JSLinearString;
 
-Gjs::AutoChar gjs_hyphen_to_underscore(const char* str) {
-    char* s = g_strdup(str);
-    char* retval = s;
-    while (*(s++) != '\0') {
-        if (*s == '-')
-            *s = '_';
-    }
+std::string gjs_hyphen_to_underscore(std::string_view str) {
+    std::string retval{str};
+    // GObject property names can't start with a hyphen
+    std::ranges::replace(retval | std::views::drop(1), '-', '_');
     return retval;
 }
 
-Gjs::AutoChar gjs_hyphen_to_camel(const char* str) {
-    Gjs::AutoChar retval{static_cast<char*>(g_malloc(strlen(str) + 1))};
-    const char* input_iter = str;
-    char* output_iter = retval.get();
+std::string gjs_hyphen_to_camel(std::string_view str) {
+    std::string retval;
+    retval.reserve(str.size());  // worst case
+
     bool uppercase_next = false;
-    while (*input_iter != '\0') {
-        if (*input_iter == '-') {
+    for (const char c : str) {
+        if (c == '-') {
             uppercase_next = true;
         } else if (uppercase_next) {
-            *output_iter++ = g_ascii_toupper(*input_iter);
+            retval += g_ascii_toupper(c);
             uppercase_next = false;
         } else {
-            *output_iter++ = *input_iter;
+            retval += c;
         }
-        input_iter++;
     }
-    *output_iter = '\0';
     return retval;
 }
 
@@ -156,15 +152,16 @@ bool gjs_string_to_utf8_n(JSContext* cx, JS::HandleString str,
 /**
  * gjs_lossy_string_from_utf8:
  * @cx: the current #JSContext
- * @utf8_string: a zero-terminated array of UTF-8 characters to decode
+ * @utf8_string: a view of UTF-8 characters to decode
  *
  * Converts @utf8_string to a JS string. Instead of throwing, any invalid
  * characters will be converted to the UTF-8 invalid character fallback.
  *
  * Returns: The decoded string.
  */
-JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
-    JS::UTF8Chars chars{utf8_string, strlen(utf8_string)};
+JSString* gjs_lossy_string_from_utf8(JSContext* cx,
+                                     std::string_view utf8_string) {
+    JS::UTF8Chars chars{utf8_string.data(), utf8_string.size()};
     size_t outlen;
     JS::UniqueTwoByteChars twobyte_chars(
         JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
@@ -176,45 +173,9 @@ JSString* gjs_lossy_string_from_utf8(JSContext* cx, const char* utf8_string) {
     return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
 }
 
-/**
- * gjs_lossy_string_from_utf8_n:
- * @cx: the current #JSContext
- * @utf8_string: an array of UTF-8 characters to decode
- * @len: length of @utf8_string
- *
- * Provides the same conversion behavior as gjs_lossy_string_from_utf8
- * with a fixed length. See gjs_lossy_string_from_utf8().
- *
- * Returns: The decoded string.
- */
-JSString* gjs_lossy_string_from_utf8_n(JSContext* cx, const char* utf8_string,
-                                       size_t len) {
-    JS::UTF8Chars chars(utf8_string, len);
-    size_t outlen;
-    JS::UniqueTwoByteChars twobyte_chars(
-        JS::LossyUTF8CharsToNewTwoByteCharsZ(cx, chars, &outlen,
-                                             js::MallocArena)
-            .get());
-    if (!twobyte_chars)
-        return nullptr;
-
-    return JS_NewUCStringCopyN(cx, twobyte_chars.get(), outlen);
-}
-
-bool gjs_string_from_utf8(JSContext* cx, const char* utf8_string,
-                          JS::MutableHandleValue value_p) {
-    JS::ConstUTF8CharsZ chars{utf8_string};
-    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, chars)};
-    if (!str)
-        return false;
-
-    value_p.setString(str);
-    return true;
-}
-
-bool gjs_string_from_utf8_n(JSContext* cx, const char* utf8_chars, size_t len,
-                            JS::MutableHandleValue out) {
-    JS::UTF8Chars chars(utf8_chars, len);
+bool gjs_string_from_utf8(JSContext* cx, std::string_view utf8_chars,
+                          JS::MutableHandleValue out) {
+    JS::UTF8Chars chars{utf8_chars.data(), utf8_chars.size()};
     JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
     if (str)
         out.setString(str);
@@ -257,7 +218,7 @@ bool gjs_string_from_filename(JSContext* cx, const char* filename_string,
         return false;
     }
 
-    return gjs_string_from_utf8_n(cx, utf8_string, written, value_p);
+    return gjs_string_from_utf8(cx, {utf8_string, written}, value_p);
 }
 
 /* Converts a JSString's array of Latin-1 chars to an array of a wider integer
@@ -462,8 +423,9 @@ bool gjs_unichar_from_string(JSContext* cx, JS::Value string_val,
     return false;
 }
 
-jsid gjs_intern_string_to_id(JSContext* cx, const char* string) {
-    JS::RootedString str(cx, JS_AtomizeAndPinString(cx, string));
+jsid gjs_intern_string_to_id(JSContext* cx, std::string_view string) {
+    JS::RootedString str{
+        cx, JS_AtomizeAndPinStringN(cx, string.data(), string.size())};
     if (!str)
         return JS::PropertyKey::Void();
     return JS::PropertyKey::fromPinnedString(str);

@@ -4,8 +4,11 @@
 
 #include <config.h>
 
+#include <string>
+#include <string_view>
+
 #ifdef USE_GLIB_PLATFORM_COMPAT
-#    include <string.h>
+#    include <format>
 #endif
 
 #include <girepository/girepository.h>
@@ -30,7 +33,6 @@
 #include "gi/ns.h"
 #include "gi/repo.h"
 #include "gjs/atoms.h"
-#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/global.h"
 #include "gjs/jsapi-util.h"
@@ -46,13 +48,14 @@ using mozilla::Maybe;
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
 // helper function
-static void platform_specific_warning_glib(JSContext* cx, const char* prefix,
-                                           const char* platform,
-                                           const char* resolved_name) {
-    if (!g_str_has_prefix(resolved_name, prefix))
+static void platform_specific_warning_glib(JSContext* cx,
+                                           std::string_view prefix,
+                                           std::string_view platform,
+                                           std::string_view resolved_name) {
+    if (!resolved_name.starts_with(prefix))
         return;
 
-    const char* base_name = resolved_name + strlen(prefix);
+    std::string_view base_name = resolved_name.substr(prefix.size());
     std::string old_name = std::format("GLib.{}", resolved_name);
     std::string new_name = std::format("GLib{}.{}", platform, base_name);
     gjs_warn_deprecated_once_per_callsite<
@@ -61,19 +64,18 @@ static void platform_specific_warning_glib(JSContext* cx, const char* prefix,
 }
 #endif  // USE_GLIB_PLATFORM_COMPAT
 
-class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
+class Ns : private std::string, public CWrapper<Ns> {
     friend CWrapperPointerOps<Ns>;
     friend CWrapper<Ns>;
 
     static constexpr GjsGlobalSlot PROTOTYPE_SLOT = GjsGlobalSlot::PROTOTYPE_ns;
     static constexpr GjsDebugTopic DEBUG_TOPIC = GJS_DEBUG_GNAMESPACE;
 
-    explicit Ns(const char* ns_name)
-        : Gjs::AutoChar(const_cast<char*>(ns_name), Gjs::TakeOwnership{}) {
+    explicit Ns(std::string_view ns_name) : std::string(ns_name) {
         GJS_INC_COUNTER(ns);
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
-        m_is_glib = strcmp(ns_name, "GLib") == 0;
+        m_is_glib = ns_name == "GLib";
 #endif
     }
 
@@ -111,7 +113,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
         }
 
         Maybe<GI::AutoBaseInfo> info{
-            GI::Repository{}.find_by_name(get(), name.get())};
+            GI::Repository{}.find_by_name(c_str(), name.get())};
         if (!info) {
             *resolved = false;  // No property defined, but no error either
             return true;
@@ -121,10 +123,11 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
 #ifdef USE_GLIB_PLATFORM_COMPAT
         if (m_is_glib) {
-            platform_specific_warning_glib(cx, "Unix", "Unix", name.get());
-            platform_specific_warning_glib(cx, "unix_", "Unix", name.get());
-            platform_specific_warning_glib(cx, "Win32", "Win32", name.get());
-            platform_specific_warning_glib(cx, "win32_", "Win32", name.get());
+            std::string_view name_view{name.get()};
+            platform_specific_warning_glib(cx, "Unix", "Unix", name_view);
+            platform_specific_warning_glib(cx, "unix_", "Unix", name_view);
+            platform_specific_warning_glib(cx, "Win32", "Win32", name_view);
+            platform_specific_warning_glib(cx, "win32_", "Win32", name_view);
         }
 #endif
 
@@ -145,7 +148,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
                             JS::HandleObject obj [[maybe_unused]],
                             JS::MutableHandleIdVector properties,
                             bool only_enumerable [[maybe_unused]]) {
-        GI::Repository::Iterable infos{GI::Repository{}.infos(get())};
+        GI::Repository::Iterable infos{GI::Repository{}.infos(c_str())};
         if (!properties.reserve(properties.length() + infos.size())) {
             JS_ReportOutOfMemory(cx);
             return false;
@@ -174,13 +177,13 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     GJS_JSAPI_RETURN_CONVENTION
     static bool get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
         GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
-        return gjs_string_from_utf8(cx, priv->get(), args.rval());
+        return gjs_string_from_utf8(cx, priv->c_str(), args.rval());
     }
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool get_version(JSContext* cx, unsigned argc, JS::Value* vp) {
         GJS_CHECK_WRAPPER_PRIV(cx, argc, vp, args, this_obj, Ns, priv);
-        const char* version = GI::Repository{}.get_version(priv->get());
+        const char* version = GI::Repository{}.get_version(priv->c_str());
         return gjs_string_from_utf8(cx, version, args.rval());
     }
 
@@ -207,7 +210,7 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
 
  public:
     GJS_JSAPI_RETURN_CONVENTION
-    static JSObject* create(JSContext* cx, const char* ns_name) {
+    static JSObject* create(JSContext* cx, std::string_view ns_name) {
         JS::RootedObject proto(cx, Ns::create_prototype(cx));
         if (!proto)
             return nullptr;
@@ -228,6 +231,6 @@ class Ns : private Gjs::AutoChar, public CWrapper<Ns> {
     }
 };
 
-JSObject* gjs_create_ns(JSContext* cx, const char* ns_name) {
+JSObject* gjs_create_ns(JSContext* cx, std::string_view ns_name) {
     return Ns::create(cx, ns_name);
 }

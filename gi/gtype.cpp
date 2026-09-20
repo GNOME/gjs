@@ -77,7 +77,7 @@ class GTypeObj : public CWrapper<GTypeObj, void> {
 
         std::string strval =
             std::format("[object GType for '{}']", g_type_name(gtype));
-        return gjs_string_from_utf8(cx, strval.c_str(), rec.rval());
+        return gjs_string_from_utf8(cx, strval, rec.rval());
     }
 
     static constexpr JSPropertySpec proto_props[] = {

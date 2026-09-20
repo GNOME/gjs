@@ -1361,7 +1361,7 @@ bool gjs_context_eval(GjsContext* self, const char* script, ssize_t script_len,
     GjsContextPrivate* gjs = GjsContextPrivate::from_object(self_ref);
 
     gjs->register_non_module_sourcemap(script, filename);
-    return result_to_c(gjs->eval(script, real_len, filename, exit_status_p),
+    return result_to_c(gjs->eval({script, real_len}, filename, exit_status_p),
                        error);
 }
 
@@ -1514,7 +1514,7 @@ void GjsContextPrivate::register_non_module_sourcemap(const char* script,
     JS::Call(m_cx, v_loader_obj, "populateSourceMap", args, &ignored);
 }
 
-GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
+GErrorResult<> GjsContextPrivate::eval(std::string_view script,
                                        const char* filename,
                                        int* exit_status_p) {
     AutoResetExit reset(this);
@@ -1524,7 +1524,7 @@ GErrorResult<> GjsContextPrivate::eval(const char* script, size_t script_len,
     Gjs::AutoMainRealm ar{this};
 
     JS::RootedValue retval(m_cx);
-    bool ok = eval_with_scope(nullptr, script, script_len, filename, &retval);
+    bool ok = eval_with_scope(nullptr, script, filename, &retval);
 
     // If there are no errors and the mainloop hook is set, call it.
     if (ok && m_main_loop_hook)
@@ -1717,7 +1717,6 @@ bool gjs_context_eval_module_file(GjsContext* self, const char* filename,
  * GjsContextPrivate::eval_with_scope:
  * @scope_object: an object to use as the global scope, or nullptr
  * @source: JavaScript program encoded in UTF-8
- * @source_len: length of @source, or -1 if @source is 0-terminated
  * @filename: filename to use as the origin of @source
  * @retval: location for the return value of @source
  *
@@ -1727,7 +1726,7 @@ bool gjs_context_eval_module_file(GjsContext* self, const char* filename,
  * Otherwise, the global definitions are just discarded.
  */
 bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
-                                        const char* source, size_t source_len,
+                                        std::string_view source,
                                         const char* filename,
                                         JS::MutableHandleValue retval) {
     // log and clear exception if it's set (should not be, normally...)
@@ -1741,7 +1740,8 @@ bool GjsContextPrivate::eval_with_scope(JS::HandleObject scope_object,
         eval_obj = JS_NewPlainObject(m_cx);
 
     JS::SourceText<mozilla::Utf8Unit> buf;
-    if (!buf.init(m_cx, source, source_len, JS::SourceOwnership::Borrowed))
+    if (!buf.init(m_cx, source.data(), source.size(),
+                  JS::SourceOwnership::Borrowed))
         return false;
 
     JS::EnvironmentChain scope_chain{m_cx, JS::SupportUnscopables::No};

@@ -6,6 +6,8 @@
 
 #include <config.h>
 
+#include <string_view>
+
 #include <gio/gio.h>
 
 #include <js/TypeDecls.h>
@@ -14,7 +16,7 @@
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_module_import(JSContext*, JS::HandleObject importer, JS::HandleId,
-                            const char* name, GFile*);
+                            std::string_view name, GFile*);
 
 GJS_JSAPI_RETURN_CONVENTION
 JSObject* gjs_script_module_build_private(JSContext*, const char* uri);

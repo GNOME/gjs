@@ -16,6 +16,7 @@
 #include <memory>  // for make_unique, unique_ptr
 #include <span>
 #include <string>
+#include <string_view>
 #include <tuple>  // for tie
 #include <type_traits>
 #include <unordered_set>
@@ -1833,7 +1834,7 @@ bool ObjectPrototype::uncached_resolve(JSContext* cx, JS::HandleObject obj,
         return resolve_no_info(cx, obj, id, resolved, name,
                                ConsiderMethodsAndProperties);
 
-    if (g_str_has_prefix(name, "vfunc_")) {
+    if (std::string_view{name}.starts_with("vfunc_")) {
         /* The only time we find a vfunc info is when we're the base class that
          * defined the vfunc. If we let regular prototype chaining resolve this,
          * we'd have the implementation for the base's vfunc on the base class,
@@ -1983,7 +1984,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Properties
         for (GI::AutoPropertyInfo prop_info : props_iter) {
-            Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
+            std::string js_name{gjs_hyphen_to_underscore(prop_info.name())};
 
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id.isVoid())
@@ -2014,7 +2015,7 @@ bool ObjectPrototype::new_enumerate_impl(JSContext* cx, JS::HandleObject,
 
         // Properties
         for (GI::AutoPropertyInfo prop_info : props_iter) {
-            Gjs::AutoChar js_name{gjs_hyphen_to_underscore(prop_info.name())};
+            std::string js_name{gjs_hyphen_to_underscore(prop_info.name())};
             jsid id = gjs_intern_string_to_id(cx, js_name);
             if (id.isVoid())
                 return false;

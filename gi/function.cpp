@@ -1181,8 +1181,7 @@ bool Function::get_name(JSContext* cx, unsigned argc, JS::Value* vp) {
     if (auto func_info = priv->m_info.as<GI::InfoTag::FUNCTION>())
         return gjs_string_from_utf8(cx, func_info->symbol(), rec.rval());
 
-    return gjs_string_from_utf8(cx, priv->m_info.display_string().c_str(),
-                                rec.rval());
+    return gjs_string_from_utf8(cx, priv->m_info.display_string(), rec.rval());
 }
 
 bool Function::to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -1216,7 +1215,7 @@ bool Function::to_string_impl(JSContext* cx, JS::MutableHandleValue rval) {
             arg_names);
     }
 
-    return gjs_string_from_utf8(cx, descr.c_str(), rval);
+    return gjs_string_from_utf8(cx, descr, rval);
 }
 
 const JSClassOps Function::class_ops = {.finalize = &Function::finalize,

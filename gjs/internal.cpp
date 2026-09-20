@@ -98,7 +98,7 @@ bool gjs_load_internal_module(JSContext* cx, const char* identifier) {
 
     JS::RootedObject registry{cx, gjs_get_module_registry(internal_global)};
 
-    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path.c_str())};
+    JS::RootedId key{cx, gjs_intern_string_to_id(cx, full_path)};
     if (key.isVoid())
         return false;
 
@@ -377,7 +377,7 @@ static bool gjs_uri_object(JSContext* cx, const char* uri,
 
     JS::RootedValue v_uri{cx};
     Gjs::AutoChar uri_string{g_uri_to_string(parsed)};
-    if (!gjs_string_from_utf8(cx, uri_string, &v_uri))
+    if (!gjs_string_from_utf8(cx, uri_string.get(), &v_uri))
         return false;
 
     // JS_NewStringCopyZ() used here and below because the URI components are
@@ -575,7 +575,7 @@ static void load_async_callback(GObject* file, GAsyncResult* res, void* data) {
     }
 
     JS::RootedValue text(promise->cx);
-    bool ok = gjs_string_from_utf8_n(promise->cx, contents, length, &text);
+    bool ok = gjs_string_from_utf8(promise->cx, {contents, length}, &text);
     g_free(contents);
     if (!ok) {
         promise->reject_with_pending_exception();

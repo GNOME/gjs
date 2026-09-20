@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <string.h>  // for size_t, strlen
 
+#include <charconv>
 #include <limits>
 #include <random>
 #include <span>
@@ -787,15 +788,6 @@ static void test_jsapi_util_error_throw_cause(GjsUnitTestFixture* fx,
     g_test_assert_expected_messages();
 }
 
-static void test_jsapi_util_string_utf8_nchars_to_js(GjsUnitTestFixture* fx,
-                                                     const void*) {
-    JS::RootedValue v_out(fx->cx);
-    bool ok = gjs_string_from_utf8_n(fx->cx, VALID_UTF8_STRING,
-                                     strlen(VALID_UTF8_STRING), &v_out);
-    g_assert_true(ok);
-    g_assert_true(v_out.isString());
-}
-
 static void test_jsapi_util_string_char16_data(GjsUnitTestFixture* fx,
                                                const void*) {
     char16_t* chars;
@@ -1272,16 +1264,23 @@ int main(int argc, char* argv[]) {
     g_unsetenv("GJS_ENABLE_PROFILER");
     g_unsetenv("GJS_TRACE_FD");
 
+    static constexpr std::string_view seed_prefix{"--cpp-seed="};
     for (size_t i = 0; i < args.size(); i++) {
-        const char* seed = nullptr;
+        std::string_view seed;
 
-        if (g_str_has_prefix(args[i], "--cpp-seed=") && strlen(args[i]) > 11)
-            seed = args[i] + 11;
-        else if (i < args.size() - 1 && g_str_equal(args[i], "--cpp-seed"))
+        std::string_view arg{args[i]};
+        if (arg.starts_with(seed_prefix) && arg.size() > seed_prefix.size()) {
+            arg.remove_prefix(seed_prefix.size());
+            seed = arg;
+        } else if (i < args.size() - 1 && arg == "--cpp-seed") {
             seed = args[i + 1];
+        }
 
-        if (seed)
-            cpp_random_seed = std::stoi(seed);
+        if (!seed.empty()) {
+            // Ignore invalid values
+            std::from_chars(seed.data(), seed.data() + seed.size(),
+                            cpp_random_seed);
+        }
     }
 
     g_test_init(&argc, &argv, nullptr);
@@ -1394,8 +1393,6 @@ int main(int argc, char* argv[]) {
     ADD_JSAPI_UTIL_TEST("error/throw-cause", test_jsapi_util_error_throw_cause);
     ADD_JSAPI_UTIL_TEST("string/js/string/utf8",
                         gjstest_test_func_gjs_jsapi_util_string_js_string_utf8);
-    ADD_JSAPI_UTIL_TEST("string/utf8-nchars-to-js",
-                        test_jsapi_util_string_utf8_nchars_to_js);
     ADD_JSAPI_UTIL_TEST("string/char16_data",
                         test_jsapi_util_string_char16_data);
     ADD_JSAPI_UTIL_TEST("string/to_ucs4",

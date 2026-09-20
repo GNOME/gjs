@@ -144,16 +144,10 @@ GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_to_utf8_n(JSContext*, JS::HandleString str,
                           JS::UniqueChars* output, size_t* output_len);
 GJS_JSAPI_RETURN_CONVENTION
-JSString* gjs_lossy_string_from_utf8(JSContext*, const char* utf8_string);
+JSString* gjs_lossy_string_from_utf8(JSContext*, std::string_view utf8_string);
 GJS_JSAPI_RETURN_CONVENTION
-JSString* gjs_lossy_string_from_utf8_n(JSContext*, const char* utf8_string,
-                                       size_t len);
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_from_utf8(JSContext*, const char* utf8_string,
+bool gjs_string_from_utf8(JSContext*, std::string_view utf8_chars,
                           JS::MutableHandleValue);
-GJS_JSAPI_RETURN_CONVENTION
-bool gjs_string_from_utf8_n(JSContext*, const char* utf8_chars, size_t len,
-                            JS::MutableHandleValue);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_string_to_filename(JSContext*, JS::Value,
@@ -177,7 +171,7 @@ bool gjs_string_from_ucs4(JSContext*, const gunichar* ucs4_string,
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_get_string_id(JSContext*, jsid, JS::UniqueChars* name_p);
 GJS_JSAPI_RETURN_CONVENTION
-jsid gjs_intern_string_to_id(JSContext*, const char* string);
+jsid gjs_intern_string_to_id(JSContext*, std::string_view);
 
 GJS_JSAPI_RETURN_CONVENTION
 bool gjs_unichar_from_string(JSContext*, JS::Value string_val,
@@ -237,8 +231,8 @@ bool gjs_object_require_converted_property(JSContext*, JS::HandleObject,
 [[nodiscard]] std::string gjs_debug_value(JS::Value);
 [[nodiscard]] std::string gjs_debug_id(jsid);
 
-[[nodiscard]] Gjs::AutoChar gjs_hyphen_to_underscore(const char*);
-[[nodiscard]] Gjs::AutoChar gjs_hyphen_to_camel(const char*);
+[[nodiscard]] std::string gjs_hyphen_to_underscore(std::string_view);
+[[nodiscard]] std::string gjs_hyphen_to_camel(std::string_view);
 [[nodiscard]] std::string gjs_hyphen_from_camel(std::string_view);
 
 // Custom GC reasons; SpiderMonkey includes a bunch of "Firefox reasons" which

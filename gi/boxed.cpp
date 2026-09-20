@@ -818,7 +818,7 @@ bool BoxedPrototype<Base, Prototype, Instance>::define_boxed_class_fields(
         const std::string property_name =
             find_unique_js_field_name(info(), field.name());
         JS::RootedValue private_id{cx, JS::PrivateUint32Value(count++)};
-        JS::RootedId id{cx, gjs_intern_string_to_id(cx, property_name.c_str())};
+        JS::RootedId id{cx, gjs_intern_string_to_id(cx, property_name)};
 
         gjs_debug_marshal(GJS_DEBUG_GBOXED,
                           "Defining field {} (as {}) in prototype for {}",

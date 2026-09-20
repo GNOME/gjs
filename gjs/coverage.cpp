@@ -8,10 +8,13 @@
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen
 
+#include <array>
 #include <format>
 #include <iterator>  // for size
 #include <new>
+#include <ranges>
 #include <string>
+#include <string_view>
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -166,25 +169,33 @@ static Gjs::AutoChar find_diverging_child_components(GFile* child,
 
 [[nodiscard]]
 static bool filename_has_coverage_prefixes(GjsCoverage* self,
-                                           const char* filename) {
+                                           const std::string& filename) {
     auto* priv = static_cast<GjsCoveragePrivate*>(
         gjs_coverage_get_instance_private(self));
     Gjs::AutoChar workdir{g_get_current_dir()};
-    Gjs::AutoChar abs_filename{g_canonicalize_filename(filename, workdir)};
+    Gjs::AutoChar abs_filename_owned{
+        g_canonicalize_filename(filename.c_str(), workdir)};
+    std::string_view abs_filename{abs_filename_owned.get()};
 
     for (const char* const* prefix = priv->prefixes; *prefix; prefix++) {
         Gjs::AutoChar abs_prefix{g_canonicalize_filename(*prefix, workdir)};
-        if (g_str_has_prefix(abs_filename, abs_prefix))
+        if (abs_filename.starts_with(abs_prefix.get()))
             return true;
     }
     return false;
 }
 
 [[nodiscard]]
-static inline GErrorResult<> write_line(GOutputStream* out, const char* line) {
+static inline GErrorResult<> write_line(GOutputStream* out,
+                                        std::string_view line) {
+    std::array<GOutputVector, 2> output{{
+        {.buffer = line.data(), .size = line.size()},
+        {.buffer = "\n", .size = 1},
+    }};
     Gjs::AutoError error;
-    if (!g_output_stream_printf(out, nullptr, nullptr, error.out(), "%s\n",
-                                line))
+    if (!g_output_stream_writev_all(out, output.data(), output.size(),
+                                    /*bytes_written=*/nullptr,
+                                    /*cancellable=*/nullptr, error.out()))
         return Err(error.release());
     return Ok{};
 }
@@ -215,49 +226,53 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         g_file_get_child(priv->output_dir, "coverage.lcov")};
 
     size_t lcov_length;
-    JS::UniqueChars lcov = js::GetCodeCoverageSummary(cx, &lcov_length);
-    if (!lcov)
+    JS::UniqueChars lcov_owned = js::GetCodeCoverageSummary(cx, &lcov_length);
+    if (!lcov_owned)
         return Err(g_error_new_literal(G_IO_ERROR, G_IO_ERROR_MESSAGE_TOO_LARGE,
                                        "LCOV data too large"));
+    std::string_view lcov{lcov_owned.get(), lcov_length};
 
     Gjs::AutoUnref<GOutputStream> ostream{G_OUTPUT_STREAM(g_file_append_to(
         output_file, G_FILE_CREATE_NONE, nullptr, error.out()))};
     if (!ostream)
         return Err(error.release());
 
-    Gjs::AutoStrv lcov_lines{g_strsplit(lcov.get(), "\n", -1)};
-    const char* test_name = nullptr;
+    std::string_view test_name;
     bool ignoring_file = false;
 
-    for (const char* const* iter = lcov_lines.get(); *iter; iter++) {
+    for (const auto iter : std::views::split(lcov, '\n')) {
+        // COMPAT: std::string_view line{iter} in C++23
+        std::string_view line{iter.data(), iter.size()};
         if (ignoring_file) {
-            if (strcmp(*iter, "end_of_record") == 0)
+            if (line == "end_of_record")
                 ignoring_file = false;
             continue;
         }
 
-        if (g_str_has_prefix(*iter, "TN:")) {
+        if (line.starts_with("TN:")) {
             /* Don't write the test name if the next line shows we are ignoring
              * the source file */
-            test_name = *iter;
+            test_name = line;
             continue;
         }
 
-        if (g_str_has_prefix(*iter, "SF:")) {
-            const char* filename = *iter + 3;
+        static constexpr std::string_view sourcefile_prefix{"SF:"};
+        if (line.starts_with(sourcefile_prefix)) {
+            std::string filename{line.substr(sourcefile_prefix.size())};
             if (!filename_has_coverage_prefixes(self, filename)) {
                 ignoring_file = true;
                 continue;
             }
 
             // Now we can write the test name before writing the source file
+            g_assert(!test_name.empty() && "TN: should have been emitted");
             MOZ_TRY(write_line(ostream, test_name));
 
             /* The source file could be a resource, so we must use
              * g_file_new_for_commandline_arg() to disambiguate between URIs and
              * filesystem paths. */
             Gjs::AutoUnref<GFile> source_file{
-                g_file_new_for_commandline_arg(filename)};
+                g_file_new_for_commandline_arg(filename.c_str())};
             Gjs::AutoChar diverged_paths{
                 find_diverging_child_components(source_file, priv->output_dir)};
             Gjs::AutoUnref<GFile> destination_file{
@@ -271,7 +286,7 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
             continue;
         }
 
-        MOZ_TRY(write_line(ostream, *iter));
+        MOZ_TRY(write_line(ostream, line));
     }
 
     return output_file;

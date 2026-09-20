@@ -2211,8 +2211,9 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
             }
 
             char utf8[7];
-            int bytes = g_unichar_to_utf8(value, utf8);
-            return gjs_string_from_utf8_n(cx, utf8, bytes, value_out);
+            // bytes is guaranteed to be in the range 1 to 6
+            size_t bytes = g_unichar_to_utf8(value, utf8);
+            return gjs_string_from_utf8(cx, {utf8, bytes}, value_out);
         }
 
         case GI_TYPE_TAG_FILENAME:
@@ -2226,13 +2227,14 @@ bool gjs_value_from_basic_gi_argument(JSContext* cx,
             if (type_tag == GI_TYPE_TAG_FILENAME)
                 return gjs_string_from_filename(cx, str, -1, value_out);
 
-            if (!g_utf8_validate(str, -1, nullptr)) {
+            const char* endptr;
+            if (!g_utf8_validate(str, -1, &endptr)) {
                 gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
                                  "String from C value is invalid UTF-8 and "
                                  "cannot be safely stored");
                 return false;
             }
-            return gjs_string_from_utf8(cx, str, value_out);
+            return gjs_string_from_utf8(cx, {str, endptr}, value_out);
         }
 
         default:
@@ -3321,7 +3323,7 @@ bool gjs_value_from_gi_argument(JSContext* cx, JS::MutableHandleValue value_p,
                         return true;
                     }
 
-                    return gjs_string_from_utf8(cx, name, value_p);
+                    return gjs_string_from_utf8(cx, name.get(), value_p);
                 }
 
                 if (gtype == G_TYPE_VARIANT) {

@@ -56,7 +56,7 @@ static bool gjs_address_of(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     std::string pointer_string =
         std::format("{}", static_cast<void*>(target_obj.get()));
-    return gjs_string_from_utf8(cx, pointer_string.c_str(), args.rval());
+    return gjs_string_from_utf8(cx, pointer_string, args.rval());
 }
 
 GJS_JSAPI_RETURN_CONVENTION
@@ -76,7 +76,7 @@ static bool gjs_address_of_gobject(JSContext* cx, unsigned argc,
     }
 
     std::string pointer_string = std::format("{}", static_cast<void*>(obj));
-    return gjs_string_from_utf8(cx, pointer_string.c_str(), args.rval());
+    return gjs_string_from_utf8(cx, pointer_string, args.rval());
 }
 
 static bool gjs_refcount(JSContext* cx, unsigned argc, JS::Value* vp) {

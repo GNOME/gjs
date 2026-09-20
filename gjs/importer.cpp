@@ -13,6 +13,7 @@
 
 #include <format>
 #include <string>
+#include <string_view>
 #include <vector>   // for vector
 
 #include <gio/gio.h>
@@ -95,7 +96,7 @@ static bool importer_to_string(JSContext* cx, unsigned argc, JS::Value* vp) {
 GJS_JSAPI_RETURN_CONVENTION
 static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                                    const char* parse_name,
-                                   const char* module_name,
+                                   std::string_view module_name,
                                    JS::HandleObject parent) {
     const GjsAtoms& atoms = GjsContextPrivate::atoms(cx);
 
@@ -112,8 +113,7 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
         parent && JS_InstanceOf(cx, parent, &gjs_importer_class, nullptr);
 
     gjs_debug(GJS_DEBUG_IMPORTER, "Defining parent {:?} of {:?} '{}' is mod {}",
-              parent, module_obj, module_name ? module_name : "<root>",
-              parent_is_module);
+              parent, module_obj, module_name, parent_is_module);
 
     if (parse_name != nullptr) {
         JS::RootedValue file{cx};
@@ -148,13 +148,12 @@ static bool define_meta_properties(JSContext* cx, JS::HandleObject module_obj,
                 return false;
             module_path_buf = std::format("{}.{}", parent_path, module_name);
         }
-        if (!gjs_string_from_utf8(cx, module_path_buf.c_str(), &module_path))
+        if (!gjs_string_from_utf8(cx, module_path_buf, &module_path))
             return false;
 
         std::string to_string_tag_buf =
             std::format("GjsModule {}", module_path_buf);
-        if (!gjs_string_from_utf8(cx, to_string_tag_buf.c_str(),
-                                  &to_string_tag))
+        if (!gjs_string_from_utf8(cx, to_string_tag_buf, &to_string_tag))
             return false;
     } else {
         to_string_tag.setString(JS_AtomizeString(cx, "GjsModule"));
@@ -191,7 +190,7 @@ static bool import_directory(JSContext* cx, JS::HandleObject obj,
  */
 GJS_JSAPI_RETURN_CONVENTION
 static bool seal_import(JSContext* cx, JS::HandleObject obj, JS::HandleId id,
-                        const char* name) {
+                        std::string_view name) {
     JS::Rooted<mozilla::Maybe<JS::PropertyDescriptor>> maybe_descr(cx);
 
     if (!JS_GetOwnPropertyDescriptorById(cx, obj, id, &maybe_descr) ||
@@ -304,7 +303,7 @@ static bool import_module_init(JSContext* cx, GFile* file,
 
     Gjs::AutoChar full_path{g_file_get_parse_name(file)};
 
-    return gjs->eval_with_scope(module_obj, script, script_len, full_path,
+    return gjs->eval_with_scope(module_obj, {script, script_len}, full_path,
                                 &ignored);
 }
 
@@ -400,7 +399,7 @@ static bool import_symbol_from_init_js(JSContext* cx, JS::HandleObject importer,
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool attempt_import(JSContext* cx, JS::HandleObject obj,
-                           JS::HandleId module_id, const char* module_name,
+                           JS::HandleId module_id, std::string_view module_name,
                            GFile* file) {
     JS::RootedObject module_obj(
         cx, gjs_module_import(cx, obj, module_id, module_name, file));
@@ -647,16 +646,19 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
             if (info == nullptr || file == nullptr)
                 break;
 
-            Gjs::AutoChar filename{g_file_get_basename(file)};
+            Gjs::AutoChar filename_owned{g_file_get_basename(file)};
+            g_assert(filename_owned && "enumerated file should be valid");
+            std::string_view filename{filename_owned};
 
             // skip hidden files and directories (.svn, .git, ...)
-            if (filename.get()[0] == '.')
+            if (filename.empty() || filename[0] == '.')
                 continue;
 
             // skip module init file
-            if (strcmp(filename, MODULE_INIT_FILENAME) == 0)
+            if (filename == MODULE_INIT_FILENAME)
                 continue;
 
+            static constexpr std::string_view js_ext{".js"};
             if (g_file_info_get_file_type(info) == G_FILE_TYPE_DIRECTORY) {
                 jsid id = gjs_intern_string_to_id(cx, filename);
                 if (id.isVoid())
@@ -665,9 +667,9 @@ static bool importer_new_enumerate(JSContext* cx, JS::HandleObject object,
                     JS_ReportOutOfMemory(cx);
                     return false;
                 }
-            } else if (g_str_has_suffix(filename, ".js")) {
-                Gjs::AutoChar filename_noext{
-                    g_strndup(filename, strlen(filename) - 3)};
+            } else if (filename.ends_with(js_ext)) {
+                std::string_view filename_noext = filename;
+                filename_noext.remove_suffix(js_ext.size());
                 jsid id = gjs_intern_string_to_id(cx, filename_noext);
                 if (id.isVoid())
                     return false;

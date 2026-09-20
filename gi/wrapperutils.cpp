@@ -42,7 +42,7 @@ bool gjs_wrapper_to_string_func(JSContext* cx, JSObject* this_obj,
                               .valueOr(g_type_name(gtype)),
                           static_cast<void*>(this_obj));
     }
-    return gjs_string_from_utf8(cx, out.c_str(), rval);
+    return gjs_string_from_utf8(cx, out, rval);
 }
 
 bool gjs_wrapper_throw_nonexistent_field(JSContext* cx, GType gtype,

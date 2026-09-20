@@ -13,6 +13,7 @@
 #include <functional>  // for hash
 #include <mutex>
 #include <string>
+#include <string_view>
 #include <thread>
 #include <unordered_map>
 #include <unordered_set>
@@ -256,12 +257,11 @@ class GjsContextPrivate : public JS::JobQueue {
                                        const char* filename);
 
     [[nodiscard]]
-    Gjs::GErrorResult<> eval(const char* script, size_t script_len,
-                             const char* filename, int* exit_status_p);
+    Gjs::GErrorResult<> eval(std::string_view script, const char* filename,
+                             int* exit_status_p);
     GJS_JSAPI_RETURN_CONVENTION
-    bool eval_with_scope(JS::HandleObject scope_object, const char* source,
-                         size_t source_len, const char* filename,
-                         JS::MutableHandleValue retval);
+    bool eval_with_scope(JS::HandleObject scope_object, std::string_view source,
+                         const char* filename, JS::MutableHandleValue retval);
     [[nodiscard]]
     Gjs::GErrorResult<> eval_module(const char* identifier,
                                     uint8_t* exit_code_p);
