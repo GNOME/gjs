@@ -206,7 +206,7 @@ const handlers = {
         if (args.stopOnEntry)
             setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
 
-        STATE.pendingLaunchPath = encodeURI(filePath);
+        STATE.pendingLaunchPath = filePath;
         sendResponse(seq, 'launch');
     },
     /**
@@ -450,7 +450,8 @@ function getFrameLocation(frame) {
     if (!frame.script || !frame.offset)
         return null;
     const {lineNumber, columnNumber} = frame.script.getOffsetLocation(frame.offset);
-    return {url: decodeURIComponent(frame.script.url),
+    return {
+        url: decodeURIComponent(frame.script.url),
         line: lineNumber,
         column: columnNumber,
     };
