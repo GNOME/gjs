@@ -163,12 +163,7 @@ static bool build_filename(JSContext* cx, unsigned argc, JS::Value* vp) {
                              "path", &path))
         return false;
 
-    const char* filename = g_build_filename(cwd.get(), path.get(), nullptr);
-    if (!filename) {
-        gjs_throw(cx, "Error building filename from cwd '%s' and path '%s'",
-                  cwd.get(), path.get());
-        return false;
-    }
+    Gjs::AutoChar filename = g_build_filename(cwd.get(), path.get(), nullptr);
 
     JS::ConstUTF8CharsZ filename_chars{filename};
     JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, filename_chars)};
