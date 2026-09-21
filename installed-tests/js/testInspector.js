@@ -116,8 +116,8 @@ describe('Inspector', function () {
 
         it('can resolve a file with special characters in its name', function () {
             sendRequest('launch', {
-                cwd: 'resource:///org/gjs/jsunit/inspector',
-                program: 'nested dir#/% hello.js',
+                cwd: 'resource:///org/gjs/jsunit/inspector/nested dir#',
+                program: '% hello.js',
             });
             sendRequest('configurationDone');
 

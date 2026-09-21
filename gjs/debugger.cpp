@@ -172,9 +172,8 @@ static bool build_filename(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    JS::UTF8Chars filename_chars{
-        filename, static_cast<size_t>(g_utf8_strlen(filename, -1))};
-    JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, filename_chars)};
+    JS::ConstUTF8CharsZ filename_chars{filename};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, filename_chars)};
     if (!str)
         return false;
 
@@ -304,7 +303,7 @@ static JSFunctionSpec inspector_funcs[] = {
     JS_FN("openInputStream", open_input_stream, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readLine", read_line, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readBytes", read_bytes, 2, GJS_MODULE_PROP_FLAGS),
-    JS_FN("buildFilename", build_filename, 1, GJS_MODULE_PROP_FLAGS),
+    JS_FN("buildFilename", build_filename, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 void gjs_context_setup_inspector(GjsContext* self) {
