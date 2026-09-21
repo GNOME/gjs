@@ -163,12 +163,10 @@ static bool build_filename(JSContext* cx, unsigned argc, JS::Value* vp) {
                              "path", &path))
         return false;
 
-    const char *real_cwd = cwd.get(), *real_path = path.get();
-
-    const char* filename = g_build_filename(real_cwd, real_path, nullptr);
+    const char* filename = g_build_filename(cwd.get(), path.get(), nullptr);
     if (!filename) {
         gjs_throw(cx, "Error building filename from cwd '%s' and path '%s'",
-                  real_cwd, real_path);
+                  cwd.get(), path.get());
         return false;
     }
 
