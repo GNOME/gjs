@@ -155,18 +155,20 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
-static bool build_filename(JSContext* cx, unsigned argc, JS::Value* vp) {
+static bool build_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
     JS::UniqueChars cwd, path;
-    if (!gjs_parse_call_args(cx, "buildFilename", args, "ss", "cwd", &cwd,
-                             "path", &path))
+    if (!gjs_parse_call_args(cx, "buildUri", args, "ss", "cwd", &cwd, "path",
+                             &path))
         return false;
 
-    Gjs::AutoChar filename = g_build_filename(cwd.get(), path.get(), nullptr);
+    Gjs::AutoUnref<GFile> parent{g_file_new_for_commandline_arg(cwd.get())};
+    Gjs::AutoUnref<GFile> filename{g_file_get_child(parent, path.get())};
+    Gjs::AutoChar uri{g_file_get_uri(filename)};
 
-    JS::ConstUTF8CharsZ filename_chars{filename};
-    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, filename_chars)};
+    JS::ConstUTF8CharsZ uri_chars{uri};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, uri_chars)};
     if (!str)
         return false;
 
@@ -296,7 +298,7 @@ static JSFunctionSpec inspector_funcs[] = {
     JS_FN("openInputStream", open_input_stream, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readLine", read_line, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readBytes", read_bytes, 2, GJS_MODULE_PROP_FLAGS),
-    JS_FN("buildFilename", build_filename, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("buildUri", build_uri, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 void gjs_context_setup_inspector(GjsContext* self) {
