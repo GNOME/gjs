@@ -79,7 +79,7 @@ describe('Inspector', function () {
         });
     });
 
-    it('accepts and responds to an Initialize and ConfigurationDone request', function () {
+    it('accepts and responds to Initialize, ConfigurationDone, and Disconnect requests', function () {
         const response = sendRequest('initialize', {
             adapterID: 'miniinspector',
             clientID: 'jasmine',
@@ -90,6 +90,10 @@ describe('Inspector', function () {
         expect(response.supportsConfigurationDoneRequest).toBe(true);
         expectEvent('initialized');
         sendRequest('configurationDone');
+
+        sendRequest('disconnect');
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
     });
 
     describe('once initialized', function () {
@@ -139,11 +143,15 @@ describe('Inspector', function () {
             const stopped = expectEvent('stopped');
             expect(stopped.reason).toBe('instruction breakpoint');
         });
+
+        afterEach(function () {
+            sendRequest('disconnect');
+            miniinspector.wait(cancel);
+            expect(miniinspector.get_successful()).toBeTrue();
+        });
     });
 
     afterEach(function () {
         cancel.cancel();
-        miniinspector.force_exit();
-        miniinspector.wait(null);
     });
 });

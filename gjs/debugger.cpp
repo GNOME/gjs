@@ -36,14 +36,15 @@
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
+#include "gjs/error-types.h"
 #include "gjs/gerror-result.h"  // for AutoError
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/module.h"
-
 #include "util/console.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -147,6 +148,11 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     uint8_t exit_code;
     result = gjs->eval_module(uri, &exit_code);
     if (result.isErr()) {
+        if (g_error_matches(result.inspectErr(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT) && exit_code == 0) {
+            args.rval().setUndefined();
+            return true;
+        }
+
         gjs_throw(cx, "Error evaluating file: {}", result);
         return false;
     }
@@ -301,19 +307,23 @@ static JSFunctionSpec inspector_funcs[] = {
     JS_FN("buildUri", build_uri, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
-void gjs_context_setup_inspector(GjsContext* self) {
+bool gjs_context_setup_inspector(GjsContext* self) {
     auto* gjs = GjsContextPrivate::from_object(self);
     JSContext* cx = gjs->context();
 
     JS::RootedObject inspector_global{
         cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER)};
+    if (!inspector_global) {
+        gjs_log_exception(cx);
+        return false;
+    }
 
     // Enter realm of the inspector and initialize it with the debuggee
     JSAutoRealm ar{cx, inspector_global};
     JS::RootedObject debuggee{cx, gjs->global()};
     if (!JS_WrapObject(cx, &debuggee)) {
         gjs_log_exception(cx);
-        return;
+        return false;
     }
 
     JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
@@ -322,6 +332,18 @@ void gjs_context_setup_inspector(GjsContext* self) {
         !JS_DefineFunctions(cx, inspector_global, inspector_funcs) ||
         !gjs_define_global_properties(cx, inspector_global,
                                       GjsGlobalType::DEBUGGER, "GJS inspector",
-                                      "inspector"))
+                                      "inspector")) {
+        uint8_t exit_code;
+        if (gjs->should_exit(&exit_code)) {
+            if (exit_code != 0) {
+                gjs_warning("Inspector exited with code {}", exit_code);
+                return false;
+            }
+            return true;
+        }
+
         gjs_log_exception(cx);
+        return false;
+    }
+    return true;
 }

@@ -13,8 +13,8 @@ int main() {
 
     GjsContext* gjs_context = gjs_context_new();
 
-    gjs_context_setup_inspector(gjs_context);
+    bool ok = gjs_context_setup_inspector(gjs_context);
 
     g_object_unref(gjs_context);
-    return 0;
+    return ok ? 0 : 1;
 }

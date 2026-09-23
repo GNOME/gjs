@@ -225,6 +225,11 @@ const handlers = {
 
                 sendEvent('exited', {exitCode: 0});
                 sendEvent('terminated');
+                // TODO: technically we should not quit here, but wait for a
+                // Disconnect request; however, currently if the debuggee isn't
+                // stopped, we can't receive the request because we're
+                // synchronously in launchFile above
+                quit(0);
             } catch (e) {
                 sendEvent('output', {
                     category: 'stderr',
