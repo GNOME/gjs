@@ -64,30 +64,31 @@ const input = openInputStream(STDIN);
 
 function readMessage() {
     let contentLength = 0;
-    let sawHeader = false;
-
     while (true) {
         const line = readLine(input);
-        if (line === '' || line === '\r') {
-            if (sawHeader)
-                break;
+        if (line === null)
+            return null; // i.e., EOF
+        if (line === '' || line === '\r')
             continue;
-        }
 
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
         if (match !== null) {
             contentLength = parseInt(match[1]);
-            sawHeader = true;
             break;
         }
     }
 
     let body = readBytes(input, contentLength);
+    if (body === null)
+        return null;
 
     if (body.startsWith('\r\n')) {
         STATE.extraCrlf = true;
         // remove the `\r\n` prefix if it was sent, and instead get the remaining body
-        body = body.slice(2) + readBytes(input, 2);
+        const remainingBytes = readBytes(input, 2);
+        if (remainingBytes === null)
+            return null;
+        body = body.slice(2) + remainingBytes;
     }
 
     return JSON.parse(body);

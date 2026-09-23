@@ -79,6 +79,19 @@ describe('Inspector', function () {
         });
     });
 
+    it('handles EOF gracefully when reading the request header', function () {
+        miniinspector.get_stdin_pipe().close(cancel);
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
+    });
+
+    it('handles EOF gracefully when reading the request body', function () {
+        stdin.put_string('Content-Length: 100\r\n\r\n{', cancel);
+        miniinspector.get_stdin_pipe().close(cancel);
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
+    });
+
     it('accepts and responds to Initialize, ConfigurationDone, and Disconnect requests', function () {
         const response = sendRequest('initialize', {
             adapterID: 'miniinspector',

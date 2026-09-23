@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
 
+#include <string_view>
+
 #ifdef HAVE_READLINE_READLINE_H
 #    include <readline/history.h>
 #    include <readline/readline.h>
@@ -220,8 +222,13 @@ static bool read_line(JSContext* cx, unsigned argc, JS::Value* vp) {
     Gjs::AutoChar line = g_data_input_stream_read_line_utf8(
         stream, &len, /* cancellable = */ nullptr, error.out());
     if (!line) {
-        gjs_throw(cx, "Error reading DAP Content-Length header: {}", error);
-        return false;
+        if (error) {
+            gjs_throw(cx, "Error reading DAP Content-Length header: {}", error);
+            return false;
+        }
+        // null return without error set means EOF
+        args.rval().setNull();
+        return true;
     }
 
     JS::UTF8Chars chars{line, len};
@@ -257,6 +264,13 @@ static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     size_t len;
     const void* pointer = g_bytes_get_data(bytes, &len);
+    if (len < nbytes) {
+        std::string_view view{static_cast<const char*>(pointer), len};
+        gjs_message("Incomplete DAP message: {}", view);
+        args.rval().setNull();
+        return true;
+    }
+
     JS::UTF8Chars chars{static_cast<const char*>(pointer), len};
     JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, chars)};
     if (!str)

@@ -21,8 +21,8 @@ declare function loadNative(name: string): unknown;
 type InputStream = { __internal: never };
 
 declare function openInputStream(stream: number): InputStream;
-declare function readLine(stream: InputStream): string;
-declare function readBytes(stream: InputStream, bytes: number): string;
+declare function readLine(stream: InputStream): string | null;
+declare function readBytes(stream: InputStream, bytes: number): string | null;
 declare function launchFile(path: string): void;
 declare function quit(exitCode: number): never;
 declare function buildUri(cwd: string, path: string): string;
