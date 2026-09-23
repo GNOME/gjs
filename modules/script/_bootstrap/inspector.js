@@ -1,6 +1,6 @@
 // oxlint-disable no-unused-vars
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
-/* global debuggee, quit, loadNative, openInputStream, readLine, readBytes, launchFile */
+/* global debuggee, quit, loadNative, openInputStream, readLine, readBytes, launchFile, buildUri */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2026 Angelo Verlain
 

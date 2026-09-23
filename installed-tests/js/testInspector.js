@@ -127,7 +127,7 @@ describe('Inspector', function () {
             const response = sendRequest('stackTrace');
             expect(response.stackFrames.length).toBeGreaterThan(0);
             expect(response.stackFrames[0].source.name).toBe(
-                'resource:///org/gjs/jsunit/inspector/nested dir#/% hello.js',
+                'resource:///org/gjs/jsunit/inspector/nested dir#/% hello.js'
             );
         });
 
