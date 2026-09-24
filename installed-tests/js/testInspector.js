@@ -190,6 +190,20 @@ describe('Inspector', function () {
             expect(stopped.reason).toBe('entry');
         });
 
+        it('breaks on entry at the first non-comment line', function () {
+            launch('sample.js', {stopOnEntry: true});
+            expectEvent('stopped');
+            const stackTrace = sendRequest('stackTrace', {threadId: 0});
+            expect(stackTrace.totalFrames).toBe(1);
+            expect(stackTrace.stackFrames.length).toBe(1);
+            expect(stackTrace.stackFrames[0]).toEqual(jasmine.objectContaining({
+                id: 0,
+                name: jasmine.any(String),
+                line: 4,
+                column: 1,
+            }));
+        });
+
         afterEach(function () {
             sendRequest('disconnect');
             miniinspector.wait(cancel);

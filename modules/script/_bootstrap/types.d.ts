@@ -96,21 +96,27 @@ declare namespace Debugger {
         hit(frame: Debugger.Frame): void;
     }
 
-    type Offset = { __internal: never };
+    type Offset = number;
 
-    class Frame {
+    type Frame = {
         older: Debugger.Frame | null;
         depth: number;
         /** @deprecated use .onStack */
         live: boolean;
         onStack: boolean;
-        script: Debugger.Script | null;
-        offset: Debugger.Offset | null;
         environment: Debugger.Environment | null;
 
         onStep: undefined | ((this: Debugger.Frame) => void);
         onPop: undefined | ((this: Debugger.Frame) => void);
-    }
+    } & (
+        | {
+              script: null;
+          }
+        | {
+              script: Debugger.Script;
+              offset: Debugger.Offset;
+          }
+    );
 
     class Script {
         url: string;

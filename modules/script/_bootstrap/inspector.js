@@ -458,7 +458,7 @@ const handlers = {
  * @returns {Location | null}
  */
 function getFrameLocation(frame) {
-    if (!frame.script || !frame.offset)
+    if (!frame.script)
         return null;
     const {lineNumber, columnNumber} = frame.script.getOffsetLocation(frame.offset);
     return {
@@ -502,7 +502,7 @@ function onStepped() {
  * @returns {boolean}
  */
 function isDebuggeeFrame(frame) {
-    return !!frame.script && !!frame.offset;
+    return !!frame.script;
 }
 
 /**
@@ -510,7 +510,7 @@ function isDebuggeeFrame(frame) {
  * @returns {number | null}
  */
 function getFrameLine(frame) {
-    if (!frame.script || !frame.offset)
+    if (!frame.script)
         return null;
     // 1-based
     return frame.script.getOffsetLocation(frame.offset).lineNumber;
@@ -521,7 +521,7 @@ function getFrameLine(frame) {
  * @returns {number | null}
  */
 function getFrameColumn(frame) {
-    if (!frame.script || !frame.offset)
+    if (!frame.script)
         return null;
     // already 1-based
     return frame.script.getOffsetLocation(frame.offset).columnNumber;
