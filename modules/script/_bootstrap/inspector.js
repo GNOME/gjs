@@ -38,6 +38,8 @@ const STATE = {
     requestIdSeq: 0,
     /** @type {string | null} */
     pendingLaunchPath: null,
+    /** @type boolean */
+    pendingStopOnEntry: false,
     /** @type {Array<() => void>} */
     cleanups: [],
     /** @type {Location | null} */
@@ -204,7 +206,7 @@ const handlers = {
             : args.program;
 
         if (args.stopOnEntry)
-            setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
+            STATE.pendingStopOnEntry = true;
 
         STATE.pendingLaunchPath = uri;
         sendResponse(seq, 'launch');
@@ -221,6 +223,10 @@ const handlers = {
         sendResponse(seq, 'configurationDone');
 
         if (STATE.pendingLaunchPath) {
+            if (STATE.pendingStopOnEntry) {
+                STATE.pendingStopOnEntry = false;
+                setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
+            }
             try {
                 const exitCode = launchFile(STATE.pendingLaunchPath);
 

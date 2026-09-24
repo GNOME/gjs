@@ -48,10 +48,11 @@ describe('Inspector', function () {
         return message.body;
     }
 
-    function launch(filename) {
+    function launch(filename, launchOptions = {}) {
         sendRequest('launch', {
             cwd: 'resource:///org/gjs/jsunit/inspector',
             program: filename,
+            ...launchOptions,
         });
         sendRequest('configurationDone');
     }
@@ -181,6 +182,12 @@ describe('Inspector', function () {
             sendRequest('configurationDone');
             const stopped = expectEvent('stopped');
             expect(stopped.reason).toBe('instruction breakpoint');
+        });
+
+        it('can launch a file and break on entry', function () {
+            launch('sample.js', {stopOnEntry: true});
+            const stopped = expectEvent('stopped');
+            expect(stopped.reason).toBe('entry');
         });
 
         afterEach(function () {
