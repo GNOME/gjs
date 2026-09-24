@@ -150,8 +150,8 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     uint8_t exit_code;
     result = gjs->eval_module(uri, &exit_code);
     if (result.isErr()) {
-        if (g_error_matches(result.inspectErr(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT) && exit_code == 0) {
-            args.rval().setUndefined();
+        if (g_error_matches(result.inspectErr(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT)) {
+            args.rval().setInt32(exit_code);
             return true;
         }
 
@@ -159,7 +159,7 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
         return false;
     }
 
-    args.rval().setUndefined();
+    args.rval().setInt32(0);
     return true;
 }
 

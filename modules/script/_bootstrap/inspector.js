@@ -222,9 +222,9 @@ const handlers = {
 
         if (STATE.pendingLaunchPath) {
             try {
-                launchFile(STATE.pendingLaunchPath);
+                const exitCode = launchFile(STATE.pendingLaunchPath);
 
-                sendEvent('exited', {exitCode: 0});
+                sendEvent('exited', {exitCode});
                 sendEvent('terminated');
                 // TODO: technically we should not quit here, but wait for a
                 // Disconnect request; however, currently if the debuggee isn't

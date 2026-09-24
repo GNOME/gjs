@@ -48,6 +48,14 @@ describe('Inspector', function () {
         return message.body;
     }
 
+    function launch(filename) {
+        sendRequest('launch', {
+            cwd: 'resource:///org/gjs/jsunit/inspector',
+            program: filename,
+        });
+        sendRequest('configurationDone');
+    }
+
     beforeAll(function () {
         let file;
         if (GLib.getenv('GJS_USE_UNINSTALLED_FILES') === '1')
@@ -109,6 +117,28 @@ describe('Inspector', function () {
         expect(miniinspector.get_successful()).toBeTrue();
     });
 
+    it('reports the exit code of the debuggee', function () {
+        sendRequest('initialize', {
+            adapterID: 'miniinspector',
+            clientID: 'jasmine',
+            clientName: 'GJS Unit Tests',
+            locale: 'en-CA',
+            pathFormat: 'uri',
+        });
+        expectEvent('initialized');
+
+        launch('exitcode.js');
+        const exited = expectEvent('exited');
+        expect(exited.exitCode).toBe(42);
+        expectEvent('terminated');
+
+        // FIXME: We should be able to put this test in the 'once initialized'
+        // block below, but currently we have to quit the server when the
+        // debuggee quits; see TODO note in configurationDone() in inspector.js.
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
+    });
+
     describe('once initialized', function () {
         beforeEach(function () {
             sendRequest('initialize', {
@@ -122,11 +152,7 @@ describe('Inspector', function () {
         });
 
         it('can launch a file', function () {
-            sendRequest('launch', {
-                cwd: 'resource:///org/gjs/jsunit/inspector',
-                program: 'sample.js',
-            });
-            sendRequest('configurationDone');
+            launch('sample.js');
             const stopped = expectEvent('stopped');
             expect(stopped.reason).toBe('instruction breakpoint');
         });
