@@ -41,6 +41,28 @@ describe('Inspector', function () {
         return message.body;
     }
 
+    function sendFaultyRequest(command, argsObject = {}) {
+        const requestID = nextRequestID++;
+        const request = {
+            seq: requestID,
+            type: 'request',
+            command,
+            arguments: argsObject,
+        };
+        const bodyString = `${JSON.stringify(request)}\r\n`;
+        stdin.put_string(`Content-Length: ${bodyString.length}\r\n\r\n${bodyString}`, cancel);
+
+        const message = readMessage();
+        expect(message.type).toBe('response');
+        expect(message.request_seq).toBe(requestID);
+        expect(message.success).toBe(false);
+        expect(message.command).toBe(command);
+        return {
+            message: message.message,
+            error: message.body.error,
+        };
+    }
+
     function expectEvent(event) {
         const message = readMessage();
         expect(message.type).toBe('event');
@@ -201,6 +223,15 @@ describe('Inspector', function () {
                 name: jasmine.any(String),
                 line: 4,
                 column: 1,
+            }));
+        });
+
+        it('handles an unknown request gracefully', function () {
+            launch('sample.js');
+            expectEvent('stopped');
+            const {error} = sendFaultyRequest('crontinue', {threadId: 99999});
+            expect(error).toEqual(jasmine.objectContaining({
+                format: jasmine.stringMatching(/crontinue/),
             }));
         });
 

@@ -792,8 +792,9 @@ function _handleRequest() {
 
     const handler = handlers[request.command];
     if (handler === undefined) {
-        // TODO: use the error event
-        throw new Error(`Unknown request command: ${request.command}`);
+        sendErrorResponse(request.seq, request.command,
+            newMessage(`Unknown request command: ${request.command}`));
+        return true;
     }
 
     handler(request.seq, request.arguments);
