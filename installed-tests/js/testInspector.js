@@ -113,6 +113,32 @@ describe('Inspector', function () {
             const stopped = expectEvent('stopped');
             expect(stopped.reason).toBe('instruction breakpoint');
         });
+
+        it('can resolve a file with special characters in its name', function () {
+            sendRequest('launch', {
+                cwd: 'resource:///org/gjs/jsunit/inspector/nested dir#',
+                program: '% hello.js',
+            });
+            sendRequest('configurationDone');
+
+            const stopped = expectEvent('stopped');
+            expect(stopped.reason).toBe('instruction breakpoint');
+
+            const response = sendRequest('stackTrace');
+            expect(response.stackFrames.length).toBeGreaterThan(0);
+            expect(response.stackFrames[0].source.name).toBe(
+                'resource:///org/gjs/jsunit/inspector/nested dir#/% hello.js'
+            );
+        });
+
+        it('can launch a file without cwd', function () {
+            sendRequest('launch', {
+                program: 'resource:///org/gjs/jsunit/inspector/sample.js',
+            });
+            sendRequest('configurationDone');
+            const stopped = expectEvent('stopped');
+            expect(stopped.reason).toBe('instruction breakpoint');
+        });
     });
 
     afterEach(function () {

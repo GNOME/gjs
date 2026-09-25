@@ -25,6 +25,7 @@ declare function readLine(stream: InputStream): string;
 declare function readBytes(stream: InputStream, bytes: number): string;
 declare function launchFile(path: string): void;
 declare function quit(exitCode: number): void;
+declare function buildUri(cwd: string, path: string): string;
 
 // Debugger types
 
