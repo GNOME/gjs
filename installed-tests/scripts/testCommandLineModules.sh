@@ -3,26 +3,9 @@
 # SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
 # SPDX-FileCopyrightText: 2016 Philip Chimento <philip.chimento@gmail.com>
 
-if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR/gjs-console"
-else
-    gjs="gjs-console"
-fi
-
-total=0
-
-report () {
-    exit_code=$?
-    total=$((total + 1))
-    if test $exit_code -eq 0; then
-        echo "ok $total - $1"
-    else
-        echo "not ok $total - $1"
-    fi
-}
-
-# Avoid interference in the profiler tests from stray environment variable
-unset GJS_ENABLE_PROFILER
+DIR="$( cd "$( dirname "${0}" )" && pwd )"
+# shellcheck source=installed-tests/scripts/common.sh
+. "${DIR}"/common.sh
 
 cat <<EOF >doubledynamicImportee.js
 export function noop() {}

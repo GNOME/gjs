@@ -37,8 +37,10 @@ report_timeout () {
 report_xfail () {
     exit_code=$?
     total=$((total + 1))
-    if test $exit_code -ne 0; then
-        echo "ok $total - $1"
+    if test $exit_code -eq 23; then
+        echo "not ok $total - $1 (leaked memory)"
+    elif test $exit_code -ne 0; then
+        echo "ok $total - $1 [EXIT CODE: $exit_code]"
     else
         echo "not ok $total - $1"
     fi

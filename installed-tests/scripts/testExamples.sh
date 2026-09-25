@@ -3,11 +3,10 @@
 # SPDX-FileCopyrightText: 2018 Claudio André <claudioandre.br@gmail.com>
 
 DIR="$( cd "$( dirname "${0}" )" && pwd )"
-# shellcheck disable=SC1091
+# shellcheck source=installed-tests/scripts/common.sh
 . "${DIR}"/common.sh
 
 # Run the examples
-# shellcheck disable=SC2154 # It's defined in common.sh
 $gjs -m examples/gio-cat.js meson.build
 report "run the gio-cat.js example"
 
@@ -31,5 +30,4 @@ else
     skip "run the gtk-application.js example" "running without GTK"
     skip "run the gettext.js example" "running without GTK"
 fi
-# shellcheck disable=SC2154 # It's defined in common.sh
 echo "1..$total"

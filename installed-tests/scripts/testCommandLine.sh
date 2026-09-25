@@ -3,14 +3,9 @@
 # SPDX-FileCopyrightText: 2016 Endless Mobile, Inc.
 # SPDX-FileCopyrightText: 2016 Philip Chimento <philip.chimento@gmail.com>
 
-if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR/gjs-console"
-else
-    gjs="gjs-console"
-fi
-
-# Avoid interference in the profiler tests from stray environment variable
-unset GJS_ENABLE_PROFILER
+DIR="$( cd "$( dirname "${0}" )" && pwd )"
+# shellcheck source=installed-tests/scripts/common.sh
+. "${DIR}"/common.sh
 
 # Avoid interference in the warning tests from G_DEBUG=fatal-warnings/criticals
 OLD_G_DEBUG="$G_DEBUG"
@@ -134,35 +129,6 @@ while (f = iter.next_file(null)) {
     f.get_name()
 }
 EOF
-
-total=0
-
-report () {
-    exit_code=$?
-    total=$((total + 1))
-    if test $exit_code -eq 0; then
-        echo "ok $total - $1"
-    else
-        echo "not ok $total - $1"
-    fi
-}
-
-report_xfail () {
-    exit_code=$?
-    total=$((total + 1))
-    if test $exit_code -eq 23; then
-        echo "not ok $total - $1 (leaked memory)"
-    elif test $exit_code -ne 0; then
-        echo "ok $total - $1 (exit code $exit_code)"
-    else
-        echo "not ok $total - $1"
-    fi
-}
-
-skip () {
-    total=$((total + 1))
-    echo "ok $total - $1 # SKIP $2"
-}
 
 $gjs --invalid-option >/dev/null 2>/dev/null
 report_xfail "Invalid option should exit with failure"

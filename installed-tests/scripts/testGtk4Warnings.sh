@@ -2,28 +2,9 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2025 Gary Li <gary.li1@uwaterloo.ca>
 
-if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR/gjs-console"
-else
-    gjs="gjs-console"
-fi
-
-total=0
-
-report () {
-    exit_code=$?
-    total=$((total + 1))
-    if test $exit_code -eq 0; then
-        echo "ok $total - $1"
-    else
-        echo "not ok $total - $1"
-    fi
-}
-
-skip () {
-    total=$((total + 1))
-    echo "ok $total - $1 # SKIP $2"
-}
+DIR="$( cd "$( dirname "${0}" )" && pwd )"
+# shellcheck source=installed-tests/scripts/common.sh
+. "${DIR}"/common.sh
 
 cat <<'EOF' >gcWrapperWarning.js
 import GLib from 'gi://GLib';
