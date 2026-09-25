@@ -4,9 +4,12 @@
 
 if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
     gjs="$TOP_BUILDDIR/gjs-console"
+    fixtures="$TOP_SRCDIR/installed-tests/scripts"
 else
     # shellcheck disable=SC2034
     gjs="gjs-console"
+    # shellcheck disable=SC2034
+    fixtures="$(cd "$(dirname "$0")" && pwd)"
 fi
 
 # Avoid interference in the profiler tests from stray environment variable
