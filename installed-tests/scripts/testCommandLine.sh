@@ -7,6 +7,15 @@ DIR="$( cd "$( dirname "${0}" )" && pwd )"
 # shellcheck source=installed-tests/scripts/common.sh
 . "${DIR}"/common.sh
 
+scratch="$(mktemp -d)" || exit 1
+trap 'rm -rf "$scratch"' EXIT
+# convert signals into exits for shells that don't run the EXIT trap when killed
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+cd "$scratch" || exit 1
+
 # Avoid interference in the warning tests from G_DEBUG=fatal-warnings/criticals
 OLD_G_DEBUG="$G_DEBUG"
 
@@ -55,14 +64,12 @@ mkdir Код
 touch Код/🍁.js
 $gjs -m Код/🍁.js
 report "Unicode pathed encoding should work for module run."
-rm -r Код
 
 # non UTF8 file names throws error
 if bash -c "touch $'\xff'" 2>/dev/null; then
     G_FILENAME_ENCODING=utf8 $gjs -m "$fixtures/printFiles.js" 2>&1 | \
         grep -q 'Gjs-CRITICAL.*Could not convert filename string to UTF-8 for string: \\377'
     report "Throws error if filename is not UTF8"
-    bash -c "rm ''$'\377'"
 else
     skip "Throws error if filename is not UTF8" "filesystem doesn't support non UTF8 file names."
 fi
@@ -117,7 +124,6 @@ $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&
 report "--coverage-prefix after script should succeed but give a warning"
 $gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
-rm -f foo/coverage.lcov
 G_DEBUG="$OLD_G_DEBUG"
 
 for version_arg in --version --jsversion; do
@@ -136,7 +142,6 @@ for version_arg in --version --jsversion; do
 done
 
 # --profile
-rm -f gjs-*.syscap foo.syscap
 $gjs -c 'imports.system.exit(0)' && ! stat gjs-*.syscap > /dev/null 2>&1
 report "no profiling data should be dumped without --profile"
 
@@ -150,13 +155,11 @@ else
     rm -f gjs-*.syscap
     $gjs --profile -c 'imports.system.exit(0)' && stat gjs-*.syscap > /dev/null 2>&1
     report "--profile should dump profiling data to the default file name"
-    rm -f gjs-*.syscap
     $gjs --profile=foo.syscap -c 'imports.system.exit(0)' && test -f foo.syscap
     report "--profile with argument should dump profiling data to the named file"
-    rm -f foo.syscap && rm -f gjs-*.syscap
+    rm -f gjs-*.syscap
     GJS_ENABLE_PROFILER=1 $gjs -c 'imports.system.exit(0)' && stat gjs-*.syscap > /dev/null 2>&1
     report "GJS_ENABLE_PROFILER=1 should enable the profiler"
-    rm -f gjs-*.syscap
 fi
 
 # interpreter handles queued promise jobs correctly
@@ -196,7 +199,6 @@ fi
 $gjs --coverage-prefix="$PWD" --coverage-output="$PWD" "$fixtures/awaitcatch.js"
 grep -q TN: coverage.lcov
 report "coverage prefix is treated as an absolute path"
-rm -f coverage.lcov
 
 $gjs -m "$fixtures/doublegi.js" 2>&1 | grep -q 'already loaded'
 report "avoid statically importing two versions of the same module"
