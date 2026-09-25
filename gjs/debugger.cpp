@@ -29,7 +29,7 @@
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
 #include <js/Value.h>
-#include <jsapi.h>  // for JS_WrapObject
+#include <jsapi.h>           // for JS_WrapObject
 #include <mozilla/Result.h>  // for Ok
 
 #include "gjs/atoms.h"
@@ -155,6 +155,27 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     return true;
 }
 
+static bool build_uri(JSContext* cx, unsigned argc, JS::Value* vp) {
+    JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
+
+    JS::UniqueChars cwd, path;
+    if (!gjs_parse_call_args(cx, "buildUri", args, "ss", "cwd", &cwd, "path",
+                             &path))
+        return false;
+
+    Gjs::AutoUnref<GFile> parent{g_file_new_for_commandline_arg(cwd.get())};
+    Gjs::AutoUnref<GFile> filename{g_file_get_child(parent, path.get())};
+    Gjs::AutoChar uri{g_file_get_uri(filename)};
+
+    JS::ConstUTF8CharsZ uri_chars{uri};
+    JS::RootedString str{cx, JS_NewStringCopyUTF8Z(cx, uri_chars)};
+    if (!str)
+        return false;
+
+    args.rval().setString(str);
+    return true;
+}
+
 static bool open_input_stream(JSContext* cx, unsigned argc, JS::Value* vp) {
     JS::CallArgs args = JS::CallArgsFromVp(argc, vp);
 
@@ -277,6 +298,7 @@ static JSFunctionSpec inspector_funcs[] = {
     JS_FN("openInputStream", open_input_stream, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readLine", read_line, 1, GJS_MODULE_PROP_FLAGS),
     JS_FN("readBytes", read_bytes, 2, GJS_MODULE_PROP_FLAGS),
+    JS_FN("buildUri", build_uri, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
 void gjs_context_setup_inspector(GjsContext* self) {

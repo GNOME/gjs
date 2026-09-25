@@ -1,6 +1,6 @@
 // oxlint-disable no-unused-vars
 /* -*- indent-tabs-mode: nil; js-indent-level: 4 -*- */
-/* global debuggee, quit, loadNative, openInputStream, readLine, readBytes, launchFile */
+/* global debuggee, quit, loadNative, openInputStream, readLine, readBytes, launchFile, buildUri */
 // SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 // SPDX-FileCopyrightText: 2026 Angelo Verlain
 
@@ -199,13 +199,13 @@ const handlers = {
      * @param {{ cwd: string; program: string; stopOnEntry: boolean; }} args
      */
     launch(seq, args) {
-        const cwd = args.cwd || '.';
-        const filePath = `${cwd}/${args.program}`;
+        const uri = args.cwd ? buildUri(args.cwd, args.program)
+            : args.program;
 
         if (args.stopOnEntry)
             setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
 
-        STATE.pendingLaunchPath = filePath;
+        STATE.pendingLaunchPath = uri;
         sendResponse(seq, 'launch');
     },
     /**
@@ -449,7 +449,11 @@ function getFrameLocation(frame) {
     if (!frame.script || !frame.offset)
         return null;
     const {lineNumber, columnNumber} = frame.script.getOffsetLocation(frame.offset);
-    return {url: frame.script.url, line: lineNumber, column: columnNumber};
+    return {
+        url: decodeURIComponent(frame.script.url),
+        line: lineNumber,
+        column: columnNumber,
+    };
 }
 
 /**
@@ -726,7 +730,7 @@ function toDapStackFrame(frame) {
     if (!frame?.script)
         return null;
 
-    const url = frame.script.url;
+    const url = decodeURIComponent(frame.script.url);
 
     let sourceReference = 0,
         path;
@@ -920,7 +924,7 @@ class BreakpointHandler {
 const dbg = new Debugger();
 
 dbg.onNewScript = (/** @type {Debugger.Script} */ script) => {
-    resolveBreakpointsForUrl(script.url);
+    resolveBreakpointsForUrl(decodeURIComponent(script.url));
 };
 
 dbg.onDebuggerStatement = function () {
