@@ -19,10 +19,6 @@
 #    include <windows.h>
 #endif
 
-#ifdef HAVE_READLINE_READLINE_H
-#    include <readline/history.h>
-#endif
-
 #include <format>
 #include <iterator>     // for size
 #include <new>
@@ -32,6 +28,10 @@
 #include <unordered_set>
 #include <utility>  // for move
 #include <vector>
+
+#ifdef HAVE_READLINE_READLINE_H
+#    include <readline/history.h>
+#endif
 
 #include <gio/gio.h>
 #include <glib-object.h>

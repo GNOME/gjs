@@ -18,6 +18,7 @@
 #include <utility>        // for in_range, move
 
 #include <ffi.h>
+
 #include <girepository/girepository.h>
 #include <glib.h>
 

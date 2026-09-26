@@ -409,6 +409,7 @@ Headers should be included in the following order:
 - `<config.h>`
 - C system headers
 - C++ system headers
+- Low-level C dependency headers
 - GNOME library headers
 - SpiderMonkey library headers
 - GJS headers
@@ -444,6 +445,8 @@ Here is an example of all of the above rules together:
 #endif
 
 #include <vector>
+
+#include <readline/readline.h>
 
 #include <girepository.h>
 #include <glib.h>
