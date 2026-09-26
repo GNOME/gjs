@@ -93,6 +93,30 @@ describe('GObject should', function () {
     });
 });
 
+describe('GObject constructor returning an already-wrapped object', function () {
+    let singleton, singleton2;
+
+    beforeEach(function () {
+        singleton = new GjsTestTools.Singleton();
+        singleton2 = new GjsTestTools.Singleton();
+    });
+
+    it('reuses the same wrapper', function () {
+        expect(singleton2).toBe(singleton);
+    });
+
+    it('does not leak a reference', function () {
+        GjsTestTools.save_object(singleton);
+        // One reference owned by singleton's JS wrapper, one by save_object(),
+        // but no extra reference held by singleton2's JS wrapper
+        expect(GjsTestTools.get_saved_ref_count()).toBe(2);
+    });
+
+    afterEach(function () {
+        GjsTestTools.reset();
+    });
+});
+
 describe('GObject.Object.new()', function () {
     const gon = GObject.Object.new;
 
