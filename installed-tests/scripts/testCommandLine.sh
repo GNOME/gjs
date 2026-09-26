@@ -19,9 +19,9 @@ cd "$scratch" || exit 1
 # Avoid interference in the warning tests from G_DEBUG=fatal-warnings/criticals
 OLD_G_DEBUG="$G_DEBUG"
 
-$gjs --invalid-option >/dev/null 2>/dev/null
+output=$($gjs --invalid-option 2>&1)
 report_xfail "Invalid option should exit with failure"
-$gjs --invalid-option 2>&1 | grep -q invalid-option
+test -n "$output" -a -z "${output##*invalid-option*}"
 report "Invalid option should print a relevant message"
 
 # Test that System.exit() works in gjs-console
@@ -75,41 +75,39 @@ else
 fi
 
 # gjs --help prints GJS help
-$gjs --help >/dev/null
+output=$($gjs --help)
 report "--help should succeed"
-test -n "$($gjs --help)"
+test -n "$output"
 report "--help should print something"
 
 # print GJS help even if it's not the first argument
-$gjs -I . --help >/dev/null
+output=$($gjs -I . --help)
 report "should succeed when --help is not first arg"
-test -n "$($gjs -I . --help)"
+test -n "$output"
 report "should print something when --help is not first arg"
 
 # --help before a script file name prints GJS help
-$gjs --help "$fixtures/help.js" >/dev/null
+output=$($gjs --help "$fixtures/help.js")
 report "--help should succeed before a script file"
-test -n "$($gjs --help "$fixtures/help.js")"
+test -n "$output"
 report "--help should print something before a script file"
 
 # --help before a -c argument prints GJS help
-script='imports.system.exit(1)'
-$gjs --help -c "$script" >/dev/null
+output=$($gjs --help -c 'imports.system.exit(1)')
 report "--help should succeed before -c"
-test -n "$($gjs --help -c "$script")"
+test -n "$output"
 report "--help should print something before -c"
 
 # --help after a script file name is passed to the script
-$gjs -I sentinel "$fixtures/help.js" --help
+output=$($gjs -I sentinel "$fixtures/help.js" --help)
 report "--help after script file should be passed to script"
-test -z "$($gjs -I sentinel "$fixtures/help.js" --help)"
+test -z "$output"
 report "--help after script file should not print anything"
 
 # --help after a -c argument is passed to the script
-script='if(ARGV[0] !== "--help") imports.system.exit(1)'
-$gjs -c "$script" --help
+output=$($gjs -c 'if(ARGV[0] !== "--help") imports.system.exit(1)' --help)
 report "--help after -c should be passed to script"
-test -z "$($gjs -c "$script" --help)"
+test -z "$output"
 report "--help after -c should not print anything"
 
 # -I after a program is not consumed by GJS
@@ -120,24 +118,24 @@ report "--help after -c should not print anything"
 G_DEBUG=$(echo "$G_DEBUG" | sed -e 's/fatal-warnings,\{0,1\}//')
 $gjs "$fixtures/help.js" --help -I sentinel 2>&1 | grep -q 'Gjs-WARNING.*--include-path'
 report "-I after script should succeed but give a warning"
-$gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-prefix'
+output=$($gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1)
+printf '%s' "$output" | grep -q 'Gjs-WARNING.*--coverage-prefix'
 report "--coverage-prefix after script should succeed but give a warning"
-$gjs -c 'imports.system.exit(0)' --coverage-prefix=foo --coverage-output=foo 2>&1 | grep -q 'Gjs-WARNING.*--coverage-output'
+printf '%s' "$output" | grep -q 'Gjs-WARNING.*--coverage-output'
 report "--coverage-output after script should succeed but give a warning"
 G_DEBUG="$OLD_G_DEBUG"
 
 for version_arg in --version --jsversion; do
     # --version and --jsversion work
-    $gjs $version_arg >/dev/null
+    output=$($gjs $version_arg)
     report "$version_arg should work"
-    test -n "$($gjs $version_arg)"
+    test -n "$output"
     report "$version_arg should print something"
 
     # --version and --jsversion after a script go to the script
-    script="if(ARGV[0] !== '$version_arg') imports.system.exit(1)"
-    $gjs -c "$script" $version_arg
+    output=$($gjs -c "if(ARGV[0] !== '$version_arg') imports.system.exit(1)" $version_arg)
     report "$version_arg after -c should be passed to script"
-    test -z "$($gjs -c "$script" $version_arg)"
+    test -z "$output"
     report "$version_arg after -c should not print anything"
 done
 
