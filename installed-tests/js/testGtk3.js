@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2013 Giovanni Campagna <gcampagna@src.gnome.org>
 
 import Gdk from 'gi://Gdk?version=3.0';
+import GjsTestTools from 'gi://GjsTestTools';
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
 import GObject from 'gi://GObject';
@@ -320,6 +321,26 @@ describe('Gtk overrides', function () {
         expect(frameChild.visible).toBe(false);
         expect(() => widget.show()).not.toThrow();
         expect(frameChild.visible).toBe(true);
+    });
+
+    it('does not release a reference it does not own when construction re-enters JS', function () {
+        const frame = new Gtk.Frame();
+        // This signal handler causes construction of Gtk.Label below to
+        // re-enter JS and create a JS wrapper for widget.
+        frame.connect('add', () => {});
+        const widget = new Gtk.Label({parent: frame});
+
+        GjsTestTools.save_object(widget);
+        const nrefs = GjsTestTools.get_saved_ref_count();
+        try {
+            // One reference owned by frame, one by widget's JS wrapper, and one
+            // by save_object(). There may be others
+            expect(nrefs).not.toBeLessThan(3);
+            frame.remove(widget);
+            expect(GjsTestTools.get_saved_ref_count()).toBe(nrefs - 1);
+        } finally {
+            GjsTestTools.reset();
+        }
     });
 
     function asyncIdle() {

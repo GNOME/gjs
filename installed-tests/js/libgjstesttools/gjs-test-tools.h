@@ -104,4 +104,8 @@ GBytes* gjs_test_tools_new_unaligned_bytes(size_t len);
 GJS_TEST_TOOL_EXTERN
 GBytes* gjs_test_tools_new_static_bytes(void);
 
+GJS_TEST_TOOL_EXTERN
+G_DECLARE_FINAL_TYPE(GjsTestToolsSingleton, gjs_test_tools_singleton,
+                     GJS_TEST_TOOLS, SINGLETON, GObject)
+
 G_END_DECLS

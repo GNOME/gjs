@@ -2676,16 +2676,19 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
          * we're not actually using it, so just let it get collected. Avoiding
          * this would require a non-trivial amount of work.
          * */
-        bool toggle_ref_added = false;
-        if (!m_uses_toggle_ref) {
-            other_priv->ensure_uses_toggle_ref(cx);
-            toggle_ref_added = m_uses_toggle_ref;
-        }
+        g_assert(!m_uses_toggle_ref &&
+                 "this should always be freshly-constructed and not have a "
+                 "toggle ref");
+        other_priv->ensure_uses_toggle_ref(cx);
 
         args.rval().setObject(*other_priv->m_wrapper.get());
 
-        if (toggle_ref_added)
-            g_clear_object(&gobj);  // We already own a reference
+        // For GInitiallyUnowned, the reference has already been sunk, and we
+        // didn't gain a new reference from g_object_new_with_properties().
+        if (G_IS_INITIALLY_UNOWNED(gobj))
+            return true;
+
+        g_clear_object(&gobj);  // We already own a reference
         return true;
     }
 
