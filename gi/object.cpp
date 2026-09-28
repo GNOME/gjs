@@ -2155,16 +2155,16 @@ void ObjectInstance::gobj_dispose_notify() {
 void ObjectInstance::remove_wrapped_gobjects_if(
     const ObjectInstance::Predicate& predicate,
     const ObjectInstance::Action& action) {
-    for (auto link = s_wrapped_gobject_list.begin(),
-              last = s_wrapped_gobject_list.end();
-         link != last;) {
-        if (predicate(*link)) {
-            action(*link);
-            link = s_wrapped_gobject_list.erase(link);
-            continue;
-        }
-        ++link;
-    }
+    std::vector<ObjectInstance*> removed;
+    std::erase_if(s_wrapped_gobject_list, [&predicate, &removed](ObjectInstance* priv) {
+        if (!predicate(priv))
+            return false;
+        removed.push_back(priv);
+        return true;
+    });
+
+    for (ObjectInstance* priv : removed)
+        action(priv);
 }
 
 /**
