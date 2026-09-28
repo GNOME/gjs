@@ -86,6 +86,7 @@ class Closure : public GClosure {
     [[nodiscard]] JSObject* callable() const { return m_callable.get(); }
     [[nodiscard]] constexpr JSContext* cx() const { return m_cx; }
     [[nodiscard]] constexpr bool is_valid() const { return !!m_cx; }
+    [[nodiscard]] bool is_managed() const { return m_callable.rooted(); }
     GJS_JSAPI_RETURN_CONVENTION
     bool invoke(JS::HandleObject, const JS::HandleValueArray&,
                 JS::MutableHandleValue);
@@ -94,6 +95,8 @@ class Closure : public GClosure {
         if (m_callable)
             m_callable.trace(tracer, "signal connection");
     }
+
+    void finish_deferred_invalidation();
 
  private:
     void unset_context();

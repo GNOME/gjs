@@ -509,6 +509,26 @@ describe('Disposed or finalized GObject', function () {
         GjsTestTools.run_dispose_other_thread(file);
     });
 
+    it('can be disposed from other thread while a signal connection is associated', function () {
+        const obj = new Gio.ListStore({itemType: GObject.Object});
+        obj.connect('notify::n-items', () => {});
+        GjsTestTools.run_dispose_other_thread(obj);
+    });
+
+    it('can be disposed from other thread while a callback trampoline is associated', function () {
+        const obj = new Gio.Cancellable();
+        obj.connect(() => {});
+        GjsTestTools.run_dispose_other_thread(obj);
+    });
+
+    it('can be disposed from other thread while owning a managed closure', function () {
+        const obj = new Gio.SimpleAction({name: 'a'});
+        const target = new Gio.SimpleAction({name: 'b'});
+        obj.bind_property_full('enabled', target, 'enabled',
+            GObject.BindingFlags.DEFAULT, (_binding, v) => [true, v], null);
+        GjsTestTools.run_dispose_other_thread(obj);
+    });
+
     it('can be garbage collected once disposed from other thread', function () {
         let file = Gio.File.new_for_path('/');
         file.expandMeWithToggleRef = true;

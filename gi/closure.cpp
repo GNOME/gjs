@@ -15,6 +15,7 @@
 #include <js/Value.h>
 
 #include "gi/closure.h"
+#include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/jsapi-util-root.h"
 #include "gjs/jsapi-util.h"
@@ -127,6 +128,18 @@ void Closure::global_context_finalized() {
  * Unlike "dispose" invalidation only happens once.
  */
 void Closure::closure_invalidated() {
+    if (m_cx) {
+        auto* gjs = GjsContextPrivate::from_cx(m_cx);
+        if (!gjs->is_owner_thread()) {
+            gjs_debug_closure(
+                "Deferring invalidation of closure {} which calls callable {} "
+                "to main thread",
+                debug_addr(), m_callable.debug_addr());
+            gjs->offthread_closure_enqueue_for_gc({this, Gjs::TakeOwnership{}});
+            return;
+        }
+    }
+
     GJS_DEC_COUNTER(closure);
     gjs_debug_closure("Invalidating closure {} which calls callable {}",
                       debug_addr(), m_callable.debug_addr());
@@ -152,6 +165,18 @@ void Closure::closure_invalidated() {
 }
 
 void Closure::closure_set_invalid() {
+    if (m_cx) {
+        auto* gjs = GjsContextPrivate::from_cx(m_cx);
+        if (!gjs->is_owner_thread()) {
+            gjs_debug_closure(
+                "Deferring invalidation of signal closure {} which calls "
+                "callable {} to main thread",
+                debug_addr(), m_callable.debug_addr());
+            gjs->offthread_closure_enqueue_for_gc({this, Gjs::TakeOwnership{}});
+            return;
+        }
+    }
+
     gjs_debug_closure("Invalidating signal closure {} which calls callable {}",
                       debug_addr(), m_callable.debug_addr());
 
@@ -159,6 +184,13 @@ void Closure::closure_set_invalid() {
     reset();
 
     GJS_DEC_COUNTER(closure);
+}
+
+void Closure::finish_deferred_invalidation() {
+    if (is_managed())
+        closure_invalidated();
+    else
+        closure_set_invalid();
 }
 
 bool Closure::invoke(JS::HandleObject this_obj,

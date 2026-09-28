@@ -106,6 +106,8 @@ class GjsContextPrivate : public JS::JobQueue {
     std::unordered_set<std::pair<DestroyNotify, void*>, destroy_data_hash>
         m_destroy_notifications;
     std::vector<Gjs::Closure::Ptr> m_async_closures;
+    std::vector<Gjs::Closure::Ptr> m_offthread_closures;
+    std::mutex m_offthread_closures_mutex;
     std::unordered_map<uint64_t, JS::UniqueChars> m_unhandled_rejection_stacks;
     FunctionVector m_cleanup_tasks;
 
@@ -307,6 +309,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void register_notifier(DestroyNotify, void* data);
     void unregister_notifier(DestroyNotify, void* data);
     void async_closure_enqueue_for_gc(Gjs::Closure*);
+    void offthread_closure_enqueue_for_gc(Gjs::Closure::Ptr&&);
 
     [[nodiscard]]
     Gjs::GErrorResult<> register_module(const char* identifier,
