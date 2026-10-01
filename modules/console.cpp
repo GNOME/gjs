@@ -17,12 +17,14 @@
 
 #ifdef HAVE_READLINE_READLINE_H
 #    include <stdio.h>  // include before readline/readline.h
-
-#    include <readline/history.h>
-#    include <readline/readline.h>
 #endif
 
 #include <string>
+
+#ifdef HAVE_READLINE_READLINE_H
+#    include <readline/history.h>
+#    include <readline/readline.h>
+#endif
 
 #include <glib.h>
 #include <glib/gprintf.h>  // for g_fprintf

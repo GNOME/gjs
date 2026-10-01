@@ -21,10 +21,10 @@ declare function loadNative(name: string): unknown;
 type InputStream = { __internal: never };
 
 declare function openInputStream(stream: number): InputStream;
-declare function readLine(stream: InputStream): string;
-declare function readBytes(stream: InputStream, bytes: number): string;
-declare function launchFile(path: string): void;
-declare function quit(exitCode: number): void;
+declare function readLine(stream: InputStream): string | null;
+declare function readBytes(stream: InputStream, bytes: number): string | null;
+declare function launchFile(path: string): number;
+declare function quit(exitCode: number): never;
 declare function buildUri(cwd: string, path: string): string;
 
 // Debugger types
@@ -96,21 +96,27 @@ declare namespace Debugger {
         hit(frame: Debugger.Frame): void;
     }
 
-    type Offset = { __internal: never };
+    type Offset = number;
 
-    class Frame {
+    type Frame = {
         older: Debugger.Frame | null;
         depth: number;
         /** @deprecated use .onStack */
         live: boolean;
         onStack: boolean;
-        script: Debugger.Script | null;
-        offset: Debugger.Offset | null;
         environment: Debugger.Environment | null;
 
         onStep: undefined | ((this: Debugger.Frame) => void);
         onPop: undefined | ((this: Debugger.Frame) => void);
-    }
+    } & (
+        | {
+              script: null;
+          }
+        | {
+              script: Debugger.Script;
+              offset: Debugger.Offset;
+          }
+    );
 
     class Script {
         url: string;

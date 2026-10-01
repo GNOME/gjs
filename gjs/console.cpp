@@ -472,8 +472,9 @@ int main(int argc, char** argv) {
         gjs_context_setup_debugger_console(gjs_context);
 
     if (inspecting) {
-        gjs_context_setup_inspector(gjs_context);
-        return 0;
+        if (!gjs_context_setup_inspector(gjs_context))
+            return EXIT_FAILURE;
+        return EXIT_SUCCESS;
     }
 
     int code = define_argv_and_eval_script(gjs_context, script_argc,

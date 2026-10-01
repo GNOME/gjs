@@ -111,8 +111,8 @@ const char* gjs_get_js_version(void);
 GJS_EXPORT
 void gjs_context_setup_debugger_console(GjsContext* self);
 
-GJS_EXPORT
-void gjs_context_setup_inspector(GjsContext* self);
+GJS_EXPORT GJS_USE
+bool gjs_context_setup_inspector(GjsContext* self);
 
 GJS_EXPORT GJS_USE
 const char* gjs_context_get_repl_history_path(GjsContext* self);

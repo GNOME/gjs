@@ -41,11 +41,42 @@ describe('Inspector', function () {
         return message.body;
     }
 
+    function sendFaultyRequest(command, argsObject = {}) {
+        const requestID = nextRequestID++;
+        const request = {
+            seq: requestID,
+            type: 'request',
+            command,
+            arguments: argsObject,
+        };
+        const bodyString = `${JSON.stringify(request)}\r\n`;
+        stdin.put_string(`Content-Length: ${bodyString.length}\r\n\r\n${bodyString}`, cancel);
+
+        const message = readMessage();
+        expect(message.type).toBe('response');
+        expect(message.request_seq).toBe(requestID);
+        expect(message.success).toBe(false);
+        expect(message.command).toBe(command);
+        return {
+            message: message.message,
+            error: message.body.error,
+        };
+    }
+
     function expectEvent(event) {
         const message = readMessage();
         expect(message.type).toBe('event');
         expect(message.event).toBe(event);
         return message.body;
+    }
+
+    function launch(filename, launchOptions = {}) {
+        sendRequest('launch', {
+            cwd: 'resource:///org/gjs/jsunit/inspector',
+            program: filename,
+            ...launchOptions,
+        });
+        sendRequest('configurationDone');
     }
 
     beforeAll(function () {
@@ -79,7 +110,20 @@ describe('Inspector', function () {
         });
     });
 
-    it('accepts and responds to an Initialize and ConfigurationDone request', function () {
+    it('handles EOF gracefully when reading the request header', function () {
+        miniinspector.get_stdin_pipe().close(cancel);
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
+    });
+
+    it('handles EOF gracefully when reading the request body', function () {
+        stdin.put_string('Content-Length: 100\r\n\r\n{', cancel);
+        miniinspector.get_stdin_pipe().close(cancel);
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
+    });
+
+    it('accepts and responds to Initialize, ConfigurationDone, and Disconnect requests', function () {
         const response = sendRequest('initialize', {
             adapterID: 'miniinspector',
             clientID: 'jasmine',
@@ -90,6 +134,32 @@ describe('Inspector', function () {
         expect(response.supportsConfigurationDoneRequest).toBe(true);
         expectEvent('initialized');
         sendRequest('configurationDone');
+
+        sendRequest('disconnect');
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
+    });
+
+    it('reports the exit code of the debuggee', function () {
+        sendRequest('initialize', {
+            adapterID: 'miniinspector',
+            clientID: 'jasmine',
+            clientName: 'GJS Unit Tests',
+            locale: 'en-CA',
+            pathFormat: 'uri',
+        });
+        expectEvent('initialized');
+
+        launch('exitcode.js');
+        const exited = expectEvent('exited');
+        expect(exited.exitCode).toBe(42);
+        expectEvent('terminated');
+
+        // FIXME: We should be able to put this test in the 'once initialized'
+        // block below, but currently we have to quit the server when the
+        // debuggee quits; see TODO note in configurationDone() in inspector.js.
+        miniinspector.wait(cancel);
+        expect(miniinspector.get_successful()).toBeTrue();
     });
 
     describe('once initialized', function () {
@@ -105,11 +175,7 @@ describe('Inspector', function () {
         });
 
         it('can launch a file', function () {
-            sendRequest('launch', {
-                cwd: 'resource:///org/gjs/jsunit/inspector',
-                program: 'sample.js',
-            });
-            sendRequest('configurationDone');
+            launch('sample.js');
             const stopped = expectEvent('stopped');
             expect(stopped.reason).toBe('instruction breakpoint');
         });
@@ -139,11 +205,44 @@ describe('Inspector', function () {
             const stopped = expectEvent('stopped');
             expect(stopped.reason).toBe('instruction breakpoint');
         });
+
+        it('can launch a file and break on entry', function () {
+            launch('sample.js', {stopOnEntry: true});
+            const stopped = expectEvent('stopped');
+            expect(stopped.reason).toBe('entry');
+        });
+
+        it('breaks on entry at the first non-comment line', function () {
+            launch('sample.js', {stopOnEntry: true});
+            expectEvent('stopped');
+            const stackTrace = sendRequest('stackTrace', {threadId: 0});
+            expect(stackTrace.totalFrames).toBe(1);
+            expect(stackTrace.stackFrames.length).toBe(1);
+            expect(stackTrace.stackFrames[0]).toEqual(jasmine.objectContaining({
+                id: 0,
+                name: jasmine.any(String),
+                line: 4,
+                column: 1,
+            }));
+        });
+
+        it('handles an unknown request gracefully', function () {
+            launch('sample.js');
+            expectEvent('stopped');
+            const {error} = sendFaultyRequest('crontinue', {threadId: 99999});
+            expect(error).toEqual(jasmine.objectContaining({
+                format: jasmine.stringMatching(/crontinue/),
+            }));
+        });
+
+        afterEach(function () {
+            sendRequest('disconnect');
+            miniinspector.wait(cancel);
+            expect(miniinspector.get_successful()).toBeTrue();
+        });
     });
 
     afterEach(function () {
         cancel.cancel();
-        miniinspector.force_exit();
-        miniinspector.wait(null);
     });
 });

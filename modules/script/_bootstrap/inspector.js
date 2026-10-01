@@ -38,6 +38,8 @@ const STATE = {
     requestIdSeq: 0,
     /** @type {string | null} */
     pendingLaunchPath: null,
+    /** @type boolean */
+    pendingStopOnEntry: false,
     /** @type {Array<() => void>} */
     cleanups: [],
     /** @type {Location | null} */
@@ -64,30 +66,31 @@ const input = openInputStream(STDIN);
 
 function readMessage() {
     let contentLength = 0;
-    let sawHeader = false;
-
     while (true) {
         const line = readLine(input);
-        if (line === '' || line === '\r') {
-            if (sawHeader)
-                break;
+        if (line === null)
+            return null; // i.e., EOF
+        if (line === '' || line === '\r')
             continue;
-        }
 
         const match = /^Content-Length: (\d+)\r$/i.exec(line);
         if (match !== null) {
             contentLength = parseInt(match[1]);
-            sawHeader = true;
             break;
         }
     }
 
     let body = readBytes(input, contentLength);
+    if (body === null)
+        return null;
 
     if (body.startsWith('\r\n')) {
         STATE.extraCrlf = true;
         // remove the `\r\n` prefix if it was sent, and instead get the remaining body
-        body = body.slice(2) + readBytes(input, 2);
+        const remainingBytes = readBytes(input, 2);
+        if (remainingBytes === null)
+            return null;
+        body = body.slice(2) + remainingBytes;
     }
 
     return JSON.parse(body);
@@ -203,7 +206,7 @@ const handlers = {
             : args.program;
 
         if (args.stopOnEntry)
-            setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
+            STATE.pendingStopOnEntry = true;
 
         STATE.pendingLaunchPath = uri;
         sendResponse(seq, 'launch');
@@ -220,11 +223,20 @@ const handlers = {
         sendResponse(seq, 'configurationDone');
 
         if (STATE.pendingLaunchPath) {
+            if (STATE.pendingStopOnEntry) {
+                STATE.pendingStopOnEntry = false;
+                setUntilNextRequest(dbg, 'onEnterFrame', onInitialEnterFrame);
+            }
             try {
-                launchFile(STATE.pendingLaunchPath);
+                const exitCode = launchFile(STATE.pendingLaunchPath);
 
-                sendEvent('exited', {exitCode: 0});
+                sendEvent('exited', {exitCode});
                 sendEvent('terminated');
+                // TODO: technically we should not quit here, but wait for a
+                // Disconnect request; however, currently if the debuggee isn't
+                // stopped, we can't receive the request because we're
+                // synchronously in launchFile above
+                quit(0);
             } catch (e) {
                 sendEvent('output', {
                     category: 'stderr',
@@ -446,7 +458,7 @@ const handlers = {
  * @returns {Location | null}
  */
 function getFrameLocation(frame) {
-    if (!frame.script || !frame.offset)
+    if (!frame.script)
         return null;
     const {lineNumber, columnNumber} = frame.script.getOffsetLocation(frame.offset);
     return {
@@ -490,7 +502,7 @@ function onStepped() {
  * @returns {boolean}
  */
 function isDebuggeeFrame(frame) {
-    return !!frame.script && !!frame.offset;
+    return !!frame.script;
 }
 
 /**
@@ -498,7 +510,7 @@ function isDebuggeeFrame(frame) {
  * @returns {number | null}
  */
 function getFrameLine(frame) {
-    if (!frame.script || !frame.offset)
+    if (!frame.script)
         return null;
     // 1-based
     return frame.script.getOffsetLocation(frame.offset).lineNumber;
@@ -509,7 +521,7 @@ function getFrameLine(frame) {
  * @returns {number | null}
  */
 function getFrameColumn(frame) {
-    if (!frame.script || !frame.offset)
+    if (!frame.script)
         return null;
     // already 1-based
     return frame.script.getOffsetLocation(frame.offset).columnNumber;
@@ -780,8 +792,9 @@ function _handleRequest() {
 
     const handler = handlers[request.command];
     if (handler === undefined) {
-        // TODO: use the error event
-        throw new Error(`Unknown request command: ${request.command}`);
+        sendErrorResponse(request.seq, request.command,
+            newMessage(`Unknown request command: ${request.command}`));
+        return true;
     }
 
     handler(request.seq, request.arguments);

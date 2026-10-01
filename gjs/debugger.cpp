@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <stdio.h>  // for feof, fflush, fgets, stdin, stdout
 
+#include <string_view>
+
 #ifdef HAVE_READLINE_READLINE_H
 #    include <readline/history.h>
 #    include <readline/readline.h>
@@ -36,14 +38,15 @@
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
+#include "gjs/error-types.h"
 #include "gjs/gerror-result.h"  // for AutoError
 #include "gjs/global.h"
 #include "gjs/jsapi-util-args.h"
 #include "gjs/jsapi-util.h"
 #include "gjs/macros.h"
 #include "gjs/module.h"
-
 #include "util/console.h"
+#include "util/log.h"
 
 GJS_JSAPI_RETURN_CONVENTION
 static bool quit(JSContext* cx, unsigned argc, JS::Value* vp) {
@@ -147,11 +150,16 @@ static bool launch_file(JSContext* cx, unsigned argc, JS::Value* vp) {
     uint8_t exit_code;
     result = gjs->eval_module(uri, &exit_code);
     if (result.isErr()) {
+        if (g_error_matches(result.inspectErr(), GJS_ERROR, GJS_ERROR_SYSTEM_EXIT)) {
+            args.rval().setInt32(exit_code);
+            return true;
+        }
+
         gjs_throw(cx, "Error evaluating file: {}", result);
         return false;
     }
 
-    args.rval().setUndefined();
+    args.rval().setInt32(0);
     return true;
 }
 
@@ -214,8 +222,13 @@ static bool read_line(JSContext* cx, unsigned argc, JS::Value* vp) {
     Gjs::AutoChar line = g_data_input_stream_read_line_utf8(
         stream, &len, /* cancellable = */ nullptr, error.out());
     if (!line) {
-        gjs_throw(cx, "Error reading DAP Content-Length header: {}", error);
-        return false;
+        if (error) {
+            gjs_throw(cx, "Error reading DAP Content-Length header: {}", error);
+            return false;
+        }
+        // null return without error set means EOF
+        args.rval().setNull();
+        return true;
     }
 
     JS::UTF8Chars chars{line, len};
@@ -251,6 +264,13 @@ static bool read_bytes(JSContext* cx, unsigned argc, JS::Value* vp) {
 
     size_t len;
     const void* pointer = g_bytes_get_data(bytes, &len);
+    if (len < nbytes) {
+        std::string_view view{static_cast<const char*>(pointer), len};
+        gjs_message("Incomplete DAP message: {}", view);
+        args.rval().setNull();
+        return true;
+    }
+
     JS::UTF8Chars chars{static_cast<const char*>(pointer), len};
     JS::RootedString str{cx, JS_NewStringCopyUTF8N(cx, chars)};
     if (!str)
@@ -301,19 +321,23 @@ static JSFunctionSpec inspector_funcs[] = {
     JS_FN("buildUri", build_uri, 2, GJS_MODULE_PROP_FLAGS),
     JS_FS_END};
 
-void gjs_context_setup_inspector(GjsContext* self) {
+bool gjs_context_setup_inspector(GjsContext* self) {
     auto* gjs = GjsContextPrivate::from_object(self);
     JSContext* cx = gjs->context();
 
     JS::RootedObject inspector_global{
         cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER)};
+    if (!inspector_global) {
+        gjs_log_exception(cx);
+        return false;
+    }
 
     // Enter realm of the inspector and initialize it with the debuggee
     JSAutoRealm ar{cx, inspector_global};
     JS::RootedObject debuggee{cx, gjs->global()};
     if (!JS_WrapObject(cx, &debuggee)) {
         gjs_log_exception(cx);
-        return;
+        return false;
     }
 
     JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
@@ -322,6 +346,18 @@ void gjs_context_setup_inspector(GjsContext* self) {
         !JS_DefineFunctions(cx, inspector_global, inspector_funcs) ||
         !gjs_define_global_properties(cx, inspector_global,
                                       GjsGlobalType::DEBUGGER, "GJS inspector",
-                                      "inspector"))
+                                      "inspector")) {
+        uint8_t exit_code;
+        if (gjs->should_exit(&exit_code)) {
+            if (exit_code != 0) {
+                gjs_warning("Inspector exited with code {}", exit_code);
+                return false;
+            }
+            return true;
+        }
+
         gjs_log_exception(cx);
+        return false;
+    }
+    return true;
 }

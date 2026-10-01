@@ -84,6 +84,7 @@ EOF
 #include <config.h>
 #include <stdint.h>
 #include <memory>
+#include <readline/readline.h>
 #include <glib.h>
 #include <js/TypeDecls.h>
 #include "program.h"
@@ -94,6 +95,7 @@ EOF
     test_env
     cat > gjs/program.c <<EOF
 #include <config.h>
+#include <readline/readline.h>
 #include <memory>
 #include <glib.h>
 #include <js/TypeDecls.h>
@@ -134,6 +136,7 @@ function check_config_header {
 
     c_headers=()
     cpp_headers=()
+    c_lib_headers=()
     gnome_headers=()
     moz_headers=()
     gjs_headers=()
@@ -148,11 +151,16 @@ function check_config_header {
             continue
         fi
         report_out_of_order "$file" "$include" "Mozilla" "${moz_headers[@]}" || continue
-        if [[ "$include" =~ \<(ffi|sysprof.*|cairo.*|g.*)\.h\> ]]; then
+        if [[ "$include" =~ \<(sysprof.*|cairo.*|g.*)\.h\> ]]; then
             gnome_headers+=("$include")
             continue
         fi
         report_out_of_order "$file" "$include" "GNOME platform" "${gnome_headers[@]}" || continue
+        if [[ "$include" =~ \<(ffi|readline.*)\.h\> ]]; then
+            c_lib_headers+=("$include")
+            continue
+        fi
+        report_out_of_order "$file" "$include" "C dependency" "${c_lib_headers[@]}" || continue
         if [[ "$include" =~ \<.*\.h\> ]]; then
             report_out_of_order "$file" "$include" "C++ standard library" "${cpp_headers[@]}" || continue
             c_headers+=("$include")
