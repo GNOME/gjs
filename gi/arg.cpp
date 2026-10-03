@@ -1017,7 +1017,7 @@ bool gjs_array_to_basic_explicit_array(
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting argument '{}' JS value {} to C array",
-                      arg_name, value);
+                      gjs_argument_display_name(arg_name, arg_type), value);
 
     if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
         (!value.isString() && !value.isObjectOrNull())) {
@@ -1088,7 +1088,7 @@ bool gjs_array_to_explicit_array(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to C array, transfer {}",
-        arg_name, value, transfer);
+        gjs_argument_display_name(arg_name, arg_type), value, transfer);
 
     if ((value.isNull() && !(flags & GjsArgumentFlags::MAY_BE_NULL)) ||
         (!value.isString() && !value.isObjectOrNull())) {
@@ -1466,8 +1466,8 @@ bool gjs_value_to_basic_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '{}' JS value {} to GIArgument type {}", arg_name,
-        value, type_tag);
+        "Converting argument '{}' JS value {} to GIArgument type {}",
+        gjs_argument_display_name(arg_name, arg_type), value, type_tag);
 
     switch (type_tag) {
         case GI_TYPE_TAG_VOID:
@@ -1590,7 +1590,7 @@ bool gjs_value_to_gerror_gi_argument(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to GIArgument type error",
-        arg_name, value);
+        gjs_argument_display_name(arg_name, arg_type), value);
 
     if (value.isNull()) {
         gjs_arg_set(arg, nullptr);
@@ -1614,7 +1614,7 @@ bool gjs_value_to_gdk_atom_gi_argument(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to GIArgument type interface",
-        arg_name, value);
+        gjs_argument_display_name(arg_name, arg_type), value);
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION, "gtype of INTERFACE is GdkAtom");
 
@@ -1639,7 +1639,7 @@ bool gjs_value_to_interface_gi_argument(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to GIArgument type interface",
-        arg_name, value);
+        gjs_argument_display_name(arg_name, arg_type), value);
 
     if (auto struct_info = interface_info.as<GI::InfoTag::STRUCT>();
         struct_info && struct_info->is_foreign()) {
@@ -1742,7 +1742,7 @@ bool gjs_value_to_basic_glist_gi_argument(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to GIArgument type glist",
-        arg_name, value);
+        gjs_argument_display_name(arg_name, arg_type), value);
 
     return basic_array_to_linked_list(cx, value, element_tag, arg_name,
                                       arg_type, &gjs_arg_member<GList*>(arg));
@@ -1759,7 +1759,7 @@ bool gjs_value_to_basic_gslist_gi_argument(JSContext* cx, JS::HandleValue value,
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to GIArgument type gslist",
-        arg_name, value);
+        gjs_argument_display_name(arg_name, arg_type), value);
 
     return basic_array_to_linked_list(cx, value, element_tag, arg_name,
                                       arg_type, &gjs_arg_member<GSList*>(arg));
@@ -1778,7 +1778,7 @@ bool gjs_value_to_basic_ghash_gi_argument(
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
         "Converting argument '{}' JS value {} to GIArgument type ghash",
-        arg_name, value);
+        gjs_argument_display_name(arg_name, arg_type), value);
 
     if (value.isNull()) {
         if (!(flags & GjsArgumentFlags::MAY_BE_NULL)) {
@@ -1982,8 +1982,8 @@ bool gjs_value_to_gi_argument(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(
         GJS_DEBUG_GFUNCTION,
-        "Converting argument '{}' JS value {} to GIArgument type {}", arg_name,
-        value, type_tag);
+        "Converting argument '{}' JS value {} to GIArgument type {}",
+        gjs_argument_display_name(arg_name, arg_type), value, type_tag);
 
     switch (type_tag) {
     case GI_TYPE_TAG_VOID:

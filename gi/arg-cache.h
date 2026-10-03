@@ -244,7 +244,7 @@ struct ArgsCache {
     constexpr void set_instance(
         auto* arg, GITransfer, GjsArgumentFlags flags = GjsArgumentFlags::NONE);
 
-    void set_skip_all(uint8_t index, const char* name = nullptr);
+    void set_skip_all(uint8_t index, const char* name);
 
     template <Arg::Kind ArgKind = Arg::Kind::NORMAL>
     [[nodiscard]]

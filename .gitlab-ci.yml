@@ -144,6 +144,7 @@ sanitizer_gcc:
     CXX: clang++
     CONFIG_OPTS: >-
       -Ddtrace=true -Dsystemtap=true -Dverbose_logs=true -Db_pch=false
+    TEST_OPTS: --setup=verbose
     ENABLE_GTK: "yes"
   rules: *rules_default
   script:

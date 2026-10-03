@@ -3775,10 +3775,10 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                          "No more than 253 arguments allowed");
 
                 if (destroy_pos)
-                    set_skip_all(*destroy_pos);
+                    set_skip_all(*destroy_pos, arg.name());
 
                 if (closure_pos)
-                    set_skip_all(*closure_pos);
+                    set_skip_all(*closure_pos, arg.name());
 
                 if (destroy_pos && !closure_pos) {
                     set_argument(
