@@ -513,7 +513,7 @@ valgrind:
   rules: *rules_default
 
 # SpiderMonkey GC Tests (weekly)
-zeal_2:
+zeal-extra-gc:
   <<: *build
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
@@ -523,7 +523,7 @@ zeal_2:
   when: manual
   rules: *rules_default
 
-zeal_4:
+zeal-pre-verify:
   <<: *build
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug
@@ -533,7 +533,7 @@ zeal_4:
   when: manual
   rules: *rules_default
 
-zeal_11:
+zeal-post-verify:
   <<: *build
   stage: manual
   image: registry.gitlab.gnome.org/gnome/gjs:fedora.mozjs140-debug

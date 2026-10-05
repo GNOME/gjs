@@ -738,17 +738,14 @@ add_test_setup('verbose')
 add_test_setup('valgrind', timeout_multiplier: 120, env: valgrind_environment,
     exe_wrapper: ['valgrind'] + valgrind_args)
 
-zeal2_environment = environment()
-zeal2_environment.set('JS_GC_ZEAL', 'Compact,10')
-add_test_setup('extra_gc', timeout_multiplier: 120, env: zeal2_environment)
+extra_gc_environment = environment({'JS_GC_ZEAL': 'Compact,10'})
+add_test_setup('extra_gc', timeout_multiplier: 120, env: extra_gc_environment)
 
-zeal4_environment = environment()
-zeal4_environment.set('JS_GC_ZEAL', 'VerifierPre')
-add_test_setup('pre_verify', timeout_multiplier: 60, env: zeal4_environment)
+pre_verify_environment = environment({'JS_GC_ZEAL': 'VerifierPre'})
+add_test_setup('pre_verify', timeout_multiplier: 60, env: pre_verify_environment)
 
-zeal11_environment = environment()
-zeal11_environment.set('JS_GC_ZEAL', 'VerifierPost')
-add_test_setup('post_verify', timeout_multiplier: 5, env: zeal11_environment)
+post_verify_environment = environment({'JS_GC_ZEAL': 'VerifierPost'})
+add_test_setup('post_verify', timeout_multiplier: 5, env: post_verify_environment)
 
 ### Warn about conditions that may affect runtime ##############################
 
