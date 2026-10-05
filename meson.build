@@ -739,8 +739,8 @@ add_test_setup('valgrind', timeout_multiplier: 120, env: valgrind_environment,
     exe_wrapper: ['valgrind'] + valgrind_args)
 
 zeal2_environment = environment()
-zeal2_environment.set('JS_GC_ZEAL', 'Alloc,10')
-add_test_setup('extra_gc', timeout_multiplier: 60, env: zeal2_environment)
+zeal2_environment.set('JS_GC_ZEAL', 'Compact,10')
+add_test_setup('extra_gc', timeout_multiplier: 120, env: zeal2_environment)
 
 zeal4_environment = environment()
 zeal4_environment.set('JS_GC_ZEAL', 'VerifierPre')
