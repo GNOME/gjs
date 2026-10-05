@@ -23,6 +23,7 @@ static std::atomic<GObject*> s_tmp_object = nullptr;
 static GWeakRef s_tmp_weak;
 static std::unordered_set<GObject*> s_finalized_objects;
 static std::mutex s_finalized_objects_lock;
+static GObject* s_singleton = nullptr;
 
 struct FinalizedObjectsLocked {
     FinalizedObjectsLocked() : hold(s_finalized_objects_lock) {}
@@ -382,3 +383,37 @@ alignas(8) static const char static_bytes[] = "hello";
 GBytes* gjs_test_tools_new_static_bytes() {
     return g_bytes_new_static(static_bytes, 6);
 }
+
+/**
+ * GjsTestToolsSingleton:
+ *
+ * A GObject class with only one instance at a time. Constructing it while an
+ * instance exists returns a new reference to the existing instance.
+ */
+struct _GjsTestToolsSingleton {
+    GObject parent_instance;
+};
+
+G_DEFINE_FINAL_TYPE(GjsTestToolsSingleton, gjs_test_tools_singleton,
+                    G_TYPE_OBJECT)
+
+static GObject* gjs_test_tools_singleton_constructor(
+    GType type, unsigned n_construct_properties,
+    GObjectConstructParam* construct_properties) {
+    if (s_singleton)
+        return G_OBJECT(g_object_ref(s_singleton));
+
+    s_singleton =
+        G_OBJECT_CLASS(gjs_test_tools_singleton_parent_class)
+            ->constructor(type, n_construct_properties, construct_properties);
+    g_object_add_weak_pointer(s_singleton,
+                              reinterpret_cast<void**>(&s_singleton));
+    return s_singleton;
+}
+
+static void gjs_test_tools_singleton_class_init(
+    GjsTestToolsSingletonClass* klass) {
+    G_OBJECT_CLASS(klass)->constructor = gjs_test_tools_singleton_constructor;
+}
+
+static void gjs_test_tools_singleton_init(GjsTestToolsSingleton*) {}
