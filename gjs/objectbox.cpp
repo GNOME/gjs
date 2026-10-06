@@ -4,20 +4,16 @@
 
 #include <config.h>
 
+#include <vector>
+
 #include <glib.h>
 
-#include <js/AllocPolicy.h>
 #include <js/ComparisonOperators.h>
-#include <js/ErrorReport.h>  // for JS_ReportOutOfMemory
-#include <js/GCPolicyAPI.h>  // for GCPolicy (ptr only), NonGCPointe...
-#include <js/GCVector.h>
 #include <js/RootingAPI.h>
-#include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 
 #include "gjs/auto.h"
 #include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
 #include "gjs/objectbox.h"
 #include "util/log.h"
 
@@ -26,33 +22,18 @@
  * GObject property.
  */
 
-namespace JS {
-template <>
-struct GCPolicy<ObjectBox*> : NonGCPointerPolicy<ObjectBox*> {};
-}  // namespace JS
-
-namespace {
-JS::PersistentRooted<JS::GCVector<ObjectBox*, 0, js::SystemAllocPolicy>>
-    m_wrappers;
-}
+static std::vector<ObjectBox*> s_wrappers;
 
 struct ObjectBox::impl {
-    impl(ObjectBox* parent, JSObject* obj) : m_parent(parent), m_root(obj) {
+    impl(JSContext* cx, ObjectBox* parent, JSObject* obj)
+        : m_parent(parent), m_root(cx, obj) {
         g_atomic_ref_count_init(&m_refcount);
+        s_wrappers.push_back(m_parent);
         debug("Constructed");
     }
 
-    GJS_JSAPI_RETURN_CONVENTION
-    bool init(JSContext* cx) {
-        if (!m_wrappers.append(m_parent)) {
-            JS_ReportOutOfMemory(cx);
-            return false;
-        }
-        return true;
-    }
-
     ~impl() {
-        m_wrappers.eraseIfEqual(m_parent);
+        std::erase(s_wrappers, m_parent);
         debug("Finalized");
     }
 
@@ -74,18 +55,19 @@ struct ObjectBox::impl {
     }
 
     ObjectBox* m_parent;
-    JS::Heap<JSObject*> m_root;
+    JS::PersistentRooted<JSObject*> m_root;
     gatomicrefcount m_refcount;
 };
 
-ObjectBox::ObjectBox(JSObject* obj) : m_impl(new ObjectBox::impl(this, obj)) {}
+ObjectBox::ObjectBox(JSContext* cx, JSObject* obj)
+    : m_impl(new ObjectBox::impl(cx, this, obj)) {}
 
 void ObjectBox::destroy(ObjectBox* object) { object->m_impl->unref(); }
 
 void ObjectBox::destroy_impl(ObjectBox::impl* impl) { delete impl; }
 
 ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
-    for (ObjectBox* box : m_wrappers) {
+    for (ObjectBox* box : s_wrappers) {
         if (box->m_impl->m_root == obj) {
             box->m_impl->ref();
             box->m_impl->debug("Reusing box");
@@ -93,10 +75,7 @@ ObjectBox::Ptr ObjectBox::boxed(JSContext* cx, JSObject* obj) {
         }
     }
 
-    ObjectBox::Ptr box{new ObjectBox(obj)};
-    if (!box->m_impl->init(cx))
-        return nullptr;
-    return box;
+    return new ObjectBox(cx, obj);
 }
 
 JSObject* ObjectBox::object_for_c_ptr(JSContext* cx, ObjectBox* box) {
@@ -105,8 +84,16 @@ JSObject* ObjectBox::object_for_c_ptr(JSContext* cx, ObjectBox* box) {
         return nullptr;
     }
 
+    JSObject* obj = box->m_impl->m_root.get();
+    if (!obj) {
+        gjs_throw(cx,
+                  "JSObject for ObjectBox {} belongs to destroyed JSContext",
+                  static_cast<void*>(box));
+        return nullptr;
+    }
+
     box->m_impl->debug("retrieved JSObject");
-    return box->m_impl->m_root.get();
+    return obj;
 }
 
 void* ObjectBox::boxed_copy(void* boxed) {
@@ -125,8 +112,4 @@ GType ObjectBox::gtype() {
     static GType type_id = g_boxed_type_register_static(
         "JSObject", &ObjectBox::boxed_copy, &ObjectBox::boxed_free);
     return type_id;
-}
-
-void ObjectBox::trace(JSTracer* trc) {
-    JS::TraceEdge(trc, &m_impl->m_root, "object in ObjectBox");
 }

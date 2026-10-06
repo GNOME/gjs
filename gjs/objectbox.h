@@ -13,8 +13,6 @@
 #include "gjs/auto.h"
 #include "gjs/macros.h"
 
-class JSTracer;
-
 class ObjectBox {
     static void destroy(ObjectBox*);
 
@@ -23,16 +21,13 @@ class ObjectBox {
 
     [[nodiscard]] static GType gtype();
 
-    GJS_JSAPI_RETURN_CONVENTION
-    static ObjectBox::Ptr boxed(JSContext*, JSObject*);
+    [[nodiscard]] static ObjectBox::Ptr boxed(JSContext*, JSObject*);
 
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* object_for_c_ptr(JSContext*, ObjectBox*);
 
-    void trace(JSTracer*);
-
  private:
-    explicit ObjectBox(JSObject*);
+    explicit ObjectBox(JSContext*, JSObject*);
 
     static void* boxed_copy(void*);
     static void boxed_free(void*);
