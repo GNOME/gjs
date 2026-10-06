@@ -749,6 +749,12 @@ describe('Gtk 4', function () {
             mapModel.set_map_func(item => Gtk.StringObject.new(item.label));
             mapModel.get_item(0);
         });
+
+        it('JS object stored in a GObject.TYPE_JSOBJECT GValue by C code is not collected', function () {
+            const expr = Gtk.ConstantExpression.new_for_value({answer: 42});
+            System.gc();
+            expect(expr.get_value()).toEqual({answer: 42});
+        });
     });
 
     describe('template signal', function () {
