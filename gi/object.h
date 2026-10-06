@@ -329,8 +329,6 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
      * ref on the underlying GObject, and may be finalized at will. */
     bool m_uses_toggle_ref : 1 = false;
 
-    static bool s_weak_pointer_callback;
-
     // Constructors
 
  private:
@@ -365,13 +363,10 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     }
     [[nodiscard]] bool wrapper_is_rooted() const { return m_wrapper.rooted(); }
     void release_native_object();
-    void associate_js_gobject(JSContext*, JS::HandleObject, GObject*);
+    void associate_js_gobject(JSObject*, GObject*);
     void disassociate_js_gobject();
     void handle_context_dispose();
     [[nodiscard]] bool weak_pointer_was_finalized(JSTracer*);
-    static void ensure_weak_pointer_callback(JSContext*);
-    static void update_heap_wrapper_weak_pointers(JSTracer*, JS::Compartment*,
-                                                  void* data);
 
  public:
     void toggle_down();
@@ -383,6 +378,9 @@ class ObjectInstance : public GIWrapperInstance<ObjectBase, ObjectPrototype,
     GJS_JSAPI_RETURN_CONVENTION
     static bool set_value_from_gobject(JSContext*, GObject*,
                                        JS::MutableHandleValue);
+
+    static void update_heap_wrapper_weak_pointers(JSTracer*, JS::Compartment*,
+                                                  void* data);
 
     // Methods to manipulate the list of closures
 

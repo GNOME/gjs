@@ -35,7 +35,6 @@
 #include <js/ComparisonOperators.h>
 #include <js/ErrorReport.h>         // for JS_ReportOutOfMemory
 #include <js/Exception.h>           // for JS_ClearPendingException
-#include <js/GCAPI.h>               // for JS_AddWeakPointerCompartmentCallback
 #include <js/GCVector.h>            // for MutableWrappedPtrOperations
 #include <js/HeapAPI.h>
 #include <js/MemoryFunctions.h>     // for AddAssociatedMemory, RemoveAssoci...
@@ -107,7 +106,6 @@ static_assert(sizeof(ObjectInstance) <= 64,
               "gnome-shell run.");
 #endif  // x86-64 clang
 
-bool ObjectInstance::s_weak_pointer_callback = false;
 decltype(ObjectInstance::s_wrapped_gobject_list)
     ObjectInstance::s_wrapped_gobject_list;
 
@@ -2416,8 +2414,8 @@ ObjectPrototype::ObjectPrototype(const Maybe<GI::ObjectInfo>& info, GType gtype)
 /**
  * ObjectInstance::update_heap_wrapper_weak_pointers:
  *
- * Private callback, called after the JS engine finishes garbage collection, and
- * notifies when weak pointers need to be either moved or swept.
+ * Called after the JS engine finishes garbage collection, and notifies when
+ * weak pointers need to be either moved or swept.
  */
 void ObjectInstance::update_heap_wrapper_weak_pointers(JSTracer* trc,
                                                        JS::Compartment*,
@@ -2466,21 +2464,7 @@ bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
     return false;
 }
 
-/**
- * ObjectInstance::ensure_weak_pointer_callback:
- *
- * Private method called when adding a weak pointer for the first time.
- */
-void ObjectInstance::ensure_weak_pointer_callback(JSContext* cx) {
-    if (!s_weak_pointer_callback) {
-        JS_AddWeakPointerCompartmentCallback(
-            cx, &ObjectInstance::update_heap_wrapper_weak_pointers, nullptr);
-        s_weak_pointer_callback = true;
-    }
-}
-
-void ObjectInstance::associate_js_gobject(JSContext* cx,
-                                          JS::HandleObject object,
+void ObjectInstance::associate_js_gobject(JSObject* object,
                                           GObject* gobj) {
     g_assert(!wrapper_is_rooted());
 
@@ -2490,7 +2474,6 @@ void ObjectInstance::associate_js_gobject(JSContext* cx,
     m_wrapper = object;
     m_gobj_disposed = !!g_object_get_qdata(gobj, ObjectBase::disposed_quark());
 
-    ensure_weak_pointer_callback(cx);
     link();
 
     if (!m_gobj_disposed) [[likely]]
@@ -2682,7 +2665,7 @@ bool ObjectInstance::init_impl(JSContext* cx, const JS::CallArgs& args,
     }
 
     if (!m_ptr)
-        associate_js_gobject(cx, object, gobj);
+        associate_js_gobject(object, gobj);
 
     TRACE(GJS_OBJECT_WRAPPER_NEW(this, m_ptr, ns(), name()));
 
@@ -3501,7 +3484,7 @@ bool ObjectPrototype::define_class(JSContext* cx, JS::HandleObject in_object,
 bool ObjectInstance::init_custom_class_from_gobject(JSContext* cx,
                                                     JS::HandleObject wrapper,
                                                     GObject* gobj) {
-    associate_js_gobject(cx, wrapper, gobj);
+    associate_js_gobject(wrapper, gobj);
 
     // Custom JS objects will most likely have visible state, so just do this
     // from the start.
@@ -3561,7 +3544,7 @@ ObjectInstance* ObjectInstance::new_for_gobject(JSContext* cx, GObject* gobj) {
     ObjectBase::init_private(obj, priv);
 
     g_object_ref_sink(gobj);
-    priv->associate_js_gobject(cx, obj, gobj);
+    priv->associate_js_gobject(obj, gobj);
 
     g_assert(priv->wrapper() == obj.get());
 

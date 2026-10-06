@@ -653,6 +653,9 @@ GjsContextPrivate::GjsContextPrivate(JSContext* cx, GjsContext* public_context)
                 status, reason);
         },
         this);
+    if (!JS_AddWeakPointerCompartmentCallback(
+            cx, &ObjectInstance::update_heap_wrapper_weak_pointers, nullptr))
+        gjs_error("Failed to add weak pointer callback");
 
     const char* env_profiler = g_getenv("GJS_ENABLE_PROFILER");
     if (env_profiler || m_should_listen_sigusr2)
