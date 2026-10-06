@@ -400,7 +400,7 @@ class CWrapper : public CWrapperPointerOps<Base, Wrapped> {
     GJS_JSAPI_RETURN_CONVENTION
     static JSObject* create_prototype(JSContext* cx,
                                       JS::HandleObject module = nullptr) {
-        JSObject* global = JS::CurrentGlobalOrNull(cx);
+        JS::RootedObject global{cx, JS::CurrentGlobalOrNull(cx)};
         assert(global && "Must be in a realm to call create_prototype()");
 
         // If we've been here more than once, we already have the proto
