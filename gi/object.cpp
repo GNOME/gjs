@@ -2473,10 +2473,10 @@ bool ObjectInstance::weak_pointer_was_finalized(JSTracer* trc) {
         std::tie(toggle_down_queued, toggle_up_queued) =
             toggle_queue->is_queued(this);
 
-        if (!toggle_down_queued && toggle_up_queued)
+        if (!update_after_gc(trc))
             return false;
 
-        if (!update_after_gc(trc))
+        if (!toggle_down_queued && toggle_up_queued)
             return false;
 
         if (toggle_down_queued)
