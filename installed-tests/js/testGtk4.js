@@ -771,3 +771,43 @@ describe('Gtk 4', function () {
         });
     });
 });
+
+describe('Regression test for GObject disposal race', function () {
+    // This test needs to be in a separate describe() block because the log
+    // writer callback would otherwise be called during GC.
+    it('does not crash', function () {
+        class Target extends GObject.Object {
+            static [GObject.properties] = {
+                'widget': GObject.ParamSpec.object('widget', 'dummy', 'dummy',
+                    GObject.ParamFlags.READWRITE, Gtk.Widget),
+            };
+
+            static {
+                GObject.registerClass(this);
+            }
+        }
+
+        // Each iteration of this loop creates several garbage objects,
+        // including the Gtk.Box and the Target. If the Box is disposed before
+        // the Target, the Label is also disposed and the property binding tries
+        // to update the target's property and enters gjs_object_set_gproperty()
+        // on a JS wrapper that's about to be swept. That would crash in debug
+        // builds. This test ensures we prevent the crash and log a critical
+        // instead. Because it's nondeterministic which object is disposed
+        // first, create several copies of these objects.
+        for (let i = 0; i < 20; i++) {
+            const label = new Gtk.Label();
+            new Gtk.Box().append(label);
+            new Gtk.PropertyExpression(Gtk.Widget, null, 'parent')
+                .bind(new Target(), 'widget', label);
+        }
+
+        // A variable number of criticals may be logged, so we can't use
+        // GLib.test_expect_message(), and they are logged during GC, so we
+        // can't use a JS log writer callback.
+        const oldMask = GLib.log_set_always_fatal(
+            GLib.LogLevelFlags.LEVEL_ERROR | GLib.LogLevelFlags.LEVEL_CRITICAL);
+        System.gc();
+        GLib.log_set_always_fatal(oldMask);
+    });
+});
