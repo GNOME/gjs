@@ -265,6 +265,47 @@ static size_t zero_terminated_length(const T* data, size_t len) {
     return std::distance(start, found);
 }
 
+// Open-coded copy of JS_NewStringCopyUTF8N(), but copies ASCII string data
+// _before_ creating the JSString, which may GC and invalidate the data pointer.
+GJS_JSAPI_RETURN_CONVENTION
+static JSString* new_string_from_movable_utf8(JSContext* cx,
+                                              const uint8_t* data, size_t len) {
+    JS::UTF8Chars utf8{reinterpret_cast<const char*>(data), len};
+    size_t out_len;
+
+    switch (JS::FindSmallestEncoding(utf8)) {
+        case JS::SmallestEncoding::ASCII: {
+            // ASCII is already Latin-1, so just copy
+            JS::UniqueLatin1Chars latin1{js_pod_malloc<JS::Latin1Char>(len)};
+            if (!latin1) {
+                JS_ReportOutOfMemory(cx);
+                return nullptr;
+            }
+            std::copy_n(data, len, latin1.get());
+            return JS_NewLatin1String(cx, std::move(latin1), len);
+        }
+        case JS::SmallestEncoding::Latin1: {
+            JS::UniqueLatin1Chars latin1{
+                JS::UTF8CharsToNewLatin1CharsZ(cx, utf8, &out_len,
+                                               js::MallocArena)
+                    .get()};
+            if (!latin1)
+                return nullptr;
+            return JS_NewLatin1String(cx, std::move(latin1), out_len);
+        }
+        case JS::SmallestEncoding::UTF16: {
+            JS::UniqueTwoByteChars utf16{
+                JS::UTF8CharsToNewTwoByteCharsZ(cx, utf8, &out_len,
+                                                js::MallocArena)
+                    .get()};
+            if (!utf16)
+                return nullptr;
+            return JS_NewUCStringDontDeflate(cx, std::move(utf16), out_len);
+        }
+    }
+    g_assert_not_reached();
+}
+
 // decode() function implementation
 JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
                                      const char* encoding,
@@ -298,66 +339,38 @@ JSString* gjs_decode_from_uint8array(JSContext* cx, JS::HandleObject uint8array,
     if (!encoding_is_utf8)
         return gjs_decode_from_uint8array_slow(cx, data, len, encoding, fatal);
 
-    JS::RootedString decoded(cx);
     if (!fatal) {
-        decoded.set(gjs_lossy_string_from_utf8(
-            cx, {reinterpret_cast<char*>(data), len}));
-    } else {
-        JS::UTF8Chars chars(reinterpret_cast<char*>(data), len);
-        JS::RootedString str(cx, JS_NewStringCopyUTF8N(cx, chars));
-
-        // If an exception occurred, we need to check if the
-        // exception was an InternalError. Unfortunately,
-        // SpiderMonkey's decoder can throw InternalError for some
-        // invalid UTF-8 sources, we have to convert this into a
-        // TypeError to match the Encoding specification.
-        if (str) {
-            decoded.set(str);
-        } else {
-            JS::RootedValue exc(cx);
-            if (!JS_GetPendingException(cx, &exc) || !exc.isObject())
-                return nullptr;
-
-            JS::RootedObject exc_obj(cx, &exc.toObject());
-            const JSClass* internal_error =
-                js::ProtoKeyToClass(JSProto_InternalError);
-            if (JS_InstanceOf(cx, exc_obj, internal_error, nullptr)) {
-                // Clear the existing exception.
-                JS_ClearPendingException(cx);
-                gjs_throw_custom(
-                    cx, JSEXN_TYPEERR, nullptr,
-                    "The provided encoded data was not valid UTF-8");
-            }
-
-            return nullptr;
-        }
+        return gjs_lossy_string_from_utf8(cx,
+                                          {reinterpret_cast<char*>(data), len});
     }
 
-    uint8_t* current_data;
-    size_t current_len;
-    bool ignore_val;
+    JS::RootedString decoded{cx, new_string_from_movable_utf8(cx, data, len)};
+    // The above call can GC. data must not be used after this point
+    data = nullptr;
 
-    // If a garbage collection occurs between when we call
-    // js::GetUint8ArrayLengthAndData and return from
-    // gjs_decode_from_uint8array, a use-after-free corruption can occur if the
-    // garbage collector shifts the location of the Uint8Array's private data.
-    // To mitigate this we call js::GetUint8ArrayLengthAndData again and then
-    // compare if the length and pointer are still the same. If the pointers
-    // differ, we use the slow path to ensure no data corruption occurred. The
-    // shared-ness of an array cannot change between calls, so we ignore it.
-    js::GetUint8ArrayLengthAndData(uint8array, &current_len, &ignore_val,
-                                   &current_data);
+    // If an exception occurred, we need to check if the exception was an
+    // InternalError. Unfortunately, SpiderMonkey's decoder can throw
+    // InternalError for some invalid UTF-8 sources, we have to convert this
+    // into a TypeError to match the Encoding specification.
+    if (!decoded) {
+        JS::RootedValue exc{cx};
+        if (!JS_GetPendingException(cx, &exc) || !exc.isObject())
+            return nullptr;
 
-    // Ensure the private data hasn't changed
-    if (current_data == data)
-        return decoded;
+        JS::RootedObject exc_obj{cx, &exc.toObject()};
+        const JSClass* internal_error =
+            js::ProtoKeyToClass(JSProto_InternalError);
+        if (JS_InstanceOf(cx, exc_obj, internal_error, nullptr)) {
+            // Clear the existing exception.
+            JS_ClearPendingException(cx);
+            gjs_throw_custom(cx, JSEXN_TYPEERR, nullptr,
+                             "The provided encoded data was not valid UTF-8");
+        }
 
-    g_assert(current_len == len &&
-             "Garbage collection should not affect data length.");
+        return nullptr;
+    }
 
-    // This was the UTF-8 optimized path, so we explicitly pass the encoding
-    return gjs_decode_from_uint8array_slow(cx, current_data, current_len,
-                                           "utf-8", fatal);
+    return decoded;
 }
 
 GJS_JSAPI_RETURN_CONVENTION
