@@ -68,7 +68,7 @@
 #include "gjs/profiler-private.h"
 #include "util/log.h"
 
-using mozilla::Maybe, mozilla::Some;
+using mozilla::Err, mozilla::Maybe, mozilla::Ok, mozilla::Result, mozilla::Some;
 
 // We use uint8_t for arguments; functions can't have more than this.
 #define GJS_ARG_INDEX_INVALID UINT8_MAX
@@ -659,8 +659,12 @@ GjsCallbackTrampoline* GjsCallbackTrampoline::create(
     auto* trampoline = new GjsCallbackTrampoline(cx, callable, callable_info,
                                                  scope, has_scope_object);
 
-    if (!trampoline->initialize()) {
+    Result<Ok, std::string> init_result = trampoline->initialize();
+    if (init_result.isErr()) {
+        // Throwing may allocate and invalidate m_callable if not rooted, so
+        // must destroy trampoline and call its notify callbacks before that
         g_closure_unref(trampoline);
+        gjs_throw(cx, "{}", init_result.inspectErr());
         return nullptr;
     }
 
@@ -718,7 +722,7 @@ ffi_closure* GjsCallbackTrampoline::create_closure() {
         &m_cif, &GjsCallbackTrampoline::invoke_callback_closure, this);
 }
 
-bool GjsCallbackTrampoline::initialize() {
+Result<Ok, std::string> GjsCallbackTrampoline::initialize() {
     g_assert(is_valid());
     g_assert(!m_closure);
 
@@ -745,11 +749,10 @@ bool GjsCallbackTrampoline::initialize() {
 
         if (type_tag == GI_TYPE_TAG_INTERFACE) {
             if (type_info.interface().is_callback()) {
-                gjs_throw(cx(),
-                          "The {} {} accepts another callback as a parameter. "
-                          "This is not supported",
-                          m_info.kind_string(), m_info);
-                return false;
+                return Err(
+                    std::format("The {} {} accepts another callback as a "
+                                "parameter. This is not supported",
+                                m_info.kind_string(), m_info));
             }
         } else if (type_tag == GI_TYPE_TAG_ARRAY) {
             if (type_info.array_type() == GI_ARRAY_TYPE_C) {
@@ -763,12 +766,10 @@ bool GjsCallbackTrampoline::initialize() {
                     m_info.load_arg(*array_length_pos, &length_arg_info);
 
                     if (length_arg_info.direction() != direction) {
-                        gjs_throw(
-                            cx(),
+                        return Err(std::format(
                             "The {} {} has an array with different-direction "
                             "length argument. This is not supported",
-                            m_info.kind_string(), m_info);
-                        return false;
+                            m_info.kind_string(), m_info));
                     }
 
                     m_param_types[*array_length_pos] = PARAM_SKIPPED;
@@ -779,7 +780,7 @@ bool GjsCallbackTrampoline::initialize() {
     }
 
     m_closure = create_closure();
-    return true;
+    return Ok{};
 }
 
 namespace Gjs {
