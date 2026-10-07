@@ -2156,12 +2156,16 @@ void ObjectInstance::remove_wrapped_gobjects_if(
     const ObjectInstance::Predicate& predicate,
     const ObjectInstance::Action& action) {
     std::vector<ObjectInstance*> removed;
-    std::erase_if(s_wrapped_gobject_list, [&predicate, &removed](ObjectInstance* priv) {
-        if (!predicate(priv))
-            return false;
-        removed.push_back(priv);
-        return true;
-    });
+    for (auto link = s_wrapped_gobject_list.begin(),
+              last = s_wrapped_gobject_list.end();
+         link != last;) {
+        if (predicate(*link)) {
+            removed.push_back(*link);
+            link = s_wrapped_gobject_list.erase(link);
+            continue;
+        }
+        ++link;
+    }
 
     for (ObjectInstance* priv : removed)
         action(priv);
