@@ -21,6 +21,7 @@
 
 #include <format>
 #include <iterator>     // for size
+#include <mutex>
 #include <new>
 #include <string>       // for u16string
 #include <thread>       // for get_id
@@ -350,6 +351,14 @@ void GjsContextPrivate::trace(JSTracer* trc, void* data) {
     gjs->m_job_queue.trace(trc);
     gjs->m_cleanup_tasks.trace(trc);
     gjs->m_object_init_list.trace(trc);
+
+    // Usually empty, but traces closures enqueued after vector is drained at
+    // GC start
+    std::lock_guard lock{gjs->m_offthread_closures_mutex};
+    for (Gjs::Closure::Ptr& closure : gjs->m_offthread_closures) {
+        if (!closure->is_managed())
+            closure->trace(trc);
+    }
 }
 
 void GjsContextPrivate::warn_about_unhandled_promise_rejections() {
@@ -475,6 +484,17 @@ void GjsContextPrivate::dispose() {
         // don't use g_clear_pointer() as we want the pointer intact while we
         // destroy the context in case we dump stack
         gjs_debug(GJS_DEBUG_CONTEXT, "JS context destroyed");
+
+        // There may be more off-thread deferrals queued after the final GC, but
+        // we can't do anything with them at this point
+        std::lock_guard lock{m_offthread_closures_mutex};
+        for (Gjs::Closure::Ptr& closure : m_offthread_closures) {
+            gjs_debug(
+                GJS_DEBUG_CONTEXT,
+                "Leaking invalidated closure deferred after final GC");
+            closure.release();
+        }
+        m_offthread_closures.clear();
     }
 }
 
@@ -910,7 +930,7 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status,
         gjs_profiler_set_gc_status(m_profiler, status, reason);
 
     switch (status) {
-        case JSGC_BEGIN:
+        case JSGC_BEGIN: {
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT,
                                 "Begin garbage collection because of {}",
                                 gjs_explain_gc_reason(reason));
@@ -923,7 +943,15 @@ void GjsContextPrivate::on_garbage_collection(JSGCStatus status,
 
             m_async_closures.clear();
             m_async_closures.shrink_to_fit();
-            break;
+
+            std::vector<Gjs::Closure::Ptr> drain;
+            {
+                std::lock_guard lock{m_offthread_closures_mutex};
+                std::swap(m_offthread_closures, drain);
+            }
+            for (Gjs::Closure::Ptr& closure : drain)
+                closure->finish_deferred_invalidation();
+        } break;
         case JSGC_END:
             gjs_debug_lifecycle(GJS_DEBUG_CONTEXT, "End garbage collection");
             break;
@@ -1271,6 +1299,16 @@ void GjsContextPrivate::async_closure_enqueue_for_gc(Gjs::Closure* trampoline) {
     //  will be freed the next time gc happens
     g_assert(!trampoline->cx() || trampoline->cx() == m_cx);
     m_async_closures.emplace_back(trampoline);
+}
+
+void GjsContextPrivate::offthread_closure_enqueue_for_gc(
+    Gjs::Closure::Ptr&& closure) {
+    // Similar to async_closure_enqueue_for_gc(), but threadsafe. This is for
+    // closures that were invalidated off-thread, and need to be disposed on the
+    // main thread.
+    g_assert(!closure->cx() || closure->cx() == m_cx);
+    std::lock_guard lock{m_offthread_closures_mutex};
+    m_offthread_closures.emplace_back(std::move(closure));
 }
 
 /**
