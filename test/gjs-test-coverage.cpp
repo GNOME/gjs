@@ -370,6 +370,47 @@ static void test_expected_entry_not_written_for_nonexistent_file(
     g_assert_null(sf_line);
 }
 
+static void test_expected_entry_written_for_module_evaluated_from_file(
+    void* fixture_data, const void*) {
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
+
+    Gjs::AutoChar filename{get_script_identifier(fixture->tmp_js_script)};
+    bool ok = gjs_context_eval_module_file(fixture->gjs_context, filename,
+                                           nullptr, nullptr);
+    g_assert_true(ok);
+
+    Gjs::AutoChar coverage_data_contents =
+        write_statistics_and_get_coverage_data(fixture->coverage,
+                                               fixture->lcov_output);
+
+    Gjs::AutoChar expected_source_filename = get_output_path_for_script_on_disk(
+        fixture->tmp_js_script, fixture->lcov_output_dir);
+
+    assert_coverage_data_contains_value_for_key(
+        coverage_data_contents, "SF:", expected_source_filename);
+}
+
+static void test_entry_not_written_for_internal_sources(void* fixture_data,
+                                                        const void*) {
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
+
+    Gjs::AutoChar workdir{g_get_current_dir()};
+    char* coverage_paths[] = {workdir, nullptr};
+
+    g_object_unref(fixture->coverage);
+    fixture->coverage = gjs_coverage_new(coverage_paths, fixture->gjs_context,
+                                         fixture->lcov_output_dir);
+
+    /* Creating the context already executed internal bootstrap scripts, no
+     * need to evaluate anything else */
+    Gjs::AutoChar coverage_data_contents =
+        write_statistics_and_get_coverage_data(fixture->coverage,
+                                               fixture->lcov_output);
+
+    const char* sf_line = line_starting_with(coverage_data_contents, "SF:");
+    g_assert_null(sf_line);
+}
+
 enum BranchTaken : uint8_t { NOT_EXECUTED, NOT_TAKEN, TAKEN };
 
 struct BranchLineData {
@@ -1058,6 +1099,13 @@ void gjs_test_add_tests_for_coverage() {
     add_test_for_fixture("/gjs/coverage/entry_not_written_for_nonexistent_file",
                          &coverage_fixture,
                          test_expected_entry_not_written_for_nonexistent_file);
+    add_test_for_fixture(
+        "/gjs/coverage/entry_written_for_module_evaluated_from_file",
+        &coverage_fixture,
+        test_expected_entry_written_for_module_evaluated_from_file);
+    add_test_for_fixture("/gjs/coverage/entry_not_written_for_internal_sources",
+                         &coverage_fixture,
+                         test_entry_not_written_for_internal_sources);
     add_test_for_fixture(
         "/gjs/coverage/single_branch_coverage_written_to_coverage_data",
         &coverage_fixture,

@@ -8,8 +8,10 @@
 #include <stdint.h>
 #include <string.h>  // for strcmp, strlen
 
+#include <algorithm>
 #include <iterator>  // for size
 #include <new>
+#include <vector>
 
 #include <gio/gio.h>
 #include <glib-object.h>
@@ -161,22 +163,6 @@ static Gjs::AutoChar find_diverging_child_components(GFile* child,
 }
 
 [[nodiscard]]
-static bool filename_has_coverage_prefixes(GjsCoverage* self,
-                                           const char* filename) {
-    auto* priv = static_cast<GjsCoveragePrivate*>(
-        gjs_coverage_get_instance_private(self));
-    Gjs::AutoChar workdir{g_get_current_dir()};
-    Gjs::AutoChar abs_filename{g_canonicalize_filename(filename, workdir)};
-
-    for (const char* const* prefix = priv->prefixes; *prefix; prefix++) {
-        Gjs::AutoChar abs_prefix{g_canonicalize_filename(*prefix, workdir)};
-        if (g_str_has_prefix(abs_filename, abs_prefix))
-            return true;
-    }
-    return false;
-}
-
-[[nodiscard]]
 static inline GErrorResult<> write_line(GOutputStream* out, const char* line) {
     Gjs::AutoError error;
     if (!g_output_stream_printf(out, nullptr, nullptr, error.out(), "%s\n",
@@ -221,6 +207,11 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
     if (!ostream)
         return Err(error.release());
 
+    std::vector<Gjs::AutoUnref<GFile>> prefixes;
+
+    for (const char* const* prefix = priv->prefixes; *prefix; prefix++)
+        prefixes.emplace_back(g_file_new_for_commandline_arg(*prefix));
+
     Gjs::AutoStrv lcov_lines{g_strsplit(lcov.get(), "\n", -1)};
     const char* test_name = nullptr;
     bool ignoring_file = false;
@@ -241,19 +232,26 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
 
         if (g_str_has_prefix(*iter, "SF:")) {
             const char* filename = *iter + 3;
-            if (!filename_has_coverage_prefixes(self, filename)) {
-                ignoring_file = true;
-                continue;
-            }
-
-            // Now we can write the test name before writing the source file
-            MOZ_TRY(write_line(ostream, test_name));
 
             /* The source file could be a resource, so we must use
              * g_file_new_for_commandline_arg() to disambiguate between URIs and
              * filesystem paths. */
             Gjs::AutoUnref<GFile> source_file{
                 g_file_new_for_commandline_arg(filename)};
+
+            ignoring_file = std::none_of(
+                prefixes.begin(), prefixes.end(),
+                [&source_file](GFile* prefix) {
+                    return g_file_has_prefix(source_file, prefix) ||
+                           g_file_equal(source_file, prefix);
+                });
+
+            if (ignoring_file)
+                continue;
+
+            // Now we can write the test name before writing the source file
+            MOZ_TRY(write_line(ostream, test_name));
+
             Gjs::AutoChar diverged_paths{
                 find_diverging_child_components(source_file, priv->output_dir)};
             Gjs::AutoUnref<GFile> destination_file{
