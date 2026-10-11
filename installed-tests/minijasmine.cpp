@@ -29,10 +29,17 @@ static void bail_out(GjsContext* gjs_context, GError* error) {
     exit(1);
 }
 
+[[noreturn]]
+static void bail_out(GError* error) {
+    g_print("Bail out! %s\n", error->message);
+    g_error_free(error);
+    exit(1);
+}
+
 int main(int argc, char** argv) {
     if (argc < 2)
         // NOLINTNEXTLINE(custom-use-typesafe-log) no internal header use here
-        g_error("Need a test file");
+        g_error("Usage: minijasmine FILE [-m [IMPORT_MAP]]");
 
     g_setenv("GJS_DEBUG_OUTPUT", "stderr", false);
 
@@ -54,8 +61,28 @@ int main(int argc, char** argv) {
     if (coverage_prefix)
         gjs_coverage_enable();
 
+    bool eval_as_module = argc >= 3 && strcmp(argv[2], "-m") == 0;
+    bool has_import_map = eval_as_module && argc > 3;
+
     GjsContext* gjs_context =
         gjs_context_new_with_search_path(const_cast<char**>(search_path));
+    if (has_import_map) {
+        GFile* import_map_file = g_file_new_for_commandline_arg(argv[3]);
+        char* import_map_contents;
+        size_t length;
+        GError* error = nullptr;
+        if (!g_file_load_contents(import_map_file, /* cancellable= */ nullptr,
+                                  &import_map_contents, &length,
+                                  /* etag_out= */ nullptr, &error)) {
+            bail_out(error);
+        }
+        g_object_unref(import_map_file);
+        if (!gjs_context_add_import_map(gjs_context, import_map_contents,
+                                        length, &error)) {
+            bail_out(error);
+        }
+        g_free(import_map_contents);
+    }
     GjsCoverage* coverage = nullptr;
 
     if (coverage_prefix) {
@@ -81,7 +108,6 @@ int main(int argc, char** argv) {
             &u8_exitcode_ignored, &error))
         bail_out(gjs_context, error);
 
-    bool eval_as_module = argc >= 3 && strcmp(argv[2], "-m") == 0;
     if (eval_as_module) {
         success = gjs_context_eval_module_file(gjs_context, argv[1],
                                                &u8_exitcode_ignored, &error);

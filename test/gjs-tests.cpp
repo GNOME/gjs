@@ -494,6 +494,35 @@ static void gjstest_test_func_gjs_context_register_module_eval_jsapi_rel(
     g_test_assert_expected_messages();
 }
 
+static void test_gjs_context_eval_jsapi_dynamic_import_builtin(
+    GjsUnitTestFixture* fx, const void*) {
+    JS::CompileOptions options{fx->cx};
+    options.setFileAndLine("import.js", 1);
+    static constexpr std::string_view code{R"js(
+        let error;
+        const loop = new imports.gi.GLib.MainLoop(null, false);
+        import('system')
+        .then(module => {
+            if (typeof module.default.exit !== 'function')
+                throw new Error('wrong module');
+        })
+        .catch(e => (error = e))
+        .finally(() => loop.quit());
+        loop.run();
+        if (error)
+            throw error;
+    )js"};
+    JS::SourceText<mozilla::Utf8Unit> source;
+    bool ok = source.init(fx->cx, code.data(), code.size(),
+                          JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
+    JS::RootedValue unused{fx->cx};
+    ok = JS::Evaluate(fx->cx, options, source, &unused);
+    gjs_log_exception(fx->cx);  // will fail test if exception pending
+    g_assert_true(ok);
+}
+
 static void gjstest_test_func_gjs_context_register_module_non_existent() {
     AutoUnref<GjsContext> gjs_context{gjs_context_new()};
     AutoError error;
@@ -1253,6 +1282,227 @@ static void gjstest_test_func_gjs_context_eval_file_source_map() {
     g_assert_cmpuint(exit_status, ==, 1);
     g_test_assert_expected_messages();
 }
+
+static constexpr std::string_view import_map_json{
+    R"json({
+      "imports": {
+        "foo": "resource:///org/gnome/gjs/mock/test/modules/default.js"
+      }
+    })json"};
+
+static void test_gjs_context_add_import_map_succeeds(GjsUnitTestFixture* fx,
+                                                  const void*) {
+    Gjs::AutoError error;
+    bool ok =
+        gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                   import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+}
+
+static int32_t import_number_helper(GjsUnitTestFixture* fx,
+                                    std::string_view specifier) {
+    std::string code{R"js(
+        let result, error;
+        const loop = new imports.gi.GLib.MainLoop(null, false);
+        import(')js"};
+    code += specifier;
+    code += R"js(')
+        .then(m => (result = m.default))
+        .catch(e => (error = e))
+        .finally(() => loop.quit());
+        loop.run();
+        if (error)
+            throw(error);
+        result;
+    )js";
+
+    JS::CompileOptions options{fx->cx};
+    options.setFileAndLine("import.js", 1);
+    JS::SourceText<mozilla::Utf8Unit> source;
+    bool ok = source.init(fx->cx, code.data(), code.size(),
+                          JS::SourceOwnership::Borrowed);
+    g_assert_true(ok);
+
+    JS::RootedValue result{fx->cx};
+    ok = JS::Evaluate(fx->cx, options, source, &result);
+    gjs_log_exception(fx->cx);  // will fail test if exception pending
+    g_assert_true(ok);
+
+    g_assert_true(result.isInt32());
+    return result.toInt32();
+}
+
+static void test_gjs_context_add_import_map_fails_after_import(
+    GjsUnitTestFixture* fx, const void*) {
+    Gjs::AutoError error;
+
+    int32_t result = import_number_helper(
+        fx, "resource:///org/gnome/gjs/mock/test/modules/default.js");
+    g_assert_cmpint(result, ==, 77);
+
+    bool ok =
+        gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                   import_map_json.size(), error.out());
+    g_assert_false(ok);
+    g_assert_error(error, GJS_JS_ERROR, GJS_JS_ERROR_ERROR);
+}
+
+static void test_gjs_context_add_import_map_only_once(GjsUnitTestFixture* fx,
+                                                      const void*) {
+    Gjs::AutoError error;
+    bool ok =
+        gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                   import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    ok = gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                    import_map_json.size(), error.out());
+    g_assert_false(ok);
+    g_assert_error(error, GJS_JS_ERROR, GJS_JS_ERROR_ERROR);
+}
+
+static void test_gjs_context_add_import_map_invalid_utf8(GjsUnitTestFixture* fx,
+                                                         const void*) {
+    Gjs::AutoError error;
+    static constexpr std::string_view invalid{"\xc3\x28\xff"};
+    bool ok = gjs_context_add_import_map(fx->gjs_context, invalid.data(),
+                                         invalid.size(), error.out());
+    g_assert_false(ok);
+    g_assert_error(error, GJS_JS_ERROR, GJS_JS_ERROR_TYPE_ERROR);
+}
+
+static void test_gjs_context_add_import_map_invalid_json(GjsUnitTestFixture* fx,
+                                                         const void*) {
+    Gjs::AutoError error;
+    static constexpr std::string_view invalid{";!"};
+    bool ok = gjs_context_add_import_map(fx->gjs_context, invalid.data(),
+                                         invalid.size(), error.out());
+    g_assert_false(ok);
+    g_assert_error(error, GJS_JS_ERROR, GJS_JS_ERROR_SYNTAX_ERROR);
+}
+
+static void test_gjs_context_add_import_map_invalid_schema(GjsUnitTestFixture* fx,
+                                                         const void*) {
+    Gjs::AutoError error;
+    static constexpr std::string_view invalid{"[]"};
+    bool ok = gjs_context_add_import_map(fx->gjs_context, invalid.data(),
+                                         invalid.size(), error.out());
+    g_assert_false(ok);
+    g_assert_error(error, GJS_JS_ERROR, GJS_JS_ERROR_TYPE_ERROR);
+}
+
+static void test_gjs_context_add_import_map_maps_specifier_from_module(
+    GjsUnitTestFixture* fx, const void*) {
+    Gjs::AutoError error;
+    bool ok =
+        gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                   import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    ok = gjs_context_eval_module_file(
+        fx->gjs_context,
+        "resource:///org/gnome/gjs/mock/test/modules/import.js", nullptr,
+        error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+}
+
+static void test_gjs_context_add_import_map_maps_specifier_from_eval(
+    GjsUnitTestFixture* fx, const void*) {
+    Gjs::AutoError error;
+    bool ok =
+        gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                   import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    int32_t result = import_number_helper(fx, "foo");
+    g_assert_cmpint(result, ==, 77);
+}
+
+static void test_gjs_context_add_import_map_registered_specifier(
+    GjsUnitTestFixture* fx, const void*) {
+    Gjs::AutoError error;
+
+    // The import map does not override this 'foo' bare specifier. (It could,
+    // but that would require refactoring the module registry. If you have a use
+    // case for this, open an issue.)
+    bool ok = gjs_context_register_module(
+        fx->gjs_context, "foo",
+        "resource:///org/gnome/gjs/mock/test/modules/default.js", error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    static constexpr std::string_view import_map_json{
+        R"json({
+            "imports": {
+                "foo": "resource:///org/gnome/gjs/mock/test/modules/throws.js"
+            }
+        })json"};
+    ok = gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                    import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    ok = gjs_context_eval_module_file(
+        fx->gjs_context,
+        "resource:///org/gnome/gjs/mock/test/modules/import.js", nullptr,
+        error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+}
+
+static constexpr const char* registered_url_identifier =
+    "resource:///org/gnome/gjs/mock/test/modules/registered.js";
+
+static void test_gjs_context_add_import_map_registered_url_specifier(
+    GjsUnitTestFixture* fx, const void*) {
+    Gjs::AutoError error;
+
+    // As above, but with a URL as the identifier
+    bool ok = gjs_context_register_module(
+        fx->gjs_context, registered_url_identifier,
+        "resource:///org/gnome/gjs/mock/test/modules/default.js", error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    static constexpr std::string_view import_map_json{
+        R"json({
+            "imports": {
+                "resource:///org/gnome/gjs/mock/test/modules/registered.js":
+                    "resource:///org/gnome/gjs/mock/test/modules/throws.js"
+            }
+        })json"};
+    ok = gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                    import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    g_assert_cmpint(import_number_helper(fx, registered_url_identifier), ==,
+                    77);
+}
+
+static void test_gjs_context_add_import_map_registered_url_specifier_unmapped(
+    GjsUnitTestFixture* fx, const void*) {
+    Gjs::AutoError error;
+
+    bool ok = gjs_context_register_module(
+        fx->gjs_context, registered_url_identifier,
+        "resource:///org/gnome/gjs/mock/test/modules/default.js", error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    ok = gjs_context_add_import_map(fx->gjs_context, import_map_json.data(),
+                                    import_map_json.size(), error.out());
+    g_assert_true(ok);
+    g_assert_no_error(error);
+
+    g_assert_cmpint(import_number_helper(fx, registered_url_identifier), ==,
+                    77);
+}
 }  // namespace Gjs::Test
 
 int main(int argc, char* argv[]) {
@@ -1290,6 +1540,11 @@ int main(int argc, char* argv[]) {
 
     gjs_message("Using C++ random seed {}", cpp_random_seed);
 
+#define ADD_CONTEXT_TEST(path, func)                              \
+    g_test_add("/gjs/context/" path, GjsUnitTestFixture, nullptr, \
+               gjs_unit_test_fixture_setup, func,                 \
+               gjs_unit_test_fixture_teardown)
+
     g_test_add_func("/gjs/dumpstack/none", gjstest_test_gjs_dumpstack_none);
     g_test_add("/gjs/dumpstack/context", GjsUnitTestFixture, nullptr,
                gjs_unit_test_fixture_setup, gjstest_test_gjs_dumpstack_context,
@@ -1323,14 +1578,13 @@ int main(int argc, char* argv[]) {
     g_test_add_func(
         "/gjs/context/register-module/eval-module-file",
         gjstest_test_func_gjs_context_register_module_eval_module_file);
-    g_test_add("/gjs/context/register-module/eval-jsapi", GjsUnitTestFixture,
-               nullptr, gjs_unit_test_fixture_setup,
-               gjstest_test_func_gjs_context_register_module_eval_jsapi,
-               gjs_unit_test_fixture_teardown);
-    g_test_add("/gjs/context/register-module/eval-jsapi-relative",
-               GjsUnitTestFixture, nullptr, gjs_unit_test_fixture_setup,
-               gjstest_test_func_gjs_context_register_module_eval_jsapi_rel,
-               gjs_unit_test_fixture_teardown);
+    ADD_CONTEXT_TEST("register-module/eval-jsapi",
+                     gjstest_test_func_gjs_context_register_module_eval_jsapi);
+    ADD_CONTEXT_TEST(
+        "register-module/eval-jsapi-relative",
+        gjstest_test_func_gjs_context_register_module_eval_jsapi_rel);
+    ADD_CONTEXT_TEST("eval-jsapi/dynamic-import-builtin",
+                     test_gjs_context_eval_jsapi_dynamic_import_builtin);
     g_test_add_func("/gjs/context/register-module/non-existent",
                     gjstest_test_func_gjs_context_register_module_non_existent);
     g_test_add_func("/gjs/context/eval-module/unregistered",
@@ -1371,10 +1625,8 @@ int main(int argc, char* argv[]) {
     g_test_add_func(
         "/gjs/context/eval-module/exit-code-omitted-no-throw",
         gjstest_test_func_gjs_context_eval_module_exit_code_omitted_no_throw);
-    g_test_add("/gjs/context/eval-module/jsapi-throw", GjsUnitTestFixture,
-               nullptr, gjs_unit_test_fixture_setup,
-               gjstest_test_func_gjs_context_module_eval_jsapi_throws,
-               gjs_unit_test_fixture_teardown);
+    ADD_CONTEXT_TEST("eval-module/jsapi-throw",
+                     gjstest_test_func_gjs_context_module_eval_jsapi_throws);
     g_test_add_func("/gjs/context/run-in-realm",
                     gjstest_test_func_gjs_context_run_in_realm);
 
@@ -1382,6 +1634,33 @@ int main(int argc, char* argv[]) {
                     gjstest_test_func_gjs_context_eval_module_source_map);
     g_test_add_func("/gjs/context/eval-file/source-map",
                     gjstest_test_func_gjs_context_eval_file_source_map);
+
+    ADD_CONTEXT_TEST("add-import-map/succeeds",
+                     test_gjs_context_add_import_map_succeeds);
+    ADD_CONTEXT_TEST("add-import-map/fails-after-import",
+                     test_gjs_context_add_import_map_fails_after_import);
+    ADD_CONTEXT_TEST("add-import-map/only-once",
+                     test_gjs_context_add_import_map_only_once);
+    ADD_CONTEXT_TEST("add-import-map/invalid-utf8",
+                     test_gjs_context_add_import_map_invalid_utf8);
+    ADD_CONTEXT_TEST("add-import-map/invalid-json",
+                     test_gjs_context_add_import_map_invalid_json);
+    ADD_CONTEXT_TEST("add-import-map/invalid-schema",
+                     test_gjs_context_add_import_map_invalid_schema);
+    ADD_CONTEXT_TEST(
+        "add-import-map/maps-specifier-from-module",
+        test_gjs_context_add_import_map_maps_specifier_from_module);
+    ADD_CONTEXT_TEST("add-import-map/maps-specifier-from-eval",
+                     test_gjs_context_add_import_map_maps_specifier_from_eval);
+    ADD_CONTEXT_TEST("add-import-map/registered-specifier",
+                     test_gjs_context_add_import_map_registered_specifier);
+    ADD_CONTEXT_TEST("add-import-map/registered-url-specifier",
+                     test_gjs_context_add_import_map_registered_url_specifier);
+    ADD_CONTEXT_TEST(
+        "add-import-map/registered-url-specifier-unmapped",
+        test_gjs_context_add_import_map_registered_url_specifier_unmapped);
+
+#undef ADD_CONTEXT_TEST
 
 #define ADD_JSAPI_UTIL_TEST(path, func)                              \
     g_test_add("/gjs/jsapi/util/" path, GjsUnitTestFixture, nullptr, \

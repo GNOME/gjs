@@ -17,6 +17,7 @@ tests_dependencies = [
 if cxx.get_argument_syntax() != 'msvc'
     simple_tests += [
         'CommandLine',
+        'CommandLineImportMaps',
         'CommandLineModules',
         'Warnings',
     ]
@@ -60,6 +61,16 @@ install_data(
   'scripts' / 'exit.js',
   'scripts' / 'gcWrapperWarning.js',
   'scripts' / 'help.js',
+  'scripts' / 'importMapAbsolutePathAddress.json',
+  'scripts' / 'importMapBuiltinInvalid.json',
+  'scripts' / 'importMapBuiltinNonString.json',
+  'scripts' / 'importMapGLib.json',
+  'scripts' / 'importMapImporter.js',
+  'scripts' / 'importMapNonString.json',
+  'scripts' / 'importMapRelativeAddress.json',
+  'scripts' / 'importMapRelativeKey.json',
+  'scripts' / 'importMapRelativeScope.json',
+  'scripts' / 'importMapScopeInvalid.json',
   'scripts' / 'int.js',
   'scripts' / 'printFiles.js',
   'scripts' / 'promise.js',

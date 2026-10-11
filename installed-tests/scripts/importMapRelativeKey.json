@@ -1,0 +1,5 @@
+{
+    "imports": {
+        "./glib.js": "gi://GLib"
+    }
+}
