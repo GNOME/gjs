@@ -511,7 +511,7 @@ void adopt_nested_ptr(auto* priv, void* data) {
 template <class Base, class Prototype, class Instance>
 template <class FieldInstance>
 bool BoxedInstance<Base, Prototype, Instance>::get_nested_interface_object(
-    JSContext* cx, JSObject* parent_obj, const GI::FieldInfo& field_info,
+    JSContext* cx, JS::HandleObject parent_obj, const GI::FieldInfo& field_info,
     const GI::UnownedInfo<FieldInstance::TAG>& struct_info,
     JS::MutableHandleValue value) const {
     if (!GI::struct_is_simple(struct_info)) {
@@ -577,7 +577,7 @@ bool BoxedBase<Base, Prototype, Instance>::field_getter(JSContext* cx,
 // See BoxedBase::field_getter().
 template <class Base, class Prototype, class Instance>
 bool BoxedInstance<Base, Prototype, Instance>::field_getter_impl(
-    JSContext* cx, JSObject* obj, const GI::FieldInfo& field_info,
+    JSContext* cx, JS::HandleObject obj, const GI::FieldInfo& field_info,
     JS::MutableHandleValue rval) const {
     GI::AutoTypeInfo type_info{field_info.type_info()};
 

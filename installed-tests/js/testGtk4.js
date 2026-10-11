@@ -227,6 +227,8 @@ GObject.registerClass({
 </interface>`),
 }, LeakTestWidget);
 
+Gtk.init();
+
 describe('Gtk 4', function () {
     // This test file times out on CI under Valgrind
     if (GLib.getenv('CI_JOB_NAME') === 'valgrind')
@@ -234,8 +236,6 @@ describe('Gtk 4', function () {
 
     let writerFunc;
     beforeAll(function () {
-        Gtk.init();
-
         // Set up log writer for tests to override
         writerFunc = jasmine.createSpy('log writer', () => GLib.LogWriterOutput.UNHANDLED);
         writerFunc.and.callThrough();
@@ -749,6 +749,12 @@ describe('Gtk 4', function () {
             mapModel.set_map_func(item => Gtk.StringObject.new(item.label));
             mapModel.get_item(0);
         });
+
+        it('JS object stored in a GObject.TYPE_JSOBJECT GValue by C code is not collected', function () {
+            const expr = Gtk.ConstantExpression.new_for_value({answer: 42});
+            System.gc();
+            expect(expr.get_value()).toEqual({answer: 42});
+        });
     });
 
     describe('template signal', function () {
@@ -787,12 +793,18 @@ describe('Regression test for GObject disposal race', function () {
             }
         }
 
+        // A variable number of warnings may be logged, so we can't use
+        // GLib.test_expect_message(), and they are logged during GC, so we
+        // can't use a JS log writer callback.
+        const oldMask = GLib.log_set_always_fatal(
+            GLib.LogLevelFlags.LEVEL_ERROR | GLib.LogLevelFlags.LEVEL_CRITICAL);
+
         // Each iteration of this loop creates several garbage objects,
         // including the Gtk.Box and the Target. If the Box is disposed before
         // the Target, the Label is also disposed and the property binding tries
         // to update the target's property and enters gjs_object_set_gproperty()
         // on a JS wrapper that's about to be swept. That would crash in debug
-        // builds. This test ensures we prevent the crash and log a critical
+        // builds. This test ensures we prevent the crash and log a warning
         // instead. Because it's nondeterministic which object is disposed
         // first, create several copies of these objects.
         for (let i = 0; i < 20; i++) {
@@ -802,11 +814,6 @@ describe('Regression test for GObject disposal race', function () {
                 .bind(new Target(), 'widget', label);
         }
 
-        // A variable number of criticals may be logged, so we can't use
-        // GLib.test_expect_message(), and they are logged during GC, so we
-        // can't use a JS log writer callback.
-        const oldMask = GLib.log_set_always_fatal(
-            GLib.LogLevelFlags.LEVEL_ERROR | GLib.LogLevelFlags.LEVEL_CRITICAL);
         System.gc();
         GLib.log_set_always_fatal(oldMask);
     });

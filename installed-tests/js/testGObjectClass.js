@@ -1652,17 +1652,13 @@ describe('GObject class with JSObject signals', function () {
         };
 
         myInstance.connect('send-many-objects', (instance, func, args, foo) => {
-            expect(instance).toEqual(myInstance);
-            expect(System.addressOf(instance)).toEqual(System.addressOf(myInstance));
-            expect(foo).toEqual(obj.foo);
-            expect(System.addressOf(foo)).toEqual(System.addressOf(obj.foo));
+            expect(instance).toBe(myInstance);
+            expect(foo).toBe(obj.foo);
             expect(func(args).ret[0]).toEqual(args);
         });
         myInstance.connect('send-object', (instance, param) => {
-            expect(instance).toEqual(myInstance);
-            expect(System.addressOf(instance)).toEqual(System.addressOf(myInstance));
-            expect(param).toEqual(obj);
-            expect(System.addressOf(param)).toEqual(System.addressOf(obj));
+            expect(instance).toBe(myInstance);
+            expect(param).toBe(obj);
             expect(() => instance.emit('send-many-objects', param.func, param, param.foo))
                 .not.toThrow();
         });

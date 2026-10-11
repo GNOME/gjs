@@ -214,7 +214,7 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
 
     template <class FieldInstance>
     GJS_JSAPI_RETURN_CONVENTION
-    bool get_nested_interface_object(JSContext*, JSObject* parent_obj,
+    bool get_nested_interface_object(JSContext*, JS::HandleObject parent_obj,
                                      const GI::FieldInfo&,
                                      const GI::UnownedInfo<FieldInstance::TAG>&,
                                      JS::MutableHandleValue) const;
@@ -243,7 +243,7 @@ class BoxedInstance : public GIWrapperInstance<Base, Prototype, Instance> {
     // JS property accessors
 
     GJS_JSAPI_RETURN_CONVENTION
-    bool field_getter_impl(JSContext*, JSObject*, const GI::FieldInfo&,
+    bool field_getter_impl(JSContext*, JS::HandleObject, const GI::FieldInfo&,
                            JS::MutableHandleValue rval) const;
     GJS_JSAPI_RETURN_CONVENTION
     bool field_setter_impl(JSContext*, const GI::FieldInfo&, JS::HandleValue);

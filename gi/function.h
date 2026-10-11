@@ -9,6 +9,7 @@
 #include <stdint.h>
 
 #include <memory>  // for unique_ptr
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -20,6 +21,7 @@
 #include <js/RootingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Value.h>
+#include <mozilla/Result.h>
 
 #include "gi/closure.h"
 #include "gi/info.h"
@@ -61,7 +63,7 @@ struct GjsCallbackTrampoline : public Gjs::Closure {
 
  private:
     ffi_closure* create_closure();
-    GJS_JSAPI_RETURN_CONVENTION bool initialize();
+    mozilla::Result<mozilla::Ok, std::string> initialize();
     GjsCallbackTrampoline(JSContext*, JS::HandleObject callable,
                           const GI::CallableInfo&, GIScopeType,
                           bool has_scope_object);
