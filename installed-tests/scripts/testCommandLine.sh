@@ -194,7 +194,7 @@ else
 fi
 
 # https://gitlab.gnome.org/GNOME/gjs/-/issues/322
-$gjs --coverage-prefix="$PWD" --coverage-output="$PWD" "$fixtures/awaitcatch.js"
+$gjs --coverage-prefix="$fixtures" --coverage-output="$PWD" "$fixtures/awaitcatch.js"
 grep -q TN: coverage.lcov
 report "coverage prefix is treated as an absolute path"
 
