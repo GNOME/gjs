@@ -33,7 +33,9 @@ struct ObjectBox::impl {
     }
 
     ~impl() {
-        std::erase(s_wrappers, m_parent);
+        s_wrappers.erase(
+            std::remove(s_wrappers.begin(), s_wrappers.end(), m_parent),
+            s_wrappers.end());
         debug("Finalized");
     }
 
