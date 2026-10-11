@@ -88,6 +88,7 @@ export default defineConfig([
             '**/eslint.config.js',
             'examples/**',
             'installed-tests/js/**',
+            'installed-tests/scripts/**',
             'modules/esm/**',
             'modules/internal/**',
             'test/modules/**',

@@ -2,23 +2,9 @@
 # SPDX-License-Identifier: MIT OR LGPL-2.0-or-later
 # SPDX-FileCopyrightText: 2017 Philip Chimento <philip.chimento@gmail.com>
 
-if test "$GJS_USE_UNINSTALLED_FILES" = "1"; then
-    gjs="$TOP_BUILDDIR/gjs-console"
-else
-    gjs="gjs-console"
-fi
-
-total=0
-
-report () {
-    exit_code=$?
-    total=$((total + 1))
-    if test $exit_code -eq 0; then
-        echo "ok $total - $1"
-    else
-        echo "not ok $total - $1"
-    fi
-}
+DIR="$( cd "$( dirname "${0}" )" && pwd )"
+# shellcheck source=installed-tests/scripts/common.sh
+. "${DIR}"/common.sh
 
 $gjs -c 'imports.signals.addSignalMethods({connect: "foo"})' 2>&1 | \
     grep -q 'addSignalMethods is replacing existing .* connect method'

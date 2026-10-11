@@ -11,7 +11,6 @@
 #include <array>
 #include <format>
 #include <iterator>  // for size
-#include <new>
 #include <ranges>
 #include <string>
 #include <string_view>
@@ -19,28 +18,17 @@
 #include <gio/gio.h>
 #include <glib-object.h>
 
-#include <js/GCAPI.h>  // for JS_AddExtraGCRootsTracer, JS_Remove...
-#include <js/PropertyAndElement.h>
-#include <js/Realm.h>
-#include <js/RootingAPI.h>
-#include <js/TracingAPI.h>
 #include <js/TypeDecls.h>
 #include <js/Utility.h>  // for UniqueChars
-#include <js/Value.h>
 #include <js/experimental/CodeCoverage.h>  // for EnableCodeCoverage
-#include <jsapi.h>                         // for JS_WrapObject
 #include <mozilla/Result.h>
 #include <mozilla/Try.h>
 
-#include "gjs/atoms.h"
 #include "gjs/auto.h"
 #include "gjs/context-private.h"
 #include "gjs/context.h"
 #include "gjs/coverage.h"
 #include "gjs/gerror-result.h"
-#include "gjs/global.h"
-#include "gjs/jsapi-util.h"
-#include "gjs/macros.h"
 #include "util/log.h"
 
 using Gjs::GErrorResult;
@@ -55,8 +43,6 @@ struct _GjsCoverage {
 struct GjsCoveragePrivate {
     char** prefixes;
     GjsContext* coverage_context;
-    JS::Heap<JSObject*> global;
-
     GFile* output_dir;
 };
 
@@ -331,63 +317,6 @@ static void gjs_coverage_init(GjsCoverage*) {
             " You must call this function before creating any GjsContext");
 }
 
-static void coverage_tracer(JSTracer* trc, void* data) {
-    GjsCoverage* self = GJS_COVERAGE(data);
-    auto* priv = static_cast<GjsCoveragePrivate*>(
-        gjs_coverage_get_instance_private(self));
-
-    JS::TraceEdge<JSObject*>(trc, &priv->global, "Coverage global object");
-}
-
-GJS_JSAPI_RETURN_CONVENTION
-static bool bootstrap_coverage(GjsCoverage* self) {
-    auto* priv = static_cast<GjsCoveragePrivate*>(
-        gjs_coverage_get_instance_private(self));
-
-    auto* gjs = GjsContextPrivate::from_object(priv->coverage_context);
-    JSContext* cx = gjs->context();
-
-    JS::RootedObject debugger_global{
-        cx, gjs_create_global_object(cx, GjsGlobalType::DEBUGGER)};
-    {
-        JSAutoRealm ar{cx, debugger_global};
-        JS::RootedObject debuggee{cx, gjs->global()};
-        if (!JS_WrapObject(cx, &debuggee))
-            return false;
-
-        JS::RootedValue v_debuggee{cx, JS::ObjectValue(*debuggee)};
-        if (!JS_SetPropertyById(cx, debugger_global, gjs->atoms().debuggee(),
-                                v_debuggee) ||
-            !gjs_define_global_properties(cx, debugger_global,
-                                          GjsGlobalType::DEBUGGER,
-                                          "GJS coverage", "coverage"))
-            return false;
-
-        // Add a tracer, as suggested by jdm on #jsapi
-        JS_AddExtraGCRootsTracer(cx, coverage_tracer, self);
-
-        priv->global = debugger_global;
-    }
-
-    return true;
-}
-
-static void gjs_coverage_constructed(GObject* object) {
-    G_OBJECT_CLASS(gjs_coverage_parent_class)->constructed(object);
-
-    GjsCoverage* self = GJS_COVERAGE(object);
-    auto* priv = static_cast<GjsCoveragePrivate*>(
-        gjs_coverage_get_instance_private(self));
-    new (&priv->global) JS::Heap<JSObject*>();
-
-    if (!bootstrap_coverage(self)) {
-        JSContext* cx = static_cast<JSContext*>(
-            gjs_context_get_native_context(priv->coverage_context));
-        Gjs::AutoMainRealm ar{cx};
-        gjs_log_exception(cx);
-    }
-}
-
 static void gjs_coverage_set_property(GObject* object, unsigned prop_id,
                                       const GValue* value,
                                       GParamSpec* pspec [[maybe_unused]]) {
@@ -415,13 +344,6 @@ static void gjs_coverage_dispose(GObject* object) {
     auto* priv = static_cast<GjsCoveragePrivate*>(
         gjs_coverage_get_instance_private(self));
 
-    /* Decomission objects inside of the JSContext before disposing of the
-     * context */
-    auto* cx = static_cast<JSContext*>(
-        gjs_context_get_native_context(priv->coverage_context));
-    JS_RemoveExtraGCRootsTracer(cx, coverage_tracer, self);
-    priv->global = nullptr;
-
     g_clear_object(&priv->coverage_context);
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->dispose(object);
@@ -434,7 +356,6 @@ static void gjs_coverage_finalize(GObject* object) {
 
     g_strfreev(priv->prefixes);
     g_clear_object(&priv->output_dir);
-    priv->global.~Heap();
 
     G_OBJECT_CLASS(gjs_coverage_parent_class)->finalize(object);
 }
@@ -442,7 +363,6 @@ static void gjs_coverage_finalize(GObject* object) {
 static void gjs_coverage_class_init(GjsCoverageClass* klass) {
     GObjectClass* object_class = G_OBJECT_CLASS(klass);
 
-    object_class->constructed = gjs_coverage_constructed;
     object_class->dispose = gjs_coverage_dispose;
     object_class->finalize = gjs_coverage_finalize;
     object_class->set_property = gjs_coverage_set_property;

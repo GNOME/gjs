@@ -326,9 +326,7 @@ class GjsInternalGlobal : GjsBaseGlobal {
 
     GJS_JSAPI_RETURN_CONVENTION
     static bool define_properties(JSContext* cx, JS::HandleObject global,
-                                  const char* realm_name,
-                                  const char* bootstrap_script
-                                  [[maybe_unused]]) {
+                                  const char* realm_name) {
         JS::Realm* realm = JS::GetObjectRealmOrNull(global);
         g_assert(realm && "Global object must be associated with a realm");
         // const_cast is allowed here if we never free the realm data
@@ -579,8 +577,7 @@ bool gjs_define_global_properties(JSContext* cx, JS::HandleObject global,
             return GjsDebuggerGlobal::define_properties(cx, global, realm_name,
                                                         bootstrap_script);
         case GjsGlobalType::INTERNAL:
-            return GjsInternalGlobal::define_properties(cx, global, realm_name,
-                                                        bootstrap_script);
+            return GjsInternalGlobal::define_properties(cx, global, realm_name);
     }
 
     // Global type does not handle define_properties

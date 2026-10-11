@@ -1762,6 +1762,22 @@ let VFuncTester = GObject.registerClass(class VFuncTester extends GIMarshallingT
         case 14:
             // eslint-disable-next-line no-throw-literal
             throw {name: 'TypeError', message: false};
+        case 15:
+            throw new EvalError('message');
+        case 16:
+            throw new RangeError('message');
+        case 17:
+            throw new SyntaxError('message');
+        case 18:
+            throw new URIError('message');
+        case 19:
+            throw new AggregateError([
+                new TypeError('inner 1'),
+                new Error('inner 2'),
+            ], 'message');
+        case 20:
+            // eslint-disable-next-line no-throw-literal
+            throw {name: 'AggregateError', message: 'an error message'};
         }
     }
 
@@ -1932,6 +1948,10 @@ describe('Virtual function', function () {
     it('marshals an error out parameter with a JavaScript exception', function () {
         expect(() => tester.vfunc_meth_with_error(0)).toThrowError(TypeError);
         expect(() => tester.vfunc_meth_with_error(1)).toThrowError(ReferenceError);
+        expect(() => tester.vfunc_meth_with_error(15)).toThrowError(EvalError, 'message');
+        expect(() => tester.vfunc_meth_with_error(16)).toThrowError(RangeError, 'message');
+        expect(() => tester.vfunc_meth_with_error(17)).toThrowError(SyntaxError, 'message');
+        expect(() => tester.vfunc_meth_with_error(18)).toThrowError(URIError, 'message');
     });
 
     it('marshals an error out parameter with a GError exception', function () {
@@ -1967,6 +1987,11 @@ describe('Virtual function', function () {
         expect(() => tester.vfunc_meth_with_error(12)).toThrowError(TypeError, /an error message/);
         expect(() => tester.vfunc_meth_with_error(13)).toThrowError(/Object/);
         expect(() => tester.vfunc_meth_with_error(14)).toThrowError(Error, /Object/);
+    });
+
+    it('marshals an error out parameter with an AggregateError and sub-errors', function () {
+        expect(() => tester.vfunc_meth_with_error(19)).toThrowError(AggregateError, /message.*inner 1.*inner 2/s);
+        expect(() => tester.vfunc_meth_with_error(20)).toThrowError(AggregateError, /an error message/);
     });
 
     it('marshals an enum return value', function () {

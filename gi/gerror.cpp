@@ -7,15 +7,18 @@
 #include <stdint.h>
 
 #include <format>
+#include <iterator>  // for back_inserter
 #include <string>
 
 #include <girepository/girepository.h>
 #include <glib-object.h>
 
+#include <js/Array.h>
 #include <js/CallAndConstruct.h>
 #include <js/CallArgs.h>
 #include <js/Class.h>
 #include <js/ColumnNumber.h>
+#include <js/Conversions.h>  // for ToString
 #include <js/Exception.h>
 #include <js/PropertyAndElement.h>
 #include <js/PropertyDescriptor.h>  // for JSPROP_ENUMERATE
@@ -299,6 +302,8 @@ bool gjs_define_error_properties(JSContext* cx, JS::HandleObject obj) {
 [[nodiscard]]
 static JSProtoKey proto_key_from_error_enum(int val) {
     switch (val) {
+        case GJS_JS_ERROR_AGGREGATE_ERROR:
+            return JSProto_AggregateError;
         case GJS_JS_ERROR_EVAL_ERROR:
             return JSProto_EvalError;
         case GJS_JS_ERROR_INTERNAL_ERROR:
@@ -321,10 +326,6 @@ static JSProtoKey proto_key_from_error_enum(int val) {
 
 GJS_JSAPI_RETURN_CONVENTION
 static JSObject* gjs_error_from_js_gerror(JSContext* cx, GError* gerror) {
-    JS::RootedValueArray<1> error_args(cx);
-    if (!gjs_string_from_utf8(cx, gerror->message, error_args[0]))
-        return nullptr;
-
     JSProtoKey error_kind = proto_key_from_error_enum(gerror->code);
     JS::RootedObject error_constructor(cx);
     if (!JS_GetClassObject(cx, error_kind, &error_constructor))
@@ -333,8 +334,24 @@ static JSObject* gjs_error_from_js_gerror(JSContext* cx, GError* gerror) {
     JS::RootedValue v_error_constructor(cx,
                                         JS::ObjectValue(*error_constructor));
     JS::RootedObject error(cx);
-    if (!JS::Construct(cx, v_error_constructor, error_args, &error))
-        return nullptr;
+
+    if (error_kind == JSProto_AggregateError) {
+        // The AggregateError was already flattened coming from JS, so we can't
+        // reconstruct the sub-errors.
+        JS::RootedValueArray<2> error_args{cx};
+        JSObject* empty = JS::NewArrayObject(cx, 0);
+        if (!empty)
+            return nullptr;
+        error_args[0].setObject(*empty);
+        if (!gjs_string_from_utf8(cx, gerror->message, error_args[1]) ||
+            !JS::Construct(cx, v_error_constructor, error_args, &error))
+            return nullptr;
+    } else {
+        JS::RootedValueArray<1> error_args{cx};
+        if (!gjs_string_from_utf8(cx, gerror->message, error_args[0]) ||
+            !JS::Construct(cx, v_error_constructor, error_args, &error))
+            return nullptr;
+    }
 
     return error;
 }
@@ -464,6 +481,45 @@ static GError* gerror_from_error_impl(JSContext* cx, JS::HandleObject obj) {
         code = value->value;
     else
         code = GJS_JS_ERROR_ERROR;
+
+    if (code == GJS_JS_ERROR_AGGREGATE_ERROR) {
+        // Since we can't pack all the sub-errors into one GError, try to pack
+        // all the messages into the error message. (But don't recurse)
+        std::string aggregate_msg{message.get()};
+
+        JS::RootedValue v_errors{cx};
+        bool is_array;
+        if (!JS_GetProperty(cx, obj, "errors", &v_errors) ||
+            !JS::IsArrayObject(cx, v_errors, &is_array))
+            return nullptr;
+        if (!is_array)
+            return g_error_new_literal(GJS_JS_ERROR, code, message.get());
+        JS::RootedObject errors{cx, &v_errors.toObject()};
+
+        uint32_t n_errors;
+        if (!JS::GetArrayLength(cx, errors, &n_errors))
+            return nullptr;
+        JS::RootedValue element{cx};
+        JS::RootedString str{cx};
+        for (uint32_t ix = 0; ix < n_errors; ix++) {
+            if (!JS_GetElement(cx, errors, ix, &element))
+                return nullptr;
+
+            str = JS::ToString(cx, element);
+            if (!str)
+                return nullptr;
+            JS::UniqueChars summary =
+                gjs_string_to_utf8(cx, JS::StringValue(str));
+            if (!summary)
+                return nullptr;
+
+            std::format_to(std::back_inserter(aggregate_msg), "\n - {}",
+                           summary);
+        }
+
+        return g_error_new_literal(GJS_JS_ERROR, GJS_JS_ERROR_AGGREGATE_ERROR,
+                                   aggregate_msg.c_str());
+    }
 
     return g_error_new_literal(GJS_JS_ERROR, code, message.get());
 }

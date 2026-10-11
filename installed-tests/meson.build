@@ -46,6 +46,27 @@ foreach test : simple_tests
     endif
 endforeach
 
+install_data(
+  'scripts' / 'argv.js',
+  'scripts' / 'awaitcatch.js',
+  'scripts' / 'badWidget.js',
+  'scripts' / 'doubledynamic.js',
+  'scripts' / 'doubledynamicImportee.js',
+  'scripts' / 'doublegi.js',
+  'scripts' / 'dynamicImplicitMainloop.js',
+  'scripts' / 'dynamicImplicitMainloopImportee.js',
+  'scripts' / 'dynamicTopLevelAwait.js',
+  'scripts' / 'dynamicTopLevelAwaitImportee.js',
+  'scripts' / 'exit.js',
+  'scripts' / 'gcWrapperWarning.js',
+  'scripts' / 'help.js',
+  'scripts' / 'int.js',
+  'scripts' / 'printFiles.js',
+  'scripts' / 'promise.js',
+  'scripts' / 'promiseexit.js',
+  'scripts' / 'signalexit.js',
+  install_dir: installed_tests_execdir / 'scripts')
+
 # Jasmine tests #
 
 subdir('js')
