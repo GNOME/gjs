@@ -1,3 +1,18 @@
+Version 1.90.1
+--------------
+
+- First bugfix release for GNOME 51. This release contains several fixes for
+  crashes related to toggle references and garbage collection, and a fix for
+  filtering of source files when generating code coverage reports.
+
+- Closed bugs and merge requests:
+  * object: Fix reference leak for GObject that already has a wrapper [!1121,
+    Philip Chimento]
+  * object: Don't modify wrapped GObject list while iterating it [!1123, Philip
+    Chimento]
+  * Some other commits included from !1126
+  * coverage: Fix source file filtering [!1127, Aleksandr Mezin]
+
 Version 1.90.0
 --------------
 
