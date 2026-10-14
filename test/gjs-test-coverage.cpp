@@ -47,9 +47,9 @@ static void replace_file(GFile* file, const char* contents) {
 }
 
 static void recursive_delete_dir(GFile* dir) {
-    GFileEnumerator* files =
-        g_file_enumerate_children(dir, G_FILE_ATTRIBUTE_STANDARD_TYPE,
-                                  G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
+    GFileEnumerator* files = g_file_enumerate_children(
+        dir, G_FILE_ATTRIBUTE_STANDARD_TYPE "," G_FILE_ATTRIBUTE_STANDARD_NAME,
+        G_FILE_QUERY_INFO_NONE, nullptr, nullptr);
     while (true) {
         GFile* file;
         GFileInfo* info;
