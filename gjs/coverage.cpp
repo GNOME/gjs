@@ -9,7 +9,6 @@
 #include <string.h>  // for strcmp, strlen
 
 #include <algorithm>
-#include <array>
 #include <format>
 #include <iterator>  // for size
 #include <ranges>
@@ -68,24 +67,31 @@ static Gjs::AutoChar get_file_identifier(GFile* source_file) {
     return path;
 }
 
-[[nodiscard]]
-static GErrorResult<> write_source_file_header(GOutputStream* stream,
-                                               GFile* source_file) {
-    Gjs::AutoChar path{get_file_identifier(source_file)};
-    Gjs::AutoError error;
-    std::string header = std::format("SF:{}\n", path);
-    if (!g_output_stream_write_all(stream, header.data(), header.size(),
-                                   nullptr, nullptr, error.out()))
-        return Err(error.release());
-    return Ok{};
-}
-
+// Load the whole file into memory and write it atomically using
+// g_file_set_contents_full(). There is no GFile-based API that could do this,
+// at least without extra steps. Loading the entire file is fine, because
+// all files processed by this function are JS modules - they were previously
+// loaded into memory already.
 [[nodiscard]]
 static GErrorResult<> copy_source_file_to_coverage_output(
     GFile* source_file, GFile* destination_file) {
-    /* We need to recursively make the directory we want to copy to, as
-     * g_file_copy doesn't do that */
     Gjs::AutoError error;
+    Gjs::AutoChar destination_path{g_file_get_path(destination_file)};
+    if (!destination_path) {
+        Gjs::AutoChar uri{g_file_get_uri(destination_file)};
+        return Err(Gjs::AutoError{G_IO_ERROR, G_IO_ERROR_NOT_SUPPORTED,
+                                  "Destination must be a local path (got {})",
+                                  uri.get()});
+    }
+
+    Gjs::AutoChar contents;
+    // Do not use size_t, may be different width
+    gsize length;
+    if (!g_file_load_contents(source_file, /*cancellable=*/nullptr,
+                              contents.out(), &length,
+                              /*etag_out=*/nullptr, error.out()))
+        return Err(error.release());
+
     Gjs::AutoUnref<GFile> destination_dir{g_file_get_parent(destination_file)};
     if (!g_file_make_directory_with_parents(destination_dir, nullptr,
                                             error.out())) {
@@ -94,8 +100,9 @@ static GErrorResult<> copy_source_file_to_coverage_output(
         error.reset();
     }
 
-    if (!g_file_copy(source_file, destination_file, G_FILE_COPY_OVERWRITE,
-                     nullptr, nullptr, nullptr, error.out()))
+    if (!g_file_set_contents_full(destination_path, contents, length,
+                                  G_FILE_SET_CONTENTS_CONSISTENT, 0666,
+                                  error.out()))
         return Err(error.release());
     return Ok{};
 }
@@ -156,16 +163,12 @@ static Gjs::AutoChar find_diverging_child_components(GFile* child,
 }
 
 [[nodiscard]]
-static inline GErrorResult<> write_line(GOutputStream* out,
-                                        std::string_view line) {
-    std::array<GOutputVector, 2> output{{
-        {.buffer = line.data(), .size = line.size()},
-        {.buffer = "\n", .size = 1},
-    }};
+static inline GErrorResult<> write_string(GOutputStream* out,
+                                          std::string_view str) {
     Gjs::AutoError error;
-    if (!g_output_stream_writev_all(out, output.data(), output.size(),
-                                    /*bytes_written=*/nullptr,
-                                    /*cancellable=*/nullptr, error.out()))
+    if (!g_output_stream_write_all(out, str.data(), str.size(),
+                                   /*bytes_written=*/nullptr,
+                                   /*cancellable=*/nullptr, error.out()))
         return Err(error.release());
     return Ok{};
 }
@@ -213,20 +216,29 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
         prefixes.emplace_back(g_file_new_for_commandline_arg(*prefix));
 
     std::string_view test_name;
+    std::string record;
     bool ignoring_file = false;
 
     for (const auto iter : std::views::split(lcov, '\n')) {
         // COMPAT: std::string_view line{iter} in C++23
         std::string_view line{iter.data(), iter.size()};
-        if (ignoring_file) {
-            if (line == "end_of_record")
+
+        if (line == "end_of_record") {
+            if (ignoring_file) {
                 ignoring_file = false;
+            } else {
+                record.append(line);
+                record.push_back('\n');
+                MOZ_TRY(write_string(ostream, record));
+            }
+
+            record.clear();
             continue;
         }
 
         if (line.starts_with("TN:")) {
-            /* Don't write the test name if the next line shows we are ignoring
-             * the source file */
+            /* Test name may appear before an ignored file record,
+             * don't lose it */
             test_name = line;
             continue;
         }
@@ -252,7 +264,8 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
 
             // Now we can write the test name before writing the source file
             g_assert(!test_name.empty() && "TN: should have been emitted");
-            MOZ_TRY(write_line(ostream, test_name));
+            record.append(test_name);
+            record.push_back('\n');
 
             Gjs::AutoChar diverged_paths{
                 find_diverging_child_components(source_file, priv->output_dir)};
@@ -261,13 +274,13 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
             MOZ_TRY(copy_source_file_to_coverage_output(source_file,
                                                         destination_file));
 
-            /* Rewrite the source file path to be relative to the output dir so
-             * that genhtml will find it */
-            MOZ_TRY(write_source_file_header(ostream, destination_file));
+            Gjs::AutoChar path{get_file_identifier(destination_file)};
+            record.append(std::format("SF:{}\n", path));
             continue;
         }
 
-        MOZ_TRY(write_line(ostream, line));
+        record.append(line);
+        record.push_back('\n');
     }
 
     return output_file;

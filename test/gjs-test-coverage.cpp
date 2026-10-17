@@ -922,7 +922,7 @@ static void test_no_hits_to_coverage_data_for_unexecuted(void* fixture_data,
                                                fixture->lcov_output);
 
     // No files were executed, so the coverage data is empty.
-    g_assert_cmpstr(coverage_data_contents, ==, "\n");
+    g_assert_cmpstr(coverage_data_contents, ==, "");
 }
 
 static void test_end_of_record_section_written_to_coverage_data(
