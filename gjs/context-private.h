@@ -98,6 +98,9 @@ class GjsContextPrivate : public JS::JobQueue {
 
     JobQueueStorage m_job_queue;
     WasmJobQueueStorage m_wasm_job_queue;
+    // Note, this flag cannot be in a bitfield because it needs to be guarded by
+    // m_wasm_job_queue_mutex
+    bool m_wasm_job_queue_closed = false;
     std::mutex m_wasm_job_queue_mutex;
     Gjs::PromiseJobDispatcher m_dispatcher;
     Gjs::MainLoop m_main_loop;
@@ -156,6 +159,7 @@ class GjsContextPrivate : public JS::JobQueue {
     void stop_draining_job_queue();
     void shutdown_wasm_job_queue();
     [[nodiscard]] bool run_single_job(JS::HandleObject job, size_t ix);
+    [[nodiscard]] bool drain_promise_jobs();
 
     void warn_about_unhandled_promise_rejections();
 
