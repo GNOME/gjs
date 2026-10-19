@@ -92,17 +92,32 @@ static GErrorResult<> copy_source_file_to_coverage_output(
                               /*etag_out=*/nullptr, error.out()))
         return Err(error.release());
 
-    Gjs::AutoUnref<GFile> destination_dir{g_file_get_parent(destination_file)};
-    if (!g_file_make_directory_with_parents(destination_dir, nullptr,
-                                            error.out())) {
-        if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
-            return Err(error.release());
-        error.reset();
+    Gjs::AutoChar destination_contents;
+    // Do not use size_t, may be different width
+    gsize destination_length;
+    if (g_file_load_contents(destination_file, /*cancellable=*/nullptr,
+                             destination_contents.out(), &destination_length,
+                             /*etag_out=*/nullptr, /*error=*/nullptr)) {
+        if (length == destination_length &&
+            memcmp(contents, destination_contents, length) == 0)
+            return Ok{};
+        // If the destination file exists, its parent directory exists too.
+    } else {
+        Gjs::AutoUnref<GFile> destination_dir{
+            g_file_get_parent(destination_file)};
+        if (!g_file_make_directory_with_parents(destination_dir, nullptr,
+                                                error.out())) {
+            if (!g_error_matches(error, G_IO_ERROR, G_IO_ERROR_EXISTS))
+                return Err(error.release());
+            error.reset();
+        }
     }
 
-    if (!g_file_set_contents_full(destination_path, contents, length,
-                                  G_FILE_SET_CONTENTS_CONSISTENT, 0666,
-                                  error.out()))
+    auto flags = GFileSetContentsFlags(G_FILE_SET_CONTENTS_CONSISTENT |
+                                       // Skip fsync() for new files
+                                       G_FILE_SET_CONTENTS_ONLY_EXISTING);
+    if (!g_file_set_contents_full(destination_path, contents, length, flags,
+                                  0666, error.out()))
         return Err(error.release());
     return Ok{};
 }
