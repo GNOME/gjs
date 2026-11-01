@@ -3774,6 +3774,14 @@ void ArgsCache::build_arg(uint8_t gi_index, GIDirection direction,
                 g_assert(closure_pos.valueOr(0) <= Argument::MAX_ARGS &&
                          "No more than 253 arguments allowed");
 
+                if (closure_pos && *closure_pos < gi_index) {
+                    Argument* cached_closure = argument(*closure_pos);
+                    if (!(cached_closure->skip_in() &&
+                          cached_closure->skip_out())) {
+                        *inc_counter_out = false;
+                    }
+                }
+
                 if (destroy_pos)
                     set_skip_all(*destroy_pos, arg.name());
 
