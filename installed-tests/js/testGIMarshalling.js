@@ -1247,11 +1247,11 @@ describe('Callback', function () {
         expect(callback).toHaveBeenCalledOnceWith(53, 54);
     });
 
-    xit('marshals a callback with user data parameter before it', function () {
+    it('marshals a callback with user data parameter before it', function () {
         const callback = jasmine.createSpy('callback');
         GIMarshallingTests.callback_user_data_before_callback(55, 56, callback);
         expect(callback).toHaveBeenCalledOnceWith(55, 56);
-    }).pend('https://gitlab.gnome.org/GNOME/gjs/-/work_items/748');
+    });
 });
 
 describe('Raw pointers', function () {
