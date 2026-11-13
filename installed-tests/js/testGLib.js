@@ -242,6 +242,22 @@ describe('GLib string function overrides', function () {
         );
     });
 
+    it('GLib.hash_table_size errors for a hash table with untyped contents', function () {
+        expect(() => GLib.hash_table_size({foo: 1, bar: 2})).toThrowError(
+            /Type void not supported for hash table keys/
+        );
+    });
+
+    it('GLib.hash_table_size errors for an empty hash table with untyped contents', function () {
+        expect(() => GLib.hash_table_size({})).toThrowError(
+            /Type void not supported for hash table keys/
+        );
+    });
+
+    it('GLib.HashTableIter.get_hash_table returns null for an uninitialized iterator', function () {
+        expect(new GLib.HashTableIter().get_hash_table()).toBeNull();
+    });
+
     it('GLib.stpcpy', function () {
         expect(() => GLib.stpcpy('dest', 'src')).toThrowError(/not introspectable/);
     });
