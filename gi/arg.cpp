@@ -313,6 +313,16 @@ static bool hashtable_int_key(JSContext* cx, JS::HandleValue value,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool check_ghash_key_type(JSContext* cx, GITypeTag key_tag) {
+    if (!GI::is_supported_ghash_key_type(key_tag)) {
+        gjs_throw(cx, "Type {} not supported for hash table keys", key_tag);
+        return false;
+    }
+
+    return true;
+}
+
 /* Converts a JS::Value to a GHashTable key, stuffing it into pointer_out if
  * possible, otherwise giving the location of an allocated key in pointer_out.
  */
@@ -324,11 +334,6 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GHashTable key {}", type_tag);
-
-    if (!GI::is_supported_ghash_key_type(type_tag)) {
-        gjs_throw(cx, "Type {} not supported for hash table keys", type_tag);
-        return false;
-    }
 
     switch (type_tag) {
         case GI_TYPE_TAG_BOOLEAN:
@@ -435,6 +440,9 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
 
         transfer = GI_TRANSFER_NOTHING;
     }
+
+    if (!check_ghash_key_type(cx, key_tag))
+        return false;
 
     JS::Rooted<JS::IdVector> ids{cx, cx};
     if (!JS_Enumerate(cx, props, &ids))
@@ -1800,6 +1808,9 @@ bool gjs_value_to_basic_ghash_gi_argument(
         gjs_throw(cx, "Container transfer for in parameters not supported");
         return false;
     }
+
+    if (!check_ghash_key_type(cx, key_tag))
+        return false;
 
     JS::RootedObject props{cx, &value.toObject()};
     JS::Rooted<JS::IdVector> ids{cx, cx};
