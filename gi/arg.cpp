@@ -313,6 +313,16 @@ static bool hashtable_int_key(JSContext* cx, JS::HandleValue value,
     return true;
 }
 
+GJS_JSAPI_RETURN_CONVENTION
+static bool check_ghash_key_type(JSContext* cx, GITypeTag key_tag) {
+    if (!GI::is_supported_ghash_key_type(key_tag)) {
+        gjs_throw(cx, "Type {} not supported for hash table keys", key_tag);
+        return false;
+    }
+
+    return true;
+}
+
 /* Converts a JS::Value to a GHashTable key, stuffing it into pointer_out if
  * possible, otherwise giving the location of an allocated key in pointer_out.
  */
@@ -324,11 +334,6 @@ static bool value_to_ghashtable_key(JSContext* cx, JS::HandleValue value,
 
     gjs_debug_marshal(GJS_DEBUG_GFUNCTION,
                       "Converting JS::Value to GHashTable key {}", type_tag);
-
-    if (!GI::is_supported_ghash_key_type(type_tag)) {
-        gjs_throw(cx, "Type {} not supported for hash table keys", type_tag);
-        return false;
-    }
 
     switch (type_tag) {
         case GI_TYPE_TAG_BOOLEAN:
@@ -419,9 +424,8 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
     GITypeTag key_tag = key_type.tag();
     GITypeTag val_type = value_type.tag();
 
-    g_assert(
-        (!GI_TYPE_TAG_IS_BASIC(key_tag) || !GI_TYPE_TAG_IS_BASIC(val_type)) &&
-        "use gjs_value_to_basic_ghash_gi_argument() instead");
+    g_assert((!key_type.is_basic() || !value_type.is_basic()) &&
+             "use gjs_value_to_basic_ghash_gi_argument() instead");
 
     if (transfer == GI_TRANSFER_CONTAINER) {
         if (type_needs_release(key_type, key_tag) ||
@@ -436,6 +440,9 @@ static bool gjs_object_to_g_hash(JSContext* cx, JS::HandleObject props,
 
         transfer = GI_TRANSFER_NOTHING;
     }
+
+    if (!check_ghash_key_type(cx, key_tag))
+        return false;
 
     JS::Rooted<JS::IdVector> ids{cx, cx};
     if (!JS_Enumerate(cx, props, &ids))
@@ -1802,6 +1809,9 @@ bool gjs_value_to_basic_ghash_gi_argument(
         return false;
     }
 
+    if (!check_ghash_key_type(cx, key_tag))
+        return false;
+
     JS::RootedObject props{cx, &value.toObject()};
     JS::Rooted<JS::IdVector> ids{cx, cx};
     if (!JS_Enumerate(cx, props, &ids))
@@ -2895,8 +2905,7 @@ bool gjs_object_from_g_hash(JSContext* cx, JS::MutableHandleValue value_p,
                             GHashTable* hash) {
     GHashTableIter iter;
 
-    g_assert((!GI_TYPE_TAG_IS_BASIC(key_type.tag()) ||
-              !GI_TYPE_TAG_IS_BASIC(val_type.tag())) &&
+    g_assert((!key_type.is_basic() || !val_type.is_basic()) &&
              "use gjs_value_from_basic_ghash() instead");
 
     // a NULL hash table becomes a null JS value
@@ -4063,8 +4072,7 @@ static bool gjs_g_arg_release_internal(
         GI::AutoTypeInfo key_type{type_info.key_type()};
         GI::AutoTypeInfo val_type{type_info.value_type()};
         GITypeTag key_tag = key_type.tag(), val_tag = val_type.tag();
-        g_assert((!GI_TYPE_TAG_IS_BASIC(key_tag) ||
-                  !GI_TYPE_TAG_IS_BASIC(val_tag)) &&
+        g_assert((!key_type.is_basic() || !val_type.is_basic()) &&
                  "use basic_ghash_release() instead");
 
         GHashTableIter iter;
