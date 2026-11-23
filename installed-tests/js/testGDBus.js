@@ -1018,6 +1018,24 @@ describe('DBus Proxy wrapper', function () {
         await expectAsync(proxyPromise).toBeRejected();
     });
 
+    it('disables property loading for interfaces without properties', function () {
+        const NoPropertiesIface = `
+          <node>
+            <interface name="org.gnome.gjs.Test">
+              <method name="someMethod"/>
+            </interface>
+          </node>`;
+        const NoPropertiesProxy = Gio.DBusProxy.makeProxyWrapper(NoPropertiesIface);
+
+        const regularProxy = new ProxyClass(Gio.DBus.session,
+            'org.gnome.gjs.Test', '/org/gnome/gjs/Test');
+        const noPropsProxy = new NoPropertiesProxy(Gio.DBus.session,
+            'org.gnome.gjs.Test', '/org/gnome/gjs/Test');
+
+        expect(regularProxy.g_flags).toEqual(Gio.DBusProxyFlags.NONE);
+        expect(noPropsProxy.g_flags).toEqual(Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES);
+    });
+
     afterAll(function () {
         if (!wasPromise) {
             // Remove stuff added by Gio._promisify, this can be not needed in future
