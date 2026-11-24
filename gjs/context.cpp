@@ -189,8 +189,9 @@ static void gjs_context_dump_heaps() {
     if (!fp)
         return;
 
-    for (GList* l = all_contexts; l; l = g_list_next(l)) {
-        auto* gjs = static_cast<GjsContextPrivate*>(l->data);
+    Gjs::SmartPointer<GList> contexts{gjs_context_get_all()};
+    for (GList* iter = contexts; iter; iter = iter->next) {
+        auto* gjs = GjsContextPrivate::from_object(GJS_CONTEXT(iter->data));
         js::DumpHeap(gjs->context(), fp, js::CollectNurseryBeforeDump);
     }
 
