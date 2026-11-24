@@ -230,8 +230,12 @@ function _addDBusConvenience(proxyInstance) {
 function _makeProxyWrapper(interfaceXml) {
     var info = _newInterfaceInfo(interfaceXml);
     var iname = info.name;
+    const defaultFlags = info.properties.length === 0
+        ? Gio.DBusProxyFlags.DO_NOT_LOAD_PROPERTIES
+        : Gio.DBusProxyFlags.NONE;
+
     function wrapper(bus, name, object, asyncCallback, cancellable = null,
-        flags = Gio.DBusProxyFlags.NONE) {
+        flags = defaultFlags) {
         if (new.target === undefined)
             warnDeprecatedOncePerCallsite(MAKE_PROXY_WRAPPER_FUNCTION_CALL, name);
 
@@ -255,7 +259,7 @@ function _makeProxyWrapper(interfaceXml) {
         return obj;
     }
     wrapper.newAsync = function newAsync(bus, name, object, cancellable = null,
-        flags = Gio.DBusProxyFlags.NONE) {
+        flags = defaultFlags) {
         const obj = new Gio.DBusProxy({
             g_connection: bus,
             g_interface_name: info.name,
