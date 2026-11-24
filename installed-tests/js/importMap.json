@@ -1,0 +1,27 @@
+{
+    "imports": {
+        "backtracktest/": "resource:///org/gjs/jsunit/modules/?a=1/",
+        "cairo": "resource:///org/gjs/jsunit/modules/othersub/x.js",
+        "console": "resource:///org/gjs/jsunit/modules/foobar.js",
+        "dotdottest/": "resource:///org/gjs/jsunit/modules/othersub/",
+        "filescopetest/": "resource:///org/gjs/jsunit/modules/sub/",
+        "gi://Gio?version=2.0": "gi://GLib",
+        "resource:///org/gjs/jsunit/modules/queryprefix/": "resource:///org/gjs/jsunit/modules/",
+        "resource:///org/gjs/jsunit/modules/meta.js?v=1": "resource:///org/gjs/jsunit/modules/othersub/x.js",
+        "resource:///org/gjs/jsunit/modules/relativetest.js": "resource:///org/gjs/jsunit/modules/othersub/x.js",
+        "resource:///org/gjs/jsunit/modules/slashtest/": "resource:///org/gjs/jsunit/modules/othersub/",
+        "sorttest/": "resource:///org/gjs/jsunit/modules/",
+        "sorttest/sub/": "resource:///org/gjs/jsunit/modules/othersub/"
+    },
+    "scopes": {
+        "resource:///org/gjs/jsunit/modules/": {
+            "resource:///org/gjs/jsunit/modules/sub/x.js": "resource:///org/gjs/jsunit/modules/exports.js"
+        },
+        "resource:///org/gjs/jsunit/modules/loadorder/": {
+            "resource:///org/gjs/jsunit/modules/sub/x.js": "resource:///org/gjs/jsunit/modules/othersub/x.js"
+        },
+        "resource:///org/gjs/jsunit/modules/importMapFileScope.js": {
+            "filescopetest/": "resource:///org/gjs/jsunit/modules/othersub/"
+        }
+    }
+}

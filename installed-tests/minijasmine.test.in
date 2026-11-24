@@ -3,5 +3,5 @@
 
 [Test]
 Type=session
-Exec=@installed_tests_execdir@/minijasmine @installed_tests_execdir@/js/@name@ -m
+Exec=@installed_tests_execdir@/minijasmine @installed_tests_execdir@/js/@name@ -m @import_map_arg@
 Output=TAP

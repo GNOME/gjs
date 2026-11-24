@@ -1,0 +1,10 @@
+{
+    "imports": {
+        "glib": "gi://GLib"
+    },
+    "scopes": {
+        "resource:///org/gjs/importmaptest/": {
+            "glib": 42
+        }
+    }
+}

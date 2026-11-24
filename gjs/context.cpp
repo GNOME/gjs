@@ -52,6 +52,7 @@
 #include <js/GlobalObject.h>  // for CurrentGlobalOrNull
 #include <js/HeapAPI.h>       // for ExposeObjectToActiveJS
 #include <js/Id.h>
+#include <js/JSON.h>
 #include <js/Modules.h>
 #include <js/Promise.h>  // for JobQueue::SavedJobQueue
 #include <js/PropertyAndElement.h>
@@ -74,6 +75,7 @@
 #include <mozilla/UniquePtr.h>  // for UniquePtr::get
 
 #include "gi/function.h"
+#include "gi/gerror.h"
 #include "gi/info.h"
 #include "gi/object.h"
 #include "gi/private.h"
@@ -1415,6 +1417,38 @@ static inline bool result_to_c(GErrorResult<> result, GError** error_out) {
     return false;
 }
 
+/**
+ * gjs_context_add_import_map:
+ * @self: the #GjsContext
+ * @import_map_json: JSON-encoded import map
+ * @import_map_json_len: Length of @import_map_json, or -1 if zero-terminated
+ * @error: (nullable): Return location for an error, or %NULL
+ *
+ * Assigns an import map to the JS context, which will be used to transform any
+ * import specifiers in subsequent evaluated JS.
+ * Currently, this function may be called only once per #GjsContext, before any
+ * modules are imported from user code.
+ *
+ * Identifiers registered with gjs_context_register_module() are currently not
+ * looked up in the import map.
+ *
+ * https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/script/type/importmap
+ *
+ * Returns: %TRUE if successful, %FALSE if @error is set
+ */
+bool gjs_context_add_import_map(GjsContext* self, const char* import_map_json,
+                                ssize_t import_map_json_len, GError** error) {
+    g_return_val_if_fail(GJS_IS_CONTEXT(self), false);
+    g_return_val_if_fail(import_map_json != nullptr, false);
+    g_return_val_if_fail(error == nullptr || *error == nullptr, false);
+
+    size_t real_len =
+        import_map_json_len < 0 ? strlen(import_map_json) : import_map_json_len;
+
+    GjsContextPrivate* gjs = GjsContextPrivate::from_object(self);
+    return result_to_c(gjs->add_import_map({import_map_json, real_len}), error);
+}
+
 bool gjs_context_eval(GjsContext* self, const char* script, ssize_t script_len,
                       const char* filename, int* exit_status_p,
                       GError** error) {
@@ -1577,6 +1611,38 @@ void GjsContextPrivate::register_non_module_sourcemap(const char* script,
 
     JS::RootedValue ignored{m_cx};
     JS::Call(m_cx, v_loader_obj, "populateSourceMap", args, &ignored);
+}
+
+GErrorResult<> GjsContextPrivate::add_import_map(std::string_view import_map) {
+    Gjs::AutoMainRealm ar{this};
+
+    JS::UTF8Chars import_map_chars{import_map.data(), import_map.size()};
+    JS::RootedString import_map_string{
+        m_cx, JS_NewStringCopyUTF8N(m_cx, import_map_chars)};
+    if (!import_map_string) {
+        Gjs::AutoError error = gjs_gerror_make_from_thrown_value(m_cx);
+        g_prefix_error(error.out(), "Import map has invalid UTF-8 encoding: ");
+        return Err(error.release());
+    }
+
+    JS::RootedValue v_import_map_json{m_cx};
+    if (!JS_ParseJSON(m_cx, import_map_string, &v_import_map_json)) {
+        Gjs::AutoError error = gjs_gerror_make_from_thrown_value(m_cx);
+        g_prefix_error(error.out(), "Failed to parse import map: ");
+        return Err(error.release());
+    }
+
+    JS::RootedValue v_loader{
+        m_cx, gjs_get_global_slot(global(), GjsGlobalSlot::MODULE_LOADER)};
+    g_assert(v_loader.isObject() && "weird value in global module loader slot");
+    JS::RootedObject loader{m_cx, &v_loader.toObject()};
+    JS::RootedValueArray<1> args{m_cx};
+    args[0].set(v_import_map_json);
+    JS::RootedValue unused{m_cx};
+    if (!JS::Call(m_cx, loader, "addImportMap", args, &unused))
+        return Err(gjs_gerror_make_from_thrown_value(m_cx).release());
+
+    return Ok{};
 }
 
 GErrorResult<> GjsContextPrivate::eval(std::string_view script,

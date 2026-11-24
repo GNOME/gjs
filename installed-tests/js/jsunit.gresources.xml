@@ -6,6 +6,7 @@
     <file preprocess="xml-stripblanks">builder-nontemplate.ui</file>
     <file preprocess="xml-stripblanks">complex3.ui</file>
     <file preprocess="xml-stripblanks">complex4.ui</file>
+    <file>importMap.json</file>
     <file>inspector/exitcode.js</file>
     <file>inspector/sample.js</file>
     <file>inspector/nested dir#/% hello.js</file>
@@ -27,12 +28,18 @@
     <file>modules/exports.js</file>
     <file>modules/foobar.js</file>
     <file>modules/greet.js</file>
+    <file>modules/importer.js</file>
+    <file>modules/importMapFileScope.js</file>
+    <file>modules/importMapSlash.js</file>
     <file>modules/importmeta.js</file>
     <file>modules/lexicalScope.js</file>
+    <file>modules/loadorder/importer.js</file>
+    <file>modules/meta.js</file>
     <file>modules/modunicode.js</file>
     <file>modules/mutualImport/a.js</file>
     <file>modules/mutualImport/b.js</file>
     <file>modules/networkURI.js</file>
+    <file>modules/othersub/x.js</file>
     <file>modules/overrides/GIMarshallingTests.js</file>
     <file>modules/say.js</file>
     <file>modules/scaryURI.js</file>
@@ -41,6 +48,7 @@
     <file>modules/sideEffect3.js</file>
     <file>modules/sideEffect4.js</file>
     <file>modules/sloppy.js</file>
+    <file>modules/sub/x.js</file>
     <file>modules/subA/subB/__init__.js</file>
     <file>modules/subA/subB/baz.js</file>
     <file>modules/subA/subB/foobar.js</file>

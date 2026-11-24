@@ -261,6 +261,8 @@ class GjsContextPrivate : public JS::JobQueue {
 
     void register_non_module_sourcemap(const char* script,
                                        const char* filename);
+    [[nodiscard]]
+    Gjs::GErrorResult<> add_import_map(std::string_view import_map);
 
     [[nodiscard]]
     Gjs::GErrorResult<> eval(std::string_view script, const char* filename,

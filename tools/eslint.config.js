@@ -144,6 +144,7 @@ export default defineConfig([
                 compileModule: 'readonly',
                 getRegistry: 'readonly',
                 getSourceMapRegistry: 'readonly',
+                internalWarning: 'readonly',
                 loadResourceOrFile: 'readonly',
                 loadResourceOrFileAsync: 'readonly',
                 moduleGlobalThis: 'readonly',

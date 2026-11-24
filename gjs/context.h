@@ -49,6 +49,9 @@ GjsContext* gjs_context_new(void);
 GJS_EXPORT GJS_USE
 GjsContext* gjs_context_new_with_search_path(char** search_path);
 GJS_EXPORT GJS_USE
+bool gjs_context_add_import_map(GjsContext* self, const char* import_map_json,
+                                ssize_t import_map_json_len, GError** error);
+GJS_EXPORT GJS_USE
 bool gjs_context_eval_file(GjsContext* self, const char* filename,
                            int* exit_status_p, GError** error);
 GJS_EXPORT GJS_USE

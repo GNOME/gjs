@@ -10,6 +10,10 @@ Files: tools/package.json
 Copyright: 2020 Evan Welsh <contact@evanwelsh.com>
 License: MIT OR LGPL-2.0-or-later
 
+Files: installed-tests/js/importMap.json installed-tests/scripts/importMap*.json
+Copyright: 2026 Philip Chimento <philip.chimento@gmail.com>
+License: MIT OR LGPL-2.0-or-later
+
 Files: installed-tests/js/modules/encodings.json
 Copyright: WHATWG (Apple, Google, Mozilla, Microsoft)
 License: BSD-3-Clause

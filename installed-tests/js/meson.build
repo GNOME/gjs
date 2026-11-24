@@ -101,6 +101,7 @@ foreach test : jasmine_tests
 
     test_description_subst = {
         'name': 'test@0@.js'.format(test),
+        'import_map_arg': '',
         'installed_tests_execdir': prefix / installed_tests_execdir,
     }
     configure_file(configuration: test_description_subst,
@@ -136,6 +137,7 @@ endif
 
 dbus_test_description_subst = {
     'name': 'testGDBus.js',
+    'import_map_arg': '',
     'installed_tests_execdir': prefix / installed_tests_execdir,
 }
 configure_file(
@@ -147,6 +149,29 @@ configure_file(
 
 if get_option('installed_tests')
     install_data(dbus_test_file, install_dir: installed_js_tests_dir)
+endif
+
+# testImportMap.js is separate because it needs to pass the import map to
+# minijasmine
+import_map_test_file = files('testImportMap.js')
+test('ImportMap', minijasmine, args: [import_map_test_file, '-m',
+      'resource:///org/gjs/jsunit/importMap.json'],
+    suite: 'JS', env: tests_environment, depends: tests_dependencies,
+    protocol: 'tap')
+
+configure_file(
+    input: '../minijasmine.test.in',
+    output: 'testImportMap.test',
+    install: get_option('installed_tests'),
+    install_dir: installed_tests_metadir,
+    configuration: {
+        'name': 'testImportMap.js',
+        'import_map_arg': 'resource:///org/gjs/jsunit/importMap.json',
+        'installed_tests_execdir': prefix / installed_tests_execdir,
+    })
+
+if get_option('installed_tests')
+    install_data(import_map_test_file, install_dir: installed_js_tests_dir)
 endif
 
 # tests that require the legacy importer are also separate because they need to
@@ -180,6 +205,7 @@ foreach test : legacy_importer_tests
 
     esm_test_description_subst = {
         'name': 'test@0@.js'.format(test),
+        'import_map_arg': '',
         'installed_tests_execdir': prefix / installed_tests_execdir,
     }
     configure_file(configuration: esm_test_description_subst,
