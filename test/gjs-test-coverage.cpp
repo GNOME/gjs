@@ -349,6 +349,26 @@ static void test_expected_source_file_name_written_to_coverage_data(
                                                 expected_source_filename);
 }
 
+static void test_missing_source_file_not_fatal(void* fixture_data,
+                                               const void*) {
+    auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
+
+    Gjs::AutoChar filename{get_script_identifier(fixture->tmp_js_script)};
+    g_assert_true(eval_script(fixture->gjs_context, fixture->tmp_js_script));
+    g_assert_true(g_file_delete(fixture->tmp_js_script, nullptr, nullptr));
+
+    g_test_expect_message("Gjs", G_LOG_LEVEL_WARNING,
+                          "Source file *gjs_coverage_script.js not found: *");
+    Gjs::AutoChar coverage_data_contents =
+        write_statistics_and_get_coverage_data(fixture->coverage,
+                                               fixture->lcov_output);
+    g_test_assert_expected_messages();
+
+    assert_coverage_data_contains_value_for_key(coverage_data_contents,
+                                                "SF:", filename);
+    g_assert_nonnull(strstr(coverage_data_contents, "end_of_record"));
+}
+
 static void test_expected_entry_not_written_for_nonexistent_file(
     void* fixture_data, const void*) {
     auto* fixture = static_cast<GjsCoverageFixture*>(fixture_data);
@@ -1108,6 +1128,8 @@ void gjs_test_add_tests_for_coverage() {
         "/gjs/coverage/expected_source_file_name_written_to_coverage_data",
         &coverage_fixture,
         test_expected_source_file_name_written_to_coverage_data);
+    add_test_for_fixture("/gjs/coverage/test_missing_source_file_not_fatal",
+                         &coverage_fixture, test_missing_source_file_not_fatal);
     add_test_for_fixture("/gjs/coverage/entry_not_written_for_nonexistent_file",
                          &coverage_fixture,
                          test_expected_entry_not_written_for_nonexistent_file);
