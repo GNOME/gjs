@@ -1,3 +1,16 @@
+Version 1.90.2
+--------------
+
+- Second bugfix release for GNOME 51. This release contains several bug fixes
+  for code coverage.
+
+- Closed bugs and merge request:
+  * coverage: Allow output from parallel tests to the same directory [!1130,
+    Aleksandr Mezin]
+  * fix recursive_delete_dir cleanup failure [!1131, Jakub Kulík]
+  * coverage: Don't overwrite files with the same content [!1135, Aleksandr
+    Mezin]
+
 Version 1.90.1
 --------------
 
