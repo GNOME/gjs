@@ -9,7 +9,6 @@
 #include <string.h>  // for strcmp, strlen
 
 #include <algorithm>
-#include <format>
 #include <iterator>  // for size
 #include <ranges>
 #include <string>
@@ -58,14 +57,6 @@ enum GjsCoverageProps : uint8_t {
     PROP_OUTPUT_DIRECTORY,
 };
 static GParamSpec* gjs_coverage_props[PROP_OUTPUT_DIRECTORY + 1];
-
-[[nodiscard]]
-static Gjs::AutoChar get_file_identifier(GFile* source_file) {
-    Gjs::AutoChar path{g_file_get_path(source_file)};
-    if (!path)
-        path = g_file_get_uri(source_file);
-    return path;
-}
 
 // Load the whole file into memory and write it atomically using
 // g_file_set_contents_full(). There is no GFile-based API that could do this,
@@ -286,11 +277,25 @@ GErrorResult<Gjs::AutoUnref<GFile>> write_statistics_internal(GjsCoverage* self,
                 find_diverging_child_components(source_file, priv->output_dir)};
             Gjs::AutoUnref<GFile> destination_file{
                 g_file_resolve_relative_path(priv->output_dir, diverged_paths)};
-            MOZ_TRY(copy_source_file_to_coverage_output(source_file,
-                                                        destination_file));
+            auto copy_result = copy_source_file_to_coverage_output(
+                source_file, destination_file);
 
-            Gjs::AutoChar path{get_file_identifier(destination_file)};
-            record.append(std::format("SF:{}\n", path));
+            record.append("SF:");
+
+            if (copy_result.isErr()) {
+                if (!g_error_matches(copy_result.inspectErr(), G_IO_ERROR,
+                                     G_IO_ERROR_NOT_FOUND))
+                    return copy_result.propagateErr();
+
+                gjs_warning("Source file {} not found: {}", filename,
+                            copy_result);
+                record.append(filename);
+            } else {
+                Gjs::AutoChar path{g_file_get_path(destination_file)};
+                record.append(path);
+            }
+
+            record.append("\n");
             continue;
         }
 
